@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtux Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: #01042e; color: #fff; min-height: 100vh; }
+
+    /* LOGIN */
+    #loginPage {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: #01042e;
+    }
+    .login-box {
+      background: #050e30; border: 1px solid #9fb000;
+      border-radius: 14px; padding: 36px 32px; width: 340px; text-align: center;
+    }
+    .login-box h1 { color: #d4e800; font-size: 24px; margin-bottom: 6px; }
+    .login-box p { color: #667; font-size: 13px; margin-bottom: 24px; }
+    .login-box input {
+      width: 100%; padding: 10px 14px; border-radius: 7px;
+      border: 1px solid #1e2d6b; background: #0a1540; color: #fff;
+      font-size: 14px; font-family: 'Poppins', sans-serif; margin-bottom: 12px;
+    }
+    .login-box input:focus { outline: none; border-color: #9fb000; }
+    .btn-login {
+      width: 100%; padding: 10px; background: #9fb000; color: #000;
+      border: none; border-radius: 7px; font-size: 15px; font-weight: 700;
+      cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s;
+    }
+    .btn-login:hover { background: #d4e800; }
+    .login-error { color: #f55; font-size: 12px; margin-top: 8px; display: none; }
+
+    /* ADMIN */
+    #adminPage { display: none; }
+    .admin-topbar {
+      background: #000718; border-bottom: 1px solid #9fb000;
+      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .admin-topbar h1 { color: #d4e800; font-size: 18px; }
+    .btn-logout {
+      background: transparent; border: 1px solid #f55; color: #f55;
+      padding: 5px 14px; border-radius: 5px; font-size: 12px; cursor: pointer;
+      font-family: 'Poppins', sans-serif; transition: background 0.2s;
+    }
+    .btn-logout:hover { background: #f55; color: #fff; }
+
+    .admin-body { display: flex; min-height: calc(100vh - 54px); }
+
+    /* SIDEBAR */
+    .admin-sidebar {
+      width: 180px; background: #050c2e; border-right: 1px solid #1e2d6b;
+      padding: 14px 8px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .sb-btn {
+      background: transparent; border: none; color: #aab; padding: 9px 12px;
+      border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left;
+      font-family: 'Poppins', sans-serif; transition: background 0.2s;
+    }
+    .sb-btn:hover, .sb-btn.active { background: #1a2d80; color: #d4e800; }
+    .sb-btn.active { border-left: 3px solid #d4e800; }
+    .sb-section { font-size: 10px; color: #556; text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px 2px; }
+
+    /* MAIN */
+    .admin-main { flex: 1; padding: 24px; overflow-y: auto; }
+    .admin-page { display: none; }
+    .admin-page.active { display: block; }
+
+    .page-title { font-size: 20px; color: #d4e800; font-weight: 700; margin-bottom: 20px; }
+
+    /* FORM */
+    .add-form {
+      background: #050e30; border: 1px solid #1e2d6b; border-radius: 12px; padding: 20px; margin-bottom: 24px;
+    }
+    .add-form h3 { color: #9fb000; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .form-grid input, .form-grid select, .form-grid textarea {
+      padding: 9px 12px; border-radius: 7px; border: 1px solid #1e2d6b;
+      background: #0a1540; color: #fff; font-size: 13px;
+      font-family: 'Poppins', sans-serif; width: 100%;
+    }
+    .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
+      outline: none; border-color: #9fb000;
+    }
+    .form-grid select option { background: #0a1540; }
+    .form-full { grid-column: 1 / -1; }
+    .btn-add {
+      background: #9fb000; color: #000; border: none; border-radius: 7px;
+      padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: 'Poppins', sans-serif; transition: background 0.2s;
+    }
+    .btn-add:hover { background: #d4e800; }
+    .btn-add:disabled { background: #556; color: #999; cursor: not-allowed; }
+
+    /* POSTS LIST */
+    .posts-list { display: flex; flex-direction: column; gap: 10px; }
+    .post-item {
+      background: #050e30; border: 1px solid #1e2d6b; border-radius: 10px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+    }
+    .post-icon { font-size: 24px; width: 40px; text-align: center; }
+    .post-info { flex: 1; }
+    .post-info .pi-title { font-size: 14px; font-weight: 600; color: #ddd; }
+    .post-info .pi-meta { font-size: 12px; color: #667; margin-top: 2px; }
+    .pi-tag {
+      display: inline-block; font-size: 11px; background: #0f1e55;
+      color: #9fb000; border-radius: 3px; padding: 1px 8px; margin-top: 4px;
+    }
+    .pi-room {
+      font-size: 11px; background: #1a2d80; color: #aac;
+      border-radius: 3px; padding: 1px 8px; margin-left: 4px;
+    }
+    .btn-delete {
+      background: transparent; border: 1px solid #f55; color: #f55;
+      border-radius: 5px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+      font-family: 'Poppins', sans-serif; transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-delete:hover { background: #f55; color: #fff; }
+
+    .empty-state { text-align: center; color: #445; padding: 40px; font-size: 14px; }
+    .success-msg { background: #0f3d2e; border: 1px solid #0f6e56; color: #4caf90; border-radius: 7px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none; }
+    .loading { color: #667; font-size: 13px; text-align: center; padding: 20px; }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 10px; padding: 16px; text-align: center; }
+    .stat-card .sc-num { font-size: 28px; font-weight: 700; color: #d4e800; }
+    .stat-card .sc-label { font-size: 12px; color: #667; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage">
+  <div class="login-box">
+    <h1>🎮 Virtux Admin</h1>
+    <p>Enter your password to continue</p>
+    <input type="password" id="passwordInput" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-login" onclick="login()">Login</button>
+    <div class="login-error" id="loginError">Wrong password, try again.</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPage">
+  <div class="admin-topbar">
+    <h1>🎮 Virtux Admin Panel</h1>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-sidebar">
+      <button class="sb-btn active" onclick="showAdminPage('dashboard')">📊 Dashboard</button>
+      <div class="sb-section">Rooms</div>
+      <button class="sb-btn" onclick="showAdminPage('live')">🔴 Live</button>
+      <button class="sb-btn" onclick="showAdminPage('tournaments')">🏆 Tournaments</button>
+      <button class="sb-btn" onclick="showAdminPage('highlights')">🎬 Highlights</button>
+      <button class="sb-btn" onclick="showAdminPage('subscribers')">👥 Subscribers</button>
+    </div>
+
+    <div class="admin-main">
+
+      <!-- DASHBOARD -->
+      <div class="admin-page active" id="ap-dashboard">
+        <div class="page-title">📊 Dashboard</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="sc-num" id="stat-total">—</div><div class="sc-label">Total Posts</div></div>
+          <div class="stat-card"><div class="sc-num" id="stat-live">—</div><div class="sc-label">Live Posts</div></div>
+          <div class="stat-card"><div class="sc-num" id="stat-tour">—</div><div class="sc-label">Tournaments</div></div>
+          <div class="stat-card"><div class="sc-num" id="stat-hl">—</div><div class="sc-label">Highlights</div></div>
+        </div>
+        <div class="add-form">
+          <h3>Recent Posts</h3>
+          <div id="recent-posts"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- LIVE -->
+      <div class="admin-page" id="ap-live">
+        <div class="page-title">🔴 Live — Manage Posts</div>
+        <div class="add-form">
+          <h3>➕ Add New Live</h3>
+          <div class="success-msg" id="success-live">✅ Posted successfully!</div>
+          <div class="form-grid">
+            <input type="text" id="live-title" placeholder="Stream title (e.g. NinjaX Gaming)">
+            <input type="text" id="live-desc" placeholder="Game • Type (e.g. Valorant • Ranked)">
+            <input type="text" id="live-icon" placeholder="Icon emoji (e.g. 🎮)">
+            <select id="live-tag">
+              <option value="Live Now">🔴 Live Now</option>
+              <option value="Pre Lives">⏰ Pre Lives</option>
+              <option value="Live News">📰 Live News</option>
+              <option value="VIP">👑 VIP</option>
+            </select>
+          </div>
+          <button class="btn-add" onclick="addPost('live')">➕ Publish Live</button>
+        </div>
+        <div class="posts-list" id="posts-live"><div class="loading">Loading...</div></div>
+      </div>
+
+      <!-- TOURNAMENTS -->
+      <div class="admin-page" id="ap-tournaments">
+        <div class="page-title">🏆 Tournaments — Manage Posts</div>
+        <div class="add-form">
+          <h3>➕ Add New Tournament</h3>
+          <div class="success-msg" id="success-tournaments">✅ Posted successfully!</div>
+          <div class="form-grid">
+            <input type="text" id="tournaments-title" placeholder="Tournament name">
+            <input type="text" id="tournaments-desc" placeholder="Game • Teams • Region">
+            <input type="text" id="tournaments-icon" placeholder="Icon emoji (e.g. 🏆)">
+            <select id="tournaments-tag">
+              <option value="Ongoing">🏆 Ongoing</option>
+              <option value="Tournament News">📰 News</option>
+              <option value="Global">🌍 Global</option>
+              <option value="VIP">👑 VIP</option>
+            </select>
+          </div>
+          <button class="btn-add" onclick="addPost('tournaments')">➕ Publish Tournament</button>
+        </div>
+        <div class="posts-list" id="posts-tournaments"><div class="loading">Loading...</div></div>
+      </div>
+
+      <!-- HIGHLIGHTS -->
+      <div class="admin-page" id="ap-highlights">
+        <div class="page-title">🎬 Highlights — Manage Posts</div>
+        <div class="add-form">
+          <h3>➕ Add New Highlight</h3>
+          <div class="success-msg" id="success-highlights">✅ Posted successfully!</div>
+          <div class="form-grid">
+            <input type="text" id="highlights-title" placeholder="Highlight title">
+            <input type="text" id="highlights-desc" placeholder="Player • Game • Time ago">
+            <input type="text" id="highlights-icon" placeholder="Icon emoji (e.g. 🎯)">
+            <select id="highlights-tag">
+              <option value="Pro">🏅 Pro</option>
+              <option value="Tournament">🏆 Tournament</option>
+              <option value="Photo">📷 Photo</option>
+              <option value="Video">📹 Video</option>
+            </select>
+          </div>
+          <button class="btn-add" onclick="addPost('highlights')">➕ Publish Highlight</button>
+        </div>
+        <div class="posts-list" id="posts-highlights"><div class="loading">Loading...</div></div>
+      </div>
+
+      <!-- SUBSCRIBERS -->
+      <div class="admin-page" id="ap-subscribers">
+        <div class="page-title">👥 Subscribers — Manage Posts</div>
+        <div class="add-form">
+          <h3>➕ Add New Subscriber</h3>
+          <div class="success-msg" id="success-subscribers">✅ Posted successfully!</div>
+          <div class="form-grid">
+            <input type="text" id="subscribers-title" placeholder="Name (e.g. NinjaX)">
+            <input type="text" id="subscribers-desc" placeholder="Followers count">
+            <input type="text" id="subscribers-icon" placeholder="Icon emoji (e.g. 🔔)">
+            <select id="subscribers-tag">
+              <option value="YouTube">🔔 YouTube</option>
+              <option value="Member">⭐ Member</option>
+              <option value="Donor">🎁 Donor</option>
+              <option value="Collaboration">🌐 Collaboration</option>
+            </select>
+          </div>
+          <button class="btn-add" onclick="addPost('subscribers')">➕ Add Subscriber</button>
+        </div>
+        <div class="posts-list" id="posts-subscribers"><div class="loading">Loading...</div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+  const ADMIN_PASSWORD = 'virtux2025';
+
+  function login() {
+    const pw = document.getElementById('passwordInput').value;
+    if (pw === ADMIN_PASSWORD) {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('adminPage').style.display = 'block';
+      loadAllPosts();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+    }
+  }
+
+  function logout() {
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('adminPage').style.display = 'none';
+    document.getElementById('passwordInput').value = '';
+  }
+
+  function showAdminPage(id) {
+    document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('ap-' + id).classList.add('active');
+    document.querySelectorAll('.sb-btn').forEach(b => {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(id)) b.classList.add('active');
+    });
+    if (id !== 'dashboard') loadPosts(id);
+  }
+
+  async function supabaseFetch(method, path, body) {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+      method,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : ''
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (method === 'DELETE') return true;
+    return res.json();
+  }
+
+  async function loadAllPosts() {
+    const posts = await supabaseFetch('GET', 'posts?order=id.desc');
+    if (!Array.isArray(posts)) return;
+
+    document.getElementById('stat-total').textContent = posts.length;
+    document.getElementById('stat-live').textContent = posts.filter(p => p.room === 'live').length;
+    document.getElementById('stat-tour').textContent = posts.filter(p => p.room === 'tournaments').length;
+    document.getElementById('stat-hl').textContent = posts.filter(p => p.room === 'highlights').length;
+
+    const recent = posts.slice(0, 5);
+    const el = document.getElementById('recent-posts');
+    if (recent.length === 0) { el.innerHTML = '<div class="empty-state">No posts yet.</div>'; return; }
+    el.innerHTML = recent.map(p => postHTML(p)).join('');
+  }
+
+  async function loadPosts(room) {
+    const el = document.getElementById('posts-' + room);
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    const posts = await supabaseFetch('GET', 'posts?room=eq.' + room + '&order=id.desc');
+    if (!Array.isArray(posts) || posts.length === 0) {
+      el.innerHTML = '<div class="empty-state">No posts in this room yet.</div>';
+      return;
+    }
+    el.innerHTML = posts.map(p => postHTML(p)).join('');
+  }
+
+  function postHTML(p) {
+    return `<div class="post-item" id="post-${p.id}">
+      <div class="post-icon">${p.icon || '📄'}</div>
+      <div class="post-info">
+        <div class="pi-title">${p.title}</div>
+        <div class="pi-meta">${p.description || ''}</div>
+        <span class="pi-tag">${p.tag || ''}</span>
+        <span class="pi-room">${p.room}</span>
+      </div>
+      <button class="btn-delete" onclick="deletePost(${p.id}, '${p.room}')">🗑️ Delete</button>
+    </div>`;
+  }
+
+  async function addPost(room) {
+    const title = document.getElementById(room + '-title').value.trim();
+    const desc = document.getElementById(room + '-desc').value.trim();
+    const icon = document.getElementById(room + '-icon').value.trim();
+    const tag = document.getElementById(room + '-tag').value;
+
+    if (!title) { alert('Please enter a title!'); return; }
+
+    const btn = document.querySelector(`#ap-${room} .btn-add`);
+    btn.disabled = true;
+    btn.textContent = 'Publishing...';
+
+    await supabaseFetch('POST', 'posts', { title, description: desc, room, icon: icon || '📄', tag });
+
+    btn.disabled = false;
+    btn.textContent = '➕ Publish';
+
+    document.getElementById(room + '-title').value = '';
+    document.getElementById(room + '-desc').value = '';
+    document.getElementById(room + '-icon').value = '';
+
+    const msg = document.getElementById('success-' + room);
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 3000);
+
+    loadPosts(room);
+    loadAllPosts();
+  }
+
+  async function deletePost(id, room) {
+    if (!confirm('Delete this post?')) return;
+    await supabaseFetch('DELETE', 'posts?id=eq.' + id);
+    document.getElementById('post-' + id)?.remove();
+    loadAllPosts();
+  }
+
+  loadAllPosts();
+</script>
+</body>
+</html>

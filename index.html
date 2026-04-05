@@ -4,200 +4,103 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux — Gaming Community</title>
-  <link rel="icon" href="./Virtux1.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Poppins', sans-serif; }
     .vx-root { background: #01042e; min-height: 100vh; color: #fff; display: flex; flex-direction: column; }
-
-    /* TOPBAR */
     .vx-topbar { display: flex; align-items: center; gap: 12px; padding: 10px 18px; background: #000718; border-bottom: 1px solid #9fb000; }
     .vx-logo { font-size: 22px; font-weight: 700; color: #d4e800; letter-spacing: 2px; }
     .vx-logo span { color: #fff; font-weight: 400; }
     .vx-topnav { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
-    .vx-topnav .dd { position: relative; }
-    .vx-topnav .dd-btn { background: transparent; border: 1px solid #9fb000; color: #d4e800; padding: 5px 12px; border-radius: 5px; font-size: 13px; cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s; }
-    .vx-topnav .dd-btn:hover { background: #9fb000; color: #000; }
-    .dd-menu { display: none; position: absolute; top: 100%; left: 0; background: #010a2e; border: 1px solid #9fb000; border-radius: 5px; min-width: 160px; z-index: 99; overflow: hidden; }
+    .dd { position: relative; }
+    .dd-btn { background: transparent; border: 1px solid #9fb000; color: #d4e800; padding: 5px 12px; border-radius: 5px; font-size: 13px; cursor: pointer; font-family: 'Poppins', sans-serif; }
+    .dd-btn:hover { background: #9fb000; color: #000; }
+    .dd-menu { display: none; position: absolute; top: 100%; left: 0; background: #010a2e; border: 1px solid #9fb000; border-radius: 5px; min-width: 160px; z-index: 99; }
     .dd:hover .dd-menu { display: block; }
-    .dd-menu button { display: block; width: 100%; background: transparent; border: none; color: #ccc; padding: 8px 14px; text-align: left; font-size: 13px; cursor: pointer; font-family: 'Poppins', sans-serif; border-bottom: 1px solid #1a2550; transition: background 0.2s; }
+    .dd-menu button { display: block; width: 100%; background: transparent; border: none; color: #ccc; padding: 8px 14px; text-align: left; font-size: 13px; cursor: pointer; font-family: 'Poppins', sans-serif; border-bottom: 1px solid #1a2550; }
     .dd-menu button:hover { background: #9fb000; color: #000; }
-
-    /* TICKER */
     .vx-ticker { background: #000; padding: 5px 16px; display: flex; align-items: center; gap: 10px; overflow: hidden; }
     .ticker-label { font-size: 11px; background: #d4e800; color: #000; padding: 2px 8px; border-radius: 3px; font-weight: 700; white-space: nowrap; }
     .ticker-track { display: flex; gap: 30px; animation: ticker 28s linear infinite; white-space: nowrap; }
     @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .ticker-item { font-size: 12px; color: #99aabb; }
     .ticker-item span { color: #d4e800; }
-
-    /* LAYOUT */
     .vx-body { display: flex; flex: 1; }
-
-    /* SIDEBAR */
-    .vx-sidebar { width: 180px; min-width: 150px; background: linear-gradient(180deg, #050c2e 0%, #0a1540 100%); border-right: 1px solid #1e2d6b; display: flex; flex-direction: column; gap: 4px; padding: 10px 6px; }
-    .vx-sidebar .sb-btn { background: transparent; border: none; color: #aab; padding: 9px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; font-family: 'Poppins', sans-serif; transition: background 0.2s, color 0.2s; }
-    .vx-sidebar .sb-btn:hover, .vx-sidebar .sb-btn.active { background: #1a2d80; color: #d4e800; }
-    .vx-sidebar .sb-btn.active { border-left: 3px solid #d4e800; }
+    .vx-sidebar { width: 180px; background: linear-gradient(180deg,#050c2e,#0a1540); border-right: 1px solid #1e2d6b; display: flex; flex-direction: column; gap: 4px; padding: 10px 6px; }
+    .sb-btn { background: transparent; border: none; color: #aab; padding: 9px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; font-family: 'Poppins', sans-serif; transition: background 0.2s; }
+    .sb-btn:hover, .sb-btn.active { background: #1a2d80; color: #d4e800; }
+    .sb-btn.active { border-left: 3px solid #d4e800; }
     .sb-section { font-size: 10px; color: #556; text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px 2px; }
-
-    /* MAIN */
     .vx-main { flex: 1; overflow: hidden; }
     .vx-page { display: none; }
     .vx-page.active { display: block; }
     .scrollable { max-height: calc(100vh - 90px); overflow-y: auto; }
-
-    /* HOME */
-    .home-hero { background: linear-gradient(135deg, #010a2e 0%, #0a1f5e 60%, #010a2e 100%); padding: 28px 24px 20px; border-bottom: 1px solid #9fb000; }
+    .home-hero { background: linear-gradient(135deg,#010a2e,#0a1f5e,#010a2e); padding: 28px 24px 20px; border-bottom: 1px solid #9fb000; }
     .home-hero h1 { font-size: 26px; font-weight: 700; color: #d4e800; margin-bottom: 6px; }
     .home-hero p { color: #8899cc; font-size: 14px; }
-
-    /* ROOM CARDS */
-    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; padding: 18px 20px; }
-    .room-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 10px; overflow: hidden; transition: border-color 0.2s, transform 0.2s; cursor: pointer; }
-    .room-card:hover { border-color: #9fb000; transform: translateY(-2px); }
-    .room-card .rc-header { background: #0a1540; padding: 12px 14px; display: flex; align-items: center; gap: 8px; }
-    .rc-icon { font-size: 20px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #0f1e55; border-radius: 8px; }
-    .rc-title { font-size: 14px; font-weight: 600; color: #d4e800; }
-    .rc-sub { font-size: 11px; color: #667; }
-    .room-card .rc-body { padding: 10px 14px; }
-    .rc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
-    .rc-tag { font-size: 11px; background: #0f1e55; color: #9fb000; border: 1px solid #1e3a6b; border-radius: 4px; padding: 2px 8px; }
-    .rc-actions { display: flex; gap: 6px; }
-    .btn-join { flex: 1; background: #9fb000; color: #000; border: none; border-radius: 5px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s; }
-    .btn-join:hover { background: #d4e800; }
-    .btn-dl { background: transparent; color: #9fb000; border: 1px solid #9fb000; border-radius: 5px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s; }
-    .btn-dl:hover { background: #1a2d80; }
-
-    /* PAGE HEADER */
     .page-header { padding: 14px 20px 10px; border-bottom: 1px solid #1e2d6b; background: #000718; }
     .page-header h2 { font-size: 17px; color: #d4e800; font-weight: 600; }
     .page-header p { font-size: 12px; color: #667; }
-
-    /* FILTER BAR */
     .filter-bar { display: flex; gap: 6px; padding: 10px 18px; flex-wrap: wrap; border-bottom: 1px solid #1e2d6b; }
-    .filter-btn { background: #0a1540; border: 1px solid #1e2d6b; color: #aaa; border-radius: 5px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: 'Poppins', sans-serif; transition: all 0.2s; }
+    .filter-btn { background: #0a1540; border: 1px solid #1e2d6b; color: #aaa; border-radius: 5px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: 'Poppins', sans-serif; }
     .filter-btn:hover, .filter-btn.active { background: #9fb000; color: #000; border-color: #9fb000; }
-
-    /* LIVE */
-    .live-header { background: #000; padding: 10px 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #1e2d6b; }
-    .live-dot { width: 10px; height: 10px; background: red; border-radius: 50%; animation: blink 1s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-    .live-header span { font-size: 13px; color: #ccc; }
-    .live-header b { color: #f55; }
-    .live-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 16px 18px; }
-    .live-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 8px; overflow: hidden; }
-    .live-thumb { height: 100px; background: linear-gradient(135deg, #0a1540, #1a2d80); display: flex; align-items: center; justify-content: center; font-size: 32px; position: relative; }
+    .dynamic-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 12px; padding: 16px 18px; }
+    .dyn-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 8px; overflow: hidden; transition: border-color 0.2s; }
+    .dyn-card:hover { border-color: #9fb000; }
+    .dyn-thumb { height: 90px; background: linear-gradient(135deg,#0a1540,#1a2d80); display: flex; align-items: center; justify-content: center; font-size: 36px; position: relative; }
     .live-badge { position: absolute; top: 6px; left: 6px; background: red; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
-    .vip-badge { position: absolute; top: 6px; right: 6px; background: #d4e800; color: #000; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
-    .live-info { padding: 8px 10px; }
-    .live-info .li-name { font-size: 13px; font-weight: 600; color: #ddd; }
-    .live-info .li-game { font-size: 11px; color: #667; }
-    .live-info .li-viewers { font-size: 11px; color: #9fb000; margin-top: 4px; }
-
-    /* TOURNAMENTS */
-    .tour-list { padding: 16px 20px; }
-    .tour-item { background: #050e30; border: 1px solid #1e2d6b; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
-    .tour-item:hover { border-color: #9fb000; }
-    .tour-icon { font-size: 28px; }
-    .tour-info { flex: 1; }
-    .tour-info .ti-name { font-size: 14px; font-weight: 600; color: #d4e800; }
-    .tour-info .ti-meta { font-size: 12px; color: #778; margin-top: 2px; }
-    .ti-prize { font-size: 14px; font-weight: 700; color: #d4e800; text-align: right; }
-    .ti-prize span { display: block; font-size: 10px; color: #667; font-weight: 400; }
-    .btn-register { background: transparent; border: 1px solid #9fb000; color: #9fb000; border-radius: 5px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s; white-space: nowrap; }
-    .btn-register:hover { background: #9fb000; color: #000; }
-
-    /* HIGHLIGHTS */
-    .hl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 16px 18px; }
-    .hl-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 8px; overflow: hidden; cursor: pointer; }
-    .hl-card:hover { border-color: #9fb000; }
-    .hl-thumb { height: 90px; background: linear-gradient(135deg, #0a1540, #0f1e55); display: flex; align-items: center; justify-content: center; font-size: 30px; }
-    .hl-info { padding: 8px 10px; }
-    .hl-info .hi-title { font-size: 13px; color: #ddd; font-weight: 600; }
-    .hl-info .hi-meta { font-size: 11px; color: #667; margin-top: 2px; }
-    .hi-tag { display: inline-block; font-size: 10px; background: #0f1e55; color: #9fb000; border-radius: 3px; padding: 1px 6px; margin-top: 4px; }
-
-    /* SUBSCRIBERS */
+    .dyn-info { padding: 8px 10px; }
+    .dyn-title { font-size: 13px; color: #ddd; font-weight: 600; }
+    .dyn-desc { font-size: 11px; color: #667; margin-top: 2px; }
+    .dyn-tag { display: inline-block; font-size: 10px; background: #0f1e55; color: #9fb000; border-radius: 3px; padding: 1px 6px; margin-top: 4px; }
+    .empty-state { text-align: center; color: #445; padding: 40px; font-size: 14px; }
+    .loading-state { text-align: center; color: #667; padding: 30px; font-size: 13px; }
+    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 14px; padding: 18px 20px; }
+    .room-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 10px; overflow: hidden; transition: border-color 0.2s,transform 0.2s; cursor: pointer; }
+    .room-card:hover { border-color: #9fb000; transform: translateY(-2px); }
+    .rc-header { background: #0a1540; padding: 12px 14px; display: flex; align-items: center; gap: 8px; }
+    .rc-icon { font-size: 20px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #0f1e55; border-radius: 8px; }
+    .rc-title { font-size: 14px; font-weight: 600; color: #d4e800; }
+    .rc-sub { font-size: 11px; color: #667; }
+    .rc-body { padding: 10px 14px; }
+    .rc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .rc-tag { font-size: 11px; background: #0f1e55; color: #9fb000; border: 1px solid #1e3a6b; border-radius: 4px; padding: 2px 8px; }
+    .btn-join { flex: 1; background: #9fb000; color: #000; border: none; border-radius: 5px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif; }
+    .btn-join:hover { background: #d4e800; }
     .contact-page { padding: 20px; }
-    .contact-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .contact-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 10px; }
     .contact-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 8px; padding: 14px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
     .contact-card:hover { border-color: #9fb000; }
-    .contact-card .cc-icon { font-size: 28px; margin-bottom: 6px; }
-    .contact-card .cc-name { font-size: 13px; color: #d4e800; font-weight: 600; }
-    .contact-card .cc-handle { font-size: 11px; color: #778; }
-
-    /* DOWNLOAD OVERLAY */
-    .room-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,4,0.88); z-index: 200; align-items: center; justify-content: center; }
-    .room-overlay.open { display: flex; }
-    .room-detail { background: #050e30; border: 1px solid #9fb000; border-radius: 14px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-    .rd-top { background: #0a1540; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e2d6b; }
-    .rd-top h2 { font-size: 17px; color: #d4e800; }
-    .rd-close { background: transparent; border: 1px solid #556; color: #aaa; width: 28px; height: 28px; border-radius: 5px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
-    .rd-close:hover { background: #1a2d80; color: #fff; }
-    .rd-body { padding: 16px 18px; }
-    .rd-section { margin-bottom: 14px; }
-    .rd-section h3 { font-size: 13px; color: #9fb000; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 1px; }
-    .rd-file { display: flex; align-items: center; justify-content: space-between; background: #0a1540; border: 1px solid #1e2d6b; border-radius: 6px; padding: 9px 12px; margin-bottom: 6px; }
-    .rd-file-info { font-size: 13px; color: #ccc; }
-    .rd-file-info span { font-size: 11px; color: #667; display: block; }
-    .btn-download { background: #9fb000; color: #000; border: none; border-radius: 5px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s; }
-    .btn-download:hover { background: #d4e800; }
+    .cc-icon { font-size: 28px; margin-bottom: 6px; }
+    .cc-name { font-size: 13px; color: #d4e800; font-weight: 600; }
+    .cc-handle { font-size: 11px; color: #778; }
   </style>
 </head>
 <body>
-
 <div class="vx-root">
-
-  <!-- TOPBAR -->
   <div class="vx-topbar">
     <div class="vx-logo">VIRT<span>UX</span></div>
     <div class="vx-topnav">
-      <div class="dd">
-        <button class="dd-btn">News ▾</button>
-        <div class="dd-menu">
-          <button onclick="showPage('home')">Gaming News</button>
-          <button onclick="showPage('home')">Youtube News</button>
-        </div>
-      </div>
-      <div class="dd">
-        <button class="dd-btn">Youtube ▾</button>
-        <div class="dd-menu">
-          <button>Channels</button>
-          <button>Videos</button>
-          <button>Lives</button>
-          <button>VIP Youtube</button>
-        </div>
-      </div>
-      <div class="dd">
-        <button class="dd-btn">Collab ▾</button>
-        <div class="dd-menu">
-          <button>Projects</button>
-        </div>
-      </div>
+      <div class="dd"><button class="dd-btn">News ▾</button><div class="dd-menu"><button onclick="showPage('home')">Gaming News</button><button onclick="showPage('home')">Youtube News</button></div></div>
+      <div class="dd"><button class="dd-btn">Youtube ▾</button><div class="dd-menu"><button>Channels</button><button>Videos</button><button>Lives</button><button>VIP Youtube</button></div></div>
+      <div class="dd"><button class="dd-btn">Collab ▾</button><div class="dd-menu"><button>Projects</button></div></div>
     </div>
   </div>
-
-  <!-- TICKER -->
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
     <div class="ticker-track">
       <span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span>
-      <span class="ticker-item">🔴 <span>NinjaX</span> is live now — 12K viewers</span>
+      <span class="ticker-item">🔴 <span>NinjaX</span> is live now</span>
       <span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span>
-      <span class="ticker-item">🎮 <span>FazeRush</span> uploaded a new highlight</span>
+      <span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span>
       <span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span>
-      <span class="ticker-item">🔴 <span>NinjaX</span> is live now — 12K viewers</span>
+      <span class="ticker-item">🔴 <span>NinjaX</span> is live now</span>
       <span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span>
-      <span class="ticker-item">🎮 <span>FazeRush</span> uploaded a new highlight</span>
+      <span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span>
     </div>
   </div>
-
-  <!-- BODY -->
   <div class="vx-body">
-
-    <!-- SIDEBAR -->
     <div class="vx-sidebar">
       <button class="sb-btn active" onclick="showPage('home')">🏠 Home</button>
       <div class="sb-section">Content</div>
@@ -208,115 +111,59 @@
       <button class="sb-btn" onclick="showPage('subscribers')">👥 Subscribers</button>
       <button class="sb-btn" onclick="showPage('contact')">📞 Contact</button>
     </div>
-
-    <!-- PAGES -->
     <div class="vx-main scrollable">
-
-      <!-- HOME -->
       <div class="vx-page active" id="page-home">
-        <div class="home-hero">
-          <h1>Welcome to Virtux 🎮</h1>
-          <p>Your English-speaking gaming community — news, lives, tournaments & highlights</p>
-        </div>
+        <div class="home-hero"><h1>Welcome to Virtux 🎮</h1><p>Your English-speaking gaming community</p></div>
         <div style="padding:14px 20px 4px;font-size:13px;color:#9fb000;">Featured Rooms</div>
         <div class="rooms-grid">
-          <div class="room-card">
-            <div class="rc-header"><div class="rc-icon">🔴</div><div><div class="rc-title">Live Room</div><div class="rc-sub">All streams</div></div></div>
-            <div class="rc-body"><div class="rc-tags"><span class="rc-tag">Live Now</span><span class="rc-tag">Pre-Lives</span><span class="rc-tag">VIP</span></div><div class="rc-actions"><button class="btn-join" onclick="showPage('live')">Enter</button><button class="btn-dl" onclick="openRoom('live')">⬇</button></div></div>
-          </div>
-          <div class="room-card">
-            <div class="rc-header"><div class="rc-icon">🏆</div><div><div class="rc-title">Tournaments</div><div class="rc-sub">Compete globally</div></div></div>
-            <div class="rc-body"><div class="rc-tags"><span class="rc-tag">Ongoing</span><span class="rc-tag">Global</span><span class="rc-tag">VIP</span></div><div class="rc-actions"><button class="btn-join" onclick="showPage('tournaments')">Enter</button><button class="btn-dl" onclick="openRoom('tournaments')">⬇</button></div></div>
-          </div>
-          <div class="room-card">
-            <div class="rc-header"><div class="rc-icon">🎬</div><div><div class="rc-title">Highlights</div><div class="rc-sub">Best moments</div></div></div>
-            <div class="rc-body"><div class="rc-tags"><span class="rc-tag">Pro Clips</span><span class="rc-tag">Videos</span><span class="rc-tag">Photos</span></div><div class="rc-actions"><button class="btn-join" onclick="showPage('highlights')">Enter</button><button class="btn-dl" onclick="openRoom('highlights')">⬇</button></div></div>
-          </div>
-          <div class="room-card">
-            <div class="rc-header"><div class="rc-icon">👥</div><div><div class="rc-title">Subscribers</div><div class="rc-sub">Members & donors</div></div></div>
-            <div class="rc-body"><div class="rc-tags"><span class="rc-tag">Youtubers</span><span class="rc-tag">Members</span><span class="rc-tag">Donors</span></div><div class="rc-actions"><button class="btn-join" onclick="showPage('subscribers')">Enter</button><button class="btn-dl" onclick="openRoom('subscribers')">⬇</button></div></div>
-          </div>
-          <div class="room-card">
-            <div class="rc-header"><div class="rc-icon">📞</div><div><div class="rc-title">Contact</div><div class="rc-sub">Reach us</div></div></div>
-            <div class="rc-body"><div class="rc-tags"><span class="rc-tag">Discord</span><span class="rc-tag">Email</span><span class="rc-tag">Social</span></div><div class="rc-actions"><button class="btn-join" onclick="showPage('contact')">Enter</button><button class="btn-dl" onclick="openRoom('contact')">⬇</button></div></div>
-          </div>
+          <div class="room-card"><div class="rc-header"><div class="rc-icon">🔴</div><div><div class="rc-title">Live Room</div><div class="rc-sub">All streams</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">Live Now</span><span class="rc-tag">Pre-Lives</span><span class="rc-tag">VIP</span></div><button class="btn-join" onclick="showPage('live')">Enter</button></div></div>
+          <div class="room-card"><div class="rc-header"><div class="rc-icon">🏆</div><div><div class="rc-title">Tournaments</div><div class="rc-sub">Compete globally</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">Ongoing</span><span class="rc-tag">Global</span><span class="rc-tag">VIP</span></div><button class="btn-join" onclick="showPage('tournaments')">Enter</button></div></div>
+          <div class="room-card"><div class="rc-header"><div class="rc-icon">🎬</div><div><div class="rc-title">Highlights</div><div class="rc-sub">Best moments</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">Pro Clips</span><span class="rc-tag">Videos</span><span class="rc-tag">Photos</span></div><button class="btn-join" onclick="showPage('highlights')">Enter</button></div></div>
+          <div class="room-card"><div class="rc-header"><div class="rc-icon">👥</div><div><div class="rc-title">Subscribers</div><div class="rc-sub">Members & donors</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">Youtubers</span><span class="rc-tag">Members</span><span class="rc-tag">Donors</span></div><button class="btn-join" onclick="showPage('subscribers')">Enter</button></div></div>
+          <div class="room-card"><div class="rc-header"><div class="rc-icon">📞</div><div><div class="rc-title">Contact</div><div class="rc-sub">Reach us</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">Discord</span><span class="rc-tag">Email</span></div><button class="btn-join" onclick="showPage('contact')">Enter</button></div></div>
         </div>
       </div>
-
-      <!-- LIVE -->
       <div class="vx-page" id="page-live">
         <div class="page-header"><h2>🔴 Live Streams</h2><p>All live streams from the Virtux community</p></div>
         <div class="filter-bar">
-          <button class="filter-btn active">All Lives</button>
-          <button class="filter-btn">Live Now</button>
-          <button class="filter-btn">Pre Lives</button>
-          <button class="filter-btn">Live News</button>
-          <button class="filter-btn">👑 VIP Lives</button>
+          <button class="filter-btn active" onclick="filterPosts('live','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button>
+          <button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button>
+          <button class="filter-btn" onclick="filterPosts('live','VIP',this)">👑 VIP</button>
         </div>
-        <div class="live-header"><div class="live-dot"></div><span><b>5 streamers</b> are live right now</span></div>
-        <div class="live-grid">
-          <div class="live-card"><div class="live-thumb">🎮<div class="live-badge">LIVE</div></div><div class="live-info"><div class="li-name">NinjaX Gaming</div><div class="li-game">Valorant • Ranked</div><div class="li-viewers">👁 12,450 viewers</div></div></div>
-          <div class="live-card"><div class="live-thumb">⚔️<div class="live-badge">LIVE</div><div class="vip-badge">VIP</div></div><div class="live-info"><div class="li-name">ProSniper99</div><div class="li-game">CS2 • Pro Match</div><div class="li-viewers">👁 8,200 viewers</div></div></div>
-          <div class="live-card"><div class="live-thumb">🏆<div class="live-badge">LIVE</div></div><div class="live-info"><div class="li-name">ESL Finals Stream</div><div class="li-game">Tournament • Grand Final</div><div class="li-viewers">👁 45,000 viewers</div></div></div>
-          <div class="live-card"><div class="live-thumb">🔫<div class="live-badge">SOON</div></div><div class="live-info"><div class="li-name">FazeRush</div><div class="li-game">Warzone • Starts in 30 min</div><div class="li-viewers">⏰ Pre-Live</div></div></div>
-        </div>
+        <div class="dynamic-grid" id="grid-live"><div class="loading-state">Loading...</div></div>
       </div>
-
-      <!-- TOURNAMENTS -->
       <div class="vx-page" id="page-tournaments">
         <div class="page-header"><h2>🏆 Tournaments</h2><p>Register, follow, and compete</p></div>
         <div class="filter-bar">
-          <button class="filter-btn active">Ongoing</button>
-          <button class="filter-btn">Tournament News</button>
-          <button class="filter-btn">Global</button>
-          <button class="filter-btn">👑 VIP</button>
+          <button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('tournaments','Ongoing',this)">Ongoing</button>
+          <button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button>
+          <button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">👑 VIP</button>
         </div>
-        <div class="tour-list">
-          <div class="tour-item"><div class="tour-icon">🏆</div><div class="tour-info"><div class="ti-name">ESL Pro League Season 21</div><div class="ti-meta">CS2 • 16 teams • Europe & NA</div></div><div class="ti-prize">$750,000<span>Prize pool</span></div><button class="btn-register">Register</button></div>
-          <div class="tour-item"><div class="tour-icon">⚔️</div><div class="tour-info"><div class="ti-name">VCT Americas 2025</div><div class="ti-meta">Valorant • 12 teams • Americas</div></div><div class="ti-prize">$500,000<span>Prize pool</span></div><button class="btn-register">Register</button></div>
-          <div class="tour-item"><div class="tour-icon">🎮</div><div class="tour-info"><div class="ti-name">Virtux Community Cup #4</div><div class="ti-meta">Warzone • 64 players • Open</div></div><div class="ti-prize">$2,000<span>Prize pool</span></div><button class="btn-register">Register</button></div>
-          <div class="tour-item"><div class="tour-icon">🌍</div><div class="tour-info"><div class="ti-name">Global Fortnite Invitational</div><div class="ti-meta">Fortnite • 32 teams • Worldwide</div></div><div class="ti-prize">$1,200,000<span>Prize pool</span></div><button class="btn-register">Register</button></div>
-        </div>
+        <div class="dynamic-grid" id="grid-tournaments"><div class="loading-state">Loading...</div></div>
       </div>
-
-      <!-- HIGHLIGHTS -->
       <div class="vx-page" id="page-highlights">
-        <div class="page-header"><h2>🎬 Highlights</h2><p>Best clips, videos & photos from the community</p></div>
+        <div class="page-header"><h2>🎬 Highlights</h2><p>Best clips, videos & photos</p></div>
         <div class="filter-bar">
-          <button class="filter-btn active">All</button>
-          <button class="filter-btn">Pro Highlights</button>
-          <button class="filter-btn">Tournament</button>
-          <button class="filter-btn">📷 Pictures</button>
-          <button class="filter-btn">📹 Videos</button>
+          <button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Video',this)">📹 Video</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">📷 Photo</button>
         </div>
-        <div class="hl-grid">
-          <div class="hl-card"><div class="hl-thumb">🎯</div><div class="hl-info"><div class="hi-title">Insane 1v5 clutch</div><div class="hi-meta">NinjaX • CS2 • 2h ago</div><span class="hi-tag">Pro</span></div></div>
-          <div class="hl-card"><div class="hl-thumb">🏆</div><div class="hl-info"><div class="hi-title">ESL Grand Final highlights</div><div class="hi-meta">Tournament • 5h ago</div><span class="hi-tag">Tournament</span></div></div>
-          <div class="hl-card"><div class="hl-thumb">📷</div><div class="hl-info"><div class="hi-title">LAN Event Gallery</div><div class="hi-meta">ESL Vienna • 1 day ago</div><span class="hi-tag">Photo</span></div></div>
-          <div class="hl-card"><div class="hl-thumb">🎬</div><div class="hl-info"><div class="hi-title">Top 10 plays of the week</div><div class="hi-meta">Virtux Editors • 2 days ago</div><span class="hi-tag">Video</span></div></div>
-          <div class="hl-card"><div class="hl-thumb">⚡</div><div class="hl-info"><div class="hi-title">Fastest ACE ever recorded</div><div class="hi-meta">ProSniper99 • Valorant</div><span class="hi-tag">Pro</span></div></div>
-          <div class="hl-card"><div class="hl-thumb">🌟</div><div class="hl-info"><div class="hi-title">Community tournament recap</div><div class="hi-meta">Cup #3 • Warzone</div><span class="hi-tag">Tournament</span></div></div>
-        </div>
+        <div class="dynamic-grid" id="grid-highlights"><div class="loading-state">Loading...</div></div>
       </div>
-
-      <!-- SUBSCRIBERS -->
       <div class="vx-page" id="page-subscribers">
-        <div class="page-header"><h2>👥 Subscribers</h2><p>Community members, creators, and supporters</p></div>
+        <div class="page-header"><h2>👥 Subscribers</h2><p>Community members and supporters</p></div>
         <div class="filter-bar">
-          <button class="filter-btn active">All</button>
-          <button class="filter-btn">🔔 Youtubers</button>
-          <button class="filter-btn">⭐ Members</button>
-          <button class="filter-btn">🎁 Donors</button>
-          <button class="filter-btn">🌐 Collabs</button>
+          <button class="filter-btn active" onclick="filterPosts('subscribers','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('subscribers','YouTube',this)">🔔 YouTube</button>
+          <button class="filter-btn" onclick="filterPosts('subscribers','Member',this)">⭐ Members</button>
+          <button class="filter-btn" onclick="filterPosts('subscribers','Donor',this)">🎁 Donors</button>
         </div>
-        <div class="rooms-grid" style="padding:16px 18px">
-          <div class="room-card"><div class="rc-header"><div class="rc-icon">🔔</div><div><div class="rc-title">NinjaX</div><div class="rc-sub">1.2M subscribers</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">YouTube</span><span class="rc-tag">VIP</span></div><div class="rc-actions"><button class="btn-join">View Channel</button></div></div></div>
-          <div class="room-card"><div class="rc-header"><div class="rc-icon">⭐</div><div><div class="rc-title">GoldMember_EU</div><div class="rc-sub">Since Jan 2024</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">Member</span><span class="rc-tag">Donor</span></div><div class="rc-actions"><button class="btn-join">Profile</button></div></div></div>
-          <div class="room-card"><div class="rc-header"><div class="rc-icon">🌐</div><div><div class="rc-title">ESports EU</div><div class="rc-sub">Partner</div></div></div><div class="rc-body"><div class="rc-tags"><span class="rc-tag">Collaboration</span></div><div class="rc-actions"><button class="btn-join">View Project</button></div></div></div>
-        </div>
+        <div class="dynamic-grid" id="grid-subscribers"><div class="loading-state">Loading...</div></div>
       </div>
-
-      <!-- CONTACT -->
       <div class="vx-page" id="page-contact">
         <div class="page-header"><h2>📞 Contact Virtux</h2><p>Get in touch with the team</p></div>
         <div class="contact-page">
@@ -329,72 +176,41 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </div>
-
-<!-- DOWNLOAD OVERLAY -->
-<div class="room-overlay" id="roomOverlay">
-  <div class="room-detail">
-    <div class="rd-top">
-      <h2 id="rd-title">Room Files</h2>
-      <button class="rd-close" onclick="closeRoom()">✕</button>
-    </div>
-    <div class="rd-body" id="rd-body"></div>
-  </div>
-</div>
-
 <script>
-  const roomData = {
-    live: { title: "🔴 Live Room — Downloads", sections: [{ label: "Schedule & Planner", files: [{ name: "Virtux_Live_Schedule.pdf", size: "1.2 MB", desc: "Weekly live schedule" },{ name: "StreamerList_2025.xlsx", size: "340 KB", desc: "All registered streamers" }]},{ label: "VIP Content", files: [{ name: "VIP_Lives_Archive.zip", size: "4.8 GB", desc: "All VIP live recordings" }]}]},
-    tournaments: { title: "🏆 Tournaments — Downloads", sections: [{ label: "Registration Packs", files: [{ name: "Tournament_Registration_Form.pdf", size: "280 KB", desc: "Official entry form" },{ name: "Rulebook_2025.pdf", size: "1.8 MB", desc: "Full tournament ruleset" }]},{ label: "Results & Brackets", files: [{ name: "ESL_Brackets_Q1.pdf", size: "560 KB", desc: "Q1 2025 brackets" },{ name: "Global_Results_Archive.xlsx", size: "2.1 MB", desc: "All results since 2022" }]}]},
-    highlights: { title: "🎬 Highlights — Downloads", sections: [{ label: "Video Packs", files: [{ name: "Top10_March2025.mp4", size: "320 MB", desc: "Top 10 plays of March" },{ name: "TournamentHighlights_ESL.mp4", size: "480 MB", desc: "ESL Pro League finals" }]},{ label: "Photo Galleries", files: [{ name: "LAN_Vienna_Gallery.zip", size: "1.4 GB", desc: "560 photos from LAN event" }]}]},
-    subscribers: { title: "👥 Subscribers — Downloads", sections: [{ label: "Community Files", files: [{ name: "Member_Directory_2025.pdf", size: "540 KB", desc: "Full member list" },{ name: "Collaboration_Guide.pdf", size: "1.1 MB", desc: "How to collab with Virtux" }]}]},
-    contact: { title: "📞 Contact — Downloads", sections: [{ label: "Media Kit", files: [{ name: "Virtux_MediaKit_2025.pdf", size: "8.2 MB", desc: "Brand assets & press kit" },{ name: "Virtux_Logos.zip", size: "12 MB", desc: "All logo formats (SVG/PNG)" }]}]}
-  };
-
-  function showPage(id) {
-    document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-' + id).classList.add('active');
-    document.querySelectorAll('.sb-btn').forEach(b => {
-      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(id)) b.classList.add('active');
-    });
+  const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+  let allPosts={};
+  async function fetchPosts(room){
+    const r=await fetch(`${SB_URL}/rest/v1/posts?room=eq.${room}&order=id.desc`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    return r.json();
   }
-
-  function openRoom(id) {
-    const data = roomData[id];
-    if (!data) return;
-    document.getElementById('rd-title').textContent = data.title;
-    let html = '';
-    data.sections.forEach(sec => {
-      html += `<div class="rd-section"><h3>${sec.label}</h3>`;
-      sec.files.forEach(f => {
-        html += `<div class="rd-file"><div class="rd-file-info">${f.name}<span>${f.desc} • ${f.size}</span></div><button class="btn-download" onclick="fakeDownload(this)">⬇ Download</button></div>`;
-      });
-      html += `</div>`;
-    });
-    document.getElementById('rd-body').innerHTML = html;
-    document.getElementById('roomOverlay').classList.add('open');
+  function renderCards(posts,gridId,room){
+    const el=document.getElementById(gridId);
+    if(!posts||posts.length===0){el.innerHTML='<div class="empty-state">No posts yet 🎮</div>';return;}
+    el.innerHTML=posts.map(p=>`<div class="dyn-card"><div class="dyn-thumb">${p.icon||'📄'}${room==='live'&&p.tag==='Live Now'?'<div class="live-badge">LIVE</div>':''}</div><div class="dyn-info"><div class="dyn-title">${p.title}</div><div class="dyn-desc">${p.description||''}</div><span class="dyn-tag">${p.tag||''}</span></div></div>`).join('');
   }
-
-  function closeRoom() { document.getElementById('roomOverlay').classList.remove('open'); }
-
-  function fakeDownload(btn) {
-    btn.textContent = '✓ Ready';
-    btn.style.background = '#0f6e56';
-    btn.style.color = '#fff';
-    setTimeout(() => { btn.textContent = '⬇ Download'; btn.style.background = '#9fb000'; btn.style.color = '#000'; }, 2000);
+  async function loadPage(room){
+    const posts=await fetchPosts(room);
+    allPosts[room]=posts;
+    renderCards(posts,'grid-'+room,room);
   }
-
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      this.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-    });
-  });
+  function filterPosts(room,tag,btn){
+    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const posts=allPosts[room]||[];
+    renderCards(tag?posts.filter(p=>p.tag===tag):posts,'grid-'+room,room);
+  }
+  function showPage(id){
+    document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('page-'+id).classList.add('active');
+    document.querySelectorAll('.sb-btn').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(id))b.classList.add('active');});
+    if(['live','tournaments','highlights','subscribers'].includes(id))loadPage(id);
+  }
+  loadPage('live');
 </script>
-
 </body>
 </html>
