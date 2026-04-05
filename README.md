@@ -55,10 +55,9 @@ virtux/
 
 ## 📬 Contact
 
-- Discord: `discord.gg/virtux`
-- Email: `contact@virtux.gg`
-- Twitter/X: `@VirtuxGG`
-- Instagram: `@virtux.official`
+- Discord: (https://discord.gg/45fJNmww6D)
+- Email: `menouer.rayane31@gmail.com`
+
 
 ---
 
