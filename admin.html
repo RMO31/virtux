@@ -2,267 +2,274 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Poppins', sans-serif; background: #01042e; color: #fff; min-height: 100vh; }
-
-    /* LOGIN */
-    #loginPage {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; background: #01042e;
-    }
-    .login-box {
-      background: #050e30; border: 1px solid #9fb000;
-      border-radius: 14px; padding: 36px 32px; width: 340px; text-align: center;
-    }
-    .login-box h1 { color: #d4e800; font-size: 24px; margin-bottom: 6px; }
-    .login-box p { color: #667; font-size: 13px; margin-bottom: 24px; }
-    .login-box input {
-      width: 100%; padding: 10px 14px; border-radius: 7px;
-      border: 1px solid #1e2d6b; background: #0a1540; color: #fff;
-      font-size: 14px; font-family: 'Poppins', sans-serif; margin-bottom: 12px;
-    }
-    .login-box input:focus { outline: none; border-color: #9fb000; }
-    .btn-login {
-      width: 100%; padding: 10px; background: #9fb000; color: #000;
-      border: none; border-radius: 7px; font-size: 15px; font-weight: 700;
-      cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s;
-    }
-    .btn-login:hover { background: #d4e800; }
-    .login-error { color: #f55; font-size: 12px; margin-top: 8px; display: none; }
-
-    /* ADMIN */
-    #adminPage { display: none; }
-    .admin-topbar {
-      background: #000718; border-bottom: 1px solid #9fb000;
-      padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
-    }
-    .admin-topbar h1 { color: #d4e800; font-size: 18px; }
-    .btn-logout {
-      background: transparent; border: 1px solid #f55; color: #f55;
-      padding: 5px 14px; border-radius: 5px; font-size: 12px; cursor: pointer;
-      font-family: 'Poppins', sans-serif; transition: background 0.2s;
-    }
-    .btn-logout:hover { background: #f55; color: #fff; }
-
-    .admin-body { display: flex; min-height: calc(100vh - 54px); }
-
-    /* SIDEBAR */
-    .admin-sidebar {
-      width: 180px; background: #050c2e; border-right: 1px solid #1e2d6b;
-      padding: 14px 8px; display: flex; flex-direction: column; gap: 4px;
-    }
-    .sb-btn {
-      background: transparent; border: none; color: #aab; padding: 9px 12px;
-      border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left;
-      font-family: 'Poppins', sans-serif; transition: background 0.2s;
-    }
-    .sb-btn:hover, .sb-btn.active { background: #1a2d80; color: #d4e800; }
-    .sb-btn.active { border-left: 3px solid #d4e800; }
-    .sb-section { font-size: 10px; color: #556; text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px 2px; }
-
-    /* MAIN */
-    .admin-main { flex: 1; padding: 24px; overflow-y: auto; }
-    .admin-page { display: none; }
-    .admin-page.active { display: block; }
-
-    .page-title { font-size: 20px; color: #d4e800; font-weight: 700; margin-bottom: 20px; }
-
-    /* FORM */
-    .add-form {
-      background: #050e30; border: 1px solid #1e2d6b; border-radius: 12px; padding: 20px; margin-bottom: 24px;
-    }
-    .add-form h3 { color: #9fb000; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-    .form-grid input, .form-grid select, .form-grid textarea {
-      padding: 9px 12px; border-radius: 7px; border: 1px solid #1e2d6b;
-      background: #0a1540; color: #fff; font-size: 13px;
-      font-family: 'Poppins', sans-serif; width: 100%;
-    }
-    .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
-      outline: none; border-color: #9fb000;
-    }
-    .form-grid select option { background: #0a1540; }
-    .form-full { grid-column: 1 / -1; }
-    .btn-add {
-      background: #9fb000; color: #000; border: none; border-radius: 7px;
-      padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
-      font-family: 'Poppins', sans-serif; transition: background 0.2s;
-    }
-    .btn-add:hover { background: #d4e800; }
-    .btn-add:disabled { background: #556; color: #999; cursor: not-allowed; }
-
-    /* POSTS LIST */
-    .posts-list { display: flex; flex-direction: column; gap: 10px; }
-    .post-item {
-      background: #050e30; border: 1px solid #1e2d6b; border-radius: 10px;
-      padding: 14px 16px; display: flex; align-items: center; gap: 14px;
-    }
-    .post-icon { font-size: 24px; width: 40px; text-align: center; }
-    .post-info { flex: 1; }
-    .post-info .pi-title { font-size: 14px; font-weight: 600; color: #ddd; }
-    .post-info .pi-meta { font-size: 12px; color: #667; margin-top: 2px; }
-    .pi-tag {
-      display: inline-block; font-size: 11px; background: #0f1e55;
-      color: #9fb000; border-radius: 3px; padding: 1px 8px; margin-top: 4px;
-    }
-    .pi-room {
-      font-size: 11px; background: #1a2d80; color: #aac;
-      border-radius: 3px; padding: 1px 8px; margin-left: 4px;
-    }
-    .btn-delete {
-      background: transparent; border: 1px solid #f55; color: #f55;
-      border-radius: 5px; padding: 5px 12px; font-size: 12px; cursor: pointer;
-      font-family: 'Poppins', sans-serif; transition: background 0.2s; white-space: nowrap;
-    }
-    .btn-delete:hover { background: #f55; color: #fff; }
-
-    .empty-state { text-align: center; color: #445; padding: 40px; font-size: 14px; }
-    .success-msg { background: #0f3d2e; border: 1px solid #0f6e56; color: #4caf90; border-radius: 7px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none; }
-    .loading { color: #667; font-size: 13px; text-align: center; padding: 20px; }
-
-    /* STATS */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
-    .stat-card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 10px; padding: 16px; text-align: center; }
-    .stat-card .sc-num { font-size: 28px; font-weight: 700; color: #d4e800; }
-    .stat-card .sc-label { font-size: 12px; color: #667; margin-top: 4px; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
+    #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .login-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;padding:36px 32px;width:340px;text-align:center}
+    .login-box h1{color:#d4e800;font-size:24px;margin-bottom:6px}
+    .login-box p{color:#667;font-size:13px;margin-bottom:24px}
+    .login-box input{width:100%;padding:10px 14px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:14px;font-family:'Poppins',sans-serif;margin-bottom:12px}
+    .login-box input:focus{outline:none;border-color:#9fb000}
+    .btn-login{width:100%;padding:10px;background:#9fb000;color:#000;border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
+    .btn-login:hover{background:#d4e800}
+    .err{color:#f55;font-size:12px;margin-top:8px;display:none}
+    #adminPage{display:none;height:100vh;flex-direction:column}
+    .topbar{background:#000718;border-bottom:1px solid #9fb000;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+    .topbar h1{color:#d4e800;font-size:16px}
+    .topbar-right{display:flex;align-items:center;gap:10px}
+    .conn{font-size:12px;padding:3px 10px;border-radius:4px;background:#0f3d2e;color:#4caf90;border:1px solid #0f6e56}
+    .conn.fail{background:#3d0f0f;color:#f55;border-color:#6e0f0f}
+    .btn-logout{background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif}
+    .btn-logout:hover{background:#f55;color:#fff}
+    .body{display:flex;flex:1;height:calc(100vh - 46px)}
+    .sidebar{width:190px;background:#050c2e;border-right:1px solid #1e2d6b;padding:12px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+    .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left;font-family:'Poppins',sans-serif;transition:background 0.2s}
+    .sb-btn:hover,.sb-btn.active{background:#1a2d80;color:#d4e800}
+    .sb-btn.active{border-left:3px solid #d4e800}
+    .sb-sec{font-size:10px;color:#556;text-transform:uppercase;letter-spacing:1px;padding:10px 12px 3px}
+    .main{flex:1;padding:20px;overflow-y:auto;background:#01042e}
+    .ap{display:none}
+    .ap.active{display:block}
+    .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
+    .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
+    .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .fg input,.fg select{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif;width:100%}
+    .fg input:focus,.fg select:focus{outline:none;border-color:#9fb000}
+    .fg select option{background:#0a1540}
+    .full{grid-column:1/-1}
+    .btn-pub{background:#9fb000;color:#000;border:none;border-radius:7px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
+    .btn-pub:hover{background:#d4e800}
+    .btn-pub:disabled{background:#445;color:#778;cursor:not-allowed}
+    .ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
+    .er{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
+    .posts-list{display:flex;flex-direction:column;gap:8px}
+    .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+    .pi:hover{border-color:#9fb000}
+    .pi-icon{font-size:22px;width:36px;text-align:center}
+    .pi-info{flex:1}
+    .pi-title{font-size:13px;font-weight:600;color:#ddd}
+    .pi-meta{font-size:11px;color:#667;margin-top:2px}
+    .pi-tag{display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:3px;padding:1px 7px;margin-top:3px}
+    .btn-del{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'Poppins',sans-serif;white-space:nowrap}
+    .btn-del:hover{background:#f55;color:#fff}
+    .empty{text-align:center;color:#445;padding:30px;font-size:13px}
+    .loading{text-align:center;color:#667;padding:20px;font-size:13px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+    .sc{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;text-align:center}
+    .sc-num{font-size:30px;font-weight:700;color:#d4e800}
+    .sc-lbl{font-size:11px;color:#667;margin-top:4px}
   </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="loginPage">
   <div class="login-box">
     <h1>🎮 Virtux Admin</h1>
-    <p>Enter your password to continue</p>
-    <input type="password" id="passwordInput" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+    <p>Enter your password</p>
+    <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
     <button class="btn-login" onclick="login()">Login</button>
-    <div class="login-error" id="loginError">Wrong password, try again.</div>
+    <div class="err" id="loginErr">Wrong password!</div>
   </div>
 </div>
 
-<!-- ADMIN PANEL -->
 <div id="adminPage">
-  <div class="admin-topbar">
+  <div class="topbar">
     <h1>🎮 Virtux Admin Panel</h1>
-    <button class="btn-logout" onclick="logout()">Logout</button>
+    <div class="topbar-right">
+      <span class="conn" id="connStatus">Checking...</span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
   </div>
-  <div class="admin-body">
-    <div class="admin-sidebar">
-      <button class="sb-btn active" onclick="showAdminPage('dashboard')">📊 Dashboard</button>
-      <div class="sb-section">Rooms</div>
-      <button class="sb-btn" onclick="showAdminPage('live')">🔴 Live</button>
-      <button class="sb-btn" onclick="showAdminPage('tournaments')">🏆 Tournaments</button>
-      <button class="sb-btn" onclick="showAdminPage('highlights')">🎬 Highlights</button>
-      <button class="sb-btn" onclick="showAdminPage('subscribers')">👥 Subscribers</button>
+  <div class="body">
+    <div class="sidebar">
+      <button class="sb-btn active" id="sb-dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
+      <div class="sb-sec">Rooms</div>
+      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
+      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
+      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
+      <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
+      <div class="sb-sec">News</div>
+      <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
+      <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
+      <div class="sb-sec">Youtube</div>
+      <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
+      <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
+      <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 Lives</button>
+      <div class="sb-sec">Collab</div>
+      <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Projects</button>
     </div>
 
-    <div class="admin-main">
+    <div class="main">
 
-      <!-- DASHBOARD -->
-      <div class="admin-page active" id="ap-dashboard">
+      <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
-        <div class="stats-grid">
-          <div class="stat-card"><div class="sc-num" id="stat-total">—</div><div class="sc-label">Total Posts</div></div>
-          <div class="stat-card"><div class="sc-num" id="stat-live">—</div><div class="sc-label">Live Posts</div></div>
-          <div class="stat-card"><div class="sc-num" id="stat-tour">—</div><div class="sc-label">Tournaments</div></div>
-          <div class="stat-card"><div class="sc-num" id="stat-hl">—</div><div class="sc-label">Highlights</div></div>
+        <div class="stats">
+          <div class="sc"><div class="sc-num" id="s-total">—</div><div class="sc-lbl">Total Posts</div></div>
+          <div class="sc"><div class="sc-num" id="s-live">—</div><div class="sc-lbl">Live</div></div>
+          <div class="sc"><div class="sc-num" id="s-tour">—</div><div class="sc-lbl">Tournaments</div></div>
+          <div class="sc"><div class="sc-num" id="s-news">—</div><div class="sc-lbl">News</div></div>
         </div>
-        <div class="add-form">
-          <h3>Recent Posts</h3>
-          <div id="recent-posts"><div class="loading">Loading...</div></div>
-        </div>
+        <div class="card"><h3>Recent Posts</h3><div id="recent-list"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- LIVE -->
-      <div class="admin-page" id="ap-live">
-        <div class="page-title">🔴 Live — Manage Posts</div>
-        <div class="add-form">
-          <h3>➕ Add New Live</h3>
-          <div class="success-msg" id="success-live">✅ Posted successfully!</div>
-          <div class="form-grid">
-            <input type="text" id="live-title" placeholder="Stream title (e.g. NinjaX Gaming)">
-            <input type="text" id="live-desc" placeholder="Game • Type (e.g. Valorant • Ranked)">
-            <input type="text" id="live-icon" placeholder="Icon emoji (e.g. 🎮)">
-            <select id="live-tag">
-              <option value="Live Now">🔴 Live Now</option>
-              <option value="Pre Lives">⏰ Pre Lives</option>
-              <option value="Live News">📰 Live News</option>
-              <option value="VIP">👑 VIP</option>
-            </select>
+      <div class="ap" id="ap-live">
+        <div class="page-title">🔴 Live</div>
+        <div class="card"><h3>➕ Add Live</h3>
+          <div class="ok" id="ok-live">✅ Published!</div><div class="er" id="er-live"></div>
+          <div class="fg">
+            <input class="full" id="live-title" placeholder="Stream title">
+            <input id="live-desc" placeholder="Game • Type">
+            <input id="live-icon" placeholder="Emoji (e.g. 🎮)">
+            <select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select>
+            <input class="full" id="live-url" placeholder="Stream URL (optional)">
           </div>
-          <button class="btn-add" onclick="addPost('live')">➕ Publish Live</button>
+          <button class="btn-pub" onclick="addPost('live')">➕ Publish</button>
         </div>
-        <div class="posts-list" id="posts-live"><div class="loading">Loading...</div></div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-live"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- TOURNAMENTS -->
-      <div class="admin-page" id="ap-tournaments">
-        <div class="page-title">🏆 Tournaments — Manage Posts</div>
-        <div class="add-form">
-          <h3>➕ Add New Tournament</h3>
-          <div class="success-msg" id="success-tournaments">✅ Posted successfully!</div>
-          <div class="form-grid">
-            <input type="text" id="tournaments-title" placeholder="Tournament name">
-            <input type="text" id="tournaments-desc" placeholder="Game • Teams • Region">
-            <input type="text" id="tournaments-icon" placeholder="Icon emoji (e.g. 🏆)">
-            <select id="tournaments-tag">
-              <option value="Ongoing">🏆 Ongoing</option>
-              <option value="Tournament News">📰 News</option>
-              <option value="Global">🌍 Global</option>
-              <option value="VIP">👑 VIP</option>
-            </select>
+      <div class="ap" id="ap-tournaments">
+        <div class="page-title">🏆 Tournaments</div>
+        <div class="card"><h3>➕ Add Tournament</h3>
+          <div class="ok" id="ok-tournaments">✅ Published!</div><div class="er" id="er-tournaments"></div>
+          <div class="fg">
+            <input class="full" id="tournaments-title" placeholder="Tournament name">
+            <input id="tournaments-desc" placeholder="Game • Teams • Region">
+            <input id="tournaments-icon" placeholder="Emoji (e.g. 🏆)">
+            <select id="tournaments-tag"><option value="Ongoing">🏆 Ongoing</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select>
+            <input class="full" id="tournaments-url" placeholder="Tournament URL (optional)">
           </div>
-          <button class="btn-add" onclick="addPost('tournaments')">➕ Publish Tournament</button>
+          <button class="btn-pub" onclick="addPost('tournaments')">➕ Publish</button>
         </div>
-        <div class="posts-list" id="posts-tournaments"><div class="loading">Loading...</div></div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-tournaments"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- HIGHLIGHTS -->
-      <div class="admin-page" id="ap-highlights">
-        <div class="page-title">🎬 Highlights — Manage Posts</div>
-        <div class="add-form">
-          <h3>➕ Add New Highlight</h3>
-          <div class="success-msg" id="success-highlights">✅ Posted successfully!</div>
-          <div class="form-grid">
-            <input type="text" id="highlights-title" placeholder="Highlight title">
-            <input type="text" id="highlights-desc" placeholder="Player • Game • Time ago">
-            <input type="text" id="highlights-icon" placeholder="Icon emoji (e.g. 🎯)">
-            <select id="highlights-tag">
-              <option value="Pro">🏅 Pro</option>
-              <option value="Tournament">🏆 Tournament</option>
-              <option value="Photo">📷 Photo</option>
-              <option value="Video">📹 Video</option>
-            </select>
+      <div class="ap" id="ap-highlights">
+        <div class="page-title">🎬 Highlights</div>
+        <div class="card"><h3>➕ Add Highlight</h3>
+          <div class="ok" id="ok-highlights">✅ Published!</div><div class="er" id="er-highlights"></div>
+          <div class="fg">
+            <input class="full" id="highlights-title" placeholder="Highlight title">
+            <input id="highlights-desc" placeholder="Player • Game • Time">
+            <input id="highlights-icon" placeholder="Emoji (e.g. 🎯)">
+            <select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select>
+            <input class="full" id="highlights-url" placeholder="Video/Image URL (optional)">
           </div>
-          <button class="btn-add" onclick="addPost('highlights')">➕ Publish Highlight</button>
+          <button class="btn-pub" onclick="addPost('highlights')">➕ Publish</button>
         </div>
-        <div class="posts-list" id="posts-highlights"><div class="loading">Loading...</div></div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-highlights"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- SUBSCRIBERS -->
-      <div class="admin-page" id="ap-subscribers">
-        <div class="page-title">👥 Subscribers — Manage Posts</div>
-        <div class="add-form">
-          <h3>➕ Add New Subscriber</h3>
-          <div class="success-msg" id="success-subscribers">✅ Posted successfully!</div>
-          <div class="form-grid">
-            <input type="text" id="subscribers-title" placeholder="Name (e.g. NinjaX)">
-            <input type="text" id="subscribers-desc" placeholder="Followers count">
-            <input type="text" id="subscribers-icon" placeholder="Icon emoji (e.g. 🔔)">
-            <select id="subscribers-tag">
-              <option value="YouTube">🔔 YouTube</option>
-              <option value="Member">⭐ Member</option>
-              <option value="Donor">🎁 Donor</option>
-              <option value="Collaboration">🌐 Collaboration</option>
-            </select>
+      <div class="ap" id="ap-subscribers">
+        <div class="page-title">👥 Subscribers</div>
+        <div class="card"><h3>➕ Add Subscriber</h3>
+          <div class="ok" id="ok-subscribers">✅ Added!</div><div class="er" id="er-subscribers"></div>
+          <div class="fg">
+            <input id="subscribers-title" placeholder="Name">
+            <input id="subscribers-desc" placeholder="Followers count">
+            <input id="subscribers-icon" placeholder="Emoji (e.g. 🔔)">
+            <select id="subscribers-tag"><option value="YouTube">🔔 YouTube</option><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option><option value="Collaboration">🌐 Collaboration</option></select>
+            <input class="full" id="subscribers-url" placeholder="Channel/Profile URL (optional)">
           </div>
-          <button class="btn-add" onclick="addPost('subscribers')">➕ Add Subscriber</button>
+          <button class="btn-pub" onclick="addPost('subscribers')">➕ Add</button>
         </div>
-        <div class="posts-list" id="posts-subscribers"><div class="loading">Loading...</div></div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-subscribers"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <div class="ap" id="ap-gaming-news">
+        <div class="page-title">📰 Gaming News</div>
+        <div class="card"><h3>➕ Add News</h3>
+          <div class="ok" id="ok-gaming-news">✅ Published!</div><div class="er" id="er-gaming-news"></div>
+          <div class="fg">
+            <input class="full" id="gaming-news-title" placeholder="News title">
+            <input class="full" id="gaming-news-desc" placeholder="Description">
+            <input id="gaming-news-icon" placeholder="Emoji (e.g. 📰)">
+            <input id="gaming-news-url" placeholder="Image or article URL">
+          </div>
+          <button class="btn-pub" onclick="addPost('gaming-news')">➕ Publish</button>
+        </div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-gaming-news"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <div class="ap" id="ap-youtube-news">
+        <div class="page-title">▶️ Youtube News</div>
+        <div class="card"><h3>➕ Add Youtube News</h3>
+          <div class="ok" id="ok-youtube-news">✅ Published!</div><div class="er" id="er-youtube-news"></div>
+          <div class="fg">
+            <input class="full" id="youtube-news-title" placeholder="Title">
+            <input class="full" id="youtube-news-desc" placeholder="Description">
+            <input id="youtube-news-icon" placeholder="Emoji">
+            <input id="youtube-news-url" placeholder="YouTube video URL">
+          </div>
+          <button class="btn-pub" onclick="addPost('youtube-news')">➕ Publish</button>
+        </div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-youtube-news"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <div class="ap" id="ap-yt-channels">
+        <div class="page-title">📺 Youtube Channels</div>
+        <div class="card"><h3>➕ Add Channel</h3>
+          <div class="ok" id="ok-yt-channels">✅ Added!</div><div class="er" id="er-yt-channels"></div>
+          <div class="fg">
+            <input id="yt-channels-title" placeholder="Channel name">
+            <input id="yt-channels-desc" placeholder="Subscribers count">
+            <input id="yt-channels-icon" placeholder="Emoji">
+            <input id="yt-channels-url" placeholder="Channel URL">
+          </div>
+          <button class="btn-pub" onclick="addPost('yt-channels')">➕ Add</button>
+        </div>
+        <div class="card"><h3>Channels</h3><div class="posts-list" id="list-yt-channels"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <div class="ap" id="ap-yt-videos">
+        <div class="page-title">🎬 Youtube Videos</div>
+        <div class="card"><h3>➕ Add Video</h3>
+          <div class="ok" id="ok-yt-videos">✅ Added!</div><div class="er" id="er-yt-videos"></div>
+          <div class="fg">
+            <input class="full" id="yt-videos-title" placeholder="Video title">
+            <input id="yt-videos-desc" placeholder="Description">
+            <input id="yt-videos-icon" placeholder="Emoji">
+            <input class="full" id="yt-videos-url" placeholder="YouTube video URL">
+            <select id="yt-videos-tag" class="full"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select>
+          </div>
+          <button class="btn-pub" onclick="addPost('yt-videos')">➕ Add</button>
+        </div>
+        <div class="card"><h3>Videos</h3><div class="posts-list" id="list-yt-videos"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <div class="ap" id="ap-yt-lives">
+        <div class="page-title">🔴 Youtube Lives</div>
+        <div class="card"><h3>➕ Add Live</h3>
+          <div class="ok" id="ok-yt-lives">✅ Added!</div><div class="er" id="er-yt-lives"></div>
+          <div class="fg">
+            <input class="full" id="yt-lives-title" placeholder="Stream title">
+            <input id="yt-lives-desc" placeholder="Game • Description">
+            <input id="yt-lives-icon" placeholder="Emoji">
+            <input class="full" id="yt-lives-url" placeholder="YouTube live URL">
+            <select id="yt-lives-tag" class="full"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select>
+          </div>
+          <button class="btn-pub" onclick="addPost('yt-lives')">➕ Add</button>
+        </div>
+        <div class="card"><h3>Lives</h3><div class="posts-list" id="list-yt-lives"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <div class="ap" id="ap-projects">
+        <div class="page-title">🌐 Projects</div>
+        <div class="card"><h3>➕ Add Project</h3>
+          <div class="ok" id="ok-projects">✅ Added!</div><div class="er" id="er-projects"></div>
+          <div class="fg">
+            <input class="full" id="projects-title" placeholder="Project name">
+            <input class="full" id="projects-desc" placeholder="Description">
+            <input id="projects-icon" placeholder="Emoji">
+            <input id="projects-url" placeholder="Project URL">
+          </div>
+          <button class="btn-pub" onclick="addPost('projects')">➕ Add</button>
+        </div>
+        <div class="card"><h3>Projects</h3><div class="posts-list" id="list-projects"><div class="loading">Loading...</div></div></div>
       </div>
 
     </div>
@@ -270,128 +277,138 @@
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-  const ADMIN_PASSWORD = 'virtux2025';
+const SB = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1';
+const KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const HDR = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+let PASS = localStorage.getItem('vx_pw') || 'virtux2025';
 
-  function login() {
-    const pw = document.getElementById('passwordInput').value;
-    if (pw === ADMIN_PASSWORD) {
-      document.getElementById('loginPage').style.display = 'none';
-      document.getElementById('adminPage').style.display = 'block';
-      loadAllPosts();
+async function checkConn() {
+  try {
+    const r = await fetch(SB + '/posts?limit=1', { headers: HDR });
+    const el = document.getElementById('connStatus');
+    if (r.ok) { el.textContent = '✅ Connected'; el.className = 'conn'; }
+    else { el.textContent = '❌ Error ' + r.status; el.className = 'conn fail'; }
+  } catch(e) {
+    document.getElementById('connStatus').textContent = '❌ No Internet';
+    document.getElementById('connStatus').className = 'conn fail';
+  }
+}
+
+function login() {
+  if (document.getElementById('pw').value === PASS) {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('adminPage').style.display = 'flex';
+    checkConn();
+    loadDashboard();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+function logout() {
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('adminPage').style.display = 'none';
+  document.getElementById('pw').value = '';
+}
+
+function showPage(id) {
+  document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('ap-' + id).classList.add('active');
+  const s = document.getElementById('sb-' + id);
+  if (s) s.classList.add('active');
+  if (id === 'dashboard') loadDashboard();
+  else loadPosts(id);
+}
+
+async function loadDashboard() {
+  try {
+    const r = await fetch(SB + '/posts?order=id.desc', { headers: HDR });
+    const data = await r.json();
+    if (!Array.isArray(data)) return;
+    document.getElementById('s-total').textContent = data.length;
+    document.getElementById('s-live').textContent = data.filter(p=>p.room==='live').length;
+    document.getElementById('s-tour').textContent = data.filter(p=>p.room==='tournaments').length;
+    document.getElementById('s-news').textContent = data.filter(p=>p.room==='gaming-news'||p.room==='youtube-news').length;
+    const el = document.getElementById('recent-list');
+    if (!data.length) { el.innerHTML = '<div class="empty">No posts yet.</div>'; return; }
+    el.innerHTML = '<div class="posts-list">'+data.slice(0,6).map(postHTML).join('')+'</div>';
+  } catch(e) {}
+}
+
+async function loadPosts(room) {
+  const el = document.getElementById('list-'+room);
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    const r = await fetch(SB + '/posts?room=eq.'+room+'&order=id.desc', { headers: HDR });
+    const data = await r.json();
+    if (!Array.isArray(data)||!data.length) { el.innerHTML='<div class="empty">No posts yet.</div>'; return; }
+    el.innerHTML = data.map(postHTML).join('');
+  } catch(e) { el.innerHTML='<div class="empty">Error loading.</div>'; }
+}
+
+function postHTML(p) {
+  const link = p.url ? ` • <a href="${p.url}" target="_blank" style="color:#9fb000;font-size:11px">🔗 Link</a>` : '';
+  return `<div class="pi" id="pi-${p.id}">
+    <div class="pi-icon">${p.icon||'📄'}</div>
+    <div class="pi-info">
+      <div class="pi-title">${p.title}</div>
+      <div class="pi-meta">${p.description||''}${link}</div>
+      <span class="pi-tag">${p.tag||p.room}</span>
+    </div>
+    <button class="btn-del" onclick="delPost(${p.id},'${p.room}')">🗑️ Delete</button>
+  </div>`;
+}
+
+function val(id) { const el=document.getElementById(id); return el?(el.value||'').trim():''; }
+function clear(id) { const el=document.getElementById(id); if(el) el.value=''; }
+
+async function addPost(room) {
+  const title = val(room+'-title');
+  if (!title) { alert('Please enter a title!'); return; }
+  const body = {
+    title,
+    description: val(room+'-desc'),
+    icon: val(room+'-icon')||'📄',
+    url: val(room+'-url'),
+    tag: val(room+'-tag')||room,
+    room
+  };
+  try {
+    const r = await fetch(SB + '/posts', {
+      method: 'POST',
+      headers: { ...HDR, 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      ['title','desc','icon','url'].forEach(f => clear(room+'-'+f));
+      const ok = document.getElementById('ok-'+room);
+      ok.style.display='block';
+      setTimeout(()=>ok.style.display='none',3000);
+      loadPosts(room);
+      loadDashboard();
     } else {
-      document.getElementById('loginError').style.display = 'block';
+      const err = await r.json();
+      const er = document.getElementById('er-'+room);
+      er.textContent = '❌ ' + (err.message||err.hint||'Error '+r.status);
+      er.style.display='block';
+      setTimeout(()=>er.style.display='none',5000);
     }
+  } catch(e) {
+    const er = document.getElementById('er-'+room);
+    er.textContent = '❌ No internet connection';
+    er.style.display='block';
+    setTimeout(()=>er.style.display='none',5000);
   }
+}
 
-  function logout() {
-    document.getElementById('loginPage').style.display = 'flex';
-    document.getElementById('adminPage').style.display = 'none';
-    document.getElementById('passwordInput').value = '';
-  }
-
-  function showAdminPage(id) {
-    document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('ap-' + id).classList.add('active');
-    document.querySelectorAll('.sb-btn').forEach(b => {
-      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(id)) b.classList.add('active');
-    });
-    if (id !== 'dashboard') loadPosts(id);
-  }
-
-  async function supabaseFetch(method, path, body) {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-      method,
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': method === 'POST' ? 'return=representation' : ''
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-    if (method === 'DELETE') return true;
-    return res.json();
-  }
-
-  async function loadAllPosts() {
-    const posts = await supabaseFetch('GET', 'posts?order=id.desc');
-    if (!Array.isArray(posts)) return;
-
-    document.getElementById('stat-total').textContent = posts.length;
-    document.getElementById('stat-live').textContent = posts.filter(p => p.room === 'live').length;
-    document.getElementById('stat-tour').textContent = posts.filter(p => p.room === 'tournaments').length;
-    document.getElementById('stat-hl').textContent = posts.filter(p => p.room === 'highlights').length;
-
-    const recent = posts.slice(0, 5);
-    const el = document.getElementById('recent-posts');
-    if (recent.length === 0) { el.innerHTML = '<div class="empty-state">No posts yet.</div>'; return; }
-    el.innerHTML = recent.map(p => postHTML(p)).join('');
-  }
-
-  async function loadPosts(room) {
-    const el = document.getElementById('posts-' + room);
-    el.innerHTML = '<div class="loading">Loading...</div>';
-    const posts = await supabaseFetch('GET', 'posts?room=eq.' + room + '&order=id.desc');
-    if (!Array.isArray(posts) || posts.length === 0) {
-      el.innerHTML = '<div class="empty-state">No posts in this room yet.</div>';
-      return;
-    }
-    el.innerHTML = posts.map(p => postHTML(p)).join('');
-  }
-
-  function postHTML(p) {
-    return `<div class="post-item" id="post-${p.id}">
-      <div class="post-icon">${p.icon || '📄'}</div>
-      <div class="post-info">
-        <div class="pi-title">${p.title}</div>
-        <div class="pi-meta">${p.description || ''}</div>
-        <span class="pi-tag">${p.tag || ''}</span>
-        <span class="pi-room">${p.room}</span>
-      </div>
-      <button class="btn-delete" onclick="deletePost(${p.id}, '${p.room}')">🗑️ Delete</button>
-    </div>`;
-  }
-
-  async function addPost(room) {
-    const title = document.getElementById(room + '-title').value.trim();
-    const desc = document.getElementById(room + '-desc').value.trim();
-    const icon = document.getElementById(room + '-icon').value.trim();
-    const tag = document.getElementById(room + '-tag').value;
-
-    if (!title) { alert('Please enter a title!'); return; }
-
-    const btn = document.querySelector(`#ap-${room} .btn-add`);
-    btn.disabled = true;
-    btn.textContent = 'Publishing...';
-
-    await supabaseFetch('POST', 'posts', { title, description: desc, room, icon: icon || '📄', tag });
-
-    btn.disabled = false;
-    btn.textContent = '➕ Publish';
-
-    document.getElementById(room + '-title').value = '';
-    document.getElementById(room + '-desc').value = '';
-    document.getElementById(room + '-icon').value = '';
-
-    const msg = document.getElementById('success-' + room);
-    msg.style.display = 'block';
-    setTimeout(() => msg.style.display = 'none', 3000);
-
-    loadPosts(room);
-    loadAllPosts();
-  }
-
-  async function deletePost(id, room) {
-    if (!confirm('Delete this post?')) return;
-    await supabaseFetch('DELETE', 'posts?id=eq.' + id);
-    document.getElementById('post-' + id)?.remove();
-    loadAllPosts();
-  }
-
-  loadAllPosts();
+async function delPost(id, room) {
+  if (!confirm('Delete this post?')) return;
+  await fetch(SB+'/posts?id=eq.'+id, { method:'DELETE', headers: HDR });
+  document.getElementById('pi-'+id)?.remove();
+  loadDashboard();
+}
 </script>
 </body>
 </html>
