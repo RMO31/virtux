@@ -50,6 +50,12 @@
     .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
     .pi:hover{border-color:#9fb000}
     .pi-icon{font-size:22px;width:36px;text-align:center}
+    .img-upload{display:flex;align-items:center;gap:8px}
+    .img-upload input[type=file]{display:none}
+    .img-upload label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:7px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;white-space:nowrap}
+    .img-upload label:hover{background:#2a3d90}
+    .img-upload input[type=text]{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif;flex:1}
+    .img-preview{width:40px;height:40px;border-radius:6px;object-fit:cover;display:none}
     .pi-info{flex:1}
     .pi-title{font-size:13px;font-weight:600;color:#ddd}
     .pi-meta{font-size:11px;color:#667;margin-top:2px}
@@ -123,7 +129,12 @@
           <div class="fg">
             <input class="full" id="live-title" placeholder="Stream title">
             <input id="live-desc" placeholder="Game • Type">
-            <input id="live-icon" placeholder="Emoji (e.g. 🎮)">
+            <div class="img-upload full">
+            <input type="file" id="live-imgfile" accept="image/*" onchange="previewImg('live')">
+            <label for="live-imgfile">📁 Upload Image</label>
+            <input type="text" id="live-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="live-imgpreview" class="img-preview" src="">
+          </div>
             <select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select>
             <input class="full" id="live-url" placeholder="Stream URL (optional)">
           </div>
@@ -139,8 +150,13 @@
           <div class="fg">
             <input class="full" id="tournaments-title" placeholder="Tournament name">
             <input id="tournaments-desc" placeholder="Game • Teams • Region">
-            <input id="tournaments-icon" placeholder="Emoji (e.g. 🏆)">
-            <select id="tournaments-tag"><option value="Ongoing">🏆 Ongoing</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select>
+            <div class="img-upload full">
+            <input type="file" id="tournaments-imgfile" accept="image/*" onchange="previewImg('tournaments')">
+            <label for="tournaments-imgfile">📁 Upload Image</label>
+            <input type="text" id="tournaments-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="tournaments-imgpreview" class="img-preview" src="">
+          </div>
+            <select id="tournaments-tag"><option value="Registration">📋 Registration</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select>
             <input class="full" id="tournaments-url" placeholder="Tournament URL (optional)">
           </div>
           <button class="btn-pub" onclick="addPost('tournaments')">➕ Publish</button>
@@ -155,7 +171,12 @@
           <div class="fg">
             <input class="full" id="highlights-title" placeholder="Highlight title">
             <input id="highlights-desc" placeholder="Player • Game • Time">
-            <input id="highlights-icon" placeholder="Emoji (e.g. 🎯)">
+            <div class="img-upload full">
+            <input type="file" id="highlights-imgfile" accept="image/*" onchange="previewImg('highlights')">
+            <label for="highlights-imgfile">📁 Upload Image</label>
+            <input type="text" id="highlights-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="highlights-imgpreview" class="img-preview" src="">
+          </div>
             <select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select>
             <input class="full" id="highlights-url" placeholder="Video/Image URL (optional)">
           </div>
@@ -171,7 +192,12 @@
           <div class="fg">
             <input id="subscribers-title" placeholder="Name">
             <input id="subscribers-desc" placeholder="Followers count">
-            <input id="subscribers-icon" placeholder="Emoji (e.g. 🔔)">
+            <div class="img-upload full">
+            <input type="file" id="subscribers-imgfile" accept="image/*" onchange="previewImg('subscribers')">
+            <label for="subscribers-imgfile">📁 Upload Image</label>
+            <input type="text" id="subscribers-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="subscribers-imgpreview" class="img-preview" src="">
+          </div>
             <select id="subscribers-tag"><option value="YouTube">🔔 YouTube</option><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option><option value="Collaboration">🌐 Collaboration</option></select>
             <input class="full" id="subscribers-url" placeholder="Channel/Profile URL (optional)">
           </div>
@@ -187,7 +213,12 @@
           <div class="fg">
             <input class="full" id="gaming-news-title" placeholder="News title">
             <input class="full" id="gaming-news-desc" placeholder="Description">
-            <input id="gaming-news-icon" placeholder="Emoji (e.g. 📰)">
+            <div class="img-upload full">
+            <input type="file" id="gaming-news-imgfile" accept="image/*" onchange="previewImg('gaming-news')">
+            <label for="gaming-news-imgfile">📁 Upload Image</label>
+            <input type="text" id="gaming-news-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="gaming-news-imgpreview" class="img-preview" src="">
+          </div>
             <input id="gaming-news-url" placeholder="Image or article URL">
           </div>
           <button class="btn-pub" onclick="addPost('gaming-news')">➕ Publish</button>
@@ -202,7 +233,12 @@
           <div class="fg">
             <input class="full" id="youtube-news-title" placeholder="Title">
             <input class="full" id="youtube-news-desc" placeholder="Description">
-            <input id="youtube-news-icon" placeholder="Emoji">
+            <div class="img-upload full">
+            <input type="file" id="youtube-news-imgfile" accept="image/*" onchange="previewImg('youtube-news')">
+            <label for="youtube-news-imgfile">📁 Upload Image</label>
+            <input type="text" id="youtube-news-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="youtube-news-imgpreview" class="img-preview" src="">
+          </div>
             <input id="youtube-news-url" placeholder="YouTube video URL">
           </div>
           <button class="btn-pub" onclick="addPost('youtube-news')">➕ Publish</button>
@@ -217,7 +253,12 @@
           <div class="fg">
             <input id="yt-channels-title" placeholder="Channel name">
             <input id="yt-channels-desc" placeholder="Subscribers count">
-            <input id="yt-channels-icon" placeholder="Emoji">
+            <div class="img-upload full">
+            <input type="file" id="yt-channels-imgfile" accept="image/*" onchange="previewImg('yt-channels')">
+            <label for="yt-channels-imgfile">📁 Upload Image</label>
+            <input type="text" id="yt-channels-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="yt-channels-imgpreview" class="img-preview" src="">
+          </div>
             <input id="yt-channels-url" placeholder="Channel URL">
           </div>
           <button class="btn-pub" onclick="addPost('yt-channels')">➕ Add</button>
@@ -232,7 +273,12 @@
           <div class="fg">
             <input class="full" id="yt-videos-title" placeholder="Video title">
             <input id="yt-videos-desc" placeholder="Description">
-            <input id="yt-videos-icon" placeholder="Emoji">
+            <div class="img-upload full">
+            <input type="file" id="yt-videos-imgfile" accept="image/*" onchange="previewImg('yt-videos')">
+            <label for="yt-videos-imgfile">📁 Upload Image</label>
+            <input type="text" id="yt-videos-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="yt-videos-imgpreview" class="img-preview" src="">
+          </div>
             <input class="full" id="yt-videos-url" placeholder="YouTube video URL">
             <select id="yt-videos-tag" class="full"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select>
           </div>
@@ -248,7 +294,12 @@
           <div class="fg">
             <input class="full" id="yt-lives-title" placeholder="Stream title">
             <input id="yt-lives-desc" placeholder="Game • Description">
-            <input id="yt-lives-icon" placeholder="Emoji">
+            <div class="img-upload full">
+            <input type="file" id="yt-lives-imgfile" accept="image/*" onchange="previewImg('yt-lives')">
+            <label for="yt-lives-imgfile">📁 Upload Image</label>
+            <input type="text" id="yt-lives-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="yt-lives-imgpreview" class="img-preview" src="">
+          </div>
             <input class="full" id="yt-lives-url" placeholder="YouTube live URL">
             <select id="yt-lives-tag" class="full"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select>
           </div>
@@ -264,7 +315,12 @@
           <div class="fg">
             <input class="full" id="projects-title" placeholder="Project name">
             <input class="full" id="projects-desc" placeholder="Description">
-            <input id="projects-icon" placeholder="Emoji">
+            <div class="img-upload full">
+            <input type="file" id="projects-imgfile" accept="image/*" onchange="previewImg('projects')">
+            <label for="projects-imgfile">📁 Upload Image</label>
+            <input type="text" id="projects-icon" placeholder="Or type emoji (e.g. 🎮)">
+            <img id="projects-imgpreview" class="img-preview" src="">
+          </div>
             <input id="projects-url" placeholder="Project URL">
           </div>
           <button class="btn-pub" onclick="addPost('projects')">➕ Add</button>
@@ -350,8 +406,11 @@ async function loadPosts(room) {
 
 function postHTML(p) {
   const link = p.url ? ` • <a href="${p.url}" target="_blank" style="color:#9fb000;font-size:11px">🔗 Link</a>` : '';
+  const iconHtml = p.icon && p.icon.startsWith('data:') 
+    ? `<img src="${p.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">` 
+    : (p.icon||'📄');
   return `<div class="pi" id="pi-${p.id}">
-    <div class="pi-icon">${p.icon||'📄'}</div>
+    <div class="pi-icon">${iconHtml}</div>
     <div class="pi-info">
       <div class="pi-title">${p.title}</div>
       <div class="pi-meta">${p.description||''}${link}</div>
@@ -370,11 +429,13 @@ async function addPost(room) {
   const body = {
     title,
     description: val(room+'-desc'),
-    icon: val(room+'-icon')||'📄',
+    icon: (()=>{ const el=document.getElementById(room+'-icon'); return (el && el._imgData) ? el._imgData : (el ? el.value||'📄' : '📄'); })(),
     url: val(room+'-url'),
     tag: val(room+'-tag')||room,
     room
   };
+  const btn = document.querySelector('#ap-'+room+' .btn-pub');
+  if(btn) { btn.disabled=true; btn.textContent='Publishing...'; }
   try {
     const r = await fetch(SB + '/posts', {
       method: 'POST',
@@ -383,6 +444,11 @@ async function addPost(room) {
     });
     if (r.ok) {
       ['title','desc','icon','url'].forEach(f => clear(room+'-'+f));
+      // Clear image preview
+      const preview = document.getElementById(room+'-imgpreview');
+      if(preview) { preview.style.display='none'; preview.src=''; }
+      const fileInput = document.getElementById(room+'-imgfile');
+      if(fileInput) fileInput.value = '';
       const ok = document.getElementById('ok-'+room);
       ok.style.display='block';
       setTimeout(()=>ok.style.display='none',3000);
@@ -400,6 +466,8 @@ async function addPost(room) {
     er.textContent = '❌ No internet connection';
     er.style.display='block';
     setTimeout(()=>er.style.display='none',5000);
+  } finally {
+    if(btn) { btn.disabled=false; btn.textContent='➕ Publish'; }
   }
 }
 
@@ -408,6 +476,21 @@ async function delPost(id, room) {
   await fetch(SB+'/posts?id=eq.'+id, { method:'DELETE', headers: HDR });
   document.getElementById('pi-'+id)?.remove();
   loadDashboard();
+}
+
+function previewImg(room) {
+  const file = document.getElementById(room+'-imgfile').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById(room+'-imgpreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    // Store base64 in icon field as marker
+    document.getElementById(room+'-icon').value = '🖼️';
+    document.getElementById(room+'-icon')._imgData = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 </script>
 </body>
