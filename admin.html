@@ -2,496 +2,550 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Virtux Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
-    #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh}
-    .login-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;padding:36px 32px;width:340px;text-align:center}
-    .login-box h1{color:#d4e800;font-size:24px;margin-bottom:6px}
-    .login-box p{color:#667;font-size:13px;margin-bottom:24px}
-    .login-box input{width:100%;padding:10px 14px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:14px;font-family:'Poppins',sans-serif;margin-bottom:12px}
-    .login-box input:focus{outline:none;border-color:#9fb000}
-    .btn-login{width:100%;padding:10px;background:#9fb000;color:#000;border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
-    .btn-login:hover{background:#d4e800}
-    .err{color:#f55;font-size:12px;margin-top:8px;display:none}
-    #adminPage{display:none;height:100vh;flex-direction:column}
-    .topbar{background:#000718;border-bottom:1px solid #9fb000;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
-    .topbar h1{color:#d4e800;font-size:16px}
-    .topbar-right{display:flex;align-items:center;gap:10px}
-    .conn{font-size:12px;padding:3px 10px;border-radius:4px;background:#0f3d2e;color:#4caf90;border:1px solid #0f6e56}
-    .conn.fail{background:#3d0f0f;color:#f55;border-color:#6e0f0f}
-    .btn-logout{background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif}
-    .btn-logout:hover{background:#f55;color:#fff}
-    .body{display:flex;flex:1;height:calc(100vh - 46px)}
-    .sidebar{width:190px;background:#050c2e;border-right:1px solid #1e2d6b;padding:12px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+    .vx-root{display:flex;flex-direction:column;min-height:100vh}
+    .vx-topbar{display:flex;align-items:center;padding:10px 18px;background:#000718;border-bottom:1px solid #9fb000;gap:12px}
+    .vx-logo{font-size:22px;font-weight:700;color:#d4e800;letter-spacing:2px}
+    .vx-logo span{color:#fff;font-weight:400}
+    .vx-topnav{display:flex;gap:6px;margin-left:auto}
+    .dd{position:relative}
+    .dd-btn{background:transparent;border:1px solid #9fb000;color:#d4e800;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif}
+    .dd-btn:hover{background:#9fb000;color:#000}
+    .dd-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#010a2e;border:1px solid #9fb000;border-radius:6px;min-width:170px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+    .dd.open .dd-menu{display:block}
+    .dd-menu a{display:block;color:#ccc;padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #1a2550;text-decoration:none}
+    .dd-menu a:last-child{border-bottom:none}
+    .dd-menu a:hover{background:#9fb000;color:#000}
+    .login-area{display:flex;align-items:center;gap:10px;margin-left:15px}
+    .login-btn{background:#9fb000;color:#000;border:none;border-radius:5px;padding:5px 14px;font-size:12px;cursor:pointer;font-weight:600}
+    .logout-btn{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 14px;font-size:12px;cursor:pointer}
+    .user-badge{font-size:12px;color:#d4e800;background:#0a1540;padding:4px 12px;border-radius:5px}
+    .vx-ticker{background:#000;padding:5px 16px;display:flex;align-items:center;gap:10px;overflow:hidden}
+    .ticker-label{font-size:11px;background:#d4e800;color:#000;padding:2px 8px;border-radius:3px;font-weight:700;white-space:nowrap}
+    .ticker-track{display:flex;gap:30px;animation:ticker 28s linear infinite;white-space:nowrap}
+    @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .ticker-item{font-size:12px;color:#99aabb}
+    .ticker-item span{color:#d4e800}
+    .vx-body{display:flex;flex:1}
+    .vx-sidebar{width:180px;background:linear-gradient(180deg,#050c2e,#0a1540);border-right:1px solid #1e2d6b;display:flex;flex-direction:column;gap:4px;padding:10px 6px}
     .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left;font-family:'Poppins',sans-serif;transition:background 0.2s}
     .sb-btn:hover,.sb-btn.active{background:#1a2d80;color:#d4e800}
     .sb-btn.active{border-left:3px solid #d4e800}
-    .sb-sec{font-size:10px;color:#556;text-transform:uppercase;letter-spacing:1px;padding:10px 12px 3px}
-    .main{flex:1;padding:20px;overflow-y:auto;background:#01042e}
-    .ap{display:none}
-    .ap.active{display:block}
-    .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
-    .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
-    .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
-    .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-    .fg input,.fg select{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif;width:100%}
-    .fg input:focus,.fg select:focus{outline:none;border-color:#9fb000}
-    .fg select option{background:#0a1540}
-    .full{grid-column:1/-1}
-    .btn-pub{background:#9fb000;color:#000;border:none;border-radius:7px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
-    .btn-pub:hover{background:#d4e800}
-    .btn-pub:disabled{background:#445;color:#778;cursor:not-allowed}
-    .ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-    .er{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-    .posts-list{display:flex;flex-direction:column;gap:8px}
-    .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
-    .pi:hover{border-color:#9fb000}
-    .pi-icon{font-size:22px;width:36px;text-align:center}
-    .img-upload{display:flex;align-items:center;gap:8px}
-    .img-upload input[type=file]{display:none}
-    .img-upload label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:7px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;white-space:nowrap}
-    .img-upload label:hover{background:#2a3d90}
-    .img-upload input[type=text]{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif;flex:1}
-    .img-preview{width:40px;height:40px;border-radius:6px;object-fit:cover;display:none}
-    .pi-info{flex:1}
-    .pi-title{font-size:13px;font-weight:600;color:#ddd}
-    .pi-meta{font-size:11px;color:#667;margin-top:2px}
-    .pi-tag{display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:3px;padding:1px 7px;margin-top:3px}
-    .btn-del{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'Poppins',sans-serif;white-space:nowrap}
-    .btn-del:hover{background:#f55;color:#fff}
-    .empty{text-align:center;color:#445;padding:30px;font-size:13px}
-    .loading{text-align:center;color:#667;padding:20px;font-size:13px}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-    .sc{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;text-align:center}
-    .sc-num{font-size:30px;font-weight:700;color:#d4e800}
-    .sc-lbl{font-size:11px;color:#667;margin-top:4px}
+    .sb-section{font-size:10px;color:#556;text-transform:uppercase;letter-spacing:1px;padding:8px 12px 2px}
+    .vx-main{flex:1;max-height:calc(100vh - 84px);overflow-y:auto}
+    .vx-page{display:none}
+    .vx-page.active{display:block}
+    .home-hero{background:linear-gradient(135deg,#010a2e,#0a1f5e,#010a2e);padding:28px 24px 20px;border-bottom:1px solid #9fb000}
+    .home-hero h1{font-size:26px;font-weight:700;color:#d4e800;margin-bottom:6px}
+    .home-hero p{color:#8899cc;font-size:14px}
+    .section-label{padding:14px 20px 4px;font-size:13px;color:#9fb000}
+    .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:10px 20px 20px}
+    .room-card{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;overflow:hidden;transition:border-color 0.2s,transform 0.2s;cursor:pointer}
+    .room-card:hover{border-color:#9fb000;transform:translateY(-2px)}
+    .rc-header{background:#0a1540;padding:12px 14px;display:flex;align-items:center;gap:8px}
+    .rc-icon{font-size:20px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#0f1e55;border-radius:8px}
+    .rc-title{font-size:14px;font-weight:600;color:#d4e800}
+    .rc-sub{font-size:11px;color:#667}
+    .rc-body{padding:10px 14px}
+    .rc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+    .rc-tag{font-size:11px;background:#0f1e55;color:#9fb000;border:1px solid #1e3a6b;border-radius:4px;padding:2px 8px}
+    .btn-enter{background:#9fb000;color:#000;border:none;border-radius:5px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;width:100%}
+    .btn-enter:hover{background:#d4e800}
+    .page-header{padding:14px 20px 10px;border-bottom:1px solid #1e2d6b;background:#000718}
+    .page-header h2{font-size:17px;color:#d4e800;font-weight:600}
+    .page-header p{font-size:12px;color:#667}
+    .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #1e2d6b}
+    .filter-btn{background:#0a1540;border:1px solid #1e2d6b;color:#aaa;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif}
+    .filter-btn:hover,.filter-btn.active{background:#9fb000;color:#000;border-color:#9fb000}
+    .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;padding:18px}
+    .post-card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
+    .post-card:hover{border-color:#9fb000;transform:translateY(-2px)}
+    .post-card-img{width:100%;height:160px;object-fit:cover;display:block}
+    .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#0a1540,#1a2d80);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
+    .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
+    .post-card-body{padding:12px 14px}
+    .post-card-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
+    .post-card-desc{font-size:12px;color:#667;margin-bottom:8px;line-height:1.5}
+    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+    .post-tag{font-size:11px;background:#0f1e55;color:#9fb000;border-radius:4px;padding:2px 8px}
+    .post-link{font-size:12px;color:#9fb000;text-decoration:none;background:#0f1e55;border:1px solid #1e3a6b;border-radius:5px;padding:4px 10px}
+    .post-link:hover{background:#1a2d80}
+    .post-dl{font-size:12px;color:#000;text-decoration:none;background:#9fb000;border-radius:5px;padding:4px 10px;font-weight:600}
+    .post-dl:hover{background:#d4e800}
+    video.post-card-vid{width:100%;height:160px;object-fit:cover}
+    .news-card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;overflow:hidden;transition:border-color 0.2s}
+    .news-card:hover{border-color:#9fb000}
+    .news-card-img{width:100%;height:180px;object-fit:cover}
+    .news-card-body{padding:14px}
+    .news-card-title{font-size:15px;font-weight:600;color:#d4e800;margin-bottom:6px}
+    .news-card-desc{font-size:13px;color:#aab;line-height:1.6;margin-bottom:10px}
+    .news-card-link{font-size:12px;color:#9fb000;text-decoration:none}
+    .channel-card{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;display:flex;align-items:center;gap:14px;transition:border-color 0.2s}
+    .channel-card:hover{border-color:#9fb000}
+    .channel-avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#0f1e55;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .channel-info{flex:1}
+    .channel-name{font-size:14px;font-weight:600;color:#d4e800}
+    .channel-sub{font-size:12px;color:#667;margin-top:2px}
+    .channel-link{font-size:12px;color:#9fb000;text-decoration:none;border:1px solid #9fb000;border-radius:5px;padding:5px 12px;white-space:nowrap}
+    .channel-link:hover{background:#9fb000;color:#000}
+    .empty-state{text-align:center;color:#445;padding:40px;font-size:14px}
+    .loading-state{text-align:center;color:#667;padding:30px;font-size:13px}
+    .contact-page{padding:20px}
+    .contact-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+    .contact-card{background:#050e30;border:1px solid #1e2d6b;border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color 0.2s}
+    .contact-card:hover{border-color:#9fb000}
+    .cc-icon{font-size:28px;margin-bottom:6px}
+    .cc-name{font-size:13px;color:#d4e800;font-weight:600}
+    .cc-handle{font-size:11px;color:#778}
+    .home-sections{margin:20px}
+    .home-section{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;margin-bottom:24px;overflow:hidden}
+    .home-section h3{padding:12px 16px;background:#0a1540;color:#d4e800;font-size:14px;border-bottom:1px solid #1e2d6b}
+    .home-section-content{padding:16px}
+    .home-section-content img{max-width:100%;border-radius:8px}
+    .home-section-content video{max-width:100%;border-radius:8px}
+    .home-section-content p{color:#aab;font-size:13px;line-height:1.5}
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center}
+    .modal-content{background:#050e30;border:1px solid #9fb000;border-radius:12px;padding:24px;width:300px;text-align:center}
+    .modal-content input{padding:10px;width:100%;margin:12px 0;border-radius:6px;border:1px solid #1e2d6b;background:#0a1540;color:#fff}
+    .modal-content button{background:#9fb000;color:#000;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
   </style>
 </head>
 <body>
-
-<div id="loginPage">
-  <div class="login-box">
-    <h1>🎮 Virtux Admin</h1>
-    <p>Enter your password</p>
-    <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
-    <button class="btn-login" onclick="login()">Login</button>
-    <div class="err" id="loginErr">Wrong password!</div>
-  </div>
-</div>
-
-<div id="adminPage">
-  <div class="topbar">
-    <h1>🎮 Virtux Admin Panel</h1>
-    <div class="topbar-right">
-      <span class="conn" id="connStatus">Checking...</span>
-      <button class="btn-logout" onclick="logout()">Logout</button>
+<div class="vx-root">
+  <div class="vx-topbar">
+    <div class="vx-logo">VIRT<span>UX</span></div>
+    <div class="vx-topnav">
+      <div class="dd" id="dd-news">
+        <button class="dd-btn" onclick="toggleDD('dd-news')">News ▾</button>
+        <div class="dd-menu">
+          <a onclick="showPage('gaming-news');closeDD()">📰 Gaming News</a>
+          <a onclick="showPage('youtube-news');closeDD()">▶️ Youtube News</a>
+        </div>
+      </div>
+      <div class="dd" id="dd-yt">
+        <button class="dd-btn" onclick="toggleDD('dd-yt')">Youtube ▾</button>
+        <div class="dd-menu">
+          <a onclick="showPage('yt-channels');closeDD()">📺 Channels</a>
+          <a onclick="showPage('yt-videos');closeDD()">🎬 Videos</a>
+          <a onclick="showPage('yt-lives');closeDD()">🔴 Lives</a>
+        </div>
+      </div>
+      <div class="dd" id="dd-collab">
+        <button class="dd-btn" onclick="toggleDD('dd-collab')">Collab ▾</button>
+        <div class="dd-menu">
+          <a onclick="showPage('projects');closeDD()">🌐 Projects</a>
+        </div>
+      </div>
+      <div class="login-area" id="loginArea">
+        <button class="login-btn" id="loginBtn" onclick="openLoginModal()">👤 Login</button>
+      </div>
     </div>
   </div>
-  <div class="body">
-    <div class="sidebar">
-      <button class="sb-btn active" id="sb-dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
-      <div class="sb-sec">Rooms</div>
+
+  <div class="vx-ticker">
+    <div class="ticker-label">LIVE</div>
+    <div class="ticker-track">
+      <span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span>
+      <span class="ticker-item">🔴 <span>NinjaX</span> is live now</span>
+      <span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span>
+      <span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span>
+      <span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span>
+      <span class="ticker-item">🔴 <span>NinjaX</span> is live now</span>
+      <span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span>
+      <span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span>
+    </div>
+  </div>
+
+  <div class="vx-body">
+    <div class="vx-sidebar">
+      <button class="sb-btn active" id="sb-home" onclick="showPage('home')">🏠 Home</button>
+      <div class="sb-section">Content</div>
       <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
       <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
       <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
+      <div class="sb-section">Community</div>
+      <button class="sb-btn" id="sb-vip-members" onclick="showPage('vip-members')">👑 VIP Members</button>
+      <button class="sb-btn" id="sb-regular-members" onclick="showPage('regular-members')">⭐ Members</button>
       <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <div class="sb-sec">News</div>
-      <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
-      <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
-      <div class="sb-sec">Youtube</div>
-      <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
-      <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 Lives</button>
-      <div class="sb-sec">Collab</div>
-      <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Projects</button>
+      <button class="sb-btn" id="sb-contact" onclick="showPage('contact')">📞 Contact</button>
     </div>
 
-    <div class="main">
+    <div class="vx-main">
 
-      <div class="ap active" id="ap-dashboard">
-        <div class="page-title">📊 Dashboard</div>
-        <div class="stats">
-          <div class="sc"><div class="sc-num" id="s-total">—</div><div class="sc-lbl">Total Posts</div></div>
-          <div class="sc"><div class="sc-num" id="s-live">—</div><div class="sc-lbl">Live</div></div>
-          <div class="sc"><div class="sc-num" id="s-tour">—</div><div class="sc-lbl">Tournaments</div></div>
-          <div class="sc"><div class="sc-num" id="s-news">—</div><div class="sc-lbl">News</div></div>
-        </div>
-        <div class="card"><h3>Recent Posts</h3><div id="recent-list"><div class="loading">Loading...</div></div></div>
+      <!-- HOME (ديناميكية من admin) -->
+      <div class="vx-page active" id="page-home">
+        <div class="home-hero"><h1>Welcome to Virtux 🎮</h1><p>Your English-speaking gaming community</p></div>
+        <div id="home-sections-container" class="home-sections"><div class="loading-state">Loading sections...</div></div>
       </div>
 
-      <div class="ap" id="ap-live">
-        <div class="page-title">🔴 Live</div>
-        <div class="card"><h3>➕ Add Live</h3>
-          <div class="ok" id="ok-live">✅ Published!</div><div class="er" id="er-live"></div>
-          <div class="fg">
-            <input class="full" id="live-title" placeholder="Stream title">
-            <input id="live-desc" placeholder="Game • Type">
-            <div class="img-upload full">
-            <input type="file" id="live-imgfile" accept="image/*" onchange="previewImg('live')">
-            <label for="live-imgfile">📁 Upload Image</label>
-            <input type="text" id="live-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="live-imgpreview" class="img-preview" src="">
-          </div>
-            <select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select>
-            <input class="full" id="live-url" placeholder="Stream URL (optional)">
-          </div>
-          <button class="btn-pub" onclick="addPost('live')">➕ Publish</button>
+      <!-- LIVE -->
+      <div class="vx-page" id="page-live">
+        <div class="page-header"><h2>🔴 Live Streams</h2><p>All live streams from the Virtux community</p></div>
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterPosts('live','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button>
+          <button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button>
+          <button class="filter-btn" onclick="filterPosts('live','VIP',this)">👑 VIP</button>
+          <button class="filter-btn" onclick="filterPosts('live','VIP Only',this)" id="vipFilterLive" style="display:none">👑 VIP Only</button>
         </div>
-        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-live"><div class="loading">Loading...</div></div></div>
+        <div class="posts-grid" id="grid-live"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-tournaments">
-        <div class="page-title">🏆 Tournaments</div>
-        <div class="card"><h3>➕ Add Tournament</h3>
-          <div class="ok" id="ok-tournaments">✅ Published!</div><div class="er" id="er-tournaments"></div>
-          <div class="fg">
-            <input class="full" id="tournaments-title" placeholder="Tournament name">
-            <input id="tournaments-desc" placeholder="Game • Teams • Region">
-            <div class="img-upload full">
-            <input type="file" id="tournaments-imgfile" accept="image/*" onchange="previewImg('tournaments')">
-            <label for="tournaments-imgfile">📁 Upload Image</label>
-            <input type="text" id="tournaments-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="tournaments-imgpreview" class="img-preview" src="">
-          </div>
-            <select id="tournaments-tag"><option value="Registration">📋 Registration</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select>
-            <input class="full" id="tournaments-url" placeholder="Tournament URL (optional)">
-          </div>
-          <button class="btn-pub" onclick="addPost('tournaments')">➕ Publish</button>
+      <!-- TOURNAMENTS -->
+      <div class="vx-page" id="page-tournaments">
+        <div class="page-header"><h2>🏆 Tournaments</h2><p>Register, follow, and compete</p></div>
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button>
+          <button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button>
+          <button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">👑 VIP</button>
+          <button class="filter-btn" onclick="filterPosts('tournaments','VIP Only',this)" id="vipFilterTournaments" style="display:none">👑 VIP Only</button>
         </div>
-        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-tournaments"><div class="loading">Loading...</div></div></div>
+        <div class="posts-grid" id="grid-tournaments"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-highlights">
-        <div class="page-title">🎬 Highlights</div>
-        <div class="card"><h3>➕ Add Highlight</h3>
-          <div class="ok" id="ok-highlights">✅ Published!</div><div class="er" id="er-highlights"></div>
-          <div class="fg">
-            <input class="full" id="highlights-title" placeholder="Highlight title">
-            <input id="highlights-desc" placeholder="Player • Game • Time">
-            <div class="img-upload full">
-            <input type="file" id="highlights-imgfile" accept="image/*" onchange="previewImg('highlights')">
-            <label for="highlights-imgfile">📁 Upload Image</label>
-            <input type="text" id="highlights-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="highlights-imgpreview" class="img-preview" src="">
-          </div>
-            <select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select>
-            <input class="full" id="highlights-url" placeholder="Video/Image URL (optional)">
-          </div>
-          <button class="btn-pub" onclick="addPost('highlights')">➕ Publish</button>
+      <!-- HIGHLIGHTS -->
+      <div class="vx-page" id="page-highlights">
+        <div class="page-header"><h2>🎬 Highlights</h2><p>Best clips, videos & photos</p></div>
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Video',this)">📹 Video</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">📷 Photo</button>
+          <button class="filter-btn" onclick="filterPosts('highlights','VIP Only',this)" id="vipFilterHighlights" style="display:none">👑 VIP Only</button>
         </div>
-        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-highlights"><div class="loading">Loading...</div></div></div>
+        <div class="posts-grid" id="grid-highlights"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-subscribers">
-        <div class="page-title">👥 Subscribers</div>
-        <div class="card"><h3>➕ Add Subscriber</h3>
-          <div class="ok" id="ok-subscribers">✅ Added!</div><div class="er" id="er-subscribers"></div>
-          <div class="fg">
-            <input id="subscribers-title" placeholder="Name">
-            <input id="subscribers-desc" placeholder="Followers count">
-            <div class="img-upload full">
-            <input type="file" id="subscribers-imgfile" accept="image/*" onchange="previewImg('subscribers')">
-            <label for="subscribers-imgfile">📁 Upload Image</label>
-            <input type="text" id="subscribers-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="subscribers-imgpreview" class="img-preview" src="">
-          </div>
-            <select id="subscribers-tag"><option value="YouTube">🔔 YouTube</option><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option><option value="Collaboration">🌐 Collaboration</option></select>
-            <input class="full" id="subscribers-url" placeholder="Channel/Profile URL (optional)">
-          </div>
-          <button class="btn-pub" onclick="addPost('subscribers')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-subscribers"><div class="loading">Loading...</div></div></div>
+      <!-- VIP MEMBERS -->
+      <div class="vx-page" id="page-vip-members">
+        <div class="page-header"><h2>👑 VIP Members</h2><p>Exclusive members</p></div>
+        <div id="grid-vip-members" class="posts-grid"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-gaming-news">
-        <div class="page-title">📰 Gaming News</div>
-        <div class="card"><h3>➕ Add News</h3>
-          <div class="ok" id="ok-gaming-news">✅ Published!</div><div class="er" id="er-gaming-news"></div>
-          <div class="fg">
-            <input class="full" id="gaming-news-title" placeholder="News title">
-            <input class="full" id="gaming-news-desc" placeholder="Description">
-            <div class="img-upload full">
-            <input type="file" id="gaming-news-imgfile" accept="image/*" onchange="previewImg('gaming-news')">
-            <label for="gaming-news-imgfile">📁 Upload Image</label>
-            <input type="text" id="gaming-news-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="gaming-news-imgpreview" class="img-preview" src="">
-          </div>
-            <input id="gaming-news-url" placeholder="Image or article URL">
-          </div>
-          <button class="btn-pub" onclick="addPost('gaming-news')">➕ Publish</button>
-        </div>
-        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-gaming-news"><div class="loading">Loading...</div></div></div>
+      <!-- REGULAR MEMBERS -->
+      <div class="vx-page" id="page-regular-members">
+        <div class="page-header"><h2>⭐ Members</h2><p>Community members</p></div>
+        <div id="grid-regular-members" class="posts-grid"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-youtube-news">
-        <div class="page-title">▶️ Youtube News</div>
-        <div class="card"><h3>➕ Add Youtube News</h3>
-          <div class="ok" id="ok-youtube-news">✅ Published!</div><div class="er" id="er-youtube-news"></div>
-          <div class="fg">
-            <input class="full" id="youtube-news-title" placeholder="Title">
-            <input class="full" id="youtube-news-desc" placeholder="Description">
-            <div class="img-upload full">
-            <input type="file" id="youtube-news-imgfile" accept="image/*" onchange="previewImg('youtube-news')">
-            <label for="youtube-news-imgfile">📁 Upload Image</label>
-            <input type="text" id="youtube-news-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="youtube-news-imgpreview" class="img-preview" src="">
-          </div>
-            <input id="youtube-news-url" placeholder="YouTube video URL">
-          </div>
-          <button class="btn-pub" onclick="addPost('youtube-news')">➕ Publish</button>
+      <!-- SUBSCRIBERS (YT Channels) -->
+      <div class="vx-page" id="page-subscribers">
+        <div class="page-header"><h2>👥 Subscribers</h2><p>Community members and supporters</p></div>
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterPosts('subscribers','',this)">All</button>
+          <button class="filter-btn" onclick="filterPosts('subscribers','YouTube',this)">🔔 YouTube</button>
+          <button class="filter-btn" onclick="filterPosts('subscribers','Member',this)">⭐ Members</button>
+          <button class="filter-btn" onclick="filterPosts('subscribers','Donor',this)">🎁 Donors</button>
         </div>
-        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-youtube-news"><div class="loading">Loading...</div></div></div>
+        <div class="posts-grid" id="grid-subscribers"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-yt-channels">
-        <div class="page-title">📺 Youtube Channels</div>
-        <div class="card"><h3>➕ Add Channel</h3>
-          <div class="ok" id="ok-yt-channels">✅ Added!</div><div class="er" id="er-yt-channels"></div>
-          <div class="fg">
-            <input id="yt-channels-title" placeholder="Channel name">
-            <input id="yt-channels-desc" placeholder="Subscribers count">
-            <div class="img-upload full">
-            <input type="file" id="yt-channels-imgfile" accept="image/*" onchange="previewImg('yt-channels')">
-            <label for="yt-channels-imgfile">📁 Upload Image</label>
-            <input type="text" id="yt-channels-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="yt-channels-imgpreview" class="img-preview" src="">
-          </div>
-            <input id="yt-channels-url" placeholder="Channel URL">
-          </div>
-          <button class="btn-pub" onclick="addPost('yt-channels')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Channels</h3><div class="posts-list" id="list-yt-channels"><div class="loading">Loading...</div></div></div>
+      <!-- GAMING NEWS -->
+      <div class="vx-page" id="page-gaming-news">
+        <div class="page-header"><h2>📰 Gaming News</h2><p>Latest gaming news and updates</p></div>
+        <div class="posts-grid" id="grid-gaming-news"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-yt-videos">
-        <div class="page-title">🎬 Youtube Videos</div>
-        <div class="card"><h3>➕ Add Video</h3>
-          <div class="ok" id="ok-yt-videos">✅ Added!</div><div class="er" id="er-yt-videos"></div>
-          <div class="fg">
-            <input class="full" id="yt-videos-title" placeholder="Video title">
-            <input id="yt-videos-desc" placeholder="Description">
-            <div class="img-upload full">
-            <input type="file" id="yt-videos-imgfile" accept="image/*" onchange="previewImg('yt-videos')">
-            <label for="yt-videos-imgfile">📁 Upload Image</label>
-            <input type="text" id="yt-videos-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="yt-videos-imgpreview" class="img-preview" src="">
-          </div>
-            <input class="full" id="yt-videos-url" placeholder="YouTube video URL">
-            <select id="yt-videos-tag" class="full"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select>
-          </div>
-          <button class="btn-pub" onclick="addPost('yt-videos')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Videos</h3><div class="posts-list" id="list-yt-videos"><div class="loading">Loading...</div></div></div>
+      <!-- YOUTUBE NEWS -->
+      <div class="vx-page" id="page-youtube-news">
+        <div class="page-header"><h2>▶️ Youtube News</h2><p>Latest Youtube updates</p></div>
+        <div class="posts-grid" id="grid-youtube-news"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-yt-lives">
-        <div class="page-title">🔴 Youtube Lives</div>
-        <div class="card"><h3>➕ Add Live</h3>
-          <div class="ok" id="ok-yt-lives">✅ Added!</div><div class="er" id="er-yt-lives"></div>
-          <div class="fg">
-            <input class="full" id="yt-lives-title" placeholder="Stream title">
-            <input id="yt-lives-desc" placeholder="Game • Description">
-            <div class="img-upload full">
-            <input type="file" id="yt-lives-imgfile" accept="image/*" onchange="previewImg('yt-lives')">
-            <label for="yt-lives-imgfile">📁 Upload Image</label>
-            <input type="text" id="yt-lives-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="yt-lives-imgpreview" class="img-preview" src="">
-          </div>
-            <input class="full" id="yt-lives-url" placeholder="YouTube live URL">
-            <select id="yt-lives-tag" class="full"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select>
-          </div>
-          <button class="btn-pub" onclick="addPost('yt-lives')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Lives</h3><div class="posts-list" id="list-yt-lives"><div class="loading">Loading...</div></div></div>
+      <!-- YT CHANNELS -->
+      <div class="vx-page" id="page-yt-channels">
+        <div class="page-header"><h2>📺 Youtube Channels</h2><p>Featured gaming channels</p></div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:16px 18px" id="grid-yt-channels"><div class="loading-state">Loading...</div></div>
       </div>
 
-      <div class="ap" id="ap-projects">
-        <div class="page-title">🌐 Projects</div>
-        <div class="card"><h3>➕ Add Project</h3>
-          <div class="ok" id="ok-projects">✅ Added!</div><div class="er" id="er-projects"></div>
-          <div class="fg">
-            <input class="full" id="projects-title" placeholder="Project name">
-            <input class="full" id="projects-desc" placeholder="Description">
-            <div class="img-upload full">
-            <input type="file" id="projects-imgfile" accept="image/*" onchange="previewImg('projects')">
-            <label for="projects-imgfile">📁 Upload Image</label>
-            <input type="text" id="projects-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="projects-imgpreview" class="img-preview" src="">
+      <!-- YT VIDEOS -->
+      <div class="vx-page" id="page-yt-videos">
+        <div class="page-header"><h2>🎬 Youtube Videos</h2><p>Latest videos from our community</p></div>
+        <div class="posts-grid" id="grid-yt-videos"><div class="loading-state">Loading...</div></div>
+      </div>
+
+      <!-- YT LIVES -->
+      <div class="vx-page" id="page-yt-lives">
+        <div class="page-header"><h2>🔴 Youtube Lives</h2><p>Live streams on Youtube</p></div>
+        <div class="posts-grid" id="grid-yt-lives"><div class="loading-state">Loading...</div></div>
+      </div>
+
+      <!-- PROJECTS -->
+      <div class="vx-page" id="page-projects">
+        <div class="page-header"><h2>🌐 Projects</h2><p>Collaboration projects</p></div>
+        <div class="posts-grid" id="grid-projects"><div class="loading-state">Loading...</div></div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="vx-page" id="page-contact">
+        <div class="page-header"><h2>📞 Contact Virtux</h2><p>Get in touch with the team</p></div>
+        <div class="contact-page">
+          <div class="contact-cards">
+            <div class="contact-card"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/virtux</div></div>
+            <div class="contact-card"><div class="cc-icon">📧</div><div class="cc-name">Email</div><div class="cc-handle">contact@virtux.gg</div></div>
+            <div class="contact-card"><div class="cc-icon">🐦</div><div class="cc-name">Twitter / X</div><div class="cc-handle">@VirtuxGG</div></div>
+            <div class="contact-card"><div class="cc-icon">📸</div><div class="cc-name">Instagram</div><div class="cc-handle">@virtux.official</div></div>
+            <div class="contact-card"><div class="cc-icon">▶️</div><div class="cc-name">YouTube</div><div class="cc-handle">@VirtuxGaming</div></div>
           </div>
-            <input id="projects-url" placeholder="Project URL">
-          </div>
-          <button class="btn-pub" onclick="addPost('projects')">➕ Add</button>
         </div>
-        <div class="card"><h3>Projects</h3><div class="posts-list" id="list-projects"><div class="loading">Loading...</div></div></div>
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" class="modal">
+  <div class="modal-content">
+    <h3>Login to Virtux</h3>
+    <input type="text" id="loginName" placeholder="Enter your name">
+    <button onclick="performLogin()">Login</button>
+    <button onclick="closeLoginModal()" style="background:#333;margin-top:8px">Cancel</button>
   </div>
 </div>
 
 <script>
-const SB = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1';
-const KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
-const HDR = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
-let PASS = localStorage.getItem('vx_pw') || 'virtux2025';
+const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const SB = SUPABASE_URL + '/rest/v1';
 
-async function checkConn() {
-  try {
-    const r = await fetch(SB + '/posts?limit=1', { headers: HDR });
-    const el = document.getElementById('connStatus');
-    if (r.ok) { el.textContent = '✅ Connected'; el.className = 'conn'; }
-    else { el.textContent = '❌ Error ' + r.status; el.className = 'conn fail'; }
-  } catch(e) {
-    document.getElementById('connStatus').textContent = '❌ No Internet';
-    document.getElementById('connStatus').className = 'conn fail';
-  }
+let currentUser = null; // { name, role }
+let allPosts = {};
+
+// Login functions
+function openLoginModal() {
+  document.getElementById('loginModal').style.display = 'flex';
 }
-
-function login() {
-  if (document.getElementById('pw').value === PASS) {
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('adminPage').style.display = 'flex';
-    checkConn();
-    loadDashboard();
+function closeLoginModal() {
+  document.getElementById('loginModal').style.display = 'none';
+}
+async function performLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  if (!name) return;
+  // Check VIP members
+  let vipRes = await fetch(SB+'/vip_members?name=eq.'+encodeURIComponent(name), { headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY} });
+  let vipData = await vipRes.json();
+  if (vipData && vipData.length>0) {
+    currentUser = { name, role: 'vip' };
   } else {
-    document.getElementById('loginErr').style.display = 'block';
+    let regRes = await fetch(SB+'/regular_members?name=eq.'+encodeURIComponent(name), { headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY} });
+    let regData = await regRes.json();
+    if (regData && regData.length>0) {
+      currentUser = { name, role: 'member' };
+    } else {
+      alert('Name not found in VIP or Members list.');
+      return;
+    }
+  }
+  localStorage.setItem('vx_user', JSON.stringify(currentUser));
+  closeLoginModal();
+  updateUIForUser();
+  // Reload current page to apply VIP filters
+  const activePage = document.querySelector('.vx-page.active').id.replace('page-','');
+  if (activePage) loadPage(activePage);
+}
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('vx_user');
+  updateUIForUser();
+  // Reload current page
+  const activePage = document.querySelector('.vx-page.active').id.replace('page-','');
+  if (activePage) loadPage(activePage);
+}
+function updateUIForUser() {
+  const loginArea = document.getElementById('loginArea');
+  if (currentUser) {
+    loginArea.innerHTML = `<span class="user-badge">👑 ${currentUser.name} (${currentUser.role})</span><button class="logout-btn" onclick="logout()">Logout</button>`;
+    // Show VIP filters
+    document.querySelectorAll('[id^="vipFilter"]').forEach(btn => btn.style.display = 'inline-block');
+  } else {
+    loginArea.innerHTML = `<button class="login-btn" id="loginBtn" onclick="openLoginModal()">👤 Login</button>`;
+    document.querySelectorAll('[id^="vipFilter"]').forEach(btn => btn.style.display = 'none');
   }
 }
 
-function logout() {
-  document.getElementById('loginPage').style.display = 'flex';
-  document.getElementById('adminPage').style.display = 'none';
-  document.getElementById('pw').value = '';
+function toggleDD(id) {
+  document.querySelectorAll('.dd').forEach(d => { if(d.id!==id) d.classList.remove('open'); });
+  document.getElementById(id).classList.toggle('open');
 }
+function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open')); }
+document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
 
 function showPage(id) {
-  document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('ap-' + id).classList.add('active');
-  const s = document.getElementById('sb-' + id);
-  if (s) s.classList.add('active');
-  if (id === 'dashboard') loadDashboard();
-  else loadPosts(id);
+  document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const sb = document.getElementById('sb-'+id);
+  if(sb) sb.classList.add('active');
+  loadPage(id);
 }
 
-async function loadDashboard() {
+async function loadPage(room) {
+  if (room === 'home') {
+    loadHomeSections();
+    return;
+  }
+  if (room === 'vip-members' || room === 'regular-members') {
+    loadMembersList(room);
+    return;
+  }
+  const gridId = 'grid-'+room;
+  const el = document.getElementById(gridId);
+  if(!el) return;
+  el.innerHTML = '<div class="loading-state">Loading...</div>';
   try {
-    const r = await fetch(SB + '/posts?order=id.desc', { headers: HDR });
-    const data = await r.json();
-    if (!Array.isArray(data)) return;
-    document.getElementById('s-total').textContent = data.length;
-    document.getElementById('s-live').textContent = data.filter(p=>p.room==='live').length;
-    document.getElementById('s-tour').textContent = data.filter(p=>p.room==='tournaments').length;
-    document.getElementById('s-news').textContent = data.filter(p=>p.room==='gaming-news'||p.room==='youtube-news').length;
-    const el = document.getElementById('recent-list');
-    if (!data.length) { el.innerHTML = '<div class="empty">No posts yet.</div>'; return; }
-    el.innerHTML = '<div class="posts-list">'+data.slice(0,6).map(postHTML).join('')+'</div>';
-  } catch(e) {}
-}
-
-async function loadPosts(room) {
-  const el = document.getElementById('list-'+room);
-  if (!el) return;
-  el.innerHTML = '<div class="loading">Loading...</div>';
-  try {
-    const r = await fetch(SB + '/posts?room=eq.'+room+'&order=id.desc', { headers: HDR });
-    const data = await r.json();
-    if (!Array.isArray(data)||!data.length) { el.innerHTML='<div class="empty">No posts yet.</div>'; return; }
-    el.innerHTML = data.map(postHTML).join('');
-  } catch(e) { el.innerHTML='<div class="empty">Error loading.</div>'; }
-}
-
-function postHTML(p) {
-  const link = p.url ? ` • <a href="${p.url}" target="_blank" style="color:#9fb000;font-size:11px">🔗 Link</a>` : '';
-  const iconHtml = p.icon && p.icon.startsWith('data:') 
-    ? `<img src="${p.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">` 
-    : (p.icon||'📄');
-  return `<div class="pi" id="pi-${p.id}">
-    <div class="pi-icon">${iconHtml}</div>
-    <div class="pi-info">
-      <div class="pi-title">${p.title}</div>
-      <div class="pi-meta">${p.description||''}${link}</div>
-      <span class="pi-tag">${p.tag||p.room}</span>
-    </div>
-    <button class="btn-del" onclick="delPost(${p.id},'${p.room}')">🗑️ Delete</button>
-  </div>`;
-}
-
-function val(id) { const el=document.getElementById(id); return el?(el.value||'').trim():''; }
-function clear(id) { const el=document.getElementById(id); if(el) el.value=''; }
-
-async function addPost(room) {
-  const title = val(room+'-title');
-  if (!title) { alert('Please enter a title!'); return; }
-  const body = {
-    title,
-    description: val(room+'-desc'),
-    icon: (()=>{ const el=document.getElementById(room+'-icon'); return (el && el._imgData) ? el._imgData : (el ? el.value||'📄' : '📄'); })(),
-    url: val(room+'-url'),
-    tag: val(room+'-tag')||room,
-    room
-  };
-  const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='Publishing...'; }
-  try {
-    const r = await fetch(SB + '/posts', {
-      method: 'POST',
-      headers: { ...HDR, 'Prefer': 'return=representation' },
-      body: JSON.stringify(body)
-    });
-    if (r.ok) {
-      ['title','desc','icon','url'].forEach(f => clear(room+'-'+f));
-      // Clear image preview
-      const preview = document.getElementById(room+'-imgpreview');
-      if(preview) { preview.style.display='none'; preview.src=''; }
-      const fileInput = document.getElementById(room+'-imgfile');
-      if(fileInput) fileInput.value = '';
-      const ok = document.getElementById('ok-'+room);
-      ok.style.display='block';
-      setTimeout(()=>ok.style.display='none',3000);
-      loadPosts(room);
-      loadDashboard();
+    let url = SB+'/posts?room=eq.'+room+'&order=id.desc';
+    const r = await fetch(url, { headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY} });
+    let posts = await r.json();
+    if (!Array.isArray(posts)) posts = [];
+    // Filter VIP only based on user role
+    if (currentUser && currentUser.role === 'vip') {
+      // VIP can see everything
+    } else if (currentUser && currentUser.role === 'member') {
+      posts = posts.filter(p => !p.viponly);
     } else {
-      const err = await r.json();
-      const er = document.getElementById('er-'+room);
-      er.textContent = '❌ ' + (err.message||err.hint||'Error '+r.status);
-      er.style.display='block';
-      setTimeout(()=>er.style.display='none',5000);
+      posts = posts.filter(p => !p.viponly);
     }
+    allPosts[room] = posts;
+    renderCards(allPosts[room], gridId, room);
   } catch(e) {
-    const er = document.getElementById('er-'+room);
-    er.textContent = '❌ No internet connection';
-    er.style.display='block';
-    setTimeout(()=>er.style.display='none',5000);
-  } finally {
-    if(btn) { btn.disabled=false; btn.textContent='➕ Publish'; }
+    el.innerHTML = '<div class="empty-state">Could not load posts.</div>';
   }
 }
 
-async function delPost(id, room) {
-  if (!confirm('Delete this post?')) return;
-  await fetch(SB+'/posts?id=eq.'+id, { method:'DELETE', headers: HDR });
-  document.getElementById('pi-'+id)?.remove();
-  loadDashboard();
+function renderCards(posts, gridId, room) {
+  const el = document.getElementById(gridId);
+  if(!posts||!posts.length) { el.innerHTML='<div class="empty-state">No posts yet 🎮</div>'; return; }
+
+  if(room === 'yt-channels') {
+    el.innerHTML = posts.map(p => {
+      const isImg = p.icon && p.icon.startsWith('data:');
+      const avatar = isImg
+        ? `<img class="channel-avatar" src="${p.icon}">`
+        : `<div class="channel-avatar">${p.icon||'📺'}</div>`;
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">Visit Channel</a>` : '';
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${p.title}</div><div class="channel-sub">${p.description||''}</div></div>${link}</div>`;
+    }).join('');
+    return;
+  }
+
+  el.innerHTML = posts.map(p => {
+    const isImg = p.icon && p.icon.startsWith('data:');
+    let thumb = '';
+    if (p.url && (p.url.endsWith('.mp4') || p.url.endsWith('.webm') || p.url.includes('/videos/'))) {
+      thumb = `<video class="post-card-img" controls><source src="${p.url}" type="video/mp4"></video>`;
+    } else if (isImg) {
+      thumb = `<img class="post-card-img" src="${p.icon}">`;
+    } else {
+      thumb = `<div class="post-card-emoji">${p.icon||'📄'}${room==='live'&&p.tag==='Live Now'?'<div class="live-badge">LIVE</div>':''}</div>`;
+    }
+
+    let actions = '';
+    if(p.url) {
+      if(room==='yt-videos'||room==='yt-lives'||room==='youtube-news') {
+        actions += `<a href="${p.url}" target="_blank" class="post-link">▶️ Watch</a>`;
+      } else if(room==='highlights') {
+        if (p.url && (p.url.endsWith('.mp4') || p.url.endsWith('.webm'))) {
+          actions += `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ Download Video</a>`;
+        } else {
+          actions += `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ Download</a>`;
+        }
+        actions += `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
+      } else {
+        actions += `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
+      }
+    }
+
+    return `<div class="post-card">
+      ${thumb}
+      <div class="post-card-body">
+        <div class="post-card-title">${p.title}</div>
+        <div class="post-card-desc">${p.description||''}</div>
+        <div class="post-card-footer">
+          <span class="post-tag">${p.tag||''}</span>
+          ${actions}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function previewImg(room) {
-  const file = document.getElementById(room+'-imgfile').files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const preview = document.getElementById(room+'-imgpreview');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    // Store base64 in icon field as marker
-    document.getElementById(room+'-icon').value = '🖼️';
-    document.getElementById(room+'-icon')._imgData = e.target.result;
-  };
-  reader.readAsDataURL(file);
+function filterPosts(room, tag, btn) {
+  btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let posts = allPosts[room]||[];
+  if (tag === 'VIP Only') {
+    posts = posts.filter(p => p.viponly === true);
+  } else if (tag) {
+    posts = posts.filter(p => p.tag === tag);
+  }
+  renderCards(posts, 'grid-'+room, room);
 }
+
+async function loadHomeSections() {
+  const container = document.getElementById('home-sections-container');
+  container.innerHTML = '<div class="loading-state">Loading sections...</div>';
+  try {
+    const r = await fetch(SB+'/home_sections?order=order_num.asc', { headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY} });
+    const sections = await r.json();
+    if (!sections.length) {
+      container.innerHTML = '<div class="empty-state">No custom sections yet. Admin can add them.</div>';
+      return;
+    }
+    let html = '';
+    for (let s of sections) {
+      html += `<div class="home-section"><h3>${s.title}</h3><div class="home-section-content">`;
+      if (s.type === 'image' && s.url) {
+        html += `<img src="${s.url}" alt="${s.title}">`;
+        if (s.content) html += `<p>${s.content}</p>`;
+      } else if (s.type === 'video' && s.url) {
+        html += `<video controls src="${s.url}"></video>`;
+        if (s.content) html += `<p>${s.content}</p>`;
+      } else if (s.type === 'article') {
+        html += `<p>${s.content || ''}</p>`;
+        if (s.url) html += `<a href="${s.url}" target="_blank" class="post-link">Read more</a>`;
+      }
+      html += `</div></div>`;
+    }
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div class="empty-state">Error loading sections.</div>';
+  }
+}
+
+async function loadMembersList(type) {
+  const table = type === 'vip-members' ? 'vip_members' : 'regular_members';
+  const gridId = 'grid-'+type;
+  const el = document.getElementById(gridId);
+  el.innerHTML = '<div class="loading-state">Loading...</div>';
+  try {
+    const r = await fetch(SB+'/'+table+'?order=id.desc', { headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY} });
+    const members = await r.json();
+    if (!members.length) { el.innerHTML = '<div class="empty-state">No members yet.</div>'; return; }
+    el.innerHTML = members.map(m => `
+      <div class="channel-card">
+        <div class="channel-avatar">${m.avatar && m.avatar.startsWith('data:') ? `<img src="${m.avatar}" style="width:52px;height:52px;border-radius:50%;">` : (m.avatar||'👤')}</div>
+        <div class="channel-info"><div class="channel-name">${m.name}</div></div>
+      </div>
+    `).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Error loading.</div>'; }
+}
+
+// Restore session
+const savedUser = localStorage.getItem('vx_user');
+if (savedUser) {
+  currentUser = JSON.parse(savedUser);
+  updateUIForUser();
+}
+// Load default page
+loadPage('home');
 </script>
 </body>
 </html>
