@@ -37,8 +37,8 @@
     .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
     .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
     .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-    .fg input,.fg select{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif;width:100%}
-    .fg input:focus,.fg select:focus{outline:none;border-color:#9fb000}
+    .fg input,.fg select,.fg textarea{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif;width:100%}
+    .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#9fb000}
     .fg select option{background:#0a1540}
     .full{grid-column:1/-1}
     .btn-pub{background:#9fb000;color:#000;border:none;border-radius:7px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
@@ -50,7 +50,7 @@
     .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
     .pi:hover{border-color:#9fb000}
     .pi-icon{font-size:22px;width:36px;text-align:center}
-    .img-upload{display:flex;align-items:center;gap:8px}
+    .img-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .img-upload input[type=file]{display:none}
     .img-upload label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:7px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;white-space:nowrap}
     .img-upload label:hover{background:#2a3d90}
@@ -130,11 +130,11 @@
             <input class="full" id="live-title" placeholder="Stream title">
             <input id="live-desc" placeholder="Game • Type">
             <div class="img-upload full">
-            <input type="file" id="live-imgfile" accept="image/*" onchange="previewImg('live')">
-            <label for="live-imgfile">📁 Upload Image</label>
-            <input type="text" id="live-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="live-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="live-imgfile" accept="image/*" onchange="previewImg('live')">
+              <label for="live-imgfile">📁 Upload Image</label>
+              <input type="text" id="live-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="live-imgpreview" class="img-preview" src="">
+            </div>
             <select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select>
             <input class="full" id="live-url" placeholder="Stream URL (optional)">
           </div>
@@ -151,11 +151,11 @@
             <input class="full" id="tournaments-title" placeholder="Tournament name">
             <input id="tournaments-desc" placeholder="Game • Teams • Region">
             <div class="img-upload full">
-            <input type="file" id="tournaments-imgfile" accept="image/*" onchange="previewImg('tournaments')">
-            <label for="tournaments-imgfile">📁 Upload Image</label>
-            <input type="text" id="tournaments-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="tournaments-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="tournaments-imgfile" accept="image/*" onchange="previewImg('tournaments')">
+              <label for="tournaments-imgfile">📁 Upload Image</label>
+              <input type="text" id="tournaments-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="tournaments-imgpreview" class="img-preview" src="">
+            </div>
             <select id="tournaments-tag"><option value="Registration">📋 Registration</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select>
             <input class="full" id="tournaments-url" placeholder="Tournament URL (optional)">
           </div>
@@ -164,6 +164,7 @@
         <div class="card"><h3>Posts</h3><div class="posts-list" id="list-tournaments"><div class="loading">Loading...</div></div></div>
       </div>
 
+      <!-- Highlights مع إضافة رفع فيديو -->
       <div class="ap" id="ap-highlights">
         <div class="page-title">🎬 Highlights</div>
         <div class="card"><h3>➕ Add Highlight</h3>
@@ -172,11 +173,13 @@
             <input class="full" id="highlights-title" placeholder="Highlight title">
             <input id="highlights-desc" placeholder="Player • Game • Time">
             <div class="img-upload full">
-            <input type="file" id="highlights-imgfile" accept="image/*" onchange="previewImg('highlights')">
-            <label for="highlights-imgfile">📁 Upload Image</label>
-            <input type="text" id="highlights-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="highlights-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="highlights-imgfile" accept="image/*" onchange="previewImg('highlights')">
+              <label for="highlights-imgfile">📁 Upload Image</label>
+              <input type="file" id="highlights-videofile" accept="video/mp4,video/webm" onchange="uploadVideo('highlights')">
+              <label for="highlights-videofile">🎥 Upload Video (mp4/webm)</label>
+              <input type="text" id="highlights-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="highlights-imgpreview" class="img-preview" src="">
+            </div>
             <select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select>
             <input class="full" id="highlights-url" placeholder="Video/Image URL (optional)">
           </div>
@@ -185,6 +188,7 @@
         <div class="card"><h3>Posts</h3><div class="posts-list" id="list-highlights"><div class="loading">Loading...</div></div></div>
       </div>
 
+      <!-- Subscribers مع إضافة خيار VIP في التصنيف -->
       <div class="ap" id="ap-subscribers">
         <div class="page-title">👥 Subscribers</div>
         <div class="card"><h3>➕ Add Subscriber</h3>
@@ -193,12 +197,18 @@
             <input id="subscribers-title" placeholder="Name">
             <input id="subscribers-desc" placeholder="Followers count">
             <div class="img-upload full">
-            <input type="file" id="subscribers-imgfile" accept="image/*" onchange="previewImg('subscribers')">
-            <label for="subscribers-imgfile">📁 Upload Image</label>
-            <input type="text" id="subscribers-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="subscribers-imgpreview" class="img-preview" src="">
-          </div>
-            <select id="subscribers-tag"><option value="YouTube">🔔 YouTube</option><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option><option value="Collaboration">🌐 Collaboration</option></select>
+              <input type="file" id="subscribers-imgfile" accept="image/*" onchange="previewImg('subscribers')">
+              <label for="subscribers-imgfile">📁 Upload Image</label>
+              <input type="text" id="subscribers-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="subscribers-imgpreview" class="img-preview" src="">
+            </div>
+            <select id="subscribers-tag">
+              <option value="YouTube">🔔 YouTube</option>
+              <option value="Member">⭐ Member</option>
+              <option value="Donor">🎁 Donor</option>
+              <option value="Collaboration">🌐 Collaboration</option>
+              <option value="VIP">👑 VIP</option>
+            </select>
             <input class="full" id="subscribers-url" placeholder="Channel/Profile URL (optional)">
           </div>
           <button class="btn-pub" onclick="addPost('subscribers')">➕ Add</button>
@@ -214,11 +224,11 @@
             <input class="full" id="gaming-news-title" placeholder="News title">
             <input class="full" id="gaming-news-desc" placeholder="Description">
             <div class="img-upload full">
-            <input type="file" id="gaming-news-imgfile" accept="image/*" onchange="previewImg('gaming-news')">
-            <label for="gaming-news-imgfile">📁 Upload Image</label>
-            <input type="text" id="gaming-news-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="gaming-news-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="gaming-news-imgfile" accept="image/*" onchange="previewImg('gaming-news')">
+              <label for="gaming-news-imgfile">📁 Upload Image</label>
+              <input type="text" id="gaming-news-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="gaming-news-imgpreview" class="img-preview" src="">
+            </div>
             <input id="gaming-news-url" placeholder="Image or article URL">
           </div>
           <button class="btn-pub" onclick="addPost('gaming-news')">➕ Publish</button>
@@ -234,11 +244,11 @@
             <input class="full" id="youtube-news-title" placeholder="Title">
             <input class="full" id="youtube-news-desc" placeholder="Description">
             <div class="img-upload full">
-            <input type="file" id="youtube-news-imgfile" accept="image/*" onchange="previewImg('youtube-news')">
-            <label for="youtube-news-imgfile">📁 Upload Image</label>
-            <input type="text" id="youtube-news-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="youtube-news-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="youtube-news-imgfile" accept="image/*" onchange="previewImg('youtube-news')">
+              <label for="youtube-news-imgfile">📁 Upload Image</label>
+              <input type="text" id="youtube-news-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="youtube-news-imgpreview" class="img-preview" src="">
+            </div>
             <input id="youtube-news-url" placeholder="YouTube video URL">
           </div>
           <button class="btn-pub" onclick="addPost('youtube-news')">➕ Publish</button>
@@ -254,11 +264,11 @@
             <input id="yt-channels-title" placeholder="Channel name">
             <input id="yt-channels-desc" placeholder="Subscribers count">
             <div class="img-upload full">
-            <input type="file" id="yt-channels-imgfile" accept="image/*" onchange="previewImg('yt-channels')">
-            <label for="yt-channels-imgfile">📁 Upload Image</label>
-            <input type="text" id="yt-channels-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="yt-channels-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="yt-channels-imgfile" accept="image/*" onchange="previewImg('yt-channels')">
+              <label for="yt-channels-imgfile">📁 Upload Image</label>
+              <input type="text" id="yt-channels-icon" placeholder="Or type emoji (e.g. 📺)">
+              <img id="yt-channels-imgpreview" class="img-preview" src="">
+            </div>
             <input id="yt-channels-url" placeholder="Channel URL">
           </div>
           <button class="btn-pub" onclick="addPost('yt-channels')">➕ Add</button>
@@ -274,11 +284,11 @@
             <input class="full" id="yt-videos-title" placeholder="Video title">
             <input id="yt-videos-desc" placeholder="Description">
             <div class="img-upload full">
-            <input type="file" id="yt-videos-imgfile" accept="image/*" onchange="previewImg('yt-videos')">
-            <label for="yt-videos-imgfile">📁 Upload Image</label>
-            <input type="text" id="yt-videos-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="yt-videos-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="yt-videos-imgfile" accept="image/*" onchange="previewImg('yt-videos')">
+              <label for="yt-videos-imgfile">📁 Upload Image</label>
+              <input type="text" id="yt-videos-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="yt-videos-imgpreview" class="img-preview" src="">
+            </div>
             <input class="full" id="yt-videos-url" placeholder="YouTube video URL">
             <select id="yt-videos-tag" class="full"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select>
           </div>
@@ -295,11 +305,11 @@
             <input class="full" id="yt-lives-title" placeholder="Stream title">
             <input id="yt-lives-desc" placeholder="Game • Description">
             <div class="img-upload full">
-            <input type="file" id="yt-lives-imgfile" accept="image/*" onchange="previewImg('yt-lives')">
-            <label for="yt-lives-imgfile">📁 Upload Image</label>
-            <input type="text" id="yt-lives-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="yt-lives-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="yt-lives-imgfile" accept="image/*" onchange="previewImg('yt-lives')">
+              <label for="yt-lives-imgfile">📁 Upload Image</label>
+              <input type="text" id="yt-lives-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="yt-lives-imgpreview" class="img-preview" src="">
+            </div>
             <input class="full" id="yt-lives-url" placeholder="YouTube live URL">
             <select id="yt-lives-tag" class="full"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select>
           </div>
@@ -316,11 +326,11 @@
             <input class="full" id="projects-title" placeholder="Project name">
             <input class="full" id="projects-desc" placeholder="Description">
             <div class="img-upload full">
-            <input type="file" id="projects-imgfile" accept="image/*" onchange="previewImg('projects')">
-            <label for="projects-imgfile">📁 Upload Image</label>
-            <input type="text" id="projects-icon" placeholder="Or type emoji (e.g. 🎮)">
-            <img id="projects-imgpreview" class="img-preview" src="">
-          </div>
+              <input type="file" id="projects-imgfile" accept="image/*" onchange="previewImg('projects')">
+              <label for="projects-imgfile">📁 Upload Image</label>
+              <input type="text" id="projects-icon" placeholder="Or type emoji (e.g. 🎮)">
+              <img id="projects-imgpreview" class="img-preview" src="">
+            </div>
             <input id="projects-url" placeholder="Project URL">
           </div>
           <button class="btn-pub" onclick="addPost('projects')">➕ Add</button>
@@ -335,6 +345,7 @@
 <script>
 const SB = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1';
 const KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const STORAGE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/storage/v1/object/public';
 const HDR = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
 let PASS = localStorage.getItem('vx_pw') || 'virtux2025';
 
@@ -444,11 +455,12 @@ async function addPost(room) {
     });
     if (r.ok) {
       ['title','desc','icon','url'].forEach(f => clear(room+'-'+f));
-      // Clear image preview
       const preview = document.getElementById(room+'-imgpreview');
       if(preview) { preview.style.display='none'; preview.src=''; }
       const fileInput = document.getElementById(room+'-imgfile');
       if(fileInput) fileInput.value = '';
+      const videoInput = document.getElementById(room+'-videofile');
+      if(videoInput) videoInput.value = '';
       const ok = document.getElementById('ok-'+room);
       ok.style.display='block';
       setTimeout(()=>ok.style.display='none',3000);
@@ -486,11 +498,33 @@ function previewImg(room) {
     const preview = document.getElementById(room+'-imgpreview');
     preview.src = e.target.result;
     preview.style.display = 'block';
-    // Store base64 in icon field as marker
     document.getElementById(room+'-icon').value = '🖼️';
     document.getElementById(room+'-icon')._imgData = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+async function uploadVideo(room) {
+  const fileInput = document.getElementById(room+'-videofile');
+  const file = fileInput.files[0];
+  if (!file) return;
+  const fileName = Date.now() + '_' + file.name;
+  const filePath = `videos/${fileName}`;
+  const uploadUrl = `https://eyqcpkhjzpmawqtilhgl.supabase.co/storage/v1/object/videos/${filePath}`;
+  try {
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + KEY },
+      body: file
+    });
+    if (res.ok) {
+      const publicUrl = `${STORAGE_URL}/videos/${filePath}`;
+      document.getElementById(room+'-url').value = publicUrl;
+      alert('Video uploaded successfully! URL added.');
+    } else {
+      alert('Upload failed. Make sure bucket "videos" exists.');
+    }
+  } catch(e) { alert('Error uploading video'); }
 }
 </script>
 </body>
