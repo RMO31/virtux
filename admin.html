@@ -37,15 +37,6 @@
     .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
     .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
     .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
-    .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-    .fg input,.fg select,.fg textarea{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;width:100%}
-    .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#9fb000}
-    .full{grid-column:1/-1}
-    .btn-pub{background:#9fb000;color:#000;border:none;border-radius:7px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer}
-    .btn-pub:hover{background:#d4e800}
-    .btn-pub:disabled{background:#445;color:#778;cursor:not-allowed}
-    .ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-    .er{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
     .posts-list{display:flex;flex-direction:column;gap:8px}
     .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
     .pi-icon{width:40px;height:40px;border-radius:6px;object-fit:cover;display:flex;align-items:center;justify-content:center;background:#0f1e55;font-size:20px}
@@ -55,14 +46,8 @@
     .pi-tag{display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:3px;padding:1px 7px;margin-top:3px}
     .btn-del{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer}
     .btn-del:hover{background:#f55;color:#fff}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-    .sc{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;text-align:center}
-    .sc-num{font-size:30px;font-weight:700;color:#d4e800}
-    .sc-lbl{font-size:11px;color:#667;margin-top:4px}
-    .img-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .img-upload input[type=file]{display:none}
-    .img-upload label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:7px;padding:8px 12px;font-size:12px;cursor:pointer}
-    .img-preview{width:40px;height:40px;border-radius:6px;object-fit:cover;display:none}
+    .empty{text-align:center;color:#667;padding:20px}
+    .loading{text-align:center;color:#667;padding:20px}
   </style>
 </head>
 <body>
@@ -106,16 +91,8 @@
     <div class="main">
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
-        <div class="stats" id="rooms-stats"></div>
-        <div class="stats">
-          <div class="sc"><div class="sc-num" id="visitors-today">—</div><div class="sc-lbl">Visitors Today</div></div>
-          <div class="sc"><div class="sc-num" id="visitors-total">—</div><div class="sc-lbl">Total Visitors</div></div>
-          <div class="sc"><div class="sc-num" id="registered-users">—</div><div class="sc-lbl">Registered Users</div></div>
-        </div>
-        <div class="card"><h3>📋 Registered Users</h3><div id="users-list"><div class="loading">Loading...</div></div></div>
+        <div class="card"><h3>Admin Panel</h3><p>Use sidebar to manage posts.</p></div>
       </div>
-
-      <!-- باقي الأقسام: تم تبسيطها للاختصار، لكنها تعمل بنفس الطريقة -->
       <div class="ap" id="ap-live"><div class="page-title">🔴 Live</div><div id="list-live" class="posts-list"><div class="loading">Loading...</div></div></div>
       <div class="ap" id="ap-tournaments"><div class="page-title">🏆 Tournaments</div><div id="list-tournaments" class="posts-list"><div class="loading">Loading...</div></div></div>
       <div class="ap" id="ap-highlights"><div class="page-title">🎬 Highlights</div><div id="list-highlights" class="posts-list"><div class="loading">Loading...</div></div></div>
@@ -145,7 +122,6 @@ function login() {
     loginPage.style.display = 'none';
     adminPage.style.display = 'flex';
     checkConn();
-    loadDashboard();
   } else {
     loginErr.style.display = 'block';
   }
@@ -165,37 +141,6 @@ async function checkConn() {
     document.getElementById('connStatus').textContent = '❌ No Internet';
     document.getElementById('connStatus').className = 'conn fail';
   }
-}
-async function loadDashboard() {
-  try {
-    const { data: posts } = await supabase.from('posts').select('room');
-    if (posts) {
-      const rooms = ['live','tournaments','highlights','subscribers','gaming-news','youtube-news','yt-channels','yt-videos','yt-lives','projects'];
-      const roomsHtml = rooms.map(room => {
-        const count = posts.filter(p => p.room === room).length;
-        let label = room.replace('-',' ').replace(/(?:^|\s)\S/g, c => c.toUpperCase());
-        if (label === 'Yt Channels') label = 'YT Channels';
-        if (label === 'Yt Videos') label = 'YT Videos';
-        if (label === 'Yt Lives') label = 'YT Lives';
-        return `<div class="sc"><div class="sc-num">${count}</div><div class="sc-lbl">${label}</div></div>`;
-      }).join('');
-      document.getElementById('rooms-stats').innerHTML = roomsHtml;
-    }
-    const { data: visitorStats } = await supabase.rpc('get_visitor_stats');
-    if (visitorStats) {
-      document.getElementById('visitors-today').textContent = visitorStats.today || 0;
-      document.getElementById('visitors-total').textContent = visitorStats.total || 0;
-    }
-    const { data: userCount } = await supabase.rpc('get_user_count');
-    if (userCount !== undefined) document.getElementById('registered-users').textContent = userCount;
-    const { data: users } = await supabase.rpc('get_users_list');
-    if (users && users.length) {
-      const usersHtml = `<table class="users-table"><thead><tr><th>Email</th><th>Registered At</th></tr></thead><tbody>${users.map(u => `<tr><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
-      document.getElementById('users-list').innerHTML = usersHtml;
-    } else {
-      document.getElementById('users-list').innerHTML = '<div class="empty">No users yet.</div>';
-    }
-  } catch(e) { console.error(e); }
 }
 async function loadPosts(room) {
   const el = document.getElementById('list-'+room);
@@ -233,7 +178,6 @@ async function delPost(id, room) {
   const { error } = await supabase.from('posts').delete().eq('id', id);
   if (!error) {
     document.getElementById('pi-'+id)?.remove();
-    loadDashboard();
     loadPosts(room);
   } else alert('Delete failed: '+error.message);
 }
@@ -243,167 +187,7 @@ function showPage(id) {
   document.getElementById('ap-' + id).classList.add('active');
   const sb = document.getElementById('sb-' + id);
   if (sb) sb.classList.add('active');
-  if (id === 'dashboard') loadDashboard();
-  else loadPosts(id);
-}
-// دوال إضافة المنشورات العادية (مثال)
-function val(id) { const el=document.getElementById(id); return el?el.value.trim():''; }
-function clear(id) { const el=document.getElementById(id); if(el) el.value=''; }
-async function addPost(room) {
-  const title = val(room+'-title');
-  if (!title) { alert('Please enter a title'); return; }
-  const iconEl = document.getElementById(room+'-icon');
-  const icon = (iconEl && iconEl._imgData) ? iconEl._imgData : (iconEl ? iconEl.value||'📄' : '📄');
-  const body = {
-    title, description: val(room+'-desc'), icon, url: val(room+'-url'), tag: val(room+'-tag')||room, room,
-    content: val(room+'-content') || null
-  };
-  const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='Publishing...'; }
-  const { error } = await supabase.from('posts').insert(body);
-  if (!error) {
-    ['title','desc','icon','url','content'].forEach(f => clear(room+'-'+f));
-    const preview = document.getElementById(room+'-imgpreview');
-    if(preview) { preview.style.display='none'; preview.src=''; }
-    const fileInput = document.getElementById(room+'-imgfile');
-    if(fileInput) fileInput.value = '';
-    const ok = document.getElementById('ok-'+room);
-    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
-    loadPosts(room); loadDashboard();
-  } else {
-    const er = document.getElementById('er-'+room);
-    if(er) { er.textContent = '❌ '+error.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
-  }
-  if(btn) { btn.disabled=false; btn.textContent='➕ Publish'; }
-}
-function previewImg(room) {
-  const file = document.getElementById(room+'-imgfile').files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const preview = document.getElementById(room+'-imgpreview');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    document.getElementById(room+'-icon').value = '🖼️';
-    document.getElementById(room+'-icon')._imgData = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-async function uploadVideo(room) {
-  const fileInput = document.getElementById(room+'-videofile');
-  const file = fileInput.files[0];
-  if (!file) return;
-  const fileName = Date.now() + '_' + file.name;
-  const filePath = `videos/${fileName}`;
-  const { error } = await supabase.storage.from('videos').upload(filePath, file);
-  if (!error) {
-    const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(filePath);
-    document.getElementById(room+'-url').value = publicUrl;
-    alert('Video uploaded successfully! URL added.');
-  } else {
-    alert('Upload failed. Make sure bucket "videos" exists.');
-  }
-}
-// دوال يوتيوب باستخدام Invidious (بدون مفتاح API)
-async function fetchYouTubeChannelInfo(url) {
-  try {
-    let channelId = null, handle = null;
-    if (url.includes('/channel/')) channelId = url.split('/channel/')[1]?.split(/[\/?]/)[0];
-    else if (url.includes('/c/')) channelId = url.split('/c/')[1]?.split(/[\/?]/)[0];
-    else if (url.includes('@')) handle = url.split('@')[1]?.split(/[\/?]/)[0];
-    else return null;
-    let apiUrl = '';
-    if (channelId) apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-    else if (handle) {
-      const searchUrl = `https://invidious.snopyta.org/api/v1/search?q=${handle}&type=channel`;
-      const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
-      if (searchData && searchData.length > 0) {
-        channelId = searchData[0].authorId;
-        apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-      } else return null;
-    } else return null;
-    const res = await fetch(apiUrl);
-    const data = await res.json();
-    if (data && data.author) {
-      return {
-        title: data.author,
-        subscribers: data.subscriberCount ? data.subscriberCount.toLocaleString() : '0',
-        thumbnail: data.authorThumbnails && data.authorThumbnails[0] ? data.authorThumbnails[0].url : 'https://via.placeholder.com/80?text=YouTube'
-      };
-    }
-    return null;
-  } catch(e) { console.error(e); return null; }
-}
-async function fetchYouTubeVideoInfo(url) {
-  try {
-    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
-    if (!videoIdMatch) return null;
-    const videoId = videoIdMatch[1];
-    const apiUrl = `https://invidious.snopyta.org/api/v1/videos/${videoId}`;
-    const res = await fetch(apiUrl);
-    const data = await res.json();
-    if (data && data.title) {
-      return {
-        title: data.title,
-        description: data.author,
-        thumbnail: data.videoThumbnails && data.videoThumbnails[4] ? data.videoThumbnails[4].url : `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
-      };
-    }
-    return null;
-  } catch(e) { console.error(e); return null; }
-}
-async function addYouTubeChannel(room) {
-  const url = document.getElementById(room+'-url').value.trim();
-  if (!url) { alert('Please enter a YouTube channel URL'); return; }
-  const info = await fetchYouTubeChannelInfo(url);
-  if (!info) { alert('Could not fetch channel info. Check URL or try again later.'); return; }
-  const tag = document.getElementById(room+'-tag')?.value || room;
-  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
-  const body = {
-    title: info.title, description: `${info.subscribers} subscribers`, icon: info.thumbnail, url, tag, room,
-    content: extraContent, user_id: null, user_email: null
-  };
-  const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='Adding...'; }
-  const { error } = await supabase.from('posts').insert(body);
-  if (!error) {
-    document.getElementById(room+'-url').value = '';
-    if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
-    const ok = document.getElementById('ok-'+room);
-    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
-    loadPosts(room); loadDashboard();
-  } else {
-    const er = document.getElementById('er-'+room);
-    if(er) { er.textContent = '❌ '+error.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
-  }
-  if(btn) { btn.disabled=false; btn.textContent='➕ Add'; }
-}
-async function addYouTubeVideo(room) {
-  const url = document.getElementById(room+'-url').value.trim();
-  if (!url) { alert('Please enter a YouTube video URL'); return; }
-  const info = await fetchYouTubeVideoInfo(url);
-  if (!info) { alert('Could not fetch video info. Check URL or try again later.'); return; }
-  const tag = document.getElementById(room+'-tag')?.value || room;
-  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
-  const body = {
-    title: info.title, description: info.description, icon: info.thumbnail, url, tag, room,
-    content: extraContent, user_id: null, user_email: null
-  };
-  const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='Adding...'; }
-  const { error } = await supabase.from('posts').insert(body);
-  if (!error) {
-    document.getElementById(room+'-url').value = '';
-    if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
-    const ok = document.getElementById('ok-'+room);
-    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
-    loadPosts(room); loadDashboard();
-  } else {
-    const er = document.getElementById('er-'+room);
-    if(er) { er.textContent = '❌ '+error.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
-  }
-  if(btn) { btn.disabled=false; btn.textContent='➕ Add'; }
+  if (id !== 'dashboard') loadPosts(id);
 }
 </script>
 </body>
