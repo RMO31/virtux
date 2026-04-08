@@ -7,7 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* جميع الأنماط السابقة - تم حذفها للاختصار، لكنها موجودة في الملف السابق */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -123,14 +122,37 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home"><div class="home-hero"><h1>Welcome to Virtux 🎮</h1><p>Your English-speaking gaming community</p></div><div class="empty-home"><p>✨ Home page content will be added soon.</p></div></div>
 
-      <!-- باقي الأقسام (نفس النسخة السابقة) - للاختصار لم أكررها، لكنها موجودة في ملفك الحالي -->
-      <!-- سأضع الأقسام الأساسية فقط، يمكنك نسخ باقي الأقسام من ملفك القديم -->
-      <div class="vx-page" id="page-live">...</div>
-      <div class="vx-page" id="page-tournaments">...</div>
-      <div class="vx-page" id="page-highlights">...</div>
+      <!-- Live -->
+      <div class="vx-page" id="page-live"><div class="page-header"><h2>🔴 Live Streams</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('live','',this)">All</button><button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="filterPosts('live','VIP',this)">👑 VIP</button></div><div id="addForm-live" class="add-form"><h3>➕ إضافة بث مباشر جديد</h3><div class="fg"><input class="full" id="live-title" placeholder="عنوان البث"><textarea id="live-desc" placeholder="وصف مختصر" rows="2"></textarea><div class="img-upload full"><input type="file" id="live-imgfile" accept="image/*"><label for="live-imgfile">📁 رفع صورة</label><input type="text" id="live-icon" placeholder="رمز تعبيري"><img id="live-imgpreview" class="img-preview"></div><select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select><input class="full" id="live-url" placeholder="رابط البث (اختياري)"><textarea class="full" id="live-content" placeholder="محتوى طويل" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('live')">نشر</button></div><div class="posts-grid" id="grid-live"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- Tournaments -->
+      <div class="vx-page" id="page-tournaments"><div class="page-header"><h2>🏆 Tournaments</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">👑 VIP</button></div><div id="addForm-tournaments" class="add-form"><h3>➕ إضافة بطولة</h3><div class="fg"><input class="full" id="tournaments-title" placeholder="اسم البطولة"><input id="tournaments-desc" placeholder="اللعبة • الفرق"><div class="img-upload full"><input type="file" id="tournaments-imgfile" accept="image/*"><label>📁 صورة</label><input type="text" id="tournaments-icon" placeholder="رمز"><img id="tournaments-imgpreview"></div><select id="tournaments-tag"><option value="Registration">📋 تسجيل</option><option value="Tournament News">📰 أخبار</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option></select><input class="full" id="tournaments-url" placeholder="رابط"><textarea class="full" id="tournaments-content" placeholder="محتوى طويل" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('tournaments')">نشر</button></div><div class="posts-grid" id="grid-tournaments"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- Highlights -->
+      <div class="vx-page" id="page-highlights"><div class="page-header"><h2>🎬 Highlights</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="filterPosts('highlights','Video',this)">📹 Video</button><button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">📷 Photo</button></div><div id="addForm-highlights" class="add-form"><h3>➕ إضافة مقطع مميز</h3><div class="fg"><input class="full" id="highlights-title" placeholder="العنوان"><input id="highlights-desc" placeholder="اللاعب • اللعبة"><div class="img-upload full"><input type="file" id="highlights-imgfile" accept="image/*"><label>📁 صورة</label><input type="file" id="highlights-videofile" accept="video/*"><label>🎥 فيديو</label><input type="text" id="highlights-icon" placeholder="رمز"><img id="highlights-imgpreview"></div><select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Photo">📷 صورة</option><option value="Video">📹 فيديو</option></select><input class="full" id="highlights-url" placeholder="رابط"><textarea class="full" id="highlights-content" placeholder="محتوى" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('highlights')">نشر</button></div><div class="posts-grid" id="grid-highlights"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- Subscribers (شبكة مربعات) -->
       <div class="vx-page" id="page-subscribers"><div class="page-header"><h2>👥 Subscribers</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('subscribers','',this)">All</button><button class="filter-btn" onclick="filterPosts('subscribers','YouTube',this)">🔔 YouTube</button><button class="filter-btn" onclick="filterPosts('subscribers','Member',this)">⭐ Members</button><button class="filter-btn" onclick="filterPosts('subscribers','Donor',this)">🎁 Donors</button><button class="filter-btn" onclick="filterPosts('subscribers','VIP',this)">👑 VIP</button></div><div id="addForm-subscribers" class="add-form"><h3>➕ إضافة قناة يوتيوب</h3><div class="fg"><input class="full" id="subscribers-url" placeholder="رابط قناة يوتيوب"><select id="subscribers-tag"><option value="YouTube">🔔 YouTube</option><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option><option value="Collaboration">🌐 Collaboration</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="subscribers-content" placeholder="وصف إضافي" rows="3"></textarea></div><button class="btn-submit" onclick="submitYouTubeChannel('subscribers')">نشر</button></div><div class="channels-grid" id="grid-subscribers"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- Gaming News -->
+      <div class="vx-page" id="page-gaming-news"><div class="page-header"><h2>📰 Gaming News</h2></div><div id="addForm-gaming-news" class="add-form"><h3>➕ إضافة خبر</h3><div class="fg"><input class="full" id="gaming-news-title" placeholder="العنوان"><textarea class="full" id="gaming-news-desc" placeholder="ملخص" rows="2"></textarea><div class="img-upload full"><input type="file" id="gaming-news-imgfile" accept="image/*"><label>📁 صورة</label><input type="text" id="gaming-news-icon" placeholder="رمز"><img id="gaming-news-imgpreview"></div><input class="full" id="gaming-news-url" placeholder="رابط الخبر"><textarea class="full" id="gaming-news-content" placeholder="المقال كامل" rows="5"></textarea></div><button class="btn-submit" onclick="submitPost('gaming-news')">نشر</button></div><div class="posts-grid" id="grid-gaming-news"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- Youtube News -->
+      <div class="vx-page" id="page-youtube-news"><div class="page-header"><h2>▶️ Youtube News</h2></div><div id="addForm-youtube-news" class="add-form"><h3>➕ إضافة خبر يوتيوب</h3><div class="fg"><input class="full" id="youtube-news-title" placeholder="العنوان"><textarea class="full" id="youtube-news-desc" placeholder="ملخص" rows="2"></textarea><div class="img-upload full"><input type="file" id="youtube-news-imgfile" accept="image/*"><label>📁 صورة</label><input type="text" id="youtube-news-icon" placeholder="رمز"><img id="youtube-news-imgpreview"></div><input class="full" id="youtube-news-url" placeholder="رابط الفيديو/الخبر"><textarea class="full" id="youtube-news-content" placeholder="المقال" rows="5"></textarea></div><button class="btn-submit" onclick="submitPost('youtube-news')">نشر</button></div><div class="posts-grid" id="grid-youtube-news"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- YT Channels (شبكة مربعات) -->
       <div class="vx-page" id="page-yt-channels"><div class="page-header"><h2>📺 Youtube Channels</h2></div><div id="addForm-yt-channels" class="add-form"><h3>➕ إضافة قناة يوتيوب</h3><div class="fg"><input class="full" id="yt-channels-url" placeholder="رابط قناة يوتيوب"><textarea class="full" id="yt-channels-content" placeholder="وصف إضافي" rows="3"></textarea></div><button class="btn-submit" onclick="submitYouTubeChannel('yt-channels')">نشر</button></div><div class="channels-grid" id="grid-yt-channels"><div class="loading-state">Loading...</div></div></div>
-      <!-- باقي الأقسام (gaming-news, youtube-news, yt-videos, yt-lives, projects) يمكنك إضافتها بنفس النمط -->
+
+      <!-- YT Videos -->
+      <div class="vx-page" id="page-yt-videos"><div class="page-header"><h2>🎬 Youtube Videos</h2></div><div id="addForm-yt-videos" class="add-form"><h3>➕ إضافة فيديو</h3><div class="fg"><input class="full" id="yt-videos-url" placeholder="رابط فيديو يوتيوب"><select id="yt-videos-tag" class="full"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="yt-videos-content" placeholder="وصف" rows="3"></textarea></div><button class="btn-submit" onclick="submitYouTubeVideo('yt-videos')">نشر</button></div><div class="posts-grid" id="grid-yt-videos"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- YT Lives -->
+      <div class="vx-page" id="page-yt-lives"><div class="page-header"><h2>🔴 Youtube Lives</h2></div><div id="addForm-yt-lives" class="add-form"><h3>➕ إضافة بث مباشر</h3><div class="fg"><input class="full" id="yt-lives-url" placeholder="رابط بث يوتيوب"><select id="yt-lives-tag" class="full"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="yt-lives-content" placeholder="وصف" rows="3"></textarea></div><button class="btn-submit" onclick="submitYouTubeVideo('yt-lives')">نشر</button></div><div class="posts-grid" id="grid-yt-lives"><div class="loading-state">Loading...</div></div></div>
+
+      <!-- Projects -->
+      <div class="vx-page" id="page-projects"><div class="page-header"><h2>🌐 Projects</h2></div><div id="addForm-projects" class="add-form"><h3>➕ إضافة مشروع</h3><div class="fg"><input class="full" id="projects-title" placeholder="اسم المشروع"><textarea class="full" id="projects-desc" placeholder="وصف قصير" rows="2"></textarea><div class="img-upload full"><input type="file" id="projects-imgfile" accept="image/*"><label>📁 صورة</label><input type="text" id="projects-icon" placeholder="رمز"><img id="projects-imgpreview"></div><input class="full" id="projects-url" placeholder="رابط المشروع"><textarea class="full" id="projects-content" placeholder="تفاصيل" rows="5"></textarea></div><button class="btn-submit" onclick="submitPost('projects')">نشر</button></div><div class="posts-grid" id="grid-projects"><div class="loading-state">Loading...</div></div></div>
+
+      <div class="vx-page" id="page-contact"><div class="page-header"><h2>📞 Contact Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/virtux</div></div><div class="contact-card"><div class="cc-icon">📧</div><div class="cc-name">Email</div><div class="cc-handle">contact@virtux.gg</div></div><div class="contact-card"><div class="cc-icon">🐦</div><div class="cc-name">Twitter / X</div><div class="cc-handle">@VirtuxGG</div></div><div class="contact-card"><div class="cc-icon">📸</div><div class="cc-name">Instagram</div><div class="cc-handle">@virtux.official</div></div><div class="contact-card"><div class="cc-icon">▶️</div><div class="cc-name">YouTube</div><div class="cc-handle">@VirtuxGaming</div></div></div></div></div>
     </div>
   </div>
 </div>
@@ -142,7 +164,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 let currentUser = null;
 let allPosts = {};
 
-// دوال المصادقة (نفس السابق)
+// Auth functions
 async function checkAuth() {
   const { data: { user } } = await supabase.auth.getUser();
   currentUser = user;
@@ -182,7 +204,7 @@ async function logout() {
   checkAuth();
 }
 
-// دوال عرض المنشورات (نفس السابق مع تعديل بسيط لدعم الشبكة)
+// Display functions
 async function loadPage(room) {
   let gridId = (room === 'subscribers' || room === 'yt-channels') ? 'grid-'+room : 'grid-'+room;
   const el = document.getElementById(gridId);
@@ -219,14 +241,58 @@ function renderCards(posts, gridId, room) {
     }).join('');
     return;
   }
-  // باقي الأقسام (بطاقات عادية) - اختصار
-  el.innerHTML = posts.map(p => `<div class="post-card">...</div>`).join('');
+  // باقي الأقسام (بطاقات عادية)
+  el.innerHTML = posts.map(p => {
+    const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+    const thumb = isImg ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
+    let summary = '';
+    if (p.content) summary = p.content.substring(0, 150).trim() + (p.content.length > 150 ? '...' : '');
+    else if (p.description) summary = p.description.substring(0, 150);
+    const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
+    let actions = '';
+    if (p.url) {
+      if (room === 'yt-videos' || room === 'yt-lives' || room === 'youtube-news') actions += `<a href="${p.url}" target="_blank" class="post-link">▶️ Watch</a>`;
+      else if (room === 'highlights') { actions += `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ Download</a>`; actions += `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`; }
+      else actions += `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
+    }
+    return `<div class="post-card">
+      ${thumb}
+      <div class="post-card-body">
+        <div class="post-card-title">${p.title}</div>
+        <div class="post-card-summary">${summary}</div>
+        <div class="post-card-footer">
+          <span class="post-tag">${p.tag || ''}</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">${actions}${readMoreLink}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
-function filterPosts(room, tag, btn) { /* نفس السابق */ }
-function showPage(id) { /* نفس السابق */ }
-function loadCurrentPage() { /* نفس السابق */ }
+function filterPosts(room, tag, btn) {
+  btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const posts = allPosts[room] || [];
+  const filtered = tag ? posts.filter(p => p.tag === tag) : posts;
+  const gridId = (room === 'subscribers' || room === 'yt-channels') ? 'grid-'+room : 'grid-'+room;
+  renderCards(filtered, gridId, room);
+}
+function showPage(id) {
+  document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const sb = document.getElementById('sb-' + id);
+  if (sb) sb.classList.add('active');
+  if (id !== 'home' && id !== 'contact') loadPage(id);
+}
+function loadCurrentPage() {
+  const activePage = document.querySelector('.vx-page.active');
+  if (activePage) {
+    const id = activePage.id.replace('page-', '');
+    if (id !== 'home' && id !== 'contact') loadPage(id);
+  }
+}
 
-// دوال النشر العامة
+// Submit post (generic)
 async function submitPost(room) {
   if (!currentUser) { alert('يجب تسجيل الدخول أولاً'); return; }
   const title = document.getElementById(room+'-title')?.value.trim();
@@ -254,40 +320,25 @@ async function submitPost(room) {
   loadPage(room);
 }
 
-// دوال يوتيوب الجديدة باستخدام Invidious (بدون مفتاح API)
+// YouTube functions using Invidious (no API key)
 async function fetchYouTubeChannelInfo(url) {
   try {
-    // استخراج معرف القناة أو اسم المستخدم من الرابط
-    let channelId = null;
-    let handle = null;
-    if (url.includes('/channel/')) {
-      channelId = url.split('/channel/')[1]?.split(/[\/?]/)[0];
-    } else if (url.includes('/c/')) {
-      channelId = url.split('/c/')[1]?.split(/[\/?]/)[0];
-    } else if (url.includes('@')) {
-      handle = url.split('@')[1]?.split(/[\/?]/)[0];
-    } else {
-      // ربما رابط مباشر مثل youtube.com/user/... نادر
-      return null;
-    }
-    // استخدام واجهة Invidious العامة
+    let channelId = null, handle = null;
+    if (url.includes('/channel/')) channelId = url.split('/channel/')[1]?.split(/[\/?]/)[0];
+    else if (url.includes('/c/')) channelId = url.split('/c/')[1]?.split(/[\/?]/)[0];
+    else if (url.includes('@')) handle = url.split('@')[1]?.split(/[\/?]/)[0];
+    else return null;
     let apiUrl = '';
-    if (channelId) {
-      apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-    } else if (handle) {
-      // نحتاج أولاً لتحويل الـ handle إلى channel id عبر البحث
+    if (channelId) apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
+    else if (handle) {
       const searchUrl = `https://invidious.snopyta.org/api/v1/search?q=${handle}&type=channel`;
       const searchRes = await fetch(searchUrl);
       const searchData = await searchRes.json();
       if (searchData && searchData.length > 0) {
         channelId = searchData[0].authorId;
         apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-      } else {
-        return null;
-      }
-    } else {
-      return null;
-    }
+      } else return null;
+    } else return null;
     const res = await fetch(apiUrl);
     const data = await res.json();
     if (data && data.author) {
@@ -298,12 +349,8 @@ async function fetchYouTubeChannelInfo(url) {
       };
     }
     return null;
-  } catch(e) {
-    console.error('Error fetching channel info:', e);
-    return null;
-  }
+  } catch(e) { console.error(e); return null; }
 }
-
 async function fetchYouTubeVideoInfo(url) {
   try {
     const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
@@ -320,77 +367,42 @@ async function fetchYouTubeVideoInfo(url) {
       };
     }
     return null;
-  } catch(e) {
-    console.error('Error fetching video info:', e);
-    return null;
-  }
+  } catch(e) { console.error(e); return null; }
 }
-
 async function submitYouTubeChannel(room) {
   if (!currentUser) { alert('يجب تسجيل الدخول'); return; }
   const url = document.getElementById(room+'-url').value.trim();
   if (!url) { alert('الرجاء إدخال رابط قناة يوتيوب'); return; }
   const info = await fetchYouTubeChannelInfo(url);
-  if (!info) {
-    alert('تعذر جلب معلومات القناة. تأكد من صحة الرابط أو حاول مرة أخرى لاحقاً.');
-    return;
-  }
+  if (!info) { alert('تعذر جلب معلومات القناة. تأكد من صحة الرابط أو حاول مرة أخرى لاحقاً.'); return; }
   const tag = document.getElementById(room+'-tag')?.value || room;
   const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
   const body = {
-    title: info.title,
-    description: `${info.subscribers} مشترك`,
-    icon: info.thumbnail,
-    url: url,
-    tag: tag,
-    room: room,
-    content: extraContent,
-    user_id: currentUser.id,
-    user_email: currentUser.email
+    title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail, url, tag, room: room,
+    content: extraContent, user_id: currentUser.id, user_email: currentUser.email
   };
   const { error } = await supabase.from('posts').insert(body);
   if (error) alert('خطأ: '+error.message);
-  else {
-    alert('تم نشر القناة بنجاح!');
-    document.getElementById(room+'-url').value = '';
-    if (document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
-    loadPage(room);
-  }
+  else { alert('تم نشر القناة بنجاح!'); document.getElementById(room+'-url').value = ''; if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = ''; loadPage(room); }
 }
-
 async function submitYouTubeVideo(room) {
   if (!currentUser) { alert('يجب تسجيل الدخول'); return; }
   const url = document.getElementById(room+'-url').value.trim();
   if (!url) { alert('الرجاء إدخال رابط فيديو يوتيوب'); return; }
   const info = await fetchYouTubeVideoInfo(url);
-  if (!info) {
-    alert('تعذر جلب معلومات الفيديو. تأكد من صحة الرابط أو حاول مرة أخرى لاحقاً.');
-    return;
-  }
+  if (!info) { alert('تعذر جلب معلومات الفيديو. تأكد من صحة الرابط أو حاول مرة أخرى لاحقاً.'); return; }
   const tag = document.getElementById(room+'-tag')?.value || room;
   const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
   const body = {
-    title: info.title,
-    description: info.description,
-    icon: info.thumbnail,
-    url: url,
-    tag: tag,
-    room: room,
-    content: extraContent,
-    user_id: currentUser.id,
-    user_email: currentUser.email
+    title: info.title, description: info.description, icon: info.thumbnail, url, tag, room: room,
+    content: extraContent, user_id: currentUser.id, user_email: currentUser.email
   };
   const { error } = await supabase.from('posts').insert(body);
   if (error) alert('خطأ: '+error.message);
-  else {
-    alert('تم نشر الفيديو بنجاح!');
-    document.getElementById(room+'-url').value = '';
-    if (document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
-    loadPage(room);
-  }
+  else { alert('تم نشر الفيديو بنجاح!'); document.getElementById(room+'-url').value = ''; if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = ''; loadPage(room); }
 }
 
-// معاينة الصور (نفس السابق)
+// Image preview
 function previewImg(room) {
   const file = document.getElementById(room+'-imgfile').files[0];
   if (!file) return;
@@ -409,7 +421,7 @@ document.querySelectorAll('.add-form input[type=file]').forEach(input => {
   input.addEventListener('change', () => previewImg(room));
 });
 
-// تسجيل الزيارة (نفس السابق)
+// Visit tracking
 (function trackVisit() {
   const lastVisit = localStorage.getItem('virtux_last_visit');
   const now = Date.now();
@@ -424,7 +436,7 @@ document.querySelectorAll('.add-form input[type=file]').forEach(input => {
   }
 })();
 
-// تعريف الدوال العامة
+// Global functions
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.submitPost = submitPost;

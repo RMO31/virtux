@@ -104,7 +104,6 @@
     </div>
 
     <div class="main">
-      <!-- Dashboard -->
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
         <div class="stats" id="rooms-stats"></div>
@@ -113,13 +112,10 @@
           <div class="sc"><div class="sc-num" id="visitors-total">—</div><div class="sc-lbl">Total Visitors</div></div>
           <div class="sc"><div class="sc-num" id="registered-users">—</div><div class="sc-lbl">Registered Users</div></div>
         </div>
-        <div class="card">
-          <h3>📋 Registered Users</h3>
-          <div id="users-list"><div class="loading">Loading...</div></div>
-        </div>
+        <div class="card"><h3>📋 Registered Users</h3><div id="users-list"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- باقي الأقسام -->
+      <!-- باقي الأقسام: تم تبسيطها للاختصار، لكنها تعمل بنفس الطريقة -->
       <div class="ap" id="ap-live"><div class="page-title">🔴 Live</div><div id="list-live" class="posts-list"><div class="loading">Loading...</div></div></div>
       <div class="ap" id="ap-tournaments"><div class="page-title">🏆 Tournaments</div><div id="list-tournaments" class="posts-list"><div class="loading">Loading...</div></div></div>
       <div class="ap" id="ap-highlights"><div class="page-title">🎬 Highlights</div><div id="list-highlights" class="posts-list"><div class="loading">Loading...</div></div></div>
@@ -159,7 +155,6 @@ function logout() {
   adminPage.style.display = 'none';
   document.getElementById('pw').value = '';
 }
-
 async function checkConn() {
   try {
     const { error } = await supabase.from('posts').select('id').limit(1);
@@ -171,7 +166,6 @@ async function checkConn() {
     document.getElementById('connStatus').className = 'conn fail';
   }
 }
-
 async function loadDashboard() {
   try {
     const { data: posts } = await supabase.from('posts').select('room');
@@ -203,7 +197,6 @@ async function loadDashboard() {
     }
   } catch(e) { console.error(e); }
 }
-
 async function loadPosts(room) {
   const el = document.getElementById('list-'+room);
   if (!el) return;
@@ -235,7 +228,6 @@ async function loadPosts(room) {
     el.innerHTML = '<div class="empty">No posts yet.</div>';
   }
 }
-
 async function delPost(id, room) {
   if (!confirm('Delete this post?')) return;
   const { error } = await supabase.from('posts').delete().eq('id', id);
@@ -245,7 +237,6 @@ async function delPost(id, room) {
     loadPosts(room);
   } else alert('Delete failed: '+error.message);
 }
-
 function showPage(id) {
   document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
@@ -255,8 +246,7 @@ function showPage(id) {
   if (id === 'dashboard') loadDashboard();
   else loadPosts(id);
 }
-
-// دوال إضافة المنشورات العادية (مثل Live, Tournaments, etc)
+// دوال إضافة المنشورات العادية (مثال)
 function val(id) { const el=document.getElementById(id); return el?el.value.trim():''; }
 function clear(id) { const el=document.getElementById(id); if(el) el.value=''; }
 async function addPost(room) {
@@ -265,19 +255,14 @@ async function addPost(room) {
   const iconEl = document.getElementById(room+'-icon');
   const icon = (iconEl && iconEl._imgData) ? iconEl._imgData : (iconEl ? iconEl.value||'📄' : '📄');
   const body = {
-    title,
-    description: val(room+'-desc'),
-    icon: icon,
-    url: val(room+'-url'),
-    tag: val(room+'-tag')||room,
-    room,
+    title, description: val(room+'-desc'), icon, url: val(room+'-url'), tag: val(room+'-tag')||room, room,
     content: val(room+'-content') || null
   };
   const btn = document.querySelector('#ap-'+room+' .btn-pub');
   if(btn) { btn.disabled=true; btn.textContent='Publishing...'; }
   const { error } = await supabase.from('posts').insert(body);
   if (!error) {
-    clear(room+'-title'); clear(room+'-desc'); clear(room+'-icon'); clear(room+'-url'); clear(room+'-content');
+    ['title','desc','icon','url','content'].forEach(f => clear(room+'-'+f));
     const preview = document.getElementById(room+'-imgpreview');
     if(preview) { preview.style.display='none'; preview.src=''; }
     const fileInput = document.getElementById(room+'-imgfile');
@@ -291,147 +276,11 @@ async function addPost(room) {
   }
   if(btn) { btn.disabled=false; btn.textContent='➕ Publish'; }
 }
-
-// دوال يوتيوب باستخدام Invidious (تعمل بدون مفتاح API)
-async function fetchYouTubeChannelInfo(url) {
-  try {
-    let channelId = null;
-    let handle = null;
-    if (url.includes('/channel/')) {
-      channelId = url.split('/channel/')[1]?.split(/[\/?]/)[0];
-    } else if (url.includes('/c/')) {
-      channelId = url.split('/c/')[1]?.split(/[\/?]/)[0];
-    } else if (url.includes('@')) {
-      handle = url.split('@')[1]?.split(/[\/?]/)[0];
-    } else return null;
-    let apiUrl = '';
-    if (channelId) {
-      apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-    } else if (handle) {
-      const searchUrl = `https://invidious.snopyta.org/api/v1/search?q=${handle}&type=channel`;
-      const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
-      if (searchData && searchData.length > 0) {
-        channelId = searchData[0].authorId;
-        apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-      } else return null;
-    } else return null;
-    const res = await fetch(apiUrl);
-    const data = await res.json();
-    if (data && data.author) {
-      return {
-        title: data.author,
-        subscribers: data.subscriberCount ? data.subscriberCount.toLocaleString() : '0',
-        thumbnail: data.authorThumbnails && data.authorThumbnails[0] ? data.authorThumbnails[0].url : 'https://via.placeholder.com/80?text=YouTube'
-      };
-    }
-    return null;
-  } catch(e) { console.error(e); return null; }
-}
-
-async function fetchYouTubeVideoInfo(url) {
-  try {
-    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
-    if (!videoIdMatch) return null;
-    const videoId = videoIdMatch[1];
-    const apiUrl = `https://invidious.snopyta.org/api/v1/videos/${videoId}`;
-    const res = await fetch(apiUrl);
-    const data = await res.json();
-    if (data && data.title) {
-      return {
-        title: data.title,
-        description: data.author,
-        thumbnail: data.videoThumbnails && data.videoThumbnails[4] ? data.videoThumbnails[4].url : `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
-      };
-    }
-    return null;
-  } catch(e) { console.error(e); return null; }
-}
-
-// إضافة قناة يوتيوب (لـ subscribers و yt-channels)
-async function addYouTubeChannel(room) {
-  const url = document.getElementById(room+'-url').value.trim();
-  if (!url) { alert('Please enter a YouTube channel URL'); return; }
-  const info = await fetchYouTubeChannelInfo(url);
-  if (!info) {
-    alert('Could not fetch channel info. Check URL or try again later.');
-    return;
-  }
-  const tag = document.getElementById(room+'-tag')?.value || room;
-  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
-  const body = {
-    title: info.title,
-    description: `${info.subscribers} subscribers`,
-    icon: info.thumbnail,
-    url: url,
-    tag: tag,
-    room: room,
-    content: extraContent,
-    user_id: null, // admin adds, no user id
-    user_email: null
-  };
-  const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='Adding...'; }
-  const { error } = await supabase.from('posts').insert(body);
-  if (!error) {
-    document.getElementById(room+'-url').value = '';
-    if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
-    const ok = document.getElementById('ok-'+room);
-    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
-    loadPosts(room);
-    loadDashboard();
-  } else {
-    const er = document.getElementById('er-'+room);
-    if(er) { er.textContent = '❌ '+error.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
-  }
-  if(btn) { btn.disabled=false; btn.textContent='➕ Add'; }
-}
-
-// إضافة فيديو يوتيوب (لـ yt-videos و yt-lives)
-async function addYouTubeVideo(room) {
-  const url = document.getElementById(room+'-url').value.trim();
-  if (!url) { alert('Please enter a YouTube video URL'); return; }
-  const info = await fetchYouTubeVideoInfo(url);
-  if (!info) {
-    alert('Could not fetch video info. Check URL or try again later.');
-    return;
-  }
-  const tag = document.getElementById(room+'-tag')?.value || room;
-  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
-  const body = {
-    title: info.title,
-    description: info.description,
-    icon: info.thumbnail,
-    url: url,
-    tag: tag,
-    room: room,
-    content: extraContent,
-    user_id: null,
-    user_email: null
-  };
-  const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='Adding...'; }
-  const { error } = await supabase.from('posts').insert(body);
-  if (!error) {
-    document.getElementById(room+'-url').value = '';
-    if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
-    const ok = document.getElementById('ok-'+room);
-    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
-    loadPosts(room);
-    loadDashboard();
-  } else {
-    const er = document.getElementById('er-'+room);
-    if(er) { er.textContent = '❌ '+error.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
-  }
-  if(btn) { btn.disabled=false; btn.textContent='➕ Add'; }
-}
-
-// دوال رفع الصور (للاستخدام في الأقسام الأخرى)
 function previewImg(room) {
   const file = document.getElementById(room+'-imgfile').files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = e => {
     const preview = document.getElementById(room+'-imgpreview');
     preview.src = e.target.result;
     preview.style.display = 'block';
@@ -454,6 +303,107 @@ async function uploadVideo(room) {
   } else {
     alert('Upload failed. Make sure bucket "videos" exists.');
   }
+}
+// دوال يوتيوب باستخدام Invidious (بدون مفتاح API)
+async function fetchYouTubeChannelInfo(url) {
+  try {
+    let channelId = null, handle = null;
+    if (url.includes('/channel/')) channelId = url.split('/channel/')[1]?.split(/[\/?]/)[0];
+    else if (url.includes('/c/')) channelId = url.split('/c/')[1]?.split(/[\/?]/)[0];
+    else if (url.includes('@')) handle = url.split('@')[1]?.split(/[\/?]/)[0];
+    else return null;
+    let apiUrl = '';
+    if (channelId) apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
+    else if (handle) {
+      const searchUrl = `https://invidious.snopyta.org/api/v1/search?q=${handle}&type=channel`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+      if (searchData && searchData.length > 0) {
+        channelId = searchData[0].authorId;
+        apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
+      } else return null;
+    } else return null;
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    if (data && data.author) {
+      return {
+        title: data.author,
+        subscribers: data.subscriberCount ? data.subscriberCount.toLocaleString() : '0',
+        thumbnail: data.authorThumbnails && data.authorThumbnails[0] ? data.authorThumbnails[0].url : 'https://via.placeholder.com/80?text=YouTube'
+      };
+    }
+    return null;
+  } catch(e) { console.error(e); return null; }
+}
+async function fetchYouTubeVideoInfo(url) {
+  try {
+    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
+    if (!videoIdMatch) return null;
+    const videoId = videoIdMatch[1];
+    const apiUrl = `https://invidious.snopyta.org/api/v1/videos/${videoId}`;
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    if (data && data.title) {
+      return {
+        title: data.title,
+        description: data.author,
+        thumbnail: data.videoThumbnails && data.videoThumbnails[4] ? data.videoThumbnails[4].url : `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+      };
+    }
+    return null;
+  } catch(e) { console.error(e); return null; }
+}
+async function addYouTubeChannel(room) {
+  const url = document.getElementById(room+'-url').value.trim();
+  if (!url) { alert('Please enter a YouTube channel URL'); return; }
+  const info = await fetchYouTubeChannelInfo(url);
+  if (!info) { alert('Could not fetch channel info. Check URL or try again later.'); return; }
+  const tag = document.getElementById(room+'-tag')?.value || room;
+  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
+  const body = {
+    title: info.title, description: `${info.subscribers} subscribers`, icon: info.thumbnail, url, tag, room,
+    content: extraContent, user_id: null, user_email: null
+  };
+  const btn = document.querySelector('#ap-'+room+' .btn-pub');
+  if(btn) { btn.disabled=true; btn.textContent='Adding...'; }
+  const { error } = await supabase.from('posts').insert(body);
+  if (!error) {
+    document.getElementById(room+'-url').value = '';
+    if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
+    const ok = document.getElementById('ok-'+room);
+    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
+    loadPosts(room); loadDashboard();
+  } else {
+    const er = document.getElementById('er-'+room);
+    if(er) { er.textContent = '❌ '+error.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
+  }
+  if(btn) { btn.disabled=false; btn.textContent='➕ Add'; }
+}
+async function addYouTubeVideo(room) {
+  const url = document.getElementById(room+'-url').value.trim();
+  if (!url) { alert('Please enter a YouTube video URL'); return; }
+  const info = await fetchYouTubeVideoInfo(url);
+  if (!info) { alert('Could not fetch video info. Check URL or try again later.'); return; }
+  const tag = document.getElementById(room+'-tag')?.value || room;
+  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
+  const body = {
+    title: info.title, description: info.description, icon: info.thumbnail, url, tag, room,
+    content: extraContent, user_id: null, user_email: null
+  };
+  const btn = document.querySelector('#ap-'+room+' .btn-pub');
+  if(btn) { btn.disabled=true; btn.textContent='Adding...'; }
+  const { error } = await supabase.from('posts').insert(body);
+  if (!error) {
+    document.getElementById(room+'-url').value = '';
+    if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
+    const ok = document.getElementById('ok-'+room);
+    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
+    loadPosts(room); loadDashboard();
+  } else {
+    const er = document.getElementById('er-'+room);
+    if(er) { er.textContent = '❌ '+error.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
+  }
+  if(btn) { btn.disabled=false; btn.textContent='➕ Add'; }
 }
 </script>
 </body>
