@@ -37,7 +37,7 @@
     .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
     .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
     .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
-    .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+    .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:18px}
     .sc{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;text-align:center}
     .sc-num{font-size:30px;font-weight:700;color:#d4e800}
     .sc-lbl{font-size:11px;color:#667;margin-top:4px}
@@ -55,6 +55,7 @@
     .users-table th{color:#9fb000;font-size:12px}
     .users-table td{font-size:12px;color:#ccc}
     .empty{text-align:center;color:#667;padding:20px}
+    .loading{text-align:center;color:#667;padding:20px}
   </style>
 </head>
 <body>
@@ -96,22 +97,10 @@
     </div>
 
     <div class="main">
-      <!-- Dashboard -->
+      <!-- Dashboard: إحصائيات فقط -->
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
-        <div class="stats">
-          <div class="sc"><div class="sc-num" id="s-total">—</div><div class="sc-lbl">Total Posts</div></div>
-          <div class="sc"><div class="sc-num" id="s-live">—</div><div class="sc-lbl">Live</div></div>
-          <div class="sc"><div class="sc-num" id="s-tour">—</div><div class="sc-lbl">Tournaments</div></div>
-          <div class="sc"><div class="sc-num" id="s-high">—</div><div class="sc-lbl">Highlights</div></div>
-          <div class="sc"><div class="sc-num" id="s-sub">—</div><div class="sc-lbl">Subscribers</div></div>
-          <div class="sc"><div class="sc-num" id="s-gnews">—</div><div class="sc-lbl">Gaming News</div></div>
-          <div class="sc"><div class="sc-num" id="s-ynews">—</div><div class="sc-lbl">Youtube News</div></div>
-          <div class="sc"><div class="sc-num" id="s-ytch">—</div><div class="sc-lbl">YT Channels</div></div>
-          <div class="sc"><div class="sc-num" id="s-ytv">—</div><div class="sc-lbl">YT Videos</div></div>
-          <div class="sc"><div class="sc-num" id="s-ytl">—</div><div class="sc-lbl">YT Lives</div></div>
-          <div class="sc"><div class="sc-num" id="s-proj">—</div><div class="sc-lbl">Projects</div></div>
-        </div>
+        <div class="stats" id="stats-container"></div>
         <div class="stats">
           <div class="sc"><div class="sc-num" id="s-visitors-today">—</div><div class="sc-lbl">Visitors Today</div></div>
           <div class="sc"><div class="sc-num" id="s-visitors-total">—</div><div class="sc-lbl">Total Visitors</div></div>
@@ -139,28 +128,29 @@
 </div>
 
 <script>
-// إعداد Supabase
 const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 const ADMIN_PASSWORD = 'virtux2025';
 
-let currentUser = null;
+// عناصر
+const loginPage = document.getElementById('loginPage');
+const adminPage = document.getElementById('adminPage');
+const loginErr = document.getElementById('loginErr');
 
-// دوال المصادقة
 function login() {
   if (document.getElementById('pw').value === ADMIN_PASSWORD) {
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('adminPage').style.display = 'flex';
+    loginPage.style.display = 'none';
+    adminPage.style.display = 'flex';
     checkConn();
     loadDashboard();
   } else {
-    document.getElementById('loginErr').style.display = 'block';
+    loginErr.style.display = 'block';
   }
 }
 function logout() {
-  document.getElementById('loginPage').style.display = 'flex';
-  document.getElementById('adminPage').style.display = 'none';
+  loginPage.style.display = 'flex';
+  adminPage.style.display = 'none';
   document.getElementById('pw').value = '';
 }
 
@@ -176,85 +166,81 @@ async function checkConn() {
   }
 }
 
-// تحميل الإحصائيات
 async function loadDashboard() {
   try {
-    // جلب جميع المنشورات
-    const { data: posts, error } = await supabase.from('posts').select('*');
-    if (!error && posts) {
-      document.getElementById('s-total').textContent = posts.length;
-      document.getElementById('s-live').textContent = posts.filter(p=>p.room==='live').length;
-      document.getElementById('s-tour').textContent = posts.filter(p=>p.room==='tournaments').length;
-      document.getElementById('s-high').textContent = posts.filter(p=>p.room==='highlights').length;
-      document.getElementById('s-sub').textContent = posts.filter(p=>p.room==='subscribers').length;
-      document.getElementById('s-gnews').textContent = posts.filter(p=>p.room==='gaming-news').length;
-      document.getElementById('s-ynews').textContent = posts.filter(p=>p.room==='youtube-news').length;
-      document.getElementById('s-ytch').textContent = posts.filter(p=>p.room==='yt-channels').length;
-      document.getElementById('s-ytv').textContent = posts.filter(p=>p.room==='yt-videos').length;
-      document.getElementById('s-ytl').textContent = posts.filter(p=>p.room==='yt-lives').length;
-      document.getElementById('s-proj').textContent = posts.filter(p=>p.room==='projects').length;
+    // جلب جميع المنشورات لإحصائيات الأقسام
+    const { data: posts } = await supabase.from('posts').select('room');
+    if (posts) {
+      const rooms = ['live','tournaments','highlights','subscribers','gaming-news','youtube-news','yt-channels','yt-videos','yt-lives','projects'];
+      const statsHtml = rooms.map(room => {
+        const count = posts.filter(p => p.room === room).length;
+        let label = '';
+        switch(room) {
+          case 'live': label = 'Live'; break;
+          case 'tournaments': label = 'Tournaments'; break;
+          case 'highlights': label = 'Highlights'; break;
+          case 'subscribers': label = 'Subscribers'; break;
+          case 'gaming-news': label = 'Gaming News'; break;
+          case 'youtube-news': label = 'Youtube News'; break;
+          case 'yt-channels': label = 'YT Channels'; break;
+          case 'yt-videos': label = 'YT Videos'; break;
+          case 'yt-lives': label = 'YT Lives'; break;
+          case 'projects': label = 'Projects'; break;
+        }
+        return `<div class="sc"><div class="sc-num">${count}</div><div class="sc-lbl">${label}</div></div>`;
+      }).join('');
+      document.getElementById('stats-container').innerHTML = statsHtml;
     }
     // إحصائيات الزوار
-    try {
-      const { data: visitorStats } = await supabase.rpc('get_visitor_stats');
-      if (visitorStats) {
-        document.getElementById('s-visitors-today').textContent = visitorStats.today || 0;
-        document.getElementById('s-visitors-total').textContent = visitorStats.total || 0;
-      }
-    } catch(e) { console.warn('visitor stats error', e); }
-    // عدد المستخدمين المسجلين
-    try {
-      const { data: userCount } = await supabase.rpc('get_user_count');
-      if (userCount !== undefined) document.getElementById('s-registered').textContent = userCount;
-    } catch(e) { console.warn('user count error', e); }
-    // جلب قائمة المستخدمين
-    try {
-      const { data: users, error: usersErr } = await supabase.rpc('get_users_list');
-      if (!usersErr && users && users.length) {
-        const usersHtml = `<table class="users-table"><thead><tr><th>Email</th><th>Registered At</th></tr></thead><tbody>${users.map(u => `<tr><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
-        document.getElementById('users-list').innerHTML = usersHtml;
-      } else {
-        document.getElementById('users-list').innerHTML = '<div class="empty">No users yet.</div>';
-      }
-    } catch(e) { console.warn('users list error', e); document.getElementById('users-list').innerHTML = '<div class="empty">Error loading users.</div>'; }
-  } catch(e) { console.error('Dashboard error', e); }
+    const { data: visitorStats } = await supabase.rpc('get_visitor_stats');
+    if (visitorStats) {
+      document.getElementById('s-visitors-today').textContent = visitorStats.today || 0;
+      document.getElementById('s-visitors-total').textContent = visitorStats.total || 0;
+    }
+    // عدد المستخدمين
+    const { data: userCount } = await supabase.rpc('get_user_count');
+    if (userCount !== undefined) document.getElementById('s-registered').textContent = userCount;
+    // قائمة المستخدمين
+    const { data: users } = await supabase.rpc('get_users_list');
+    if (users && users.length) {
+      const usersHtml = `<table class="users-table"><thead><tr><th>Email</th><th>Registered At</th></tr></thead><tbody>${users.map(u => `<tr><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
+      document.getElementById('users-list').innerHTML = usersHtml;
+    } else {
+      document.getElementById('users-list').innerHTML = '<div class="empty">No users yet.</div>';
+    }
+  } catch(e) { console.error(e); }
 }
 
-// تحميل المنشورات لقسم معين
 async function loadPosts(room) {
   const el = document.getElementById('list-'+room);
   if (!el) return;
   el.innerHTML = '<div class="loading">Loading...</div>';
-  try {
-    const { data, error } = await supabase.from('posts').select('*').eq('room', room).order('id', { ascending: false });
-    if (!error && data && data.length) {
-      el.innerHTML = data.map(postHTML).join('');
-    } else {
-      el.innerHTML = '<div class="empty">No posts yet.</div>';
-    }
-  } catch(e) { el.innerHTML = '<div class="empty">Error loading posts.</div>'; }
-}
-
-function postHTML(p) {
-  const link = p.url ? ` • <a href="${p.url}" target="_blank" style="color:#9fb000;font-size:11px">🔗 Link</a>` : '';
-  let iconHtml = '📄';
-  if (p.icon) {
-    if (p.icon.startsWith('data:image') || p.icon.startsWith('http')) {
-      iconHtml = `<img src="${p.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">`;
-    } else {
-      let shortIcon = p.icon.length > 20 ? p.icon.substring(0,20)+'…' : p.icon;
-      iconHtml = shortIcon;
-    }
+  const { data, error } = await supabase.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+  if (!error && data && data.length) {
+    el.innerHTML = data.map(p => {
+      const link = p.url ? ` • <a href="${p.url}" target="_blank" style="color:#9fb000;font-size:11px">🔗 Link</a>` : '';
+      let iconHtml = '📄';
+      if (p.icon) {
+        if (p.icon.startsWith('data:image') || p.icon.startsWith('http')) {
+          iconHtml = `<img src="${p.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">`;
+        } else {
+          let shortIcon = p.icon.length > 20 ? p.icon.substring(0,20)+'…' : p.icon;
+          iconHtml = shortIcon;
+        }
+      }
+      return `<div class="pi" id="pi-${p.id}">
+        <div class="pi-icon">${iconHtml}</div>
+        <div class="pi-info">
+          <div class="pi-title">${p.title}</div>
+          <div class="pi-meta">${p.description||''}${link}</div>
+          <span class="pi-tag">${p.tag||p.room}</span>
+        </div>
+        <button class="btn-del" onclick="delPost(${p.id},'${p.room}')">🗑️ Delete</button>
+      </div>`;
+    }).join('');
+  } else {
+    el.innerHTML = '<div class="empty">No posts yet.</div>';
   }
-  return `<div class="pi" id="pi-${p.id}">
-    <div class="pi-icon">${iconHtml}</div>
-    <div class="pi-info">
-      <div class="pi-title">${p.title}</div>
-      <div class="pi-meta">${p.description||''}${link}</div>
-      <span class="pi-tag">${p.tag||p.room}</span>
-    </div>
-    <button class="btn-del" onclick="delPost(${p.id},'${p.room}')">🗑️ Delete</button>
-  </div>`;
 }
 
 async function delPost(id, room) {
@@ -277,7 +263,7 @@ function showPage(id) {
   else loadPosts(id);
 }
 
-// لا نستخدم دوال Auth معقدة هنا لأن المسؤول يدخل بكلمة مرور ثابتة
+// بدء التشغيل (لا حاجة لاستدعاء شيء لأن login سيظهر)
 </script>
 </body>
 </html>
