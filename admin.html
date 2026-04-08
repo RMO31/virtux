@@ -37,15 +37,10 @@
     .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
     .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
     .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
-    .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-    .fg input,.fg select,.fg textarea{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;width:100%}
-    .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:#9fb000}
-    .full{grid-column:1/-1}
-    .btn-pub{background:#9fb000;color:#000;border:none;border-radius:7px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer}
-    .btn-pub:hover{background:#d4e800}
-    .btn-pub:disabled{background:#445;color:#778;cursor:not-allowed}
-    .ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-    .er{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
+    .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+    .sc{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;text-align:center}
+    .sc-num{font-size:30px;font-weight:700;color:#d4e800}
+    .sc-lbl{font-size:11px;color:#667;margin-top:4px}
     .posts-list{display:flex;flex-direction:column;gap:8px}
     .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
     .pi-icon{width:40px;height:40px;border-radius:6px;object-fit:cover;display:flex;align-items:center;justify-content:center;background:#0f1e55;font-size:20px}
@@ -55,14 +50,11 @@
     .pi-tag{display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:3px;padding:1px 7px;margin-top:3px}
     .btn-del{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer}
     .btn-del:hover{background:#f55;color:#fff}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-    .sc{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;text-align:center}
-    .sc-num{font-size:30px;font-weight:700;color:#d4e800}
-    .sc-lbl{font-size:11px;color:#667;margin-top:4px}
-    .img-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .img-upload input[type=file]{display:none}
-    .img-upload label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:7px;padding:8px 12px;font-size:12px;cursor:pointer}
-    .img-preview{width:40px;height:40px;border-radius:6px;object-fit:cover;display:none}
+    .users-table{width:100%;border-collapse:collapse;margin-top:10px}
+    .users-table th,.users-table td{padding:8px 10px;text-align:left;border-bottom:1px solid #1e2d6b}
+    .users-table th{color:#9fb000;font-size:12px}
+    .users-table td{font-size:12px;color:#ccc}
+    .empty{text-align:center;color:#667;padding:20px}
   </style>
 </head>
 <body>
@@ -104,34 +96,44 @@
     </div>
 
     <div class="main">
-      <!-- Dashboard -->
+      <!-- Dashboard: إحصائيات فقط -->
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
         <div class="stats">
           <div class="sc"><div class="sc-num" id="s-total">—</div><div class="sc-lbl">Total Posts</div></div>
           <div class="sc"><div class="sc-num" id="s-live">—</div><div class="sc-lbl">Live</div></div>
           <div class="sc"><div class="sc-num" id="s-tour">—</div><div class="sc-lbl">Tournaments</div></div>
-          <div class="sc"><div class="sc-num" id="s-news">—</div><div class="sc-lbl">News</div></div>
+          <div class="sc"><div class="sc-num" id="s-high">—</div><div class="sc-lbl">Highlights</div></div>
+          <div class="sc"><div class="sc-num" id="s-sub">—</div><div class="sc-lbl">Subscribers</div></div>
+          <div class="sc"><div class="sc-num" id="s-gnews">—</div><div class="sc-lbl">Gaming News</div></div>
+          <div class="sc"><div class="sc-num" id="s-ynews">—</div><div class="sc-lbl">Youtube News</div></div>
+          <div class="sc"><div class="sc-num" id="s-ytch">—</div><div class="sc-lbl">YT Channels</div></div>
+          <div class="sc"><div class="sc-num" id="s-ytv">—</div><div class="sc-lbl">YT Videos</div></div>
+          <div class="sc"><div class="sc-num" id="s-ytl">—</div><div class="sc-lbl">YT Lives</div></div>
+          <div class="sc"><div class="sc-num" id="s-proj">—</div><div class="sc-lbl">Projects</div></div>
         </div>
         <div class="stats">
           <div class="sc"><div class="sc-num" id="s-visitors-today">—</div><div class="sc-lbl">Visitors Today</div></div>
           <div class="sc"><div class="sc-num" id="s-visitors-total">—</div><div class="sc-lbl">Total Visitors</div></div>
           <div class="sc"><div class="sc-num" id="s-registered">—</div><div class="sc-lbl">Registered Users</div></div>
         </div>
-        <div class="card"><h3>Recent Posts</h3><div id="recent-list"><div class="loading">Loading...</div></div></div>
+        <div class="card">
+          <h3>📋 Registered Users</h3>
+          <div id="users-list"><div class="loading">Loading...</div></div>
+        </div>
       </div>
 
-      <!-- باقي الأقسام (مختصرة للطول، يمكنك إضافتها من ملفك القديم) -->
-      <div class="ap" id="ap-live">...</div>
-      <div class="ap" id="ap-tournaments">...</div>
-      <div class="ap" id="ap-highlights">...</div>
-      <div class="ap" id="ap-subscribers">...</div>
-      <div class="ap" id="ap-gaming-news">...</div>
-      <div class="ap" id="ap-youtube-news">...</div>
-      <div class="ap" id="ap-yt-channels">...</div>
-      <div class="ap" id="ap-yt-videos">...</div>
-      <div class="ap" id="ap-yt-lives">...</div>
-      <div class="ap" id="ap-projects">...</div>
+      <!-- باقي الأقسام: سيتم تعبئتها تلقائياً عند النقر -->
+      <div class="ap" id="ap-live"><div class="page-title">🔴 Live</div><div id="list-live" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-tournaments"><div class="page-title">🏆 Tournaments</div><div id="list-tournaments" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-highlights"><div class="page-title">🎬 Highlights</div><div id="list-highlights" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-subscribers"><div class="page-title">👥 Subscribers</div><div id="list-subscribers" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-gaming-news"><div class="page-title">📰 Gaming News</div><div id="list-gaming-news" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-youtube-news"><div class="page-title">▶️ Youtube News</div><div id="list-youtube-news" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-yt-channels"><div class="page-title">📺 Youtube Channels</div><div id="list-yt-channels" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-yt-videos"><div class="page-title">🎬 Youtube Videos</div><div id="list-yt-videos" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-yt-lives"><div class="page-title">🔴 Youtube Lives</div><div id="list-yt-lives" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <div class="ap" id="ap-projects"><div class="page-title">🌐 Projects</div><div id="list-projects" class="posts-list"><div class="loading">Loading...</div></div></div>
     </div>
   </div>
 </div>
@@ -140,9 +142,7 @@
 // إعداد Supabase
 const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-// كلمة المرور الثابتة للدخول
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 const ADMIN_PASSWORD = 'virtux2025';
 
 // عناصر DOM
@@ -150,19 +150,17 @@ const loginPage = document.getElementById('loginPage');
 const adminPage = document.getElementById('adminPage');
 const loginErr = document.getElementById('loginErr');
 
+// دوال المصادقة
 function login() {
-  const pw = document.getElementById('pw').value;
-  if (pw === ADMIN_PASSWORD) {
+  if (document.getElementById('pw').value === ADMIN_PASSWORD) {
     loginPage.style.display = 'none';
     adminPage.style.display = 'flex';
     checkConn();
     loadDashboard();
-    loadAllPosts(); // تحميل كل المنشورات للعرض في الأقسام
   } else {
     loginErr.style.display = 'block';
   }
 }
-
 function logout() {
   loginPage.style.display = 'flex';
   adminPage.style.display = 'none';
@@ -171,7 +169,7 @@ function logout() {
 
 async function checkConn() {
   try {
-    const { data, error } = await supabase.from('posts').select('id').limit(1);
+    const { error } = await supabase.from('posts').select('id').limit(1);
     const el = document.getElementById('connStatus');
     if (!error) { el.textContent = '✅ Connected'; el.className = 'conn'; }
     else { el.textContent = '❌ Error'; el.className = 'conn fail'; }
@@ -181,40 +179,55 @@ async function checkConn() {
   }
 }
 
+// إحصائيات المنشورات
 async function loadDashboard() {
   try {
-    // عدد المنشورات
-    const { data: posts, error: postsErr } = await supabase.from('posts').select('*');
-    if (!postsErr && posts) {
+    // جلب جميع المنشورات
+    const { data: posts, error } = await supabase.from('posts').select('*');
+    if (!error && posts) {
       document.getElementById('s-total').textContent = posts.length;
       document.getElementById('s-live').textContent = posts.filter(p=>p.room==='live').length;
       document.getElementById('s-tour').textContent = posts.filter(p=>p.room==='tournaments').length;
-      document.getElementById('s-news').textContent = posts.filter(p=>p.room==='gaming-news'||p.room==='youtube-news').length;
-      // عرض أحدث 6 منشورات
-      const recent = posts.slice(0,6);
-      const recentList = document.getElementById('recent-list');
-      if (recent.length) recentList.innerHTML = '<div class="posts-list">'+recent.map(postHTML).join('')+'</div>';
-      else recentList.innerHTML = '<div class="empty">No posts yet.</div>';
+      document.getElementById('s-high').textContent = posts.filter(p=>p.room==='highlights').length;
+      document.getElementById('s-sub').textContent = posts.filter(p=>p.room==='subscribers').length;
+      document.getElementById('s-gnews').textContent = posts.filter(p=>p.room==='gaming-news').length;
+      document.getElementById('s-ynews').textContent = posts.filter(p=>p.room==='youtube-news').length;
+      document.getElementById('s-ytch').textContent = posts.filter(p=>p.room==='yt-channels').length;
+      document.getElementById('s-ytv').textContent = posts.filter(p=>p.room==='yt-videos').length;
+      document.getElementById('s-ytl').textContent = posts.filter(p=>p.room==='yt-lives').length;
+      document.getElementById('s-proj').textContent = posts.filter(p=>p.room==='projects').length;
     }
     // إحصائيات الزوار
-    const { data: visitorStats, error: visErr } = await supabase.rpc('get_visitor_stats');
-    if (!visErr && visitorStats) {
+    const { data: visitorStats } = await supabase.rpc('get_visitor_stats');
+    if (visitorStats) {
       document.getElementById('s-visitors-today').textContent = visitorStats.today || 0;
       document.getElementById('s-visitors-total').textContent = visitorStats.total || 0;
     }
     // عدد المستخدمين المسجلين
-    const { data: userCount, error: userErr } = await supabase.rpc('get_user_count');
-    if (!userErr) document.getElementById('s-registered').textContent = userCount || 0;
+    const { data: userCount } = await supabase.rpc('get_user_count');
+    if (userCount !== undefined) document.getElementById('s-registered').textContent = userCount;
+    // جلب قائمة المستخدمين
+    const { data: users, error: usersErr } = await supabase.rpc('get_users_list');
+    if (!usersErr && users && users.length) {
+      const usersHtml = `<table class="users-table"><thead><tr><th>Email</th><th>Registered At</th></tr></thead><tbody>${users.map(u => `<tr><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
+      document.getElementById('users-list').innerHTML = usersHtml;
+    } else {
+      document.getElementById('users-list').innerHTML = '<div class="empty">No users yet.</div>';
+    }
   } catch(e) { console.error(e); }
 }
 
+// تحميل المنشورات لغرفة معينة (للحذف)
 async function loadPosts(room) {
   const el = document.getElementById('list-'+room);
   if (!el) return;
   el.innerHTML = '<div class="loading">Loading...</div>';
   const { data, error } = await supabase.from('posts').select('*').eq('room', room).order('id', { ascending: false });
-  if (!error && data && data.length) el.innerHTML = data.map(postHTML).join('');
-  else el.innerHTML = '<div class="empty">No posts yet.</div>';
+  if (!error && data && data.length) {
+    el.innerHTML = data.map(postHTML).join('');
+  } else {
+    el.innerHTML = '<div class="empty">No posts yet.</div>';
+  }
 }
 
 function postHTML(p) {
@@ -253,15 +266,13 @@ function showPage(id) {
   document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('ap-' + id).classList.add('active');
-  const s = document.getElementById('sb-' + id);
-  if (s) s.classList.add('active');
+  const sb = document.getElementById('sb-' + id);
+  if (sb) sb.classList.add('active');
   if (id === 'dashboard') loadDashboard();
   else loadPosts(id);
 }
 
-// دوال إضافية (لإكمال الأقسام - يمكنك إضافة نماذج الإضافة هنا إذا أردت)
-// لكن الأقسام الأخرى تحتاج إلى أن تُملأ بمحتوى HTML. سأتركها مختصرة للطول،
-// يمكنك نسخها من ملفك القديم حيث أن وظائف الحذف والعرض تعمل بالفعل.
+// بدء التشغيل
 </script>
 </body>
 </html>
