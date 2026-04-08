@@ -107,7 +107,7 @@
     </div>
 
     <div class="main">
-      <!-- Dashboard: إحصائيات فقط -->
+      <!-- Dashboard -->
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
         <div class="stats-grid" id="visitor-stats"></div>
@@ -117,7 +117,7 @@
         </div>
       </div>
 
-      <!-- باقي الأقسام (تم اختصارها للطول، لكنها تعمل بنفس الطريقة) -->
+      <!-- باقي الأقسام (مختصرة للطول، لكنها تعمل بنفس الطريقة) -->
       <!-- Live -->
       <div class="ap" id="ap-live">
         <div class="page-title">🔴 Live</div>
@@ -189,7 +189,7 @@
         <div class="card"><h3>المنشورات</h3><div id="list-highlights" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>
       </div>
 
-      <!-- Subscribers (YouTube Channel - رابط فقط) -->
+      <!-- Subscribers -->
       <div class="ap" id="ap-subscribers">
         <div class="page-title">👥 Subscribers</div>
         <div class="card"><h3>➕ إضافة قناة يوتيوب (رابط فقط)</h3>
@@ -257,7 +257,7 @@
         <div class="card"><h3>المنشورات</h3><div id="list-youtube-news" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>
       </div>
 
-      <!-- YT Channels (معدل: رابط فقط + جلب تلقائي) -->
+      <!-- YT Channels (معدل: رابط فقط + جلب تلقائي، بدون خيار VIP) -->
       <div class="ap" id="ap-yt-channels">
         <div class="page-title">📺 Youtube Channels</div>
         <div class="card"><h3>➕ إضافة قناة يوتيوب (رابط فقط)</h3>
@@ -267,7 +267,6 @@
             <input class="full" id="yt-channels-url" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@RMO-MR)">
             <select id="yt-channels-tag">
               <option value="Channel">📺 Channel</option>
-              <option value="VIP">👑 VIP</option>
             </select>
             <textarea class="full" id="yt-channels-content" placeholder="وصف إضافي (اختياري)" rows="3"></textarea>
           </div>
@@ -278,7 +277,7 @@
         </div>
       </div>
 
-      <!-- YT Videos (يبقى يدوي) -->
+      <!-- YT Videos -->
       <div class="ap" id="ap-yt-videos">
         <div class="page-title">🎬 Youtube Videos</div>
         <div class="card"><h3>➕ إضافة فيديو</h3>
@@ -301,7 +300,7 @@
         <div class="card"><h3>الفيديوهات</h3><div id="list-yt-videos" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>
       </div>
 
-      <!-- YT Lives (يبقى يدوي) -->
+      <!-- YT Lives -->
       <div class="ap" id="ap-yt-lives">
         <div class="page-title">🔴 Youtube Lives</div>
         <div class="card"><h3>➕ إضافة بث مباشر</h3>
@@ -578,11 +577,18 @@ async function uploadVideo(room) {
   } catch(e) { alert('خطأ في رفع الفيديو'); }
 }
 
-// ==================== جلب بيانات يوتيوب وإضافة قناة (لـ subscribers و yt-channels) ====================
+// ==================== جلب بيانات يوتيوب المحسّن (مع خوادم بديلة) ====================
 async function fetchYouTubeChannelInfo(url) {
+  const fallbackInstances = [
+    'https://invidious.snopyta.org',
+    'https://yewtu.be',
+    'https://inv.riverside.rocks',
+    'https://invidious.tiekoetter.com'
+  ];
   try {
     let channelId = null;
     let handle = null;
+    // استخراج المعرف
     if (url.includes('/channel/')) {
       channelId = url.split('/channel/')[1]?.split(/[\/?]/)[0];
     } else if (url.includes('/c/')) {
@@ -592,25 +598,34 @@ async function fetchYouTubeChannelInfo(url) {
     } else {
       return null;
     }
-    let apiUrl = '';
-    if (channelId) {
-      apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-    } else if (handle) {
-      const searchUrl = `https://invidious.snopyta.org/api/v1/search?q=${handle}&type=channel`;
-      const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
-      if (searchData && searchData.length > 0) {
-        channelId = searchData[0].authorId;
-        apiUrl = `https://invidious.snopyta.org/api/v1/channels/${channelId}`;
-      } else return null;
-    } else return null;
-    const res = await fetch(apiUrl);
-    const data = await res.json();
+    let data = null;
+    // محاولة كل خادم بديل
+    for (const instance of fallbackInstances) {
+      try {
+        let apiUrl = '';
+        if (channelId) {
+          apiUrl = `${instance}/api/v1/channels/${channelId}`;
+        } else if (handle) {
+          const searchUrl = `${instance}/api/v1/search?q=${handle}&type=channel`;
+          const searchRes = await fetch(searchUrl);
+          const searchData = await searchRes.json();
+          if (searchData && searchData.length > 0) {
+            channelId = searchData[0].authorId;
+            apiUrl = `${instance}/api/v1/channels/${channelId}`;
+          } else continue;
+        } else continue;
+        const res = await fetch(apiUrl);
+        if (res.ok) {
+          data = await res.json();
+          break;
+        }
+      } catch(e) { continue; }
+    }
     if (data && data.author) {
       return {
         title: data.author,
         subscribers: data.subscriberCount ? data.subscriberCount.toLocaleString() : '0',
-        thumbnail: data.authorThumbnails && data.authorThumbnails[0] ? data.authorThumbnails[0].url : null
+        thumbnail: data.authorThumbnails?.[0]?.url || null
       };
     }
     return null;
