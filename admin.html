@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* جميع الأنماط السابقة - نفس الملف السابق مع إضافة تنسيقات الفيديو */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -67,8 +68,6 @@
     .post-dl{font-size:12px;color:#000;text-decoration:none;background:#9fb000;border-radius:5px;padding:4px 10px;font-weight:600}
     .read-more{font-size:12px;background:#9fb000;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
     .read-more:hover{background:#d4e800}
-    .watch-on-yt{font-size:12px;background:#ff0000;color:#fff;border-radius:5px;padding:4px 10px;text-decoration:none;margin-left:5px}
-    .watch-on-yt:hover{background:#cc0000}
     .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
     .channel-card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#9fb000}
@@ -133,7 +132,7 @@
       <!-- Tournaments -->
       <div class="vx-page" id="page-tournaments"><div class="page-header"><h2>🏆 Tournaments</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">👑 VIP</button></div><div id="addForm-tournaments" class="add-form"><h3>➕ Add Tournament</h3><div class="fg"><input class="full" id="tournaments-title" placeholder="Tournament name"><input id="tournaments-desc" placeholder="Game • Teams"><div class="img-upload full"><input type="file" id="tournaments-imgfile" accept="image/*"><label>📁 Upload Image</label><input type="text" id="tournaments-icon" placeholder="Emoji"><img id="tournaments-imgpreview"></div><select id="tournaments-tag"><option value="Registration">📋 Registration</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select><input class="full" id="tournaments-url" placeholder="URL"><textarea class="full" id="tournaments-content" placeholder="Full content" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('tournaments')">Publish</button></div><div class="posts-grid" id="grid-tournaments"><div class="loading-state">Loading...</div></div></div>
 
-      <!-- Highlights -->
+      <!-- Highlights (مع دعم الفيديو المدمج وزر الانتقال إلى الرابط الأصلي) -->
       <div class="vx-page" id="page-highlights"><div class="page-header"><h2>🎬 Highlights</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="filterPosts('highlights','Video',this)">📹 Video</button><button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">📷 Photo</button></div><div id="addForm-highlights" class="add-form"><h3>➕ Add Highlight</h3><div class="fg"><input class="full" id="highlights-title" placeholder="Title (optional)"><input id="highlights-desc" placeholder="Player • Game"><div class="img-upload full"><input type="file" id="highlights-imgfile" accept="image/*"><label>📁 Upload Image</label><input type="file" id="highlights-videofile" accept="video/mp4,video/webm"><label>🎥 Upload Video</label><input type="text" id="highlights-icon" placeholder="Emoji"><img id="highlights-imgpreview"></div><select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select><input class="full" id="highlights-url" placeholder="Video/Image URL"><textarea class="full" id="highlights-content" placeholder="Full content" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('highlights')">Publish</button></div><div class="posts-grid" id="grid-highlights"><div class="loading-state">Loading...</div></div></div>
 
       <!-- Subscribers -->
@@ -251,33 +250,33 @@ function renderCards(posts, gridId, room) {
     return;
   }
   
-  // For other rooms (live, tournaments, highlights, gaming-news, youtube-news, yt-videos, yt-lives, projects)
+  // For other rooms
   el.innerHTML = posts.map(p => {
+    // Determine media content
     let mediaContent = '';
-    let isYouTube = false;
-    let videoId = null;
-    
-    // Check if URL is a YouTube video
-    if (p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'))) {
-      isYouTube = true;
-      const match = p.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
-      if (match) videoId = match[1];
-    }
-    
-    // For YouTube videos: embed iframe
-    if (isYouTube && videoId) {
-      mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
-    }
-    // For direct video files (mp4, webm) from Supabase storage
-    else if (p.url && p.url.match(/\.(mp4|webm)$/i)) {
-      mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" poster="${p.icon || ''}"></video></div>`;
-    }
-    // For images
-    else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
-      mediaContent = `<img class="post-card-img" src="${p.icon}">`;
-    }
-    // Fallback to emoji
-    else {
+    let originalLink = '';
+    if (p.url) {
+      originalLink = p.url;
+      // Direct video file (mp4, webm)
+      if (p.url.match(/\.(mp4|webm)$/i)) {
+        mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" poster="${p.icon || ''}"></video></div>`;
+      }
+      // YouTube embed
+      else if (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be')) {
+        const videoIdMatch = p.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
+        if (videoIdMatch) {
+          mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoIdMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+        } else {
+          mediaContent = `<img class="post-card-img" src="${p.icon || '📹'}">`;
+        }
+      }
+      // Otherwise, treat as image or fallback to emoji
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+        mediaContent = `<img class="post-card-img" src="${p.icon}">`;
+      } else {
+        mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
+      }
+    } else {
       mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
     
@@ -286,24 +285,21 @@ function renderCards(posts, gridId, room) {
     else if (p.description) summary = truncate(p.description, 150);
     const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 Read more</a>` : '';
     
-    // Action buttons: download (for direct video) and watch on YouTube
+    // Build action buttons: always show a "Watch / Open" link to the original URL if exists
     let actions = '';
     if (p.url) {
+      // If the media is already embedded (video/iframe), we still provide a link to the source
+      actions += `<a href="${p.url}" target="_blank" class="post-link">🔗 Open Original</a>`;
+      // Additional specific actions for certain rooms
       if (room === 'yt-videos' || room === 'yt-lives' || room === 'youtube-news') {
-        actions += `<a href="${p.url}" target="_blank" class="post-link">▶️ Watch</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-link">▶️ Watch on YouTube</a>`;
       } else if (room === 'highlights') {
-        // Download button for direct video files
+        // For highlights, we already have the embedded player, but still allow download if it's a direct file
         if (p.url.match(/\.(mp4|webm)$/i)) {
           actions += `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ Download</a>`;
+        } else {
+          actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
         }
-        // Watch on YouTube button if it's a YouTube link
-        if (isYouTube && videoId) {
-          actions += `<a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="watch-on-yt">▶️ Watch on YouTube</a>`;
-        } else if (!isYouTube && p.url) {
-          actions += `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
-        }
-      } else {
-        actions += `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
       }
     }
     
@@ -383,7 +379,7 @@ async function submitPost(room) {
   loadPage(room);
 }
 
-// ==================== YouTube helpers (unchanged) ====================
+// ==================== YouTube helpers (same as admin) ====================
 async function fetchYouTubeChannelInfo(url) {
   try {
     let channelId = null, handle = null;
@@ -580,6 +576,7 @@ async function submitYouTubeLive() {
     user_id: currentUser.id,
     user_email: currentUser.email
   };
+  // Also add to live section
   const liveBody = { ...body, room: 'live' };
   const { error: err1 } = await supabase.from('posts').insert(body);
   const { error: err2 } = await supabase.from('posts').insert(liveBody);
