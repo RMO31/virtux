@@ -88,77 +88,81 @@
       <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
       <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
       <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <div class="sb-sec">News</div>
       <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
       <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
-      <div class="sb-sec">Youtube</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
       <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 Lives</button>
-      <div class="sb-sec">Collab</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Projects</button>
     </div>
-
     <div class="main">
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
-        <div class="card"><h3>Welcome</h3><p>Select a room from the sidebar to manage posts.</p></div>
+        <div class="card"><h3>Welcome</h3><p>Select a room from the sidebar.</p></div>
       </div>
 
-      <!-- نموذج Live (مثال) - سيتم إعادة استخدامه لجميع الأقسام -->
-      <div class="ap" id="ap-live">
-        <div class="page-title">🔴 Live</div>
-        <div class="card"><h3>➕ Add Live</h3>
-          <div class="ok" id="ok-live">✅ Published!</div><div class="er" id="er-live"></div>
-          <div class="fg">
-            <input class="full" id="live-title" placeholder="Title">
-            <input id="live-desc" placeholder="Description">
-            <div class="img-upload full">
-              <input type="file" id="live-imgfile" accept="image/*" onchange="previewImg('live')">
-              <label for="live-imgfile">📁 Upload Image</label>
-              <input type="text" id="live-icon" placeholder="Or type emoji">
-              <img id="live-imgpreview" class="img-preview" src="">
+      <!-- Template for each room - will be populated by JS -->
+      <div id="room-templates" style="display:none;">
+        <div class="ap" id="ap-ROOM">
+          <div class="page-title">🔴 ROOM</div>
+          <div class="card"><h3>➕ Add ROOM</h3>
+            <div class="ok" id="ok-ROOM">✅ Published!</div><div class="er" id="er-ROOM"></div>
+            <div class="fg">
+              <input class="full" id="ROOM-title" placeholder="Title">
+              <input id="ROOM-desc" placeholder="Description">
+              <div class="img-upload full">
+                <input type="file" id="ROOM-imgfile" accept="image/*" onchange="previewImg('ROOM')">
+                <label for="ROOM-imgfile">📁 Upload Image</label>
+                <input type="text" id="ROOM-icon" placeholder="Or type emoji">
+                <img id="ROOM-imgpreview" class="img-preview" src="">
+              </div>
+              <select id="ROOM-tag"><option value="General">General</option></select>
+              <input class="full" id="ROOM-url" placeholder="URL (optional)">
+              <textarea class="full" id="ROOM-content" placeholder="Full content (optional)" rows="3"></textarea>
             </div>
-            <select id="live-tag"><option value="Live Now">Live Now</option><option value="Pre Lives">Pre Lives</option><option value="VIP">VIP</option></select>
-            <input class="full" id="live-url" placeholder="URL (optional)">
-            <textarea class="full" id="live-content" placeholder="Full content (optional)" rows="3"></textarea>
+            <button class="btn-pub" onclick="addPost('ROOM')">➕ Publish</button>
           </div>
-          <button class="btn-pub" onclick="addPost('live')">➕ Publish</button>
+          <div class="card"><h3>Posts</h3><div id="list-ROOM" class="posts-list"><div class="loading">Loading...</div></div></div>
         </div>
-        <div class="card"><h3>Posts</h3><div id="list-live" class="posts-list"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- Tournaments (مشابه) - للاختصار، لن أكرر كل الأقسام، لكنها تعمل بنفس الطريقة -->
-      <div class="ap" id="ap-tournaments"><div class="page-title">🏆 Tournaments</div><div id="list-tournaments" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-highlights"><div class="page-title">🎬 Highlights</div><div id="list-highlights" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-subscribers"><div class="page-title">👥 Subscribers</div><div id="list-subscribers" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-gaming-news"><div class="page-title">📰 Gaming News</div><div id="list-gaming-news" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-youtube-news"><div class="page-title">▶️ Youtube News</div><div id="list-youtube-news" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-yt-channels"><div class="page-title">📺 Youtube Channels</div><div id="list-yt-channels" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-yt-videos"><div class="page-title">🎬 Youtube Videos</div><div id="list-yt-videos" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-yt-lives"><div class="page-title">🔴 Youtube Lives</div><div id="list-yt-lives" class="posts-list"><div class="loading">Loading...</div></div></div>
-      <div class="ap" id="ap-projects"><div class="page-title">🌐 Projects</div><div id="list-projects" class="posts-list"><div class="loading">Loading...</div></div></div>
+      <!-- Rooms will be injected here -->
+      <div id="rooms-container"></div>
     </div>
   </div>
 </div>
 
 <script>
-// تهيئة Supabase
 const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 const ADMIN_PASSWORD = 'virtux2025';
 
+const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects'];
+const roomLabels = {
+  live: '🔴 Live', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
+  'gaming-news': '📰 Gaming News', 'youtube-news': '▶️ Youtube News', 'yt-channels': '📺 Youtube Channels',
+  'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives', projects: '🌐 Projects'
+};
+
 const loginPage = document.getElementById('loginPage');
 const adminPage = document.getElementById('adminPage');
 const loginErr = document.getElementById('loginErr');
+const roomsContainer = document.getElementById('rooms-container');
+const template = document.getElementById('room-templates').innerHTML;
+
+// Generate room HTML dynamically
+rooms.forEach(room => {
+  let html = template.replace(/ROOM/g, room);
+  html = html.replace('🔴 ROOM', roomLabels[room]);
+  roomsContainer.insertAdjacentHTML('beforeend', html);
+});
 
 function login() {
   if (document.getElementById('pw').value === ADMIN_PASSWORD) {
     loginPage.style.display = 'none';
     adminPage.style.display = 'flex';
     checkConnection();
-    // لا نحمل أي شيء تلقائياً، ننتظر اختيار القسم
   } else {
     loginErr.style.display = 'block';
   }
@@ -200,9 +204,9 @@ async function loadPosts(room) {
         return `<div class="pi" id="pi-${p.id}">
           <div class="pi-icon">${iconHtml}</div>
           <div class="pi-info">
-            <div class="pi-title">${p.title}</div>
-            <div class="pi-meta">${p.description||''}${link}</div>
-            <span class="pi-tag">${p.tag||p.room}</span>
+            <div class="pi-title">${escapeHtml(p.title)}</div>
+            <div class="pi-meta">${escapeHtml(p.description||'')}${link}</div>
+            <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
           </div>
           <button class="btn-del" onclick="delPost(${p.id},'${p.room}')">🗑️ Delete</button>
         </div>`;
@@ -212,8 +216,17 @@ async function loadPosts(room) {
     }
   } catch(e) {
     console.error('Load error:', e);
-    el.innerHTML = '<div class="empty">Error loading posts. Check console.</div>';
+    el.innerHTML = '<div class="empty">Error loading posts.</div>';
   }
+}
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
 async function delPost(id, room) {
   if (!confirm('Delete this post?')) return;
@@ -229,52 +242,59 @@ async function delPost(id, room) {
 function showPage(id) {
   document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('ap-' + id).classList.add('active');
-  const sb = document.getElementById('sb-' + id);
-  if (sb) sb.classList.add('active');
+  const target = document.getElementById('ap-' + id);
+  if (target) target.classList.add('active');
+  const btn = document.getElementById('sb-' + id);
+  if (btn) btn.classList.add('active');
   if (id !== 'dashboard') {
     loadPosts(id);
   }
 }
-function val(id) { const el=document.getElementById(id); return el ? el.value.trim() : ''; }
-function clear(id) { const el=document.getElementById(id); if(el) el.value = ''; }
+function val(room, field) {
+  const el = document.getElementById(room+'-'+field);
+  return el ? el.value.trim() : '';
+}
+function clearField(room, field) {
+  const el = document.getElementById(room+'-'+field);
+  if (el) el.value = '';
+}
 async function addPost(room) {
-  const title = val(room+'-title');
+  const title = val(room, 'title');
   if (!title) { alert('Please enter a title'); return; }
   const iconEl = document.getElementById(room+'-icon');
   let icon = iconEl ? (iconEl._imgData || iconEl.value || '📄') : '📄';
   const body = {
-    title,
-    description: val(room+'-desc'),
+    title: title,
+    description: val(room, 'desc'),
     icon: icon,
-    url: val(room+'-url'),
-    tag: val(room+'-tag') || room,
+    url: val(room, 'url'),
+    tag: val(room, 'tag') || room,
     room: room,
-    content: val(room+'-content') || null
+    content: val(room, 'content') || null
   };
   const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='Publishing...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
   try {
     const { error } = await supabase.from('posts').insert(body);
     if (error) throw error;
-    // Reset fields
-    clear(room+'-title');
-    clear(room+'-desc');
-    clear(room+'-icon');
-    clear(room+'-url');
-    clear(room+'-content');
+    // Clear fields
+    clearField(room, 'title');
+    clearField(room, 'desc');
+    clearField(room, 'icon');
+    clearField(room, 'url');
+    clearField(room, 'content');
     const preview = document.getElementById(room+'-imgpreview');
-    if(preview) { preview.style.display='none'; preview.src=''; }
+    if (preview) { preview.style.display = 'none'; preview.src = ''; }
     const fileInput = document.getElementById(room+'-imgfile');
-    if(fileInput) fileInput.value = '';
+    if (fileInput) fileInput.value = '';
     const ok = document.getElementById('ok-'+room);
-    if(ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
+    if (ok) { ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 3000); }
     loadPosts(room);
-  } catch(e) {
+  } catch (e) {
     const er = document.getElementById('er-'+room);
-    if(er) { er.textContent = '❌ '+e.message; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
+    if (er) { er.textContent = '❌ '+e.message; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 5000); }
   } finally {
-    if(btn) { btn.disabled=false; btn.textContent='➕ Publish'; }
+    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
   }
 }
 function previewImg(room) {
@@ -290,22 +310,8 @@ function previewImg(room) {
   };
   reader.readAsDataURL(file);
 }
-// دوال رفع فيديو (اختياري)
-async function uploadVideo(room) {
-  const fileInput = document.getElementById(room+'-videofile');
-  const file = fileInput.files[0];
-  if (!file) return;
-  const fileName = Date.now() + '_' + file.name;
-  const filePath = `videos/${fileName}`;
-  const { error } = await supabase.storage.from('videos').upload(filePath, file);
-  if (!error) {
-    const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(filePath);
-    document.getElementById(room+'-url').value = publicUrl;
-    alert('Video uploaded successfully! URL added.');
-  } else {
-    alert('Upload failed. Make sure bucket "videos" exists.');
-  }
-}
+// Initial load: show dashboard
+showPage('dashboard');
 </script>
 </body>
 </html>
