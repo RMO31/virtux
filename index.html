@@ -64,7 +64,6 @@
     .post-dl{font-size:12px;color:#000;text-decoration:none;background:#9fb000;border-radius:5px;padding:4px 10px;font-weight:600}
     .read-more{font-size:12px;background:#9fb000;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
     .read-more:hover{background:#d4e800}
-    /* تنسيق شبكة القنوات (مربعات) */
     .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
     .channel-card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#9fb000}
@@ -126,7 +125,7 @@
       <!-- Live -->
       <div class="vx-page" id="page-live"><div class="page-header"><h2>🔴 Live Streams</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('live','',this)">All</button><button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="filterPosts('live','VIP',this)">👑 VIP</button></div><div id="addForm-live" class="add-form"><h3>➕ إضافة بث مباشر جديد</h3><div class="fg"><input class="full" id="live-title" placeholder="عنوان البث"><textarea id="live-desc" placeholder="وصف مختصر" rows="2"></textarea><div class="img-upload full"><input type="file" id="live-imgfile" accept="image/*"><label for="live-imgfile">📁 رفع صورة</label><input type="text" id="live-icon" placeholder="رمز تعبيري"><img id="live-imgpreview" class="img-preview"></div><select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select><input class="full" id="live-url" placeholder="رابط البث (اختياري)"><textarea class="full" id="live-content" placeholder="محتوى طويل" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('live')">نشر</button></div><div class="posts-grid" id="grid-live"><div class="loading-state">Loading...</div></div></div>
 
-      <!-- Tournaments (مختصر للطول، لكن يمكنك إضافة باقي الأقسام بنفس النمط) -->
+      <!-- Tournaments -->
       <div class="vx-page" id="page-tournaments"><div class="page-header"><h2>🏆 Tournaments</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">👑 VIP</button></div><div id="addForm-tournaments" class="add-form"><h3>➕ إضافة بطولة</h3><div class="fg"><input class="full" id="tournaments-title" placeholder="اسم البطولة"><input id="tournaments-desc" placeholder="اللعبة • الفرق"><div class="img-upload full"><input type="file" id="tournaments-imgfile" accept="image/*"><label>📁 صورة</label><input type="text" id="tournaments-icon" placeholder="رمز"><img id="tournaments-imgpreview"></div><select id="tournaments-tag"><option value="Registration">📋 تسجيل</option><option value="Tournament News">📰 أخبار</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option></select><input class="full" id="tournaments-url" placeholder="رابط"><textarea class="full" id="tournaments-content" placeholder="محتوى طويل" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('tournaments')">نشر</button></div><div class="posts-grid" id="grid-tournaments"><div class="loading-state">Loading...</div></div></div>
 
       <!-- Highlights -->
@@ -159,14 +158,13 @@
 </div>
 
 <script>
-// تهيئة Supabase
 const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 let currentUser = null;
 let allPosts = {};
 
-// دوال المصادقة
+// Auth functions
 async function checkAuth() {
   const { data: { user } } = await supabase.auth.getUser();
   currentUser = user;
@@ -206,10 +204,9 @@ async function logout() {
   checkAuth();
 }
 
-// دوال عرض المنشورات
+// Display functions
 async function loadPage(room) {
-  let gridId = 'grid-'+room;
-  if (room === 'subscribers' || room === 'yt-channels') gridId = 'grid-'+room;
+  let gridId = (room === 'subscribers' || room === 'yt-channels') ? 'grid-'+room : 'grid-'+room;
   const el = document.getElementById(gridId);
   if (!el) return;
   el.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
@@ -222,7 +219,6 @@ async function loadPage(room) {
     el.innerHTML = '<div class="empty-state">فشل التحميل</div>';
   }
 }
-
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
@@ -245,7 +241,7 @@ function renderCards(posts, gridId, room) {
     }).join('');
     return;
   }
-  // باقي الأقسام (بطاقات عادية)
+  // Regular posts
   el.innerHTML = posts.map(p => {
     const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
     const thumb = isImg ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
@@ -272,7 +268,6 @@ function renderCards(posts, gridId, room) {
     </div>`;
   }).join('');
 }
-
 function filterPosts(room, tag, btn) {
   btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -281,7 +276,6 @@ function filterPosts(room, tag, btn) {
   const gridId = (room === 'subscribers' || room === 'yt-channels') ? 'grid-'+room : 'grid-'+room;
   renderCards(filtered, gridId, room);
 }
-
 function showPage(id) {
   document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
@@ -298,7 +292,7 @@ function loadCurrentPage() {
   }
 }
 
-// دوال النشر للمستخدمين العاديين (مبسطة)
+// Submit functions
 async function submitPost(room) {
   if (!currentUser) { alert('يجب تسجيل الدخول أولاً'); return; }
   const title = document.getElementById(room+'-title')?.value.trim();
@@ -313,7 +307,6 @@ async function submitPost(room) {
   const { error } = await supabase.from('posts').insert(body);
   if (error) { alert('خطأ: '+error.message); return; }
   alert('تم النشر بنجاح!');
-  // إعادة تعيين الحقول
   document.getElementById(room+'-title').value = '';
   if (document.getElementById(room+'-desc')) document.getElementById(room+'-desc').value = '';
   if (document.getElementById(room+'-icon')) document.getElementById(room+'-icon').value = '';
@@ -326,7 +319,7 @@ async function submitPost(room) {
   loadPage(room);
 }
 
-// دوال يوتيوب (لجلب البيانات - تحتاج مفتاح API صحيح)
+// YouTube helpers (API key already set)
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 async function fetchYouTubeChannelInfo(url) {
   try {
@@ -375,7 +368,7 @@ async function submitYouTubeChannel(room) {
   const url = document.getElementById(room+'-url').value.trim();
   if (!url) { alert('الرجاء إدخال رابط قناة يوتيوب'); return; }
   const info = await fetchYouTubeChannelInfo(url);
-  if (!info) { alert('تعذر جلب معلومات القناة، تأكد من الرابط أو المفتاح'); return; }
+  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
   const tag = document.getElementById(room+'-tag')?.value || room;
   const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
   const body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail, url, tag, room: room, content: extraContent, user_id: currentUser.id, user_email: currentUser.email };
@@ -397,7 +390,7 @@ async function submitYouTubeVideo(room) {
   else { alert('تم النشر'); document.getElementById(room+'-url').value = ''; if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = ''; loadPage(room); }
 }
 
-// معاينة الصور
+// Image preview
 function previewImg(room) {
   const file = document.getElementById(room+'-imgfile').files[0];
   if (!file) return;
@@ -416,7 +409,7 @@ document.querySelectorAll('.add-form input[type=file]').forEach(input => {
   input.addEventListener('change', () => previewImg(room));
 });
 
-// تسجيل الزيارة الفريدة
+// Visit tracking
 (function trackVisit() {
   const lastVisit = localStorage.getItem('virtux_last_visit');
   const now = Date.now();
@@ -431,7 +424,7 @@ document.querySelectorAll('.add-form input[type=file]').forEach(input => {
   }
 })();
 
-// تعريف الدوال العامة
+// Global functions
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.submitPost = submitPost;
@@ -444,7 +437,6 @@ window.toggleDD = (id) => {
 window.closeDD = () => document.querySelectorAll('.dd').forEach(d => d.classList.remove('open'));
 document.addEventListener('click', e => { if(!e.target.closest('.dd')) window.closeDD(); });
 
-// بدء التشغيل
 checkAuth();
 </script>
 </body>

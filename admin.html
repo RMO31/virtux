@@ -133,7 +133,6 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 const ADMIN_PASSWORD = 'virtux2025';
 
-// عناصر
 const loginPage = document.getElementById('loginPage');
 const adminPage = document.getElementById('adminPage');
 const loginErr = document.getElementById('loginErr');
@@ -168,7 +167,6 @@ async function checkConn() {
 
 async function loadDashboard() {
   try {
-    // جلب جميع المنشورات لإحصائيات الأقسام
     const { data: posts } = await supabase.from('posts').select('room');
     if (posts) {
       const rooms = ['live','tournaments','highlights','subscribers','gaming-news','youtube-news','yt-channels','yt-videos','yt-lives','projects'];
@@ -191,16 +189,13 @@ async function loadDashboard() {
       }).join('');
       document.getElementById('stats-container').innerHTML = statsHtml;
     }
-    // إحصائيات الزوار
     const { data: visitorStats } = await supabase.rpc('get_visitor_stats');
     if (visitorStats) {
       document.getElementById('s-visitors-today').textContent = visitorStats.today || 0;
       document.getElementById('s-visitors-total').textContent = visitorStats.total || 0;
     }
-    // عدد المستخدمين
     const { data: userCount } = await supabase.rpc('get_user_count');
     if (userCount !== undefined) document.getElementById('s-registered').textContent = userCount;
-    // قائمة المستخدمين
     const { data: users } = await supabase.rpc('get_users_list');
     if (users && users.length) {
       const usersHtml = `<table class="users-table"><thead><tr><th>Email</th><th>Registered At</th></tr></thead><tbody>${users.map(u => `<tr><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
@@ -262,8 +257,6 @@ function showPage(id) {
   if (id === 'dashboard') loadDashboard();
   else loadPosts(id);
 }
-
-// بدء التشغيل (لا حاجة لاستدعاء شيء لأن login سيظهر)
 </script>
 </body>
 </html>
