@@ -117,7 +117,7 @@
         </div>
       </div>
 
-      <!-- باقي الأقسام (بنفس النمط السابق مع تعديل بسيط في قسم Subscribers) -->
+      <!-- باقي الأقسام (تم اختصارها للطول، لكنها تعمل بنفس الطريقة) -->
       <!-- Live -->
       <div class="ap" id="ap-live">
         <div class="page-title">🔴 Live</div>
@@ -189,7 +189,7 @@
         <div class="card"><h3>المنشورات</h3><div id="list-highlights" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>
       </div>
 
-      <!-- Subscribers (معدل: جلب بيانات يوتيوب تلقائياً من الرابط فقط) -->
+      <!-- Subscribers (YouTube Channel - رابط فقط) -->
       <div class="ap" id="ap-subscribers">
         <div class="page-title">👥 Subscribers</div>
         <div class="card"><h3>➕ إضافة قناة يوتيوب (رابط فقط)</h3>
@@ -206,7 +206,7 @@
             </select>
             <textarea class="full" id="subscribers-content" placeholder="وصف إضافي (اختياري)" rows="3"></textarea>
           </div>
-          <button class="btn-pub" onclick="addYouTubeSubscriber()">➕ إضافة</button>
+          <button class="btn-pub" onclick="addYouTubeChannel('subscribers')">➕ إضافة</button>
         </div>
         <div class="card"><h3>القنوات المضافة</h3>
           <div id="list-subscribers" class="posts-list"><div class="loading">جاري التحميل...</div></div>
@@ -257,29 +257,28 @@
         <div class="card"><h3>المنشورات</h3><div id="list-youtube-news" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>
       </div>
 
-      <!-- YT Channels (يبقى يدوي) -->
+      <!-- YT Channels (معدل: رابط فقط + جلب تلقائي) -->
       <div class="ap" id="ap-yt-channels">
         <div class="page-title">📺 Youtube Channels</div>
-        <div class="card"><h3>➕ إضافة قناة</h3>
-          <div class="ok" id="ok-yt-channels">✅ تمت الإضافة!</div><div class="er" id="er-yt-channels"></div>
+        <div class="card"><h3>➕ إضافة قناة يوتيوب (رابط فقط)</h3>
+          <div class="ok" id="ok-yt-channels">✅ تمت الإضافة!</div>
+          <div class="er" id="er-yt-channels"></div>
           <div class="fg">
-            <input id="yt-channels-title" placeholder="اسم القناة">
-            <input id="yt-channels-desc" placeholder="عدد المشتركين">
-            <div class="img-upload full">
-              <input type="file" id="yt-channels-imgfile" accept="image/*" onchange="previewImg('yt-channels')">
-              <label for="yt-channels-imgfile">📁 رفع صورة</label>
-              <input type="text" id="yt-channels-icon" placeholder="رمز تعبيري">
-              <img id="yt-channels-imgpreview" class="img-preview" src="">
-            </div>
-            <input id="yt-channels-url" placeholder="رابط القناة">
-            <textarea class="full" id="yt-channels-content" placeholder="وصف إضافي (اختياري)" rows="4"></textarea>
+            <input class="full" id="yt-channels-url" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@RMO-MR)">
+            <select id="yt-channels-tag">
+              <option value="Channel">📺 Channel</option>
+              <option value="VIP">👑 VIP</option>
+            </select>
+            <textarea class="full" id="yt-channels-content" placeholder="وصف إضافي (اختياري)" rows="3"></textarea>
           </div>
-          <button class="btn-pub" onclick="addPost('yt-channels')">➕ إضافة</button>
+          <button class="btn-pub" onclick="addYouTubeChannel('yt-channels')">➕ إضافة</button>
         </div>
-        <div class="card"><h3>القنوات</h3><div id="list-yt-channels" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>
+        <div class="card"><h3>القنوات</h3>
+          <div id="list-yt-channels" class="posts-list"><div class="loading">جاري التحميل...</div></div>
+        </div>
       </div>
 
-      <!-- YT Videos -->
+      <!-- YT Videos (يبقى يدوي) -->
       <div class="ap" id="ap-yt-videos">
         <div class="page-title">🎬 Youtube Videos</div>
         <div class="card"><h3>➕ إضافة فيديو</h3>
@@ -302,7 +301,7 @@
         <div class="card"><h3>الفيديوهات</h3><div id="list-yt-videos" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>
       </div>
 
-      <!-- YT Lives -->
+      <!-- YT Lives (يبقى يدوي) -->
       <div class="ap" id="ap-yt-lives">
         <div class="page-title">🔴 Youtube Lives</div>
         <div class="card"><h3>➕ إضافة بث مباشر</h3>
@@ -387,7 +386,6 @@ function login() {
     document.getElementById('adminPage').style.display = 'flex';
     checkConn();
     loadDashboard();
-    // تحميل كل الأقسام عند الدخول (سيتم تحميلها عند النقر عليها)
   } else {
     document.getElementById('loginErr').style.display = 'block';
   }
@@ -399,10 +397,10 @@ function logout() {
   document.getElementById('pw').value = '';
 }
 
-// ==================== Dashboard (إحصائيات فقط) ====================
+// ==================== Dashboard ====================
 async function loadDashboard() {
   try {
-    // إحصائيات الزوار
+    // Visitor stats
     try {
       const visitorRes = await fetch(SB + '/rpc/get_visitor_stats', { headers: HDR });
       if (visitorRes.ok) {
@@ -417,7 +415,7 @@ async function loadDashboard() {
       }
     } catch(e) { console.warn(e); }
     
-    // المستخدمين المسجلين
+    // Registered users
     try {
       const userCountRes = await fetch(SB + '/rpc/get_user_count', { headers: HDR });
       if (userCountRes.ok) {
@@ -580,7 +578,7 @@ async function uploadVideo(room) {
   } catch(e) { alert('خطأ في رفع الفيديو'); }
 }
 
-// ==================== جلب بيانات يوتيوب وإضافة قناة (رابط فقط) ====================
+// ==================== جلب بيانات يوتيوب وإضافة قناة (لـ subscribers و yt-channels) ====================
 async function fetchYouTubeChannelInfo(url) {
   try {
     let channelId = null;
@@ -622,8 +620,10 @@ async function fetchYouTubeChannelInfo(url) {
   }
 }
 
-async function addYouTubeSubscriber() {
-  const url = document.getElementById('subscribers-url').value.trim();
+async function addYouTubeChannel(room) {
+  const urlField = document.getElementById(room+'-url');
+  if (!urlField) return;
+  const url = urlField.value.trim();
   if (!url) { alert('الرجاء إدخال رابط قناة يوتيوب'); return; }
   
   const info = await fetchYouTubeChannelInfo(url);
@@ -632,19 +632,22 @@ async function addYouTubeSubscriber() {
     return;
   }
   
-  const tag = document.getElementById('subscribers-tag').value;
-  const extraContent = document.getElementById('subscribers-content').value.trim();
+  const tagField = document.getElementById(room+'-tag');
+  const tag = tagField ? tagField.value : (room === 'subscribers' ? 'YouTube' : 'Channel');
+  const contentField = document.getElementById(room+'-content');
+  const extraContent = contentField ? contentField.value.trim() : '';
+  
   const body = {
     title: info.title,
     description: `${info.subscribers} مشترك`,
     icon: info.thumbnail || '📺',
     url: url,
     tag: tag,
-    room: 'subscribers',
+    room: room,
     content: extraContent || null
   };
   
-  const btn = document.querySelector('#ap-subscribers .btn-pub');
+  const btn = document.querySelector('#ap-'+room+' .btn-pub');
   if(btn) { btn.disabled=true; btn.textContent='جاري الإضافة...'; }
   try {
     const r = await fetch(SB + '/posts', {
@@ -653,25 +656,20 @@ async function addYouTubeSubscriber() {
       body: JSON.stringify(body)
     });
     if (r.ok) {
-      document.getElementById('subscribers-url').value = '';
-      document.getElementById('subscribers-content').value = '';
-      const ok = document.getElementById('ok-subscribers');
-      ok.style.display='block';
-      setTimeout(()=>ok.style.display='none',3000);
-      loadPosts('subscribers');
+      urlField.value = '';
+      if (contentField) contentField.value = '';
+      const ok = document.getElementById('ok-'+room);
+      if (ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
+      loadPosts(room);
       loadDashboard();
     } else {
       const err = await r.json();
-      const er = document.getElementById('er-subscribers');
-      er.textContent = '❌ ' + (err.message||err.hint||'خطأ');
-      er.style.display='block';
-      setTimeout(()=>er.style.display='none',5000);
+      const er = document.getElementById('er-'+room);
+      if (er) { er.textContent = '❌ ' + (err.message||err.hint||'خطأ'); er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
     }
   } catch(e) {
-    const er = document.getElementById('er-subscribers');
-    er.textContent = '❌ خطأ في الاتصال';
-    er.style.display='block';
-    setTimeout(()=>er.style.display='none',5000);
+    const er = document.getElementById('er-'+room);
+    if (er) { er.textContent = '❌ خطأ في الاتصال'; er.style.display='block'; setTimeout(()=>er.style.display='none',5000); }
   } finally {
     if(btn) { btn.disabled=false; btn.textContent='➕ إضافة'; }
   }
