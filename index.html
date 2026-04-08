@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
@@ -128,12 +127,32 @@ function toggleDD(id) { document.querySelectorAll('.dd').forEach(d => { if(d.id!
 function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open')); }
 document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
 function showPage(id) { document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); const sb = document.getElementById('sb-'+id); if(sb) sb.classList.add('active'); loadPage(id); }
-async function loadPage(room) { const gridId = 'grid-'+room; const el = document.getElementById(gridId); if(!el) return; el.innerHTML = '<div class="loading-state">Loading...</div>'; try { const r = await fetch(SB_URL+'/rest/v1/posts?room=eq.'+room+'&order=id.desc', { headers: {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY} }); const posts = await r.json(); allPosts[room] = Array.isArray(posts) ? posts : []; renderCards(allPosts[room], gridId, room); } catch(e) { el.innerHTML = '<div class="empty-state">Could not load posts.</div>'; } }
+async function loadPage(room) {
+  const gridId = 'grid-'+room;
+  const el = document.getElementById(gridId);
+  if(!el) return;
+  el.innerHTML = '<div class="loading-state">Loading...</div>';
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/posts?room=eq.'+room+'&order=id.desc', { headers: {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY} });
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const posts = await r.json();
+    allPosts[room] = Array.isArray(posts) ? posts : [];
+    renderCards(allPosts[room], gridId, room);
+  } catch(e) {
+    console.error('Load error:', e);
+    el.innerHTML = '<div class="empty-state">Error loading posts. Check console.</div>';
+  }
+}
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if(!posts||!posts.length) { el.innerHTML='<div class="empty-state">No posts yet 🎮</div>'; return; }
   if(room === 'yt-channels') {
-    el.innerHTML = posts.map(p => { const isImg = p.icon && (p.icon.startsWith('data:')||p.icon.startsWith('http')); const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon||'📺'}</div>`; const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">Visit Channel</a>` : ''; return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${p.title}</div><div class="channel-sub">${p.description||''}</div></div>${link}</div>`; }).join('');
+    el.innerHTML = posts.map(p => {
+      const isImg = p.icon && (p.icon.startsWith('data:')||p.icon.startsWith('http'));
+      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon||'📺'}</div>`;
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">Visit Channel</a>` : '';
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${p.title}</div><div class="channel-sub">${p.description||''}</div></div>${link}</div>`;
+    }).join('');
     return;
   }
   el.innerHTML = posts.map(p => {
