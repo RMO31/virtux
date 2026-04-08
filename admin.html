@@ -131,7 +131,7 @@
       <!-- Tournaments -->
       <div class="vx-page" id="page-tournaments"><div class="page-header"><h2>🏆 Tournaments</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">👑 VIP</button></div><div id="addForm-tournaments" class="add-form"><h3>➕ Add Tournament</h3><div class="fg"><input class="full" id="tournaments-title" placeholder="Tournament name"><input id="tournaments-desc" placeholder="Game • Teams"><div class="img-upload full"><input type="file" id="tournaments-imgfile" accept="image/*"><label>📁 Upload Image</label><input type="text" id="tournaments-icon" placeholder="Emoji"><img id="tournaments-imgpreview"></div><select id="tournaments-tag"><option value="Registration">📋 Registration</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select><input class="full" id="tournaments-url" placeholder="URL"><textarea class="full" id="tournaments-content" placeholder="Full content" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('tournaments')">Publish</button></div><div class="posts-grid" id="grid-tournaments"><div class="loading-state">Loading...</div></div></div>
 
-      <!-- Highlights (فيديو مدمج مع رابط المصدر) -->
+      <!-- Highlights -->
       <div class="vx-page" id="page-highlights"><div class="page-header"><h2>🎬 Highlights</h2></div><div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="filterPosts('highlights','Video',this)">📹 Video</button><button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">📷 Photo</button></div><div id="addForm-highlights" class="add-form"><h3>➕ Add Highlight</h3><div class="fg"><input class="full" id="highlights-title" placeholder="Title (optional)"><input id="highlights-desc" placeholder="Player • Game"><div class="img-upload full"><input type="file" id="highlights-imgfile" accept="image/*"><label>📁 Upload Image</label><input type="file" id="highlights-videofile" accept="video/mp4,video/webm"><label>🎥 Upload Video</label><input type="text" id="highlights-icon" placeholder="Emoji"><img id="highlights-imgpreview"></div><select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select><input class="full" id="highlights-url" placeholder="Video/Image URL"><textarea class="full" id="highlights-content" placeholder="Full content" rows="3"></textarea></div><button class="btn-submit" onclick="submitPost('highlights')">Publish</button></div><div class="posts-grid" id="grid-highlights"><div class="loading-state">Loading...</div></div></div>
 
       <!-- Subscribers -->
@@ -161,7 +161,6 @@
 </div>
 
 <script>
-// ==================== Supabase setup ====================
 const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -169,7 +168,17 @@ const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 let currentUser = null;
 let allPosts = {};
 
-// ==================== Auth functions ====================
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, m => {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+function truncate(str, len=150) { if (!str) return ''; if (str.length <= len) return str; return str.substring(0, len).trim() + '...'; }
+
 async function checkAuth() {
   const { data: { user } } = await supabase.auth.getUser();
   currentUser = user;
@@ -209,7 +218,6 @@ async function logout() {
   checkAuth();
 }
 
-// ==================== Display functions ====================
 async function loadPage(room) {
   let gridId = (room === 'subscribers' || room === 'yt-channels') ? 'grid-'+room : 'grid-'+room;
   const el = document.getElementById(gridId);
@@ -227,8 +235,6 @@ async function loadPage(room) {
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">No posts yet 🎮</div>'; return; }
-  
-  // Special for channels
   if (room === 'subscribers' || room === 'yt-channels') {
     el.innerHTML = posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
@@ -236,83 +242,42 @@ function renderCards(posts, gridId, room) {
       const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">Visit Channel</a>` : '';
       let subText = p.description || '';
       if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} subscribers`;
-      return `<div class="channel-card">
-        ${avatar}
-        <div class="channel-info">
-          <div class="channel-name">${escapeHtml(p.title)}</div>
-          <div class="channel-sub">${subText}</div>
-          <div class="channel-sub" style="font-size:11px; color:#aab;">${escapeHtml(p.content || '')}</div>
-        </div>
-        ${link}
-      </div>`;
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div><div class="channel-sub" style="font-size:11px; color:#aab;">${escapeHtml(p.content || '')}</div></div>${link}</div>`;
     }).join('');
     return;
   }
-  
-  // For other rooms
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
-    let originalLink = p.url;
-    // Direct video file
     if (p.url && p.url.match(/\.(mp4|webm)$/i)) {
       mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" poster="${p.icon || ''}"></video></div>`;
-    }
-    // YouTube embed
-    else if (p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'))) {
+    } else if (p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'))) {
       const videoIdMatch = p.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
       if (videoIdMatch) {
         mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoIdMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
       } else {
         mediaContent = `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
-    }
-    // Image or fallback
-    else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+    } else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
       mediaContent = `<img class="post-card-img" src="${p.icon}">`;
     } else {
       mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
-    
     let summary = '';
     if (p.content) summary = truncate(p.content.replace(/<[^>]*>/g, ''), 150);
     else if (p.description) summary = truncate(p.description, 150);
     const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 Read more</a>` : '';
-    
     let actions = '';
     if (p.url) {
-      // Always provide a link to the original source
       if (p.url.match(/\.(mp4|webm)$/i)) {
-        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ Download</a>
-                   <a href="${p.url}" target="_blank" class="post-link">🔗 Open Original</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ Download</a><a href="${p.url}" target="_blank" class="post-link">🔗 Open Original</a>`;
       } else if (p.url.includes('youtube.com') || p.url.includes('youtu.be')) {
         actions = `<a href="${p.url}" target="_blank" class="post-link">▶️ Watch on YouTube</a>`;
       } else {
         actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
       }
     }
-    
-    return `<div class="post-card">
-      ${mediaContent}
-      <div class="post-card-body">
-        <div class="post-card-title">${escapeHtml(p.title)}</div>
-        <div class="post-card-summary">${summary}</div>
-        <div class="post-card-footer">
-          <span class="post-tag">${escapeHtml(p.tag || '')}</span>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">${actions}${readMoreLink}</div>
-        </div>
-      </div>
-    </div>`;
+    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px; flex-wrap:wrap;">${actions}${readMoreLink}</div></div></div></div>`;
   }).join('');
-}
-function truncate(str, len=150) { if (!str) return ''; if (str.length <= len) return str; return str.substring(0, len).trim() + '...'; }
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, m => {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
 }
 function filterPosts(room, tag, btn) {
   btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -337,8 +302,6 @@ function loadCurrentPage() {
     if (id !== 'home' && id !== 'contact') loadPage(id);
   }
 }
-
-// ==================== Post submission (generic) ====================
 async function submitPost(room) {
   if (!currentUser) { alert('Please login first'); return; }
   const title = document.getElementById(room+'-title')?.value.trim();
@@ -354,7 +317,6 @@ async function submitPost(room) {
   const { error } = await supabase.from('posts').insert(body);
   if (error) { alert('Error: '+error.message); return; }
   alert('Published successfully!');
-  // Reset form
   document.getElementById(room+'-title').value = '';
   if (document.getElementById(room+'-desc')) document.getElementById(room+'-desc').value = '';
   if (document.getElementById(room+'-icon')) document.getElementById(room+'-icon').value = '';
@@ -366,8 +328,6 @@ async function submitPost(room) {
   if (fileInput) fileInput.value = '';
   loadPage(room);
 }
-
-// ==================== YouTube helpers (same as admin) ====================
 async function fetchYouTubeChannelInfo(url) {
   try {
     let channelId = null, handle = null;
@@ -570,8 +530,6 @@ async function submitYouTubeLive() {
   if (err1 || err2) alert('Error: ' + (err1?.message || err2?.message));
   else { alert('Live added to both sections!'); document.getElementById('yt-lives-url').value = ''; document.getElementById('yt-lives-content').value = ''; loadPage('yt-lives'); loadPage('live'); }
 }
-
-// ==================== Image preview ====================
 function previewImg(room) {
   const file = document.getElementById(room+'-imgfile').files[0];
   if (!file) return;
@@ -589,8 +547,6 @@ document.querySelectorAll('.add-form input[type=file]').forEach(input => {
   const room = input.id.replace('-imgfile', '');
   input.addEventListener('change', () => previewImg(room));
 });
-
-// ==================== Visit tracking ====================
 (function trackVisit() {
   const lastVisit = localStorage.getItem('virtux_last_visit');
   const now = Date.now();
@@ -604,8 +560,6 @@ document.querySelectorAll('.add-form input[type=file]').forEach(input => {
     }).catch(e => console.log('Visit log error:', e));
   }
 })();
-
-// ==================== Global functions ====================
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.submitPost = submitPost;
@@ -618,7 +572,6 @@ window.toggleDD = (id) => {
 };
 window.closeDD = () => document.querySelectorAll('.dd').forEach(d => d.classList.remove('open'));
 document.addEventListener('click', e => { if(!e.target.closest('.dd')) window.closeDD(); });
-
 checkAuth();
 </script>
 </body>
