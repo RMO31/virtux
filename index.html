@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* التصميم الأصلي الجميل */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -64,6 +65,7 @@
     .post-dl{font-size:12px;color:#000;text-decoration:none;background:#9fb000;border-radius:5px;padding:4px 10px;font-weight:600}
     .read-more{font-size:12px;background:#9fb000;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
     .read-more:hover{background:#d4e800}
+    /* شبكة مربعات القنوات */
     .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
     .channel-card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#9fb000}
@@ -292,7 +294,7 @@ function loadCurrentPage() {
   }
 }
 
-// Submit functions
+// Submit post (generic)
 async function submitPost(room) {
   if (!currentUser) { alert('يجب تسجيل الدخول أولاً'); return; }
   const title = document.getElementById(room+'-title')?.value.trim();
@@ -319,7 +321,7 @@ async function submitPost(room) {
   loadPage(room);
 }
 
-// YouTube helpers (API key already set)
+// YouTube helpers
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 async function fetchYouTubeChannelInfo(url) {
   try {
@@ -344,6 +346,19 @@ async function fetchYouTubeChannelInfo(url) {
     return null;
   } catch(e) { return null; }
 }
+async function submitYouTubeChannel(room) {
+  if (!currentUser) { alert('يجب تسجيل الدخول'); return; }
+  const url = document.getElementById(room+'-url').value.trim();
+  if (!url) { alert('الرجاء إدخال رابط قناة يوتيوب'); return; }
+  const info = await fetchYouTubeChannelInfo(url);
+  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
+  const tag = document.getElementById(room+'-tag')?.value || room;
+  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
+  const body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail, url, tag, room: room, content: extraContent, user_id: currentUser.id, user_email: currentUser.email };
+  const { error } = await supabase.from('posts').insert(body);
+  if (error) alert(error.message);
+  else { alert('تم النشر'); document.getElementById(room+'-url').value = ''; if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = ''; loadPage(room); }
+}
 async function fetchYouTubeVideoInfo(url) {
   const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
   if (!videoIdMatch) return null;
@@ -362,19 +377,6 @@ async function fetchYouTubeVideoInfo(url) {
     }
     return null;
   } catch(e) { return null; }
-}
-async function submitYouTubeChannel(room) {
-  if (!currentUser) { alert('يجب تسجيل الدخول'); return; }
-  const url = document.getElementById(room+'-url').value.trim();
-  if (!url) { alert('الرجاء إدخال رابط قناة يوتيوب'); return; }
-  const info = await fetchYouTubeChannelInfo(url);
-  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
-  const tag = document.getElementById(room+'-tag')?.value || room;
-  const extraContent = document.getElementById(room+'-content')?.value.trim() || '';
-  const body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail, url, tag, room: room, content: extraContent, user_id: currentUser.id, user_email: currentUser.email };
-  const { error } = await supabase.from('posts').insert(body);
-  if (error) alert(error.message);
-  else { alert('تم النشر'); document.getElementById(room+'-url').value = ''; if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = ''; loadPage(room); }
 }
 async function submitYouTubeVideo(room) {
   if (!currentUser) { alert('يجب تسجيل الدخول'); return; }
@@ -408,21 +410,6 @@ document.querySelectorAll('.add-form input[type=file]').forEach(input => {
   const room = input.id.replace('-imgfile', '');
   input.addEventListener('change', () => previewImg(room));
 });
-
-// Visit tracking
-(function trackVisit() {
-  const lastVisit = localStorage.getItem('virtux_last_visit');
-  const now = Date.now();
-  const oneDay = 24*60*60*1000;
-  if (!lastVisit || (now - parseInt(lastVisit)) > oneDay) {
-    localStorage.setItem('virtux_last_visit', now);
-    fetch('https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1/rpc/log_visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey },
-      body: JSON.stringify({ page_url: window.location.pathname })
-    }).catch(e => console.log('Visit log error:', e));
-  }
-})();
 
 // Global functions
 window.showPage = showPage;
