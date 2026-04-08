@@ -37,10 +37,6 @@
     .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
     .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
     .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
-    .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-    .sc{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:16px;text-align:center}
-    .sc-num{font-size:30px;font-weight:700;color:#d4e800}
-    .sc-lbl{font-size:11px;color:#667;margin-top:4px}
     .posts-list{display:flex;flex-direction:column;gap:8px}
     .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
     .pi-icon{width:40px;height:40px;border-radius:6px;object-fit:cover;display:flex;align-items:center;justify-content:center;background:#0f1e55;font-size:20px}
@@ -50,12 +46,12 @@
     .pi-tag{display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:3px;padding:1px 7px;margin-top:3px}
     .btn-del{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer}
     .btn-del:hover{background:#f55;color:#fff}
-    .users-table{width:100%;border-collapse:collapse;margin-top:10px}
-    .users-table th,.users-table td{padding:8px 10px;text-align:left;border-bottom:1px solid #1e2d6b}
-    .users-table th{color:#9fb000;font-size:12px}
-    .users-table td{font-size:12px;color:#ccc}
     .empty{text-align:center;color:#667;padding:20px}
     .loading{text-align:center;color:#667;padding:20px}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+    .stat-card{background:#0a1540;border:1px solid #1e2d6b;border-radius:10px;padding:12px;text-align:center}
+    .stat-number{font-size:28px;font-weight:700;color:#d4e800}
+    .stat-label{font-size:11px;color:#667}
   </style>
 </head>
 <body>
@@ -95,24 +91,15 @@
       <div class="sb-sec">Collab</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Projects</button>
     </div>
-
     <div class="main">
-      <!-- Dashboard: إحصائيات فقط -->
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
-        <div class="stats" id="stats-container"></div>
-        <div class="stats">
-          <div class="sc"><div class="sc-num" id="s-visitors-today">—</div><div class="sc-lbl">Visitors Today</div></div>
-          <div class="sc"><div class="sc-num" id="s-visitors-total">—</div><div class="sc-lbl">Total Visitors</div></div>
-          <div class="sc"><div class="sc-num" id="s-registered">—</div><div class="sc-lbl">Registered Users</div></div>
-        </div>
+        <div class="stats-grid" id="statsContainer">Loading...</div>
         <div class="card">
-          <h3>📋 Registered Users</h3>
-          <div id="users-list"><div class="loading">Loading...</div></div>
+          <h3>📋 Registered Users (from Supabase Auth)</h3>
+          <div id="usersList">Loading...</div>
         </div>
       </div>
-
-      <!-- باقي الأقسام -->
       <div class="ap" id="ap-live"><div class="page-title">🔴 Live</div><div id="list-live" class="posts-list"><div class="loading">Loading...</div></div></div>
       <div class="ap" id="ap-tournaments"><div class="page-title">🏆 Tournaments</div><div id="list-tournaments" class="posts-list"><div class="loading">Loading...</div></div></div>
       <div class="ap" id="ap-highlights"><div class="page-title">🎬 Highlights</div><div id="list-highlights" class="posts-list"><div class="loading">Loading...</div></div></div>
@@ -167,41 +154,46 @@ async function checkConn() {
 
 async function loadDashboard() {
   try {
+    // جلب جميع المنشورات
     const { data: posts } = await supabase.from('posts').select('room');
-    if (posts) {
-      const rooms = ['live','tournaments','highlights','subscribers','gaming-news','youtube-news','yt-channels','yt-videos','yt-lives','projects'];
-      const statsHtml = rooms.map(room => {
-        const count = posts.filter(p => p.room === room).length;
-        let label = '';
-        switch(room) {
-          case 'live': label = 'Live'; break;
-          case 'tournaments': label = 'Tournaments'; break;
-          case 'highlights': label = 'Highlights'; break;
-          case 'subscribers': label = 'Subscribers'; break;
-          case 'gaming-news': label = 'Gaming News'; break;
-          case 'youtube-news': label = 'Youtube News'; break;
-          case 'yt-channels': label = 'YT Channels'; break;
-          case 'yt-videos': label = 'YT Videos'; break;
-          case 'yt-lives': label = 'YT Lives'; break;
-          case 'projects': label = 'Projects'; break;
-        }
-        return `<div class="sc"><div class="sc-num">${count}</div><div class="sc-lbl">${label}</div></div>`;
-      }).join('');
-      document.getElementById('stats-container').innerHTML = statsHtml;
-    }
-    const { data: visitorStats } = await supabase.rpc('get_visitor_stats');
-    if (visitorStats) {
-      document.getElementById('s-visitors-today').textContent = visitorStats.today || 0;
-      document.getElementById('s-visitors-total').textContent = visitorStats.total || 0;
-    }
-    const { data: userCount } = await supabase.rpc('get_user_count');
-    if (userCount !== undefined) document.getElementById('s-registered').textContent = userCount;
-    const { data: users } = await supabase.rpc('get_users_list');
-    if (users && users.length) {
-      const usersHtml = `<table class="users-table"><thead><tr><th>Email</th><th>Registered At</th></tr></thead><tbody>${users.map(u => `<tr><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`).join('')}</tbody></table>`;
-      document.getElementById('users-list').innerHTML = usersHtml;
-    } else {
-      document.getElementById('users-list').innerHTML = '<div class="empty">No users yet.</div>';
+    // جلب عدد الزوار من جدول site_visits (استعلام مباشر)
+    let visitorsToday = 0, visitorsTotal = 0;
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const { data: visits } = await supabase.from('site_visits').select('*');
+      if (visits) {
+        visitorsTotal = visits.length;
+        visitorsToday = visits.filter(v => v.visit_date === today).length;
+      }
+    } catch(e) { console.warn('Visitors stats not available'); }
+    
+    // إحصائيات المنشورات
+    const rooms = ['live','tournaments','highlights','subscribers','gaming-news','youtube-news','yt-channels','yt-videos','yt-lives','projects'];
+    const statsHtml = rooms.map(room => {
+      const count = posts ? posts.filter(p => p.room === room).length : 0;
+      let label = room.replace('-',' ').replace(/(?:^|\s)\S/g, c => c.toUpperCase());
+      if (label === 'Yt Channels') label = 'YT Channels';
+      if (label === 'Yt Videos') label = 'YT Videos';
+      if (label === 'Yt Lives') label = 'YT Lives';
+      return `<div class="stat-card"><div class="stat-number">${count}</div><div class="stat-label">${label}</div></div>`;
+    }).join('');
+    // إضافة بطاقتي الزوار
+    const visitorsHtml = `<div class="stat-card"><div class="stat-number">${visitorsToday}</div><div class="stat-label">Visitors Today</div></div>
+                          <div class="stat-card"><div class="stat-number">${visitorsTotal}</div><div class="stat-label">Total Visitors</div></div>`;
+    document.getElementById('statsContainer').innerHTML = statsHtml + visitorsHtml;
+    
+    // جلب قائمة المستخدمين (محاولة استخدام API admin – قد لا تعمل بدون service_role، لكنها لن تسبب تجمد)
+    try {
+      // نحاول استخدام RPC إذا كانت موجودة، وإلا نعرض رسالة
+      const { data: users, error } = await supabase.rpc('get_users_list');
+      if (!error && users && users.length) {
+        const usersHtml = users.map(u => `<div>${u.email} - ${new Date(u.created_at).toLocaleString()}</div>`).join('');
+        document.getElementById('usersList').innerHTML = usersHtml;
+      } else {
+        document.getElementById('usersList').innerHTML = '<div class="empty">Unable to fetch users list (RPC function missing or permission denied).</div>';
+      }
+    } catch(e) {
+      document.getElementById('usersList').innerHTML = '<div class="empty">Users list not available. You can see them in Supabase Auth panel.</div>';
     }
   } catch(e) { console.error(e); }
 }
