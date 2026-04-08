@@ -103,7 +103,7 @@
     </div>
 
     <div class="main">
-      <!-- Dashboard (مختصر) -->
+      <!-- Dashboard -->
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
         <div class="stats">
@@ -115,7 +115,78 @@
         <div class="card"><h3>Recent Posts</h3><div id="recent-list"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- باقي الأقسام (يمكن إضافتها لاحقاً، لكن الأساس هو Subscribers) -->
+      <!-- Live (مثال) -->
+      <div class="ap" id="ap-live">
+        <div class="page-title">🔴 Live</div>
+        <div class="card"><h3>➕ Add Live</h3>
+          <div class="ok" id="ok-live">✅ Published!</div><div class="er" id="er-live"></div>
+          <div class="fg">
+            <input class="full" id="live-title" placeholder="Stream title">
+            <input id="live-desc" placeholder="Game • Type">
+            <div class="img-upload full">
+              <input type="file" id="live-imgfile" accept="image/*" onchange="previewImg('live')">
+              <label for="live-imgfile">📁 Upload Image</label>
+              <input type="text" id="live-icon" placeholder="Or type emoji">
+              <img id="live-imgpreview" class="img-preview" src="">
+            </div>
+            <select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select>
+            <input class="full" id="live-url" placeholder="Stream URL (optional)">
+            <textarea class="full" id="live-content" placeholder="Full article content (optional)" rows="4"></textarea>
+          </div>
+          <button class="btn-pub" onclick="addPost('live')">➕ Publish</button>
+        </div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-live"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <!-- Tournaments (مثال) -->
+      <div class="ap" id="ap-tournaments">
+        <div class="page-title">🏆 Tournaments</div>
+        <div class="card"><h3>➕ Add Tournament</h3>
+          <div class="ok" id="ok-tournaments">✅ Published!</div><div class="er" id="er-tournaments"></div>
+          <div class="fg">
+            <input class="full" id="tournaments-title" placeholder="Tournament name">
+            <input id="tournaments-desc" placeholder="Game • Teams • Region">
+            <div class="img-upload full">
+              <input type="file" id="tournaments-imgfile" accept="image/*" onchange="previewImg('tournaments')">
+              <label for="tournaments-imgfile">📁 Upload Image</label>
+              <input type="text" id="tournaments-icon" placeholder="Or type emoji">
+              <img id="tournaments-imgpreview" class="img-preview" src="">
+            </div>
+            <select id="tournaments-tag"><option value="Registration">📋 Registration</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select>
+            <input class="full" id="tournaments-url" placeholder="Tournament URL (optional)">
+            <textarea class="full" id="tournaments-content" placeholder="Full article content (optional)" rows="4"></textarea>
+          </div>
+          <button class="btn-pub" onclick="addPost('tournaments')">➕ Publish</button>
+        </div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-tournaments"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <!-- Highlights (مثال) -->
+      <div class="ap" id="ap-highlights">
+        <div class="page-title">🎬 Highlights</div>
+        <div class="card"><h3>➕ Add Highlight</h3>
+          <div class="ok" id="ok-highlights">✅ Published!</div><div class="er" id="er-highlights"></div>
+          <div class="fg">
+            <input class="full" id="highlights-title" placeholder="Highlight title">
+            <input id="highlights-desc" placeholder="Player • Game • Time">
+            <div class="img-upload full">
+              <input type="file" id="highlights-imgfile" accept="image/*" onchange="previewImg('highlights')">
+              <label for="highlights-imgfile">📁 Upload Image</label>
+              <input type="file" id="highlights-videofile" accept="video/mp4,video/webm" onchange="uploadVideo('highlights')">
+              <label for="highlights-videofile">🎥 Upload Video</label>
+              <input type="text" id="highlights-icon" placeholder="Or type emoji">
+              <img id="highlights-imgpreview" class="img-preview" src="">
+            </div>
+            <select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select>
+            <input class="full" id="highlights-url" placeholder="Video/Image URL (optional)">
+            <textarea class="full" id="highlights-content" placeholder="Full article content (optional)" rows="4"></textarea>
+          </div>
+          <button class="btn-pub" onclick="addPost('highlights')">➕ Publish</button>
+        </div>
+        <div class="card"><h3>Posts</h3><div class="posts-list" id="list-highlights"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <!-- Subscribers (YouTube Channel) مع جلب تلقائي باستخدام API -->
       <div class="ap" id="ap-subscribers">
         <div class="page-title">👥 Subscribers</div>
         <div class="card"><h3>➕ Add Subscriber</h3>
@@ -136,7 +207,51 @@
         <div class="card"><h3>Posts</h3><div class="posts-list" id="list-subscribers"><div class="loading">Loading...</div></div></div>
       </div>
 
-      <!-- باقي الأقسام (نفس الهيكل القديم يمكن إضافته) -->
+      <!-- YT Channels (مشابه) -->
+      <div class="ap" id="ap-yt-channels">
+        <div class="page-title">📺 Youtube Channels</div>
+        <div class="card"><h3>➕ Add Channel</h3>
+          <div class="ok" id="ok-yt-channels">✅ Added!</div><div class="er" id="er-yt-channels"></div>
+          <div class="fg">
+            <input class="full" id="yt-channels-url" placeholder="YouTube channel URL">
+            <textarea class="full" id="yt-channels-content" placeholder="Extra info" rows="3"></textarea>
+          </div>
+          <button class="btn-pub" onclick="addYouTubeChannel('yt-channels')">➕ Add</button>
+        </div>
+        <div class="card"><h3>Channels</h3><div class="posts-list" id="list-yt-channels"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <!-- YT Videos (جلب تلقائي) -->
+      <div class="ap" id="ap-yt-videos">
+        <div class="page-title">🎬 Youtube Videos</div>
+        <div class="card"><h3>➕ Add Video</h3>
+          <div class="ok" id="ok-yt-videos">✅ Added!</div><div class="er" id="er-yt-videos"></div>
+          <div class="fg">
+            <input class="full" id="yt-videos-url" placeholder="YouTube video URL">
+            <select id="yt-videos-tag" class="full"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select>
+            <textarea class="full" id="yt-videos-content" placeholder="Extra description" rows="3"></textarea>
+          </div>
+          <button class="btn-pub" onclick="addYouTubeVideo('yt-videos')">➕ Add</button>
+        </div>
+        <div class="card"><h3>Videos</h3><div class="posts-list" id="list-yt-videos"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <!-- YT Lives -->
+      <div class="ap" id="ap-yt-lives">
+        <div class="page-title">🔴 Youtube Lives</div>
+        <div class="card"><h3>➕ Add Live</h3>
+          <div class="ok" id="ok-yt-lives">✅ Added!</div><div class="er" id="er-yt-lives"></div>
+          <div class="fg">
+            <input class="full" id="yt-lives-url" placeholder="YouTube live URL">
+            <select id="yt-lives-tag" class="full"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select>
+            <textarea class="full" id="yt-lives-content" placeholder="Extra description" rows="3"></textarea>
+          </div>
+          <button class="btn-pub" onclick="addYouTubeVideo('yt-lives')">➕ Add</button>
+        </div>
+        <div class="card"><h3>Lives</h3><div class="posts-list" id="list-yt-lives"><div class="loading">Loading...</div></div></div>
+      </div>
+
+      <!-- باقي الأقسام (gaming-news, youtube-news, projects) يمكن إضافتها لاحقاً بنفس النمط -->
     </div>
   </div>
 </div>
@@ -150,7 +265,7 @@ let PASS = localStorage.getItem('vx_pw') || 'virtux2025';
 // مفتاح YouTube API الخاص بك
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 
-// دوال مساعدة
+// دوال مساعدة عامة
 async function checkConn() {
   try {
     const r = await fetch(SB + '/posts?limit=1', { headers: HDR });
@@ -242,6 +357,56 @@ function postHTML(p) {
 function val(id) { const el=document.getElementById(id); return el?(el.value||'').trim():''; }
 function clear(id) { const el=document.getElementById(id); if(el) el.value=''; }
 
+async function addPost(room) {
+  const title = val(room+'-title');
+  if (!title) { alert('Please enter a title!'); return; }
+  const body = {
+    title,
+    description: val(room+'-desc'),
+    icon: (()=>{ const el=document.getElementById(room+'-icon'); return (el && el._imgData) ? el._imgData : (el ? el.value||'📄' : '📄'); })(),
+    url: val(room+'-url'),
+    tag: val(room+'-tag')||room,
+    room,
+    content: val(room+'-content') || null
+  };
+  const btn = document.querySelector('#ap-'+room+' .btn-pub');
+  if(btn) { btn.disabled=true; btn.textContent='Publishing...'; }
+  try {
+    const r = await fetch(SB + '/posts', {
+      method: 'POST',
+      headers: { ...HDR, 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      ['title','desc','icon','url','content'].forEach(f => clear(room+'-'+f));
+      const preview = document.getElementById(room+'-imgpreview');
+      if(preview) { preview.style.display='none'; preview.src=''; }
+      const fileInput = document.getElementById(room+'-imgfile');
+      if(fileInput) fileInput.value = '';
+      const videoInput = document.getElementById(room+'-videofile');
+      if(videoInput) videoInput.value = '';
+      const ok = document.getElementById('ok-'+room);
+      ok.style.display='block';
+      setTimeout(()=>ok.style.display='none',3000);
+      loadPosts(room);
+      loadDashboard();
+    } else {
+      const err = await r.json();
+      const er = document.getElementById('er-'+room);
+      er.textContent = '❌ ' + (err.message||err.hint||'Error '+r.status);
+      er.style.display='block';
+      setTimeout(()=>er.style.display='none',5000);
+    }
+  } catch(e) {
+    const er = document.getElementById('er-'+room);
+    er.textContent = '❌ No internet connection';
+    er.style.display='block';
+    setTimeout(()=>er.style.display='none',5000);
+  } finally {
+    if(btn) { btn.disabled=false; btn.textContent='➕ Publish'; }
+  }
+}
+
 async function delPost(id, room) {
   if (!confirm('Delete this post?')) return;
   await fetch(SB+'/posts?id=eq.'+id, { method:'DELETE', headers: HDR });
@@ -249,7 +414,44 @@ async function delPost(id, room) {
   loadDashboard();
 }
 
-// استخراج معرف القناة من الرابط
+function previewImg(room) {
+  const file = document.getElementById(room+'-imgfile').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById(room+'-imgpreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById(room+'-icon').value = '🖼️';
+    document.getElementById(room+'-icon')._imgData = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadVideo(room) {
+  const fileInput = document.getElementById(room+'-videofile');
+  const file = fileInput.files[0];
+  if (!file) return;
+  const fileName = Date.now() + '_' + file.name;
+  const filePath = `videos/${fileName}`;
+  const uploadUrl = `https://eyqcpkhjzpmawqtilhgl.supabase.co/storage/v1/object/videos/${filePath}`;
+  try {
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + KEY },
+      body: file
+    });
+    if (res.ok) {
+      const publicUrl = `https://eyqcpkhjzpmawqtilhgl.supabase.co/storage/v1/object/public/videos/${filePath}`;
+      document.getElementById(room+'-url').value = publicUrl;
+      alert('Video uploaded successfully! URL added.');
+    } else {
+      alert('Upload failed. Make sure bucket "videos" exists.');
+    }
+  } catch(e) { alert('Error uploading video'); }
+}
+
+// دوال يوتيوب باستخدام API الرسمي
 function extractChannelIdFromUrl(url) {
   try {
     if (url.includes('/channel/')) {
@@ -261,10 +463,9 @@ function extractChannelIdFromUrl(url) {
   } catch(e) { return null; }
 }
 
-// جلب بيانات القناة باستخدام YouTube Data API v3
 async function fetchYouTubeChannelInfo(url) {
-  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY') {
-    alert('⚠️ يرجى التأكد من صحة مفتاح YouTube API');
+  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === '') {
+    alert('YouTube API key is missing. Please add it in the script.');
     return null;
   }
   try {
@@ -301,7 +502,28 @@ async function fetchYouTubeChannelInfo(url) {
   }
 }
 
-// إضافة قناة يوتيوب (لـ subscribers)
+async function fetchYouTubeVideoInfo(url) {
+  // استخراج video ID من الرابط
+  const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
+  if (!videoIdMatch) return null;
+  const videoId = videoIdMatch[1];
+  try {
+    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    if (data.items && data.items.length > 0) {
+      const item = data.items[0];
+      const snippet = item.snippet;
+      return {
+        title: snippet.title,
+        description: snippet.channelTitle,
+        thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url
+      };
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
 async function addYouTubeChannel(room) {
   const url = document.getElementById(room+'-url').value.trim();
   if (!url) { alert('Please enter a YouTube channel URL'); return; }
@@ -315,6 +537,58 @@ async function addYouTubeChannel(room) {
   const body = {
     title: info.title,
     description: `${info.subscribers} subscribers`,
+    icon: info.thumbnail,
+    url: url,
+    tag: tag,
+    room: room,
+    content: extraContent
+  };
+  const btn = document.querySelector('#ap-'+room+' .btn-pub');
+  if(btn) { btn.disabled=true; btn.textContent='Adding...'; }
+  try {
+    const r = await fetch(SB + '/posts', {
+      method: 'POST',
+      headers: { ...HDR, 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      document.getElementById(room+'-url').value = '';
+      if(document.getElementById(room+'-content')) document.getElementById(room+'-content').value = '';
+      const ok = document.getElementById('ok-'+room);
+      ok.style.display='block';
+      setTimeout(()=>ok.style.display='none',3000);
+      loadPosts(room);
+      loadDashboard();
+    } else {
+      const err = await r.json();
+      const er = document.getElementById('er-'+room);
+      er.textContent = '❌ ' + (err.message||err.hint||'Error '+r.status);
+      er.style.display='block';
+      setTimeout(()=>er.style.display='none',5000);
+    }
+  } catch(e) {
+    const er = document.getElementById('er-'+room);
+    er.textContent = '❌ Network error';
+    er.style.display='block';
+    setTimeout(()=>er.style.display='none',5000);
+  } finally {
+    if(btn) { btn.disabled=false; btn.textContent='➕ Add'; }
+  }
+}
+
+async function addYouTubeVideo(room) {
+  const url = document.getElementById(room+'-url').value.trim();
+  if (!url) { alert('Please enter a YouTube video URL'); return; }
+  const info = await fetchYouTubeVideoInfo(url);
+  if (!info) {
+    alert('Could not fetch video info. Check URL or API key.');
+    return;
+  }
+  const tag = document.getElementById(room+'-tag')?.value || room;
+  const extraContent = document.getElementById(room+'-content')?.value || '';
+  const body = {
+    title: info.title,
+    description: info.description,
     icon: info.thumbnail,
     url: url,
     tag: tag,
