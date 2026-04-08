@@ -1,137 +1,364 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <title>Virtux Admin</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        body { font-family: Arial, sans-serif; background: #01042e; color: white; padding: 20px; }
-        .login-box { background: #050e30; padding: 20px; border-radius: 10px; max-width: 300px; margin: auto; text-align: center; }
-        input, button { padding: 8px; margin: 5px; border-radius: 5px; border: none; }
-        button { background: #9fb000; cursor: pointer; }
-        .post { background: #0a1540; padding: 10px; margin: 10px 0; border-radius: 8px; display: flex; justify-content: space-between; }
-        .admin-panel { display: none; }
-        .error { color: #f55; }
-        .success { color: #4caf90; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Virtux Admin - كامل</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: #01042e; color: #fff; min-height: 100vh; }
+    #loginPage { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: #050e30; border: 1px solid #9fb000; border-radius: 14px; padding: 36px 32px; width: 340px; text-align: center; }
+    .login-box h1 { color: #d4e800; font-size: 24px; margin-bottom: 6px; }
+    .login-box p { color: #667; font-size: 13px; margin-bottom: 24px; }
+    .login-box input { width: 100%; padding: 10px 14px; border-radius: 7px; border: 1px solid #1e2d6b; background: #0a1540; color: #fff; font-size: 14px; margin-bottom: 12px; }
+    .login-box input:focus { outline: none; border-color: #9fb000; }
+    .btn-login { width: 100%; padding: 10px; background: #9fb000; color: #000; border: none; border-radius: 7px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn-login:hover { background: #d4e800; }
+    .err { color: #f55; font-size: 12px; margin-top: 8px; display: none; }
+    #adminPage { display: none; height: 100vh; flex-direction: column; }
+    .topbar { background: #000718; border-bottom: 1px solid #9fb000; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar h1 { color: #d4e800; font-size: 16px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .conn { font-size: 12px; padding: 3px 10px; border-radius: 4px; background: #0f3d2e; color: #4caf90; border: 1px solid #0f6e56; }
+    .conn.fail { background: #3d0f0f; color: #f55; border-color: #6e0f0f; }
+    .btn-logout { background: transparent; border: 1px solid #f55; color: #f55; padding: 4px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; }
+    .btn-logout:hover { background: #f55; color: #fff; }
+    .body { display: flex; flex: 1; height: calc(100vh - 46px); }
+    .sidebar { width: 190px; background: #050c2e; border-right: 1px solid #1e2d6b; padding: 12px 8px; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
+    .sb-btn { background: transparent; border: none; color: #aab; padding: 9px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; }
+    .sb-btn:hover, .sb-btn.active { background: #1a2d80; color: #d4e800; }
+    .sb-btn.active { border-left: 3px solid #d4e800; }
+    .sb-sec { font-size: 10px; color: #556; text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px 3px; }
+    .main { flex: 1; padding: 20px; overflow-y: auto; background: #01042e; }
+    .ap { display: none; }
+    .ap.active { display: block; }
+    .page-title { font-size: 18px; color: #d4e800; font-weight: 700; margin-bottom: 16px; }
+    .card { background: #050e30; border: 1px solid #1e2d6b; border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+    .card h3 { color: #9fb000; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+    .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .fg input, .fg select, .fg textarea { padding: 9px 12px; border-radius: 7px; border: 1px solid #1e2d6b; background: #0a1540; color: #fff; font-size: 13px; width: 100%; }
+    .full { grid-column: 1/-1; }
+    .btn-pub { background: #9fb000; color: #000; border: none; border-radius: 7px; padding: 9px 22px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+    .btn-pub:hover { background: #d4e800; }
+    .ok, .er { background: #0f3d2e; border: 1px solid #0f6e56; color: #4caf90; border-radius: 7px; padding: 9px 14px; font-size: 13px; margin-bottom: 12px; display: none; }
+    .er { background: #3d0f0f; border-color: #6e0f0f; color: #f55; }
+    .posts-list { display: flex; flex-direction: column; gap: 8px; }
+    .pi { background: #0a1540; border: 1px solid #1e2d6b; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+    .pi-icon { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; display: flex; align-items: center; justify-content: center; background: #0f1e55; font-size: 20px; }
+    .pi-info { flex: 1; }
+    .pi-title { font-size: 13px; font-weight: 600; color: #ddd; }
+    .pi-meta { font-size: 11px; color: #667; margin-top: 2px; }
+    .pi-tag { display: inline-block; font-size: 10px; background: #0f1e55; color: #9fb000; border-radius: 3px; padding: 1px 7px; margin-top: 3px; }
+    .btn-del { background: transparent; border: 1px solid #f55; color: #f55; border-radius: 5px; padding: 5px 12px; font-size: 11px; cursor: pointer; }
+    .btn-del:hover { background: #f55; color: #fff; }
+    .empty, .loading { text-align: center; color: #667; padding: 20px; }
+  </style>
 </head>
 <body>
-<div id="loginDiv" class="login-box">
-    <h2>Virtux Admin</h2>
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <div id="loginError" class="error"></div>
+
+<div id="loginPage">
+  <div class="login-box">
+    <h1>🎮 Virtux Admin</h1>
+    <p>أدخل كلمة المرور</p>
+    <input type="password" id="pw" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-login" onclick="login()">دخول</button>
+    <div class="err" id="loginErr">كلمة المرور خاطئة!</div>
+  </div>
 </div>
 
-<div id="adminDiv" class="admin-panel">
-    <button onclick="logout()">Logout</button>
-    <h2>Manage Live Posts</h2>
-    <div>
-        <input type="text" id="title" placeholder="Title" style="width: 80%;">
-        <button onclick="addPost()">Add Post</button>
+<div id="adminPage">
+  <div class="topbar">
+    <h1>🎮 Virtux Admin Panel</h1>
+    <div class="topbar-right">
+      <span class="conn" id="connStatus">جاري الاتصال...</span>
+      <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
     </div>
-    <div id="postsList"></div>
+  </div>
+  <div class="body">
+    <div class="sidebar">
+      <button class="sb-btn active" id="sb-dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
+      <div class="sb-sec">المحتوى</div>
+      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
+      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
+      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
+      <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
+      <div class="sb-sec">أخبار</div>
+      <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 أخبار الألعاب</button>
+      <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ أخبار يوتيوب</button>
+      <div class="sb-sec">يوتيوب</div>
+      <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 قنوات</button>
+      <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 فيديوهات</button>
+      <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 بثوث مباشرة</button>
+      <div class="sb-sec">تعاون</div>
+      <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 مشاريع</button>
+    </div>
+
+    <div class="main">
+      <!-- Dashboard -->
+      <div class="ap active" id="ap-dashboard">
+        <div class="page-title">📊 لوحة التحكم</div>
+        <div class="card"><h3>مرحباً بك</h3><p>اختر القسم من القائمة الجانبية لإدارة المنشورات.</p></div>
+      </div>
+
+      <!-- باقي الأقسام سيتم تعبئتها تلقائياً بواسطة JavaScript -->
+    </div>
+  </div>
 </div>
 
 <script>
-    const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-    const ADMIN_PASSWORD = 'virtux2025';
+// إعدادات Supabase
+const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const ADMIN_PASSWORD = 'virtux2025';
 
-    async function login() {
-        const pw = document.getElementById('password').value;
-        if (pw !== ADMIN_PASSWORD) {
-            document.getElementById('loginError').innerText = 'Wrong password';
-            return;
+// قائمة الأقسام
+const rooms = [
+  { id: 'live', label: '🔴 Live', tagOptions: ['Live Now', 'Pre Lives', 'Live News', 'VIP'] },
+  { id: 'tournaments', label: '🏆 Tournaments', tagOptions: ['Registration', 'Tournament News', 'Global', 'VIP'] },
+  { id: 'highlights', label: '🎬 Highlights', tagOptions: ['Pro', 'Tournament', 'Photo', 'Video'] },
+  { id: 'subscribers', label: '👥 Subscribers', tagOptions: ['YouTube', 'Member', 'Donor', 'Collaboration', 'VIP'] },
+  { id: 'gaming-news', label: '📰 Gaming News', tagOptions: ['News', 'Update', 'VIP'] },
+  { id: 'youtube-news', label: '▶️ Youtube News', tagOptions: ['News', 'VIP'] },
+  { id: 'yt-channels', label: '📺 Youtube Channels', tagOptions: ['Channel', 'VIP'] },
+  { id: 'yt-videos', label: '🎬 Youtube Videos', tagOptions: ['Video', 'VIP'] },
+  { id: 'yt-lives', label: '🔴 Youtube Lives', tagOptions: ['Live Now', 'Pre Lives', 'VIP'] },
+  { id: 'projects', label: '🌐 Projects', tagOptions: ['Project', 'VIP'] }
+];
+
+// عناصر الصفحة
+const loginPage = document.getElementById('loginPage');
+const adminPage = document.getElementById('adminPage');
+const loginErr = document.getElementById('loginErr');
+const mainContainer = document.querySelector('.main');
+
+// دوال مساعدة
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, m => {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+// إنشاء واجهة القسم ديناميكياً
+function createRoomSection(room) {
+  const roomId = room.id;
+  const label = room.label;
+  const tagOptions = room.tagOptions;
+  
+  // إنشاء قائمة الخيارات للـ select
+  let selectOptions = '';
+  tagOptions.forEach(opt => {
+    selectOptions += `<option value="${opt}">${opt}</option>`;
+  });
+
+  const html = `
+    <div class="ap" id="ap-${roomId}">
+      <div class="page-title">${label}</div>
+      <div class="card">
+        <h3>➕ إضافة جديد</h3>
+        <div class="ok" id="ok-${roomId}"></div>
+        <div class="er" id="er-${roomId}"></div>
+        <div class="fg">
+          <input class="full" id="${roomId}-title" placeholder="العنوان">
+          <input id="${roomId}-desc" placeholder="وصف قصير">
+          <select id="${roomId}-tag" class="full">${selectOptions}</select>
+          <input class="full" id="${roomId}-url" placeholder="رابط (اختياري)">
+          <textarea class="full" id="${roomId}-content" placeholder="محتوى طويل (اختياري)" rows="3"></textarea>
+        </div>
+        <button class="btn-pub" onclick="addPost('${roomId}')">➕ نشر</button>
+      </div>
+      <div class="card">
+        <h3>المنشورات</h3>
+        <div id="list-${roomId}" class="posts-list"><div class="loading">جاري التحميل...</div></div>
+      </div>
+    </div>
+  `;
+  mainContainer.insertAdjacentHTML('beforeend', html);
+}
+
+// بناء جميع الأقسام
+rooms.forEach(room => createRoomSection(room));
+
+// دوال تسجيل الدخول والخروج
+function login() {
+  const pw = document.getElementById('pw').value;
+  if (pw === ADMIN_PASSWORD) {
+    loginPage.style.display = 'none';
+    adminPage.style.display = 'flex';
+    checkConnection();
+    // تحميل الأقسام الحالية (المعروضة)
+    const activePage = document.querySelector('.ap.active');
+    if (activePage) {
+      const id = activePage.id.replace('ap-', '');
+      if (id !== 'dashboard') loadPosts(id);
+    }
+  } else {
+    loginErr.style.display = 'block';
+  }
+}
+function logout() {
+  loginPage.style.display = 'flex';
+  adminPage.style.display = 'none';
+  document.getElementById('pw').value = '';
+}
+
+async function checkConnection() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?limit=1`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const el = document.getElementById('connStatus');
+    if (res.ok) { el.textContent = '✅ متصل'; el.className = 'conn'; }
+    else { el.textContent = '❌ خطأ'; el.className = 'conn fail'; }
+  } catch(e) {
+    document.getElementById('connStatus').textContent = '❌ لا إنترنت';
+    document.getElementById('connStatus').className = 'conn fail';
+  }
+}
+
+// تحميل المنشورات لقسم معين
+async function loadPosts(roomId) {
+  const container = document.getElementById(`list-${roomId}`);
+  if (!container) return;
+  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?room=eq.${roomId}&order=id.desc`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const posts = await res.json();
+    if (!posts || posts.length === 0) {
+      container.innerHTML = '<div class="empty">لا توجد منشورات بعد.</div>';
+      return;
+    }
+    container.innerHTML = posts.map(post => {
+      const link = post.url ? ` • <a href="${post.url}" target="_blank" style="color:#9fb000">🔗 رابط</a>` : '';
+      let iconHtml = '📄';
+      if (post.icon) {
+        if (post.icon.startsWith('data:') || post.icon.startsWith('http')) {
+          iconHtml = `<img src="${post.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">`;
+        } else {
+          iconHtml = post.icon.length > 20 ? post.icon.substring(0,20)+'…' : post.icon;
         }
-        document.getElementById('loginDiv').style.display = 'none';
-        document.getElementById('adminDiv').style.display = 'block';
-        await loadPosts();
-    }
+      }
+      return `
+        <div class="pi" id="pi-${post.id}">
+          <div class="pi-icon">${iconHtml}</div>
+          <div class="pi-info">
+            <div class="pi-title">${escapeHtml(post.title)}</div>
+            <div class="pi-meta">${escapeHtml(post.description || '')}${link}</div>
+            <span class="pi-tag">${escapeHtml(post.tag || post.room)}</span>
+          </div>
+          <button class="btn-del" onclick="deletePost('${post.id}', '${roomId}')">🗑️ حذف</button>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    console.error(e);
+    container.innerHTML = '<div class="empty">خطأ في التحميل</div>';
+  }
+}
 
-    function logout() {
-        document.getElementById('loginDiv').style.display = 'block';
-        document.getElementById('adminDiv').style.display = 'none';
-        document.getElementById('password').value = '';
-        document.getElementById('loginError').innerText = '';
-    }
+// إضافة منشور جديد
+async function addPost(roomId) {
+  const title = document.getElementById(`${roomId}-title`).value.trim();
+  if (!title) {
+    alert('الرجاء إدخال عنوان');
+    return;
+  }
+  const description = document.getElementById(`${roomId}-desc`).value.trim();
+  const tag = document.getElementById(`${roomId}-tag`).value;
+  const url = document.getElementById(`${roomId}-url`).value.trim();
+  const content = document.getElementById(`${roomId}-content`).value.trim();
+  
+  const newPost = {
+    title,
+    description: description || '',
+    icon: '📄',
+    url: url || '',
+    tag: tag,
+    room: roomId,
+    content: content || null
+  };
+  
+  const btn = document.querySelector(`#ap-${roomId} .btn-pub`);
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(newPost)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    // مسح الحقول
+    document.getElementById(`${roomId}-title`).value = '';
+    document.getElementById(`${roomId}-desc`).value = '';
+    document.getElementById(`${roomId}-url`).value = '';
+    document.getElementById(`${roomId}-content`).value = '';
+    const okDiv = document.getElementById(`ok-${roomId}`);
+    okDiv.textContent = '✅ تم النشر!';
+    okDiv.style.display = 'block';
+    setTimeout(() => okDiv.style.display = 'none', 3000);
+    loadPosts(roomId);
+  } catch(e) {
+    const errDiv = document.getElementById(`er-${roomId}`);
+    errDiv.textContent = '❌ ' + e.message;
+    errDiv.style.display = 'block';
+    setTimeout(() => errDiv.style.display = 'none', 5000);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '➕ نشر'; }
+  }
+}
 
-    async function loadPosts() {
-        const container = document.getElementById('postsList');
-        container.innerHTML = 'Loading...';
-        try {
-            const { data, error } = await supabase
-                .from('posts')
-                .select('*')
-                .eq('room', 'live')
-                .order('id', { ascending: false });
-            if (error) throw error;
-            if (!data || data.length === 0) {
-                container.innerHTML = '<p>No posts yet.</p>';
-                return;
-            }
-            container.innerHTML = data.map(post => `
-                <div class="post">
-                    <div>
-                        <strong>${escapeHtml(post.title)}</strong><br>
-                        ${escapeHtml(post.description || '')}
-                        ${post.url ? `<br><a href="${post.url}" target="_blank" style="color:#9fb000">Link</a>` : ''}
-                    </div>
-                    <button onclick="deletePost(${post.id})">Delete</button>
-                </div>
-            `).join('');
-        } catch (err) {
-            console.error(err);
-            container.innerHTML = '<p>Error loading posts.</p>';
-        }
-    }
+// حذف منشور
+async function deletePost(postId, roomId) {
+  if (!confirm('هل أنت متأكد من حذف هذا المنشور؟')) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${postId}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    document.getElementById(`pi-${postId}`)?.remove();
+    // إذا لم يبق أي منشور، نعيد التحميل لإظهار الرسالة الفارغة
+    const remaining = document.querySelectorAll(`#list-${roomId} .pi`).length;
+    if (remaining === 0) loadPosts(roomId);
+  } catch(e) {
+    alert('فشل الحذف: ' + e.message);
+  }
+}
 
-    async function addPost() {
-        const title = document.getElementById('title').value.trim();
-        if (!title) {
-            alert('Please enter a title');
-            return;
-        }
-        const body = {
-            title: title,
-            description: '',
-            icon: '📄',
-            url: '',
-            tag: 'Live Now',
-            room: 'live',
-            content: null
-        };
-        try {
-            const { error } = await supabase.from('posts').insert(body);
-            if (error) throw error;
-            document.getElementById('title').value = '';
-            await loadPosts();
-        } catch (err) {
-            alert('Error: ' + err.message);
-        }
-    }
+// عرض الصفحة المختارة
+function showPage(pageId) {
+  // إخفاء جميع الأقسام
+  document.querySelectorAll('.ap').forEach(ap => ap.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(btn => btn.classList.remove('active'));
+  // إظهار القسم المطلوب
+  const targetAp = document.getElementById(`ap-${pageId}`);
+  if (targetAp) targetAp.classList.add('active');
+  const targetBtn = document.getElementById(`sb-${pageId}`);
+  if (targetBtn) targetBtn.classList.add('active');
+  // تحميل المنشورات إذا لم يكن dashboard
+  if (pageId !== 'dashboard') {
+    loadPosts(pageId);
+  }
+}
 
-    async function deletePost(id) {
-        if (!confirm('Delete this post?')) return;
-        try {
-            const { error } = await supabase.from('posts').delete().eq('id', id);
-            if (error) throw error;
-            await loadPosts();
-        } catch (err) {
-            alert('Delete failed: ' + err.message);
-        }
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
+// ربط الدوال بالنطاق العام
+window.login = login;
+window.logout = logout;
+window.showPage = showPage;
+window.addPost = addPost;
+window.deletePost = deletePost;
 </script>
 </body>
 </html>
