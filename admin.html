@@ -276,14 +276,18 @@
         </div>
       </div>
 
-      <!-- YT Videos (جلب تلقائي للفيديو) -->
+      <!-- YT Videos (جلب تلقائي: فيديو عادي أو أحدث فيديو من قناة VIP) -->
       <div class="ap" id="ap-yt-videos">
         <div class="page-title">🎬 Youtube Videos</div>
         <div class="card"><h3>➕ إضافة فيديو يوتيوب (رابط فقط)</h3>
           <div class="ok" id="ok-yt-videos">✅ تمت الإضافة!</div>
           <div class="er" id="er-yt-videos"></div>
           <div class="fg">
-            <input class="full" id="yt-videos-url" placeholder="رابط فيديو يوتيوب (مثال: https://www.youtube.com/watch?v=...)">
+            <input class="full" id="yt-videos-url" placeholder="رابط فيديو يوتيوب أو رابط قناة (لـ VIP)">
+            <select id="yt-videos-type" class="full">
+              <option value="single">🎬 فيديو عادي (رابط فيديو)</option>
+              <option value="channel">👑 قناة VIP (رابط قناة، يتم جلب أحدث فيديو)</option>
+            </select>
             <select id="yt-videos-tag" class="full">
               <option value="Video">📹 Video</option>
               <option value="VIP">👑 VIP</option>
@@ -297,14 +301,18 @@
         </div>
       </div>
 
-      <!-- YT Lives (جلب تلقائي للبث) -->
+      <!-- YT Lives (جلب تلقائي: بث عادي أو أحدث بث من قناة VIP) -->
       <div class="ap" id="ap-yt-lives">
         <div class="page-title">🔴 Youtube Lives</div>
         <div class="card"><h3>➕ إضافة بث مباشر يوتيوب (رابط فقط)</h3>
           <div class="ok" id="ok-yt-lives">✅ تمت الإضافة!</div>
           <div class="er" id="er-yt-lives"></div>
           <div class="fg">
-            <input class="full" id="yt-lives-url" placeholder="رابط بث يوتيوب (مثال: https://www.youtube.com/watch?v=...)">
+            <input class="full" id="yt-lives-url" placeholder="رابط بث مباشر يوتيوب أو رابط قناة (لـ VIP)">
+            <select id="yt-lives-type" class="full">
+              <option value="single">🔴 بث عادي (رابط بث)</option>
+              <option value="channel">👑 قناة VIP (رابط قناة، يتم جلب أحدث بث مباشر)</option>
+            </select>
             <select id="yt-lives-tag" class="full">
               <option value="Live Now">🔴 Live Now</option>
               <option value="Pre Lives">⏰ Pre Lives</option>
@@ -630,41 +638,110 @@ async function addYouTubeChannel(room) {
   }
 }
 
-// ==================== جلب بيانات فيديو/بث يوتيوب (API) ====================
-async function fetchYouTubeVideoInfo(url) {
+// ==================== جلب بيانات فيديو أو بث (من رابط فردي أو أحدث فيديو/بث من قناة) ====================
+async function fetchVideoFromChannel(channelUrl) {
   try {
-    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
-    if (!videoIdMatch) return null;
-    const videoId = videoIdMatch[1];
-    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-    if (data.items && data.items.length > 0) {
-      const snippet = data.items[0].snippet;
-      return {
-        title: snippet.title,
-        description: snippet.channelTitle,
-        thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url
-      };
-    }
-    return null;
+    // استخراج معرف القناة من الرابط
+    let channelId = null, handle = null;
+    if (channelUrl.includes('/channel/')) {
+      channelId = channelUrl.split('/channel/')[1]?.split(/[\/?]/)[0];
+    } else if (channelUrl.includes('/c/')) {
+      channelId = channelUrl.split('/c/')[1]?.split(/[\/?]/)[0];
+    } else if (channelUrl.includes('@')) {
+      handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0];
+    } else return null;
+    let apiUrl = '';
+    if (channelId) apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YOUTUBE_API_KEY}`;
+    else if (handle) apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+    else return null;
+    const channelRes = await fetch(apiUrl);
+    const channelData = await channelRes.json();
+    if (!channelData.items || channelData.items.length === 0) return null;
+    const realChannelId = channelData.items[0].id;
+    // جلب أحدث فيديو من القناة
+    const videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${realChannelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`;
+    const videosRes = await fetch(videosApi);
+    const videosData = await videosRes.json();
+    if (!videosData.items || videosData.items.length === 0) return null;
+    const firstVideo = videosData.items[0];
+    return {
+      title: firstVideo.snippet.title,
+      description: firstVideo.snippet.channelTitle,
+      thumbnail: firstVideo.snippet.thumbnails?.high?.url || firstVideo.snippet.thumbnails?.medium?.url,
+      videoId: firstVideo.id.videoId,
+      videoUrl: `https://www.youtube.com/watch?v=${firstVideo.id.videoId}`
+    };
   } catch(e) { console.error(e); return null; }
 }
 
-// إضافة فيديو أو بث (لـ yt-videos و yt-lives)
+async function fetchLatestLiveFromChannel(channelUrl) {
+  try {
+    // استخراج معرف القناة
+    let channelId = null, handle = null;
+    if (channelUrl.includes('/channel/')) {
+      channelId = channelUrl.split('/channel/')[1]?.split(/[\/?]/)[0];
+    } else if (channelUrl.includes('/c/')) {
+      channelId = channelUrl.split('/c/')[1]?.split(/[\/?]/)[0];
+    } else if (channelUrl.includes('@')) {
+      handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0];
+    } else return null;
+    let apiUrl = '';
+    if (channelId) apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${YOUTUBE_API_KEY}`;
+    else if (handle) apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+    else return null;
+    const channelRes = await fetch(apiUrl);
+    const channelData = await channelRes.json();
+    if (!channelData.items || channelData.items.length === 0) return null;
+    const realChannelId = channelData.items[0].id;
+    // جلب أحدث بث مباشر من القناة (نوع video و eventType=live)
+    const liveApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${realChannelId}&maxResults=1&eventType=live&type=video&key=${YOUTUBE_API_KEY}`;
+    const liveRes = await fetch(liveApi);
+    const liveData = await liveRes.json();
+    if (!liveData.items || liveData.items.length === 0) {
+      // إذا لم يكن هناك بث مباشر حالي، يمكن جلب أحدث فيديو عادي بدلاً من ذلك (اختياري)
+      return null;
+    }
+    const live = liveData.items[0];
+    return {
+      title: live.snippet.title,
+      description: live.snippet.channelTitle,
+      thumbnail: live.snippet.thumbnails?.high?.url || live.snippet.thumbnails?.medium?.url,
+      videoId: live.id.videoId,
+      videoUrl: `https://www.youtube.com/watch?v=${live.id.videoId}`
+    };
+  } catch(e) { console.error(e); return null; }
+}
+
+// إضافة فيديو أو بث (يدعم رابط فردي أو رابط قناة VIP)
 async function addYouTubeVideo(room) {
   const urlInput = document.getElementById(`${room}-url`);
   const url = urlInput?.value.trim();
-  if (!url) { alert('الرجاء إدخال رابط فيديو يوتيوب'); return; }
-  const info = await fetchYouTubeVideoInfo(url);
-  if (!info) { alert('تعذر جلب معلومات الفيديو. تأكد من صحة الرابط.'); return; }
+  if (!url) { alert('الرجاء إدخال رابط'); return; }
+  const typeSelect = document.getElementById(`${room}-type`);
+  const type = typeSelect ? typeSelect.value : 'single';
+  let info = null;
+  if (type === 'single') {
+    // رابط فيديو فردي
+    info = await fetchYouTubeVideoInfo(url);
+  } else {
+    // رابط قناة VIP - جلب أحدث فيديو أو بث حسب القسم
+    if (room === 'yt-videos') {
+      info = await fetchVideoFromChannel(url);
+      if (!info) alert('لم نتمكن من جلب أحدث فيديو من هذه القناة. تأكد من صحة الرابط وأن القناة تحتوي على فيديوهات.');
+    } else if (room === 'yt-lives') {
+      info = await fetchLatestLiveFromChannel(url);
+      if (!info) alert('لم يتم العثور على بث مباشر حالي لهذه القناة. يمكنك المحاولة لاحقاً أو استخدام رابط بث فردي.');
+    }
+  }
+  if (!info) return;
   const tag = document.getElementById(`${room}-tag`)?.value || (room === 'yt-videos' ? 'Video' : 'Live Now');
   const extraContent = document.getElementById(`${room}-content`)?.value.trim() || '';
+  const finalUrl = info.videoUrl || url;
   const body = {
     title: info.title,
     description: info.description,
-    icon: info.thumbnail || '📹',
-    url: url,
+    icon: info.thumbnail || (room === 'yt-videos' ? '📹' : '🔴'),
+    url: finalUrl,
     tag: tag,
     room: room,
     content: extraContent
@@ -695,6 +772,29 @@ async function addYouTubeVideo(room) {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '➕ إضافة'; }
   }
+}
+
+// جلب معلومات فيديو فردي (من رابط)
+async function fetchYouTubeVideoInfo(url) {
+  try {
+    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
+    if (!videoIdMatch) return null;
+    const videoId = videoIdMatch[1];
+    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    if (data.items && data.items.length > 0) {
+      const snippet = data.items[0].snippet;
+      return {
+        title: snippet.title,
+        description: snippet.channelTitle,
+        thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url,
+        videoId: videoId,
+        videoUrl: url
+      };
+    }
+    return null;
+  } catch(e) { console.error(e); return null; }
 }
 
 // ==================== دوال رفع الصور والفيديو ====================
