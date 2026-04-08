@@ -1,194 +1,137 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>Virtux Admin - Live</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
-    #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh}
-    .login-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;padding:36px 32px;width:340px;text-align:center}
-    .login-box h1{color:#d4e800;font-size:24px;margin-bottom:6px}
-    .login-box p{color:#667;font-size:13px;margin-bottom:24px}
-    .login-box input{width:100%;padding:10px 14px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:14px;margin-bottom:12px}
-    .login-box input:focus{outline:none;border-color:#9fb000}
-    .btn-login{width:100%;padding:10px;background:#9fb000;color:#000;border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer}
-    .btn-login:hover{background:#d4e800}
-    .err{color:#f55;font-size:12px;margin-top:8px;display:none}
-    #adminPage{display:none;padding:20px}
-    .topbar{background:#000718;border-bottom:1px solid #9fb000;padding:10px 20px;margin-bottom:20px;display:flex;justify-content:space-between}
-    .topbar h1{color:#d4e800}
-    .btn-logout{background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;cursor:pointer}
-    .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
-    .card h3{color:#9fb000;margin-bottom:14px}
-    .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-    .fg input,.fg select,.fg textarea{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;width:100%}
-    .full{grid-column:1/-1}
-    .btn-pub{background:#9fb000;color:#000;border:none;border-radius:7px;padding:9px 22px;cursor:pointer;font-weight:700}
-    .posts-list{display:flex;flex-direction:column;gap:8px}
-    .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
-    .pi-icon{width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#0f1e55;font-size:20px}
-    .pi-info{flex:1}
-    .pi-title{font-weight:600}
-    .pi-meta{font-size:11px;color:#667}
-    .btn-del{background:transparent;border:1px solid #f55;color:#f55;padding:5px 12px;border-radius:5px;cursor:pointer}
-    .ok{background:#0f3d2e;color:#4caf90;padding:9px;border-radius:7px;margin-bottom:12px;display:none}
-    .er{background:#3d0f0f;color:#f55;padding:9px;border-radius:7px;margin-bottom:12px;display:none}
-    .loading{text-align:center;color:#667;padding:20px}
-    .empty{text-align:center;color:#667;padding:20px}
-  </style>
+    <meta charset="UTF-8">
+    <title>Virtux Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #01042e; color: white; padding: 20px; }
+        .login-box { background: #050e30; padding: 20px; border-radius: 10px; max-width: 300px; margin: auto; text-align: center; }
+        input, button { padding: 8px; margin: 5px; border-radius: 5px; border: none; }
+        button { background: #9fb000; cursor: pointer; }
+        .post { background: #0a1540; padding: 10px; margin: 10px 0; border-radius: 8px; display: flex; justify-content: space-between; }
+        .admin-panel { display: none; }
+        .error { color: #f55; }
+        .success { color: #4caf90; }
+    </style>
 </head>
 <body>
-<div id="loginPage">
-  <div class="login-box">
-    <h1>🎮 Virtux Admin</h1>
-    <p>Enter your password</p>
-    <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
-    <button class="btn-login" onclick="login()">Login</button>
-    <div class="err" id="loginErr">Wrong password!</div>
-  </div>
+<div id="loginDiv" class="login-box">
+    <h2>Virtux Admin</h2>
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <div id="loginError" class="error"></div>
 </div>
 
-<div id="adminPage">
-  <div class="topbar">
-    <h1>Virtux Admin - Live</h1>
-    <button class="btn-logout" onclick="logout()">Logout</button>
-  </div>
-  <div class="card">
-    <h3>➕ Add Live Post</h3>
-    <div class="ok" id="okMsg"></div>
-    <div class="er" id="errMsg"></div>
-    <div class="fg">
-      <input class="full" id="title" placeholder="Title">
-      <input id="desc" placeholder="Description">
-      <input class="full" id="url" placeholder="URL (optional)">
-      <textarea class="full" id="content" placeholder="Full content (optional)" rows="3"></textarea>
+<div id="adminDiv" class="admin-panel">
+    <button onclick="logout()">Logout</button>
+    <h2>Manage Live Posts</h2>
+    <div>
+        <input type="text" id="title" placeholder="Title" style="width: 80%;">
+        <button onclick="addPost()">Add Post</button>
     </div>
-    <button class="btn-pub" onclick="addPost()">➕ Publish</button>
-  </div>
-  <div class="card">
-    <h3>📋 Live Posts</h3>
-    <div id="postsList" class="posts-list"><div class="loading">Loading...</div></div>
-  </div>
+    <div id="postsList"></div>
 </div>
 
 <script>
-const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-const ADMIN_PASSWORD = 'virtux2025';
+    const supabaseUrl = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const ADMIN_PASSWORD = 'virtux2025';
 
-const loginPage = document.getElementById('loginPage');
-const adminPage = document.getElementById('adminPage');
-const loginErr = document.getElementById('loginErr');
-
-function login() {
-  if (document.getElementById('pw').value === ADMIN_PASSWORD) {
-    loginPage.style.display = 'none';
-    adminPage.style.display = 'block';
-    loadPosts();
-  } else {
-    loginErr.style.display = 'block';
-  }
-}
-function logout() {
-  loginPage.style.display = 'flex';
-  adminPage.style.display = 'none';
-  document.getElementById('pw').value = '';
-}
-async function loadPosts() {
-  const container = document.getElementById('postsList');
-  container.innerHTML = '<div class="loading">Loading...</div>';
-  try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('room', 'live')
-      .order('id', { ascending: false });
-    if (error) throw error;
-    if (!data || data.length === 0) {
-      container.innerHTML = '<div class="empty">No posts yet.</div>';
-      return;
+    async function login() {
+        const pw = document.getElementById('password').value;
+        if (pw !== ADMIN_PASSWORD) {
+            document.getElementById('loginError').innerText = 'Wrong password';
+            return;
+        }
+        document.getElementById('loginDiv').style.display = 'none';
+        document.getElementById('adminDiv').style.display = 'block';
+        await loadPosts();
     }
-    container.innerHTML = data.map(post => `
-      <div class="pi" id="post-${post.id}">
-        <div class="pi-icon">${post.icon && (post.icon.startsWith('data:') || post.icon.startsWith('http')) ? `<img src="${post.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">` : (post.icon || '📄')}</div>
-        <div class="pi-info">
-          <div class="pi-title">${escapeHtml(post.title)}</div>
-          <div class="pi-meta">${escapeHtml(post.description || '')} ${post.url ? ` • <a href="${post.url}" target="_blank" style="color:#9fb000">🔗 Link</a>` : ''}</div>
-        </div>
-        <button class="btn-del" onclick="deletePost(${post.id})">🗑️ Delete</button>
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error(err);
-    container.innerHTML = '<div class="empty">Error loading posts.</div>';
-  }
-}
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
-}
-async function addPost() {
-  const title = document.getElementById('title').value.trim();
-  if (!title) { alert('Please enter a title'); return; }
-  const description = document.getElementById('desc').value.trim();
-  const url = document.getElementById('url').value.trim();
-  const content = document.getElementById('content').value.trim();
-  const body = {
-    title,
-    description,
-    icon: '📄',
-    url,
-    tag: 'Live Now',
-    room: 'live',
-    content: content || null
-  };
-  const btn = document.querySelector('.btn-pub');
-  btn.disabled = true;
-  btn.textContent = 'Publishing...';
-  try {
-    const { error } = await supabase.from('posts').insert(body);
-    if (error) throw error;
-    document.getElementById('title').value = '';
-    document.getElementById('desc').value = '';
-    document.getElementById('url').value = '';
-    document.getElementById('content').value = '';
-    const okDiv = document.getElementById('okMsg');
-    okDiv.textContent = '✅ Published!';
-    okDiv.style.display = 'block';
-    setTimeout(() => okDiv.style.display = 'none', 3000);
-    loadPosts();
-  } catch (err) {
-    const errDiv = document.getElementById('errMsg');
-    errDiv.textContent = '❌ ' + err.message;
-    errDiv.style.display = 'block';
-    setTimeout(() => errDiv.style.display = 'none', 5000);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '➕ Publish';
-  }
-}
-async function deletePost(id) {
-  if (!confirm('Delete this post?')) return;
-  try {
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (error) throw error;
-    document.getElementById(`post-${id}`)?.remove();
-    // if no posts left, refresh to show empty message
-    const remaining = document.querySelectorAll('.pi').length;
-    if (remaining === 0) loadPosts();
-  } catch (err) {
-    alert('Delete failed: ' + err.message);
-  }
-}
+
+    function logout() {
+        document.getElementById('loginDiv').style.display = 'block';
+        document.getElementById('adminDiv').style.display = 'none';
+        document.getElementById('password').value = '';
+        document.getElementById('loginError').innerText = '';
+    }
+
+    async function loadPosts() {
+        const container = document.getElementById('postsList');
+        container.innerHTML = 'Loading...';
+        try {
+            const { data, error } = await supabase
+                .from('posts')
+                .select('*')
+                .eq('room', 'live')
+                .order('id', { ascending: false });
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>No posts yet.</p>';
+                return;
+            }
+            container.innerHTML = data.map(post => `
+                <div class="post">
+                    <div>
+                        <strong>${escapeHtml(post.title)}</strong><br>
+                        ${escapeHtml(post.description || '')}
+                        ${post.url ? `<br><a href="${post.url}" target="_blank" style="color:#9fb000">Link</a>` : ''}
+                    </div>
+                    <button onclick="deletePost(${post.id})">Delete</button>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<p>Error loading posts.</p>';
+        }
+    }
+
+    async function addPost() {
+        const title = document.getElementById('title').value.trim();
+        if (!title) {
+            alert('Please enter a title');
+            return;
+        }
+        const body = {
+            title: title,
+            description: '',
+            icon: '📄',
+            url: '',
+            tag: 'Live Now',
+            room: 'live',
+            content: null
+        };
+        try {
+            const { error } = await supabase.from('posts').insert(body);
+            if (error) throw error;
+            document.getElementById('title').value = '';
+            await loadPosts();
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    }
+
+    async function deletePost(id) {
+        if (!confirm('Delete this post?')) return;
+        try {
+            const { error } = await supabase.from('posts').delete().eq('id', id);
+            if (error) throw error;
+            await loadPosts();
+        } catch (err) {
+            alert('Delete failed: ' + err.message);
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
 </script>
 </body>
 </html>
