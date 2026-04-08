@@ -94,26 +94,14 @@
     <div class="sidebar">
       <button class="sb-btn active" id="sb-dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
       <div class="sb-sec">الأقسام</div>
-      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
-      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
-      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
       <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <div class="sb-sec">أخبار</div>
-      <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
-      <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
-      <div class="sb-sec">يوتيوب</div>
-      <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
-      <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 Lives</button>
-      <div class="sb-sec">تعاون</div>
-      <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Projects</button>
+      <!-- يمكن إضافة أزرار أقسام أخرى إذا أردت إدارتها لاحقاً -->
     </div>
 
     <div class="main">
-      <!-- Dashboard: إحصائيات فقط (بدون قائمة منشورات) -->
+      <!-- Dashboard: إحصائيات فقط (زوار + مستخدمين مسجلين) -->
       <div class="ap active" id="ap-dashboard">
         <div class="page-title">📊 Dashboard</div>
-        <div class="stats-grid" id="posts-stats"></div>
         <div class="stats-grid" id="visitor-stats"></div>
         <div class="card">
           <h3>👥 المستخدمون المسجلون</h3>
@@ -121,82 +109,14 @@
         </div>
       </div>
 
-      <!-- باقي الأقسام (نفس الهيكل السابق مع تعديل بسيط) -->
-      <div class="ap" id="ap-live">
-        <div class="page-title">🔴 Live</div>
-        <div class="card"><h3>➕ Add Live</h3>
-          <div class="ok" id="ok-live">✅ Published!</div><div class="er" id="er-live"></div>
-          <div class="fg">
-            <input class="full" id="live-title" placeholder="Stream title">
-            <input id="live-desc" placeholder="Game • Type">
-            <div class="img-upload full">
-              <input type="file" id="live-imgfile" accept="image/*" onchange="previewImg('live')">
-              <label for="live-imgfile">📁 Upload Image</label>
-              <input type="text" id="live-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="live-imgpreview" class="img-preview" src="">
-            </div>
-            <select id="live-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 Live News</option><option value="VIP">👑 VIP</option></select>
-            <input class="full" id="live-url" placeholder="Stream URL (optional)">
-            <textarea class="full" id="live-content" placeholder="Full article content (optional)" rows="4"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('live')">➕ Publish</button>
-        </div>
-        <div class="card"><h3>Posts</h3><div id="list-live" class="posts-list"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <div class="ap" id="ap-tournaments">
-        <div class="page-title">🏆 Tournaments</div>
-        <div class="card"><h3>➕ Add Tournament</h3>
-          <div class="ok" id="ok-tournaments">✅ Published!</div><div class="er" id="er-tournaments"></div>
-          <div class="fg">
-            <input class="full" id="tournaments-title" placeholder="Tournament name">
-            <input id="tournaments-desc" placeholder="Game • Teams • Region">
-            <div class="img-upload full">
-              <input type="file" id="tournaments-imgfile" accept="image/*" onchange="previewImg('tournaments')">
-              <label for="tournaments-imgfile">📁 Upload Image</label>
-              <input type="text" id="tournaments-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="tournaments-imgpreview" class="img-preview" src="">
-            </div>
-            <select id="tournaments-tag"><option value="Registration">📋 Registration</option><option value="Tournament News">📰 News</option><option value="Global">🌍 Global</option><option value="VIP">👑 VIP</option></select>
-            <input class="full" id="tournaments-url" placeholder="Tournament URL (optional)">
-            <textarea class="full" id="tournaments-content" placeholder="Full article content (optional)" rows="4"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('tournaments')">➕ Publish</button>
-        </div>
-        <div class="card"><h3>Posts</h3><div id="list-tournaments" class="posts-list"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <div class="ap" id="ap-highlights">
-        <div class="page-title">🎬 Highlights</div>
-        <div class="card"><h3>➕ Add Highlight</h3>
-          <div class="ok" id="ok-highlights">✅ Published!</div><div class="er" id="er-highlights"></div>
-          <div class="fg">
-            <input class="full" id="highlights-title" placeholder="Highlight title">
-            <input id="highlights-desc" placeholder="Player • Game • Time">
-            <div class="img-upload full">
-              <input type="file" id="highlights-imgfile" accept="image/*" onchange="previewImg('highlights')">
-              <label for="highlights-imgfile">📁 Upload Image</label>
-              <input type="file" id="highlights-videofile" accept="video/mp4,video/webm" onchange="uploadVideo('highlights')">
-              <label for="highlights-videofile">🎥 Upload Video (mp4/webm)</label>
-              <input type="text" id="highlights-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="highlights-imgpreview" class="img-preview" src="">
-            </div>
-            <select id="highlights-tag"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option><option value="Photo">📷 Photo</option><option value="Video">📹 Video</option></select>
-            <input class="full" id="highlights-url" placeholder="Video/Image URL (optional)">
-            <textarea class="full" id="highlights-content" placeholder="Full article content (optional)" rows="4"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('highlights')">➕ Publish</button>
-        </div>
-        <div class="card"><h3>Posts</h3><div id="list-highlights" class="posts-list"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <!-- قسم Subscribers (معدل: جلب بيانات يوتيوب تلقائياً) -->
+      <!-- قسم Subscribers (جلب بيانات يوتيوب تلقائياً من الرابط فقط) -->
       <div class="ap" id="ap-subscribers">
         <div class="page-title">👥 Subscribers</div>
-        <div class="card"><h3>➕ Add Subscriber (YouTube Channel)</h3>
-          <div class="ok" id="ok-subscribers">✅ Added!</div><div class="er" id="er-subscribers"></div>
+        <div class="card"><h3>➕ إضافة قناة يوتيوب (رابط فقط)</h3>
+          <div class="ok" id="ok-subscribers">✅ تمت الإضافة!</div>
+          <div class="er" id="er-subscribers"></div>
           <div class="fg">
-            <input class="full" id="subscribers-url" placeholder="YouTube channel URL (e.g. https://www.youtube.com/@RMO-MR)">
+            <input class="full" id="subscribers-url" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@RMO-MR)">
             <select id="subscribers-tag">
               <option value="YouTube">🔔 YouTube</option>
               <option value="Member">⭐ Member</option>
@@ -204,142 +124,14 @@
               <option value="Collaboration">🌐 Collaboration</option>
               <option value="VIP">👑 VIP</option>
             </select>
-            <textarea class="full" id="subscribers-content" placeholder="Extra description (optional)" rows="3"></textarea>
+            <textarea class="full" id="subscribers-content" placeholder="وصف إضافي (اختياري)" rows="3"></textarea>
           </div>
-          <button class="btn-pub" onclick="addYouTubeSubscriber()">➕ Add</button>
+          <button class="btn-pub" onclick="addYouTubeSubscriber()">➕ إضافة</button>
         </div>
-        <div class="card"><h3>Posts</h3><div id="list-subscribers" class="posts-list"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <!-- باقي الأقسام (gaming-news, youtube-news, yt-channels, yt-videos, yt-lives, projects) -->
-      <div class="ap" id="ap-gaming-news">
-        <div class="page-title">📰 Gaming News</div>
-        <div class="card"><h3>➕ Add News</h3>
-          <div class="ok" id="ok-gaming-news">✅ Published!</div><div class="er" id="er-gaming-news"></div>
-          <div class="fg">
-            <input class="full" id="gaming-news-title" placeholder="News title">
-            <input class="full" id="gaming-news-desc" placeholder="Short summary">
-            <div class="img-upload full">
-              <input type="file" id="gaming-news-imgfile" accept="image/*" onchange="previewImg('gaming-news')">
-              <label for="gaming-news-imgfile">📁 Upload Image</label>
-              <input type="text" id="gaming-news-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="gaming-news-imgpreview" class="img-preview" src="">
-            </div>
-            <input id="gaming-news-url" placeholder="Image or article URL">
-            <textarea class="full" id="gaming-news-content" placeholder="Full news article content" rows="5"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('gaming-news')">➕ Publish</button>
+        <div class="card"><h3>القنوات المضافة</h3>
+          <div id="list-subscribers" class="posts-list"><div class="loading">جاري التحميل...</div></div>
         </div>
-        <div class="card"><h3>Posts</h3><div id="list-gaming-news" class="posts-list"><div class="loading">Loading...</div></div></div>
       </div>
-
-      <div class="ap" id="ap-youtube-news">
-        <div class="page-title">▶️ Youtube News</div>
-        <div class="card"><h3>➕ Add Youtube News</h3>
-          <div class="ok" id="ok-youtube-news">✅ Published!</div><div class="er" id="er-youtube-news"></div>
-          <div class="fg">
-            <input class="full" id="youtube-news-title" placeholder="Title">
-            <input class="full" id="youtube-news-desc" placeholder="Short summary">
-            <div class="img-upload full">
-              <input type="file" id="youtube-news-imgfile" accept="image/*" onchange="previewImg('youtube-news')">
-              <label for="youtube-news-imgfile">📁 Upload Image</label>
-              <input type="text" id="youtube-news-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="youtube-news-imgpreview" class="img-preview" src="">
-            </div>
-            <input id="youtube-news-url" placeholder="YouTube video URL">
-            <textarea class="full" id="youtube-news-content" placeholder="Full article content" rows="5"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('youtube-news')">➕ Publish</button>
-        </div>
-        <div class="card"><h3>Posts</h3><div id="list-youtube-news" class="posts-list"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <div class="ap" id="ap-yt-channels">
-        <div class="page-title">📺 Youtube Channels</div>
-        <div class="card"><h3>➕ Add Channel</h3>
-          <div class="ok" id="ok-yt-channels">✅ Added!</div><div class="er" id="er-yt-channels"></div>
-          <div class="fg">
-            <input id="yt-channels-title" placeholder="Channel name">
-            <input id="yt-channels-desc" placeholder="Subscribers count">
-            <div class="img-upload full">
-              <input type="file" id="yt-channels-imgfile" accept="image/*" onchange="previewImg('yt-channels')">
-              <label for="yt-channels-imgfile">📁 Upload Image</label>
-              <input type="text" id="yt-channels-icon" placeholder="Or type emoji (e.g. 📺)">
-              <img id="yt-channels-imgpreview" class="img-preview" src="">
-            </div>
-            <input id="yt-channels-url" placeholder="Channel URL">
-            <textarea class="full" id="yt-channels-content" placeholder="Description / article (optional)" rows="4"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('yt-channels')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Channels</h3><div class="posts-list" id="list-yt-channels"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <div class="ap" id="ap-yt-videos">
-        <div class="page-title">🎬 Youtube Videos</div>
-        <div class="card"><h3>➕ Add Video</h3>
-          <div class="ok" id="ok-yt-videos">✅ Added!</div><div class="er" id="er-yt-videos"></div>
-          <div class="fg">
-            <input class="full" id="yt-videos-title" placeholder="Video title">
-            <input id="yt-videos-desc" placeholder="Description">
-            <div class="img-upload full">
-              <input type="file" id="yt-videos-imgfile" accept="image/*" onchange="previewImg('yt-videos')">
-              <label for="yt-videos-imgfile">📁 Upload Image</label>
-              <input type="text" id="yt-videos-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="yt-videos-imgpreview" class="img-preview" src="">
-            </div>
-            <input class="full" id="yt-videos-url" placeholder="YouTube video URL">
-            <select id="yt-videos-tag" class="full"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select>
-            <textarea class="full" id="yt-videos-content" placeholder="Full description / article" rows="4"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('yt-videos')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Videos</h3><div class="posts-list" id="list-yt-videos"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <div class="ap" id="ap-yt-lives">
-        <div class="page-title">🔴 Youtube Lives</div>
-        <div class="card"><h3>➕ Add Live</h3>
-          <div class="ok" id="ok-yt-lives">✅ Added!</div><div class="er" id="er-yt-lives"></div>
-          <div class="fg">
-            <input class="full" id="yt-lives-title" placeholder="Stream title">
-            <input id="yt-lives-desc" placeholder="Game • Description">
-            <div class="img-upload full">
-              <input type="file" id="yt-lives-imgfile" accept="image/*" onchange="previewImg('yt-lives')">
-              <label for="yt-lives-imgfile">📁 Upload Image</label>
-              <input type="text" id="yt-lives-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="yt-lives-imgpreview" class="img-preview" src="">
-            </div>
-            <input class="full" id="yt-lives-url" placeholder="YouTube live URL">
-            <select id="yt-lives-tag" class="full"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select>
-            <textarea class="full" id="yt-lives-content" placeholder="Full description / article" rows="4"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('yt-lives')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Lives</h3><div class="posts-list" id="list-yt-lives"><div class="loading">Loading...</div></div></div>
-      </div>
-
-      <div class="ap" id="ap-projects">
-        <div class="page-title">🌐 Projects</div>
-        <div class="card"><h3>➕ Add Project</h3>
-          <div class="ok" id="ok-projects">✅ Added!</div><div class="er" id="er-projects"></div>
-          <div class="fg">
-            <input class="full" id="projects-title" placeholder="Project name">
-            <input class="full" id="projects-desc" placeholder="Short description">
-            <div class="img-upload full">
-              <input type="file" id="projects-imgfile" accept="image/*" onchange="previewImg('projects')">
-              <label for="projects-imgfile">📁 Upload Image</label>
-              <input type="text" id="projects-icon" placeholder="Or type emoji (e.g. 🎮)">
-              <img id="projects-imgpreview" class="img-preview" src="">
-            </div>
-            <input id="projects-url" placeholder="Project URL">
-            <textarea class="full" id="projects-content" placeholder="Full project details / article" rows="5"></textarea>
-          </div>
-          <button class="btn-pub" onclick="addPost('projects')">➕ Add</button>
-        </div>
-        <div class="card"><h3>Projects</h3><div class="posts-list" id="list-projects"><div class="loading">Loading...</div></div></div>
-      </div>
-
     </div>
   </div>
 </div>
@@ -381,6 +173,7 @@ function login() {
     document.getElementById('adminPage').style.display = 'flex';
     checkConn();
     loadDashboard();
+    loadPosts('subscribers');
   } else {
     document.getElementById('loginErr').style.display = 'block';
   }
@@ -395,72 +188,48 @@ function logout() {
 // ==================== Dashboard (إحصائيات فقط) ====================
 async function loadDashboard() {
   try {
-    // جلب جميع المنشورات
-    const r = await fetch(SB + '/posts?order=id.desc', { headers: HDR });
-    const data = await r.json();
-    if (!Array.isArray(data)) return;
-    
-    // إحصائيات عدد المنشورات لكل قسم
-    const rooms = [
-      { id: 'live', label: 'Live' },
-      { id: 'tournaments', label: 'Tournaments' },
-      { id: 'highlights', label: 'Highlights' },
-      { id: 'subscribers', label: 'Subscribers' },
-      { id: 'gaming-news', label: 'Gaming News' },
-      { id: 'youtube-news', label: 'Youtube News' },
-      { id: 'yt-channels', label: 'YT Channels' },
-      { id: 'yt-videos', label: 'YT Videos' },
-      { id: 'yt-lives', label: 'YT Lives' },
-      { id: 'projects', label: 'Projects' }
-    ];
-    const statsHtml = rooms.map(room => {
-      const count = data.filter(p => p.room === room.id).length;
-      return `<div class="stat-card"><div class="stat-number">${count}</div><div class="stat-label">${room.label}</div></div>`;
-    }).join('');
-    document.getElementById('posts-stats').innerHTML = statsHtml;
-    
     // إحصائيات الزوار (إذا كانت دوال SQL موجودة)
     try {
       const visitorRes = await fetch(SB + '/rpc/get_visitor_stats', { headers: HDR });
       if (visitorRes.ok) {
         const visitorStats = await visitorRes.json();
         const visitorHtml = `
-          <div class="stat-card"><div class="stat-number">${visitorStats.today || 0}</div><div class="stat-label">Visitors Today</div></div>
-          <div class="stat-card"><div class="stat-number">${visitorStats.total || 0}</div><div class="stat-label">Total Visitors</div></div>
+          <div class="stat-card"><div class="stat-number">${visitorStats.today || 0}</div><div class="stat-label">زوار اليوم</div></div>
+          <div class="stat-card"><div class="stat-number">${visitorStats.total || 0}</div><div class="stat-label">إجمالي الزوار</div></div>
         `;
         document.getElementById('visitor-stats').innerHTML = visitorHtml;
       } else {
-        document.getElementById('visitor-stats').innerHTML = '<div class="empty">Visitor stats not available</div>';
+        document.getElementById('visitor-stats').innerHTML = '<div class="empty">إحصائيات الزوار غير متاحة</div>';
       }
     } catch(e) { console.warn('Visitor stats error', e); }
     
-    // عدد المستخدمين المسجلين
+    // عدد المستخدمين المسجلين وقائمتهم
     try {
       const userCountRes = await fetch(SB + '/rpc/get_user_count', { headers: HDR });
       if (userCountRes.ok) {
         const userCount = await userCountRes.json();
         const usersListRes = await fetch(SB + '/rpc/get_users_list', { headers: HDR });
-        let usersHtml = `<div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">Registered Users</div></div>`;
+        let usersHtml = `<div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">مستخدمون مسجلون</div></div>`;
         if (usersListRes.ok) {
           const users = await usersListRes.json();
           if (users && users.length) {
-            usersHtml += `<div class="posts-list" style="margin-top:10px;">${users.map(u => `<div class="pi"><div class="pi-info"><div class="pi-title">${escapeHtml(u.email)}</div><div class="pi-meta">Registered: ${new Date(u.created_at).toLocaleDateString()}</div></div></div>`).join('')}</div>`;
+            usersHtml += `<div class="posts-list" style="margin-top:10px;">${users.map(u => `<div class="pi"><div class="pi-info"><div class="pi-title">${escapeHtml(u.email)}</div><div class="pi-meta">تاريخ التسجيل: ${new Date(u.created_at).toLocaleDateString()}</div></div></div>`).join('')}</div>`;
           } else {
-            usersHtml += '<div class="empty">No users yet</div>';
+            usersHtml += '<div class="empty">لا يوجد مستخدمون بعد</div>';
           }
         } else {
-          usersHtml += '<div class="empty">Could not fetch user list</div>';
+          usersHtml += '<div class="empty">تعذر جلب قائمة المستخدمين</div>';
         }
         document.getElementById('registered-users-list').innerHTML = usersHtml;
       } else {
-        document.getElementById('registered-users-list').innerHTML = '<div class="empty">User stats not available</div>';
+        document.getElementById('registered-users-list').innerHTML = '<div class="empty">إحصائيات المستخدمين غير متاحة</div>';
       }
     } catch(e) { console.warn('User stats error', e); }
     
   } catch(e) { console.error(e); }
 }
 
-// ==================== إدارة المنشورات العامة ====================
+// ==================== إدارة المنشورات (عرض وحذف) ====================
 async function loadPosts(room) {
   const el = document.getElementById('list-'+room);
   if (!el) return;
@@ -468,126 +237,33 @@ async function loadPosts(room) {
   try {
     const r = await fetch(SB + '/posts?room=eq.'+room+'&order=id.desc', { headers: HDR });
     const data = await r.json();
-    if (!Array.isArray(data)||!data.length) { el.innerHTML='<div class="empty">لا توجد منشورات.</div>'; return; }
-    el.innerHTML = data.map(postHTML).join('');
+    if (!Array.isArray(data)||!data.length) { el.innerHTML='<div class="empty">لا توجد قنوات مضافة.</div>'; return; }
+    el.innerHTML = data.map(p => {
+      const link = p.url ? ` • <a href="${p.url}" target="_blank" style="color:#9fb000;font-size:11px">🔗 رابط القناة</a>` : '';
+      const iconHtml = p.icon && p.icon.startsWith('http') 
+        ? `<img src="${p.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">` 
+        : (p.icon||'📺');
+      return `<div class="pi" id="pi-${p.id}">
+        <div class="pi-icon">${iconHtml}</div>
+        <div class="pi-info">
+          <div class="pi-title">${escapeHtml(p.title)}</div>
+          <div class="pi-meta">${escapeHtml(p.description||'')}${link}</div>
+          <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
+        </div>
+        <button class="btn-del" onclick="delPost(${p.id},'${p.room}')">🗑️ حذف</button>
+      </div>`;
+    }).join('');
   } catch(e) { el.innerHTML='<div class="empty">خطأ في التحميل.</div>'; }
 }
 
-function postHTML(p) {
-  const link = p.url ? ` • <a href="${p.url}" target="_blank" style="color:#9fb000;font-size:11px">🔗 رابط</a>` : '';
-  const iconHtml = p.icon && p.icon.startsWith('data:') 
-    ? `<img src="${p.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">` 
-    : (p.icon||'📄');
-  return `<div class="pi" id="pi-${p.id}">
-    <div class="pi-icon">${iconHtml}</div>
-    <div class="pi-info">
-      <div class="pi-title">${escapeHtml(p.title)}</div>
-      <div class="pi-meta">${escapeHtml(p.description||'')}${link}</div>
-      <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
-    </div>
-    <button class="btn-del" onclick="delPost(${p.id},'${p.room}')">🗑️ حذف</button>
-  </div>`;
-}
-
-function val(id) { const el=document.getElementById(id); return el?(el.value||'').trim():''; }
-function clear(id) { const el=document.getElementById(id); if(el) el.value=''; }
-
-async function addPost(room) {
-  const title = val(room+'-title');
-  if (!title) { alert('الرجاء إدخال عنوان!'); return; }
-  const body = {
-    title,
-    description: val(room+'-desc'),
-    icon: (()=>{ const el=document.getElementById(room+'-icon'); return (el && el._imgData) ? el._imgData : (el ? el.value||'📄' : '📄'); })(),
-    url: val(room+'-url'),
-    tag: val(room+'-tag')||room,
-    room,
-    content: val(room+'-content') || null
-  };
-  const btn = document.querySelector('#ap-'+room+' .btn-pub');
-  if(btn) { btn.disabled=true; btn.textContent='جاري النشر...'; }
-  try {
-    const r = await fetch(SB + '/posts', {
-      method: 'POST',
-      headers: { ...HDR, 'Prefer': 'return=representation' },
-      body: JSON.stringify(body)
-    });
-    if (r.ok) {
-      ['title','desc','icon','url','content'].forEach(f => clear(room+'-'+f));
-      const preview = document.getElementById(room+'-imgpreview');
-      if(preview) { preview.style.display='none'; preview.src=''; }
-      const fileInput = document.getElementById(room+'-imgfile');
-      if(fileInput) fileInput.value = '';
-      const videoInput = document.getElementById(room+'-videofile');
-      if(videoInput) videoInput.value = '';
-      const ok = document.getElementById('ok-'+room);
-      ok.style.display='block';
-      setTimeout(()=>ok.style.display='none',3000);
-      loadPosts(room);
-      loadDashboard();
-    } else {
-      const err = await r.json();
-      const er = document.getElementById('er-'+room);
-      er.textContent = '❌ ' + (err.message||err.hint||'خطأ '+r.status);
-      er.style.display='block';
-      setTimeout(()=>er.style.display='none',5000);
-    }
-  } catch(e) {
-    const er = document.getElementById('er-'+room);
-    er.textContent = '❌ خطأ في الاتصال';
-    er.style.display='block';
-    setTimeout(()=>er.style.display='none',5000);
-  } finally {
-    if(btn) { btn.disabled=false; btn.textContent='➕ نشر'; }
-  }
-}
-
 async function delPost(id, room) {
-  if (!confirm('هل تريد حذف هذا المنشور؟')) return;
+  if (!confirm('هل تريد حذف هذه القناة؟')) return;
   await fetch(SB+'/posts?id=eq.'+id, { method:'DELETE', headers: HDR });
   document.getElementById('pi-'+id)?.remove();
   loadDashboard();
 }
 
-// ==================== دوال رفع الصور والفيديو ====================
-function previewImg(room) {
-  const file = document.getElementById(room+'-imgfile').files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const preview = document.getElementById(room+'-imgpreview');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    document.getElementById(room+'-icon').value = '🖼️';
-    document.getElementById(room+'-icon')._imgData = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-async function uploadVideo(room) {
-  const fileInput = document.getElementById(room+'-videofile');
-  const file = fileInput.files[0];
-  if (!file) return;
-  const fileName = Date.now() + '_' + file.name;
-  const filePath = `videos/${fileName}`;
-  const uploadUrl = `https://eyqcpkhjzpmawqtilhgl.supabase.co/storage/v1/object/videos/${filePath}`;
-  try {
-    const res = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + KEY },
-      body: file
-    });
-    if (res.ok) {
-      const publicUrl = `${STORAGE_URL}/videos/${filePath}`;
-      document.getElementById(room+'-url').value = publicUrl;
-      alert('تم رفع الفيديو بنجاح!');
-    } else {
-      alert('فشل الرفع. تأكد من وجود bucket "videos".');
-    }
-  } catch(e) { alert('خطأ في رفع الفيديو'); }
-}
-
-// ==================== جلب بيانات يوتيوب لقسم المشتركين ====================
+// ==================== جلب بيانات يوتيوب وإضافة القناة (رابط فقط) ====================
 async function fetchYouTubeChannelInfo(url) {
   try {
     let channelId = null;
@@ -632,11 +308,14 @@ async function fetchYouTubeChannelInfo(url) {
 async function addYouTubeSubscriber() {
   const url = document.getElementById('subscribers-url').value.trim();
   if (!url) { alert('الرجاء إدخال رابط قناة يوتيوب'); return; }
+  
+  // جلب البيانات تلقائياً
   const info = await fetchYouTubeChannelInfo(url);
   if (!info) {
     alert('تعذر جلب معلومات القناة. تأكد من صحة الرابط أو حاول مرة أخرى.');
     return;
   }
+  
   const tag = document.getElementById('subscribers-tag').value;
   const extraContent = document.getElementById('subscribers-content').value.trim();
   const body = {
@@ -648,6 +327,7 @@ async function addYouTubeSubscriber() {
     room: 'subscribers',
     content: extraContent || null
   };
+  
   const btn = document.querySelector('#ap-subscribers .btn-pub');
   if(btn) { btn.disabled=true; btn.textContent='جاري الإضافة...'; }
   try {
@@ -688,8 +368,11 @@ function showPage(id) {
   document.getElementById('ap-' + id).classList.add('active');
   const s = document.getElementById('sb-' + id);
   if (s) s.classList.add('active');
-  if (id === 'dashboard') loadDashboard();
-  else loadPosts(id);
+  if (id === 'dashboard') {
+    loadDashboard();
+  } else {
+    loadPosts(id);
+  }
 }
 </script>
 </body>
