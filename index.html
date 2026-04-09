@@ -90,22 +90,30 @@
   <div class="vx-topbar">
     <div class="vx-logo">VIRT<span>UX</span></div>
     <div class="vx-topnav">
-      <div class="dd" id="dd-news"><button class="dd-btn" onclick="toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="showPage('gaming-news');closeDD()">📰 Gaming News</a><a onclick="showPage('youtube-news');closeDD()">▶️ Youtube News</a></div></div>
-      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="showPage('yt-channels');closeDD()">📺 Channels</a><a onclick="showPage('yt-videos');closeDD()">🎬 Videos</a><a onclick="showPage('yt-lives');closeDD()">🔴 Lives</a></div></div>
-      <div class="dd" id="dd-collab"><button class="dd-btn" onclick="toggleDD('dd-collab')">Collab ▾</button><div class="dd-menu"><a onclick="showPage('projects');closeDD()">🌐 Projects</a></div></div>
+      <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 Gaming News</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ Youtube News</a></div></div>
+      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a><a onclick="window.showPage('yt-lives');window.closeDD()">🔴 Lives</a></div></div>
+      <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">Collab ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 Projects</a></div></div>
+    </div>
+    <div id="auth-btn-area" style="margin-left:8px;">
+      <a href="auth.html" id="btn-login-link" style="background:transparent;border:1px solid #9fb000;color:#d4e800;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;font-family:'Poppins',sans-serif;">Login</a>
+      <div id="btn-user-area" style="display:none;display:flex;align-items:center;gap:8px;">
+        <span id="user-name" style="font-size:13px;color:#d4e800;"></span>
+        <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#1a2d80;color:#9fb000;display:none;"></span>
+        <button onclick="doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">Logout</button>
+      </div>
     </div>
   </div>
   <div class="vx-ticker"><div class="ticker-label">LIVE</div><div class="ticker-track"><span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span><span class="ticker-item">🔴 <span>NinjaX</span> is live now</span><span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span><span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span></div></div>
   <div class="vx-body">
     <div class="vx-sidebar">
-      <button class="sb-btn active" id="sb-home" onclick="showPage('home')">🏠 Home</button>
+      <button class="sb-btn active" id="sb-home" onclick="window.showPage('home')">🏠 Home</button>
       <div class="sb-section">Content</div>
-      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
-      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
-      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
+      <button class="sb-btn" id="sb-live" onclick="window.showPage('live')">🔴 Live</button>
+      <button class="sb-btn" id="sb-tournaments" onclick="window.showPage('tournaments')">🏆 Tournaments</button>
+      <button class="sb-btn" id="sb-highlights" onclick="window.showPage('highlights')">🎬 Highlights</button>
       <div class="sb-section">Community</div>
-      <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <button class="sb-btn" id="sb-contact" onclick="showPage('contact')">📞 Contact</button>
+      <button class="sb-btn" id="sb-subscribers" onclick="window.showPage('subscribers')">👥 Subscribers</button>
+      <button class="sb-btn" id="sb-contact" onclick="window.showPage('contact')">📞 Contact</button>
     </div>
     <div class="vx-main">
       <div class="vx-page active" id="page-home"><div class="home-hero"><h1>Welcome to Virtux 🎮</h1><p>Your English-speaking gaming community</p></div><div class="empty-home"><p>✨ Home page content will be added soon.</p></div></div>
@@ -114,23 +122,17 @@
 </div>
 
 <script>
-// 1. تهيئة Supabase (مرة واحدة فقط)
-const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// منع إعادة تعريف supabase
+if (!window._supabaseClient) {
+  const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SUPABASE_KEY_PUB = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+  window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+const supabase = window._supabaseClient;
 let allPosts = {};
 
-// 2. دوال مساعدة
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
-}
-function extractYouTubeId(url) {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
-  return match ? match[1] : null;
-}
-
-// 3. قائمة الأقسام
+// قائمة الأقسام
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects'];
 const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
@@ -138,7 +140,7 @@ const roomLabels = {
   'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives', projects: '🌐 Projects'
 };
 
-// 4. إنشاء الأقسام ديناميكياً (لتجنب تكرار HTML)
+// إنشاء الأقسام ديناميكياً
 const mainContainer = document.querySelector('.vx-main');
 rooms.forEach(room => {
   const pageDiv = document.createElement('div');
@@ -146,68 +148,46 @@ rooms.forEach(room => {
   pageDiv.id = `page-${room}`;
   let filterBar = '';
   if (room === 'live') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('live','',this)">All</button><button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="filterPosts('live','VIP',this)">VIP</button></div>`;
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','Live Now',this)">Live Now</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button>
+    </div>`;
   } else if (room === 'tournaments') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">VIP</button></div>`;
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','Registration',this)">Registration</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','Global',this)">Global</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button>
+    </div>`;
   } else if (room === 'highlights') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">Photo</button></div>`;
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button>
+    </div>`;
   } else if (room === 'subscribers') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('subscribers','',this)">All</button><button class="filter-btn" onclick="filterPosts('subscribers','YouTube',this)">YouTube</button><button class="filter-btn" onclick="filterPosts('subscribers','Member',this)">Members</button><button class="filter-btn" onclick="filterPosts('subscribers','Donor',this)">Donors</button><button class="filter-btn" onclick="filterPosts('subscribers','VIP',this)">VIP</button><button class="filter-btn" onclick="filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button></div>`;
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button>
+    </div>`;
   }
-  pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2></div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
+  pageDiv.innerHTML = `
+    <div class="page-header"><h2>${roomLabels[room]}</h2></div>
+    ${filterBar}
+    <div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>
+  `;
   mainContainer.appendChild(pageDiv);
 });
 
-// 5. وظيفة عرض البطاقات
-function renderCards(posts, gridId, room) {
-  const el = document.getElementById(gridId);
-  if (!el) return;
-  if (!posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
-  
-  if (room === 'subscribers' || room === 'yt-channels') {
-    el.innerHTML = posts.map(p => {
-      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
-      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
-      let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
-      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div><div class="channel-sub" style="font-size:11px;color:#aab;">${escapeHtml(p.content || '')}</div></div>${link}</div>`;
-    }).join('');
-    return;
-  }
-  
-  el.innerHTML = posts.map(p => {
-    let media = '';
-    if (p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'))) {
-      media = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
-    } else if (p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'))) {
-      const vid = extractYouTubeId(p.url);
-      if (vid) media = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen></iframe></div>`;
-      else media = `<img class="post-card-img" src="${p.icon || '📹'}">`;
-    } else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
-      media = `<img class="post-card-img" src="${p.icon}">`;
-    } else {
-      media = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
-    }
-    let summary = '';
-    if (p.content) summary = p.content.substring(0,150).trim() + (p.content.length>150?'...':'');
-    else if (p.description) summary = p.description.substring(0,150);
-    const readMore = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
-    let actions = '';
-    if (p.url) {
-      if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/')) {
-        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
-      } else if (p.url.includes('youtube.com') || p.url.includes('youtu.be')) {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">▶️ مشاهدة على يوتيوب</a>`;
-      } else {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
-      }
-    }
-    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span><div style="display:flex; gap:6px; flex-wrap:wrap;">${actions}${readMore}</div></div></div></div>`;
-  }).join('');
-}
-
-// 6. تحميل الصفحة
+// وظائف العرض
 async function loadPage(room) {
   const gridId = `grid-${room}`;
   const el = document.getElementById(gridId);
@@ -224,7 +204,84 @@ async function loadPage(room) {
   }
 }
 
-// 7. وظيفة التصفية
+function renderCards(posts, gridId, room) {
+  const el = document.getElementById(gridId);
+  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
+  
+  if (room === 'subscribers' || room === 'yt-channels') {
+    el.innerHTML = posts.map(p => {
+      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+      let subText = p.description || '';
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+      return `<div class="channel-card">
+        ${avatar}
+        <div class="channel-info">
+          <div class="channel-name">${escapeHtml(p.title)}</div>
+          <div class="channel-sub">${subText}</div>
+          <div class="channel-sub" style="font-size:11px; color:#aab;">${escapeHtml(p.content || '')}</div>
+        </div>
+        ${link}
+      </div>`;
+    }).join('');
+    return;
+  }
+  
+  el.innerHTML = posts.map(p => {
+    let mediaContent = '';
+    if (p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'))) {
+      mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
+    }
+    else if (p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'))) {
+      const videoId = extractYouTubeId(p.url);
+      if (videoId) {
+        mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+      } else {
+        mediaContent = `<img class="post-card-img" src="${p.icon || '📹'}">`;
+      }
+    }
+    else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+      mediaContent = `<img class="post-card-img" src="${p.icon}">`;
+    }
+    else {
+      mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
+    }
+    
+    let summary = '';
+    if (p.content) summary = p.content.substring(0, 150).trim() + (p.content.length > 150 ? '...' : '');
+    else if (p.description) summary = p.description.substring(0, 150);
+    const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
+    let actions = '';
+    if (p.url) {
+      if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/')) {
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
+      } else if (p.url.includes('youtube.com') || p.url.includes('youtu.be')) {
+        actions = `<a href="${p.url}" target="_blank" class="post-link">▶️ مشاهدة على يوتيوب</a>`;
+      } else {
+        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
+      }
+    }
+    
+    return `<div class="post-card">
+      ${mediaContent}
+      <div class="post-card-body">
+        <div class="post-card-title">${escapeHtml(p.title)}</div>
+        <div class="post-card-summary">${summary}</div>
+        <div class="post-card-footer">
+          <span class="post-tag">${escapeHtml(p.tag || '')}</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">${actions}${readMoreLink}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function extractYouTubeId(url) {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
+  return match ? match[1] : null;
+}
+
 function filterPosts(room, tag, btn) {
   if (btn && btn.closest('.filter-bar')) {
     btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -235,7 +292,6 @@ function filterPosts(room, tag, btn) {
   renderCards(filtered, `grid-${room}`, room);
 }
 
-// 8. وظيفة تغيير الصفحة
 function showPage(id) {
   document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
@@ -246,7 +302,6 @@ function showPage(id) {
   if (id !== 'home' && id !== 'contact') loadPage(id);
 }
 
-// 9. دوال القائمة المنسدلة
 function toggleDD(id) {
   document.querySelectorAll('.dd').forEach(d => { if(d.id !== id) d.classList.remove('open'); });
   document.getElementById(id).classList.toggle('open');
@@ -256,21 +311,68 @@ function closeDD() {
 }
 document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
 
-// 10. ربط الدوال بالكائن window لتكون متاحة في onclick (ضروري)
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
+}
+
+// تسجيل الزيارة
+(function trackVisit() {
+  const lastVisit = localStorage.getItem('virtux_last_visit');
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+  if (!lastVisit || (now - parseInt(lastVisit)) > oneDay) {
+    localStorage.setItem('virtux_last_visit', now);
+    fetch('https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1/rpc/log_visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ page_url: window.location.pathname })
+    }).catch(e => console.log('Visit log error:', e));
+  }
+})();
+
+// ربط الدوال إلى window لضمان الوصول إليها من onclick
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
 window.closeDD = closeDD;
 
-// 11. بدء التشغيل (تحميل الصفحة الحالية)
-// ننتظر حتى يتم إنشاء جميع العناصر
-setTimeout(() => {
-  const activePage = document.querySelector('.vx-page.active');
-  if (activePage && activePage.id !== 'page-home') {
-    const room = activePage.id.replace('page-', '');
-    loadPage(room);
+// Auth
+const authDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY_PUB || SUPABASE_KEY);
+
+async function checkAuth() {
+  const { data: { session } } = await authDb.auth.getSession();
+  const loginLink = document.getElementById('btn-login-link');
+  const userArea = document.getElementById('btn-user-area');
+  if (session && session.user) {
+    if (loginLink) loginLink.style.display = 'none';
+    if (userArea) userArea.style.display = 'flex';
+    const { data: profile } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
+    const userName = document.getElementById('user-name');
+    const roleBadge = document.getElementById('user-role-badge');
+    if (userName) userName.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
+    if (roleBadge && profile?.role && profile.role !== 'user') {
+      roleBadge.textContent = profile.role.toUpperCase();
+      roleBadge.style.display = 'inline-block';
+    }
+    // Store role globally
+    window.userRole = profile?.role || 'user';
+    window.userId = session.user.id;
+    window.userEmail = session.user.email;
+  } else {
+    if (loginLink) loginLink.style.display = 'inline-block';
+    if (userArea) userArea.style.display = 'none';
+    window.userRole = 'guest';
   }
-}, 100);
+}
+
+async function doLogout() {
+  await authDb.auth.signOut();
+  window.location.reload();
+}
+
+checkAuth();
+
 </script>
 </body>
 </html>
