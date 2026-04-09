@@ -520,6 +520,38 @@ async function addPost(room) {
   if (room === 'highlights' && !title) {
     title = '🎬 مقطع فيديو';
   }
+
+  // Highlights validation: tag must match file type
+  if (room === 'highlights') {
+    const tag = document.getElementById('highlights-tag')?.value || '';
+    const imgFile = document.getElementById('highlights-imgfile');
+    const videoFile = document.getElementById('highlights-videofile');
+    const hasImg = imgFile && imgFile.files && imgFile.files.length > 0;
+    const hasVideo = videoFile && videoFile.files && videoFile.files.length > 0;
+    const urlVal = document.getElementById('highlights-url')?.value.trim() || '';
+    const isVideoUrl = urlVal && (urlVal.match(/\.(mp4|webm)$/i) || urlVal.includes('youtube') || urlVal.includes('youtu.be'));
+    const isImgUrl = urlVal && urlVal.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+
+    if (tag === 'Photo' || tag === 'صورة') {
+      if (hasVideo) {
+        alert('❌ خانة الصورة لا تقبل فيديو! يرجى رفع صورة فقط أو تغيير النوع إلى Video.');
+        if (btn) { btn.disabled = false; btn.textContent = '➕ نشر'; }
+        return;
+      }
+      if (isVideoUrl) {
+        alert('❌ رابط الفيديو لا يناسب خانة الصورة! يرجى تغيير النوع إلى Video.');
+        if (btn) { btn.disabled = false; btn.textContent = '➕ نشر'; }
+        return;
+      }
+    }
+    if (tag === 'Video' || tag === 'فيديو') {
+      if (hasImg && !hasVideo && !isVideoUrl) {
+        alert('❌ خانة الفيديو لا تقبل صورة فقط! يرجى رفع فيديو أو إدخال رابط فيديو، أو تغيير النوع إلى Photo.');
+        if (btn) { btn.disabled = false; btn.textContent = '➕ نشر'; }
+        return;
+      }
+    }
+  }
   
   const description = document.getElementById(`${room}-desc`)?.value.trim() || '';
   const iconEl = document.getElementById(`${room}-icon`);
