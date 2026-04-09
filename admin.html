@@ -3,210 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux — Gaming Community</title>
+  <title>Virtux — Admin Panel</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
+    body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
-    .vx-topbar{display:flex;align-items:center;padding:10px 18px;background:#000718;border-bottom:1px solid #9fb000;gap:12px;flex-wrap:wrap}
-    .vx-logo{font-size:22px;font-weight:700;color:#d4e800;letter-spacing:2px}
+    .vx-topbar{display:flex;align-items:center;padding:10px 18px;background:#000;border-bottom:1px solid #d4af37;gap:12px;flex-wrap:wrap}
+    .vx-logo{font-size:22px;font-weight:700;color:#d4af37;letter-spacing:2px}
     .vx-logo span{color:#fff;font-weight:400}
-    .vx-topnav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;align-items:center}
+    .vx-topnav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
     .dd{position:relative}
-    .dd-btn{background:transparent;border:1px solid #9fb000;color:#d4e800;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif}
-    .dd-btn:hover{background:#9fb000;color:#000}
-    .dd-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#010a2e;border:1px solid #9fb000;border-radius:6px;min-width:170px;z-index:999}
+    .dd-btn{background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer}
+    .dd-btn:hover{background:#d4af37;color:#000}
+    .dd-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#1a1a1a;border:1px solid #d4af37;border-radius:6px;min-width:170px;z-index:999}
     .dd.open .dd-menu{display:block}
-    .dd-menu a{display:block;color:#ccc;padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #1a2550;text-decoration:none}
+    .dd-menu a{display:block;color:#ccc;padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #333;text-decoration:none}
     .dd-menu a:last-child{border-bottom:none}
-    .dd-menu a:hover{background:#9fb000;color:#000}
-    .btn-login-top{background:transparent;border:1px solid #9fb000;color:#d4e800;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;text-decoration:none}
-    .btn-login-top:hover{background:#9fb000;color:#000}
-    .btn-logout-top{background:transparent;border:1px solid #f55;color:#f55;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif}
-    .btn-logout-top:hover{background:#f55;color:#fff}
-    .user-info{display:flex;align-items:center;gap:8px}
-    .user-name{font-size:13px;color:#d4e800}
-    .user-badge{font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2000;color:#d4e800;display:none}
+    .dd-menu a:hover{background:#d4af37;color:#000}
     .vx-ticker{background:#000;padding:5px 16px;display:flex;align-items:center;gap:10px;overflow:hidden}
-    .ticker-label{font-size:11px;background:#d4e800;color:#000;padding:2px 8px;border-radius:3px;font-weight:700;white-space:nowrap}
+    .ticker-label{font-size:11px;background:#d4af37;color:#000;padding:2px 8px;border-radius:3px;font-weight:700;white-space:nowrap}
     .ticker-track{display:flex;gap:30px;animation:ticker 28s linear infinite;white-space:nowrap}
     @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     .ticker-item{font-size:12px;color:#99aabb}
-    .ticker-item span{color:#d4e800}
+    .ticker-item span{color:#d4af37}
     .vx-body{display:flex;flex:1}
-    .vx-sidebar{width:180px;background:linear-gradient(180deg,#050c2e,#0a1540);border-right:1px solid #1e2d6b;display:flex;flex-direction:column;gap:4px;padding:10px 6px}
-    .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left;font-family:'Poppins',sans-serif}
-    .sb-btn:hover,.sb-btn.active{background:#1a2d80;color:#d4e800}
-    .sb-btn.active{border-left:3px solid #d4e800}
-    .sb-section{font-size:10px;color:#556;text-transform:uppercase;letter-spacing:1px;padding:8px 12px 2px}
-    .vx-main{flex:1;max-height:calc(100vh - 84px);overflow-y:auto}
-    .vx-page{display:none}
-    .vx-page.active{display:block}
-    .home-hero{background:linear-gradient(135deg,#010a2e,#0a1f5e,#010a2e);padding:28px 24px 20px;border-bottom:1px solid #9fb000}
-    .home-hero h1{font-size:26px;font-weight:700;color:#d4e800;margin-bottom:6px}
-    .home-hero p{color:#8899cc;font-size:14px}
-    .empty-home{text-align:center;padding:60px 20px;color:#667;font-size:14px}
-    .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #1e2d6b}
-    .filter-btn{background:#0a1540;border:1px solid #1e2d6b;color:#aaa;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif}
-    .filter-btn:hover,.filter-btn.active{background:#9fb000;color:#000;border-color:#9fb000}
-    .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
-    .post-card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column}
-    .post-card:hover{border-color:#9fb000}
-    .post-card-img{width:100%;height:160px;object-fit:cover}
-    .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#0a1540,#1a2d80);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-    .post-card-video{width:100%;aspect-ratio:16/9;background:#000}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none}
-    .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
-    .post-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column}
-    .post-card-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
-    .post-card-summary{font-size:12px;color:#aab;margin-bottom:12px;line-height:1.5}
-    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:auto}
-    .post-tag{font-size:11px;background:#0f1e55;color:#9fb000;border-radius:4px;padding:2px 8px}
-    .post-link{font-size:12px;color:#9fb000;text-decoration:none;background:#0f1e55;border:1px solid #1e3a6b;border-radius:5px;padding:4px 10px}
-    .post-dl{font-size:12px;color:#000;text-decoration:none;background:#9fb000;border-radius:5px;padding:4px 10px;font-weight:600}
-    .read-more{font-size:12px;background:#9fb000;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
-    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
-    .channel-card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center}
-    .channel-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;background:#0f1e55;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px}
-    .channel-name{font-size:14px;font-weight:600;color:#d4e800;margin-bottom:4px}
-    .channel-sub{font-size:12px;color:#667;margin-bottom:8px}
-    .channel-link{font-size:12px;color:#9fb000;text-decoration:none;border:1px solid #9fb000;border-radius:5px;padding:5px 12px;display:inline-block;margin-top:6px}
-    .empty-state{text-align:center;color:#445;padding:40px;font-size:14px}
-    .loading-state{text-align:center;color:#667;padding:30px;font-size:13px}
-    .contact-page{padding:20px}
-    .contact-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-    .contact-card{background:#050e30;border:1px solid #1e2d6b;border-radius:8px;padding:14px;text-align:center;cursor:pointer}
-    .contact-card:hover{border-color:#9fb000}
-    .cc-icon{font-size:28px;margin-bottom:6px}
-    .cc-name{font-size:13px;color:#d4e800;font-weight:600}
-    .cc-handle{font-size:11px;color:#778}
-    .page-header{padding:14px 20px 10px;border-bottom:1px solid #1e2d6b;background:#000718;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-    .page-header h2{font-size:17px;color:#d4e800;font-weight:600}
-    .btn-post{background:#9fb000;color:#000;border:none;border-radius:7px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
-    .btn-post:hover{background:#d4e800}
-
-    /* POST MODAL */
+    .vx-sidebar{width:180px;background:linear-gradient(180deg,#1a1a1a,#2a2a2a);border-right:1px solid #d4af37;display:flex;flex-direction:column;gap:4px;padding:10px 6px}
+    .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left}
+    .sb-btn:hover,.sb-btn.active{background:#d4af37;color:#000}
+    .sb-btn.active{border-left:3px solid #d4af37}
+    .sb-section{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px;padding:8px 12px 2px}
+    .vx-main{flex:1;max-height:calc(100vh - 84px);overflow-y:auto;padding:20px}
+    .admin-welcome{background:#1e1e2e;border:1px solid #d4af37;border-radius:12px;padding:30px;text-align:center}
+    .admin-welcome h2{color:#d4af37;margin-bottom:15px}
+    .post-btn-large{background:#d4af37;color:#000;border:none;border-radius:8px;padding:12px 24px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:20px}
+    .post-btn-large:hover{background:#e6c300}
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,4,0.85);z-index:500;align-items:center;justify-content:center}
     .modal-overlay.open{display:flex}
-    .modal-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto}
-    .modal-top{background:#000718;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e2d6b}
-    .modal-top h2{font-size:16px;color:#d4e800}
-    .modal-close{background:transparent;border:1px solid #556;color:#aaa;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif}
-    .modal-close:hover{background:#1a2d80;color:#fff}
+    .modal-box{background:#1e1e2e;border:1px solid #d4af37;border-radius:14px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto}
+    .modal-top{background:#000;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #333}
+    .modal-top h2{font-size:16px;color:#d4af37}
+    .modal-close{background:transparent;border:1px solid #555;color:#aaa;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:16px}
     .modal-body{padding:18px}
     .mf-group{margin-bottom:12px}
-    .mf-group label{display:block;font-size:11px;color:#9fb000;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
-    .mf-group input,.mf-group select,.mf-group textarea{width:100%;padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif}
-    .mf-group input:focus,.mf-group select:focus,.mf-group textarea:focus{outline:none;border-color:#9fb000}
-    .mf-group select option{background:#0a1540}
+    .mf-group label{display:block;font-size:11px;color:#d4af37;margin-bottom:5px}
+    .mf-group input,.mf-group select,.mf-group textarea{width:100%;padding:9px 12px;border-radius:7px;border:1px solid #444;background:#2a2a3a;color:#fff;font-size:13px}
     .mf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .mf-img-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .mf-img-label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif}
+    .mf-img-label{background:#2a2a3a;color:#d4af37;border:1px solid #444;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer}
     .mf-img-preview{width:50px;height:50px;border-radius:6px;object-fit:cover;display:none}
-    .btn-submit{width:100%;padding:10px;background:#9fb000;color:#000;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;margin-top:4px}
-    .btn-submit:hover{background:#d4e800}
-    .btn-submit:disabled{background:#445;color:#778;cursor:not-allowed}
-    .modal-ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-    .modal-err{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-
-    /* LOGIN MODAL */
-    .login-modal-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;width:90%;max-width:360px;padding:32px 28px;text-align:center}
-    .login-modal-box h2{color:#d4e800;font-size:20px;margin-bottom:6px}
-    .login-modal-box p{color:#667;font-size:13px;margin-bottom:20px}
-    .lm-tabs{display:flex;border:1px solid #1e2d6b;border-radius:7px;overflow:hidden;margin-bottom:18px}
-    .lm-tab{flex:1;padding:8px;background:#0a1540;color:#aab;border:none;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif}
-    .lm-tab.active{background:#9fb000;color:#000;font-weight:600}
-    .lm-input{width:100%;padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;font-family:'Poppins',sans-serif;margin-bottom:10px;display:block}
-    .lm-input:focus{outline:none;border-color:#9fb000}
-    .btn-lm{width:100%;padding:10px;background:#9fb000;color:#000;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
-    .btn-lm:hover{background:#d4e800}
-    .lm-err{color:#f55;font-size:12px;margin-top:6px;display:none}
-    .lm-ok{color:#4caf90;font-size:12px;margin-top:6px;display:none}
-    .lm-panel{display:none}
-    .lm-panel.active{display:block}
+    .btn-submit{width:100%;padding:10px;background:#d4af37;color:#000;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+    .modal-ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px 14px;margin-bottom:12px;display:none}
+    .modal-err{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px 14px;margin-bottom:12px;display:none}
   </style>
 </head>
 <body>
 <div class="vx-root">
   <div class="vx-topbar">
-    <div class="vx-logo">VIRT<span>UX</span></div>
+    <div class="vx-logo">VIRT<span>UX</span> <span style="font-size:12px; color:#d4af37;">| Admin</span></div>
     <div class="vx-topnav">
-      <div class="dd" id="dd-news">
-        <button class="dd-btn" onclick="toggleDD('dd-news')">News ▾</button>
-        <div class="dd-menu">
-          <a onclick="showPage('gaming-news');closeDD()">📰 Gaming News</a>
-          <a onclick="showPage('youtube-news');closeDD()">▶️ Youtube News</a>
-        </div>
-      </div>
-      <div class="dd" id="dd-yt">
-        <button class="dd-btn" onclick="toggleDD('dd-yt')">Youtube ▾</button>
-        <div class="dd-menu">
-          <a onclick="showPage('yt-channels');closeDD()">📺 Channels</a>
-          <a onclick="showPage('yt-videos');closeDD()">🎬 Videos</a>
-          <a onclick="showPage('yt-lives');closeDD()">🔴 Lives</a>
-        </div>
-      </div>
-      <div class="dd" id="dd-collab">
-        <button class="dd-btn" onclick="toggleDD('dd-collab')">Collab ▾</button>
-        <div class="dd-menu">
-          <a onclick="showPage('projects');closeDD()">🌐 Projects</a>
-        </div>
-      </div>
-      <!-- Auth area -->
       <div id="area-guest" style="display:flex;align-items:center;">
-        <a href="auth.html" class="btn-login-top">Login</a>
+        <button class="dd-btn" onclick="openLoginModal()">Login</button>
       </div>
       <div id="area-user" style="display:none;align-items:center;gap:8px;">
-        <span class="user-name" id="user-name"></span>
-        <span class="user-badge" id="user-badge"></span>
-        <button class="btn-logout-top" onclick="doLogout()">Logout</button>
+        <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
+        <span id="user-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
+        <button onclick="doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:5px 12px;border-radius:5px;cursor:pointer;">Logout</button>
       </div>
     </div>
   </div>
-
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
-    <div class="ticker-track">
-      <span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span>
-      <span class="ticker-item">🔴 <span>NinjaX</span> is live now</span>
-      <span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span>
-      <span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span>
-      <span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span>
-      <span class="ticker-item">🔴 <span>NinjaX</span> is live now</span>
-      <span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span>
-      <span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span>
-    </div>
+    <div class="ticker-track"><span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals</span><span class="ticker-item">🔴 <span>NinjaX</span> live</span></div>
   </div>
-
   <div class="vx-body">
     <div class="vx-sidebar">
-      <button class="sb-btn active" id="sb-home" onclick="showPage('home')">🏠 Home</button>
-      <div class="sb-section">Content</div>
-      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
-      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
-      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
-      <div class="sb-section">Community</div>
-      <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <button class="sb-btn" id="sb-contact" onclick="showPage('contact')">📞 Contact</button>
+      <button class="sb-btn active" id="sb-dashboard">📊 Dashboard</button>
+      <div class="sb-section">Actions</div>
+      <button class="sb-btn" id="sb-newpost" onclick="openPostModal('live')">➕ New Post</button>
     </div>
     <div class="vx-main" id="vx-main">
-      <div class="vx-page active" id="page-home">
-        <div class="home-hero"><h1>Welcome to Virtux 🎮</h1><p>Your English-speaking gaming community</p></div>
-        <div class="empty-home"><p>✨ Home page content will be added soon.</p></div>
+      <div class="admin-welcome">
+        <h2>🎮 Admin Control Panel</h2>
+        <p>Manage your community posts from here.</p>
+        <p style="margin-top:10px; color:#aaa;">Use the "New Post" button to publish content to Live, Tournaments, Highlights, or YouTube Videos.</p>
+        <button class="post-btn-large" onclick="openPostModal('live')">➕ Create New Post</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- POST MODAL -->
+<!-- POST MODAL (مثل السابق) -->
 <div class="modal-overlay" id="postModal">
   <div class="modal-box">
-    <div class="modal-top">
-      <h2 id="postModalTitle">➕ New Post</h2>
-      <button class="modal-close" onclick="closePostModal()">✕</button>
-    </div>
+    <div class="modal-top"><h2 id="postModalTitle">➕ New Post</h2><button class="modal-close" onclick="closePostModal()">✕</button></div>
     <div class="modal-body">
       <div class="modal-ok" id="postOk">✅ Posted successfully!</div>
       <div class="modal-err" id="postErr"></div>
@@ -216,30 +107,15 @@
   </div>
 </div>
 
-<!-- LOGIN MODAL -->
+<!-- LOGIN MODAL (مبسط) -->
 <div class="modal-overlay" id="loginModal">
-  <div class="login-modal-box">
-    <h2>🎮 Join Virtux</h2>
-    <p>Login or create an account to post</p>
-    <div class="lm-tabs">
-      <button class="lm-tab active" onclick="switchLMTab('login')">Login</button>
-      <button class="lm-tab" onclick="switchLMTab('register')">Register</button>
-    </div>
-    <div class="lm-panel active" id="lm-login">
-      <input class="lm-input" type="email" id="lm-email" placeholder="Email">
-      <input class="lm-input" type="password" id="lm-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLMLogin()">
-      <button class="btn-lm" onclick="doLMLogin()">Login</button>
-    </div>
-    <div class="lm-panel" id="lm-register">
-      <input class="lm-input" type="text" id="lm-username" placeholder="Username">
-      <input class="lm-input" type="email" id="lm-remail" placeholder="Email">
-      <input class="lm-input" type="password" id="lm-rpassword" placeholder="Password (min 6 chars)" onkeydown="if(event.key==='Enter')doLMRegister()">
-      <button class="btn-lm" onclick="doLMRegister()">Create Account</button>
-    </div>
-    <div class="lm-err" id="lm-err"></div>
-    <div class="lm-ok" id="lm-ok"></div>
-    <div style="margin-top:12px;">
-      <button onclick="closeLoginModal()" style="background:transparent;border:none;color:#667;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">Cancel</button>
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-top"><h2>Login to Admin</h2><button class="modal-close" onclick="closeLoginModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="email" id="lm-email" placeholder="Email" class="mf-group input" style="width:100%;margin-bottom:10px;padding:9px;">
+      <input type="password" id="lm-password" placeholder="Password" class="mf-group input" style="width:100%;margin-bottom:10px;padding:9px;">
+      <button class="btn-submit" onclick="doLogin()">Login</button>
+      <div id="lm-err" style="color:#f55; margin-top:10px; display:none;"></div>
     </div>
   </div>
 </div>
@@ -248,353 +124,75 @@
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let allPosts = {};
-let currentRoom = '';
+let currentRoom = 'live';
 let currentPostImg = null;
 
-// Room configs
-const rooms = ['live','tournaments','highlights','subscribers','gaming-news','youtube-news','yt-channels','yt-videos','yt-lives','projects'];
+// Room configs for posting
 const roomLabels = {
-  live:'🔴 Live Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
-  subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
-  'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
-  'yt-lives':'🔴 Youtube Lives', projects:'🌐 Projects'
+  live:'Live Streams', tournaments:'Tournaments', highlights:'Highlights', 'yt-videos':'YouTube Videos'
 };
-
-// Rooms where users can post
-const userPostableRooms = ['live','tournaments','highlights','yt-videos'];
-
-// Build pages
-const mainContainer = document.getElementById('vx-main');
-rooms.forEach(room => {
-  const pageDiv = document.createElement('div');
-  pageDiv.className = 'vx-page';
-  pageDiv.id = `page-${room}`;
-  let filterBar = '';
-  if(room==='live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('live','',this)">All</button><button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button></div>`;
-  else if(room==='tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button></div>`;
-  else if(room==='highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">Photo</button></div>`;
-  else if(room==='subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="filterPosts('subscribers','',this)">All</button><button class="filter-btn" onclick="filterPosts('subscribers','Youtuber',this)">Youtuber</button><button class="filter-btn" onclick="filterPosts('subscribers','Member',this)">Member</button><button class="filter-btn" onclick="filterPosts('subscribers','Donor',this)">Donor</button></div>`;
-
-  const postBtn = userPostableRooms.includes(room)
-    ? `<button class="btn-post" onclick="openPostModal('${room}')">➕ Post</button>` : '';
-
-  pageDiv.innerHTML = `
-    <div class="page-header">
-      <h2>${roomLabels[room]}</h2>
-      ${postBtn}
-    </div>
-    ${filterBar}
-    <div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
-  mainContainer.appendChild(pageDiv);
-});
-
-// Contact page
-const contactPage = document.createElement('div');
-contactPage.className = 'vx-page';
-contactPage.id = 'page-contact';
-contactPage.innerHTML = `<div class="page-header"><h2>📞 Contact Virtux</h2></div>
-<div class="contact-page"><div class="contact-cards">
-  <div class="contact-card"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/virtux</div></div>
-  <div class="contact-card"><div class="cc-icon">📧</div><div class="cc-name">Email</div><div class="cc-handle">contact@virtux.gg</div></div>
-  <div class="contact-card"><div class="cc-icon">🐦</div><div class="cc-name">Twitter / X</div><div class="cc-handle">@VirtuxGG</div></div>
-  <div class="contact-card"><div class="cc-icon">📸</div><div class="cc-name">Instagram</div><div class="cc-handle">@virtux.official</div></div>
-  <div class="contact-card"><div class="cc-icon">▶️</div><div class="cc-name">YouTube</div><div class="cc-handle">@VirtuxGaming</div></div>
-</div></div>`;
-mainContainer.appendChild(contactPage);
-
-// Load posts
-async function loadPage(room) {
-  const el = document.getElementById(`grid-${room}`);
-  if(!el) return;
-  el.innerHTML = '<div class="loading-state">Loading...</div>';
-  try {
-    const { data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false });
-    if(error) throw error;
-    allPosts[room] = data || [];
-    renderCards(allPosts[room], `grid-${room}`, room);
-  } catch(e) {
-    el.innerHTML = '<div class="empty-state">Could not load posts.</div>';
-  }
-}
-
-function renderCards(posts, gridId, room) {
-  const el = document.getElementById(gridId);
-  if(!posts||!posts.length) { el.innerHTML='<div class="empty-state">No posts yet 🎮</div>'; return; }
-  if(room==='subscribers'||room==='yt-channels') {
-    el.innerHTML = `<div class="channels-grid">${posts.map(p => {
-      const isImg = p.icon && (p.icon.startsWith('data:')||p.icon.startsWith('http'));
-      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">` : `<div class="channel-avatar">${p.icon||'📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">Visit</a>` : '';
-      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${escapeHtml(p.description||'')}</div></div>${link}</div>`;
-    }).join('')}</div>`;
-    return;
-  }
-  el.innerHTML = posts.map(p => {
-    let media = '';
-    if(p.url && (p.url.includes('youtube.com')||p.url.includes('youtu.be'))) {
-      const vid = p.url.match(/(?:youtu\.be\/|watch\?v=)([^&\?\/]+)/)?.[1];
-      if(vid) media = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen></iframe></div>`;
-    } else if(p.url && p.url.match(/\.(mp4|webm)$/i)) {
-      media = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
-    } else if(p.icon && (p.icon.startsWith('data:')||p.icon.startsWith('http'))) {
-      media = `<img class="post-card-img" src="${p.icon}">`;
-    } else {
-      media = `<div class="post-card-emoji">${p.icon||'📄'}${room==='live'&&p.tag==='Live Now'?'<div class="live-badge">LIVE</div>':''}</div>`;
-    }
-    let actions = '';
-    if(p.url) {
-      if(p.url.match(/\.(mp4|webm)$/i)) actions = `<a href="${p.url}" class="post-dl" download>⬇️ Download</a>`;
-      else if(p.url.includes('youtube')||p.url.includes('youtu.be')) actions = `<a href="${p.url}" target="_blank" class="post-link">▶️ Watch</a>`;
-      else actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
-    }
-    const summary = p.content ? p.content.substring(0,120)+'...' : (p.description||'');
-    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${escapeHtml(summary)}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span><div style="display:flex;gap:6px">${actions}</div></div></div></div>`;
-  }).join('');
-}
-
-function filterPosts(room, tag, btn) {
-  if(btn&&btn.closest('.filter-bar')) { btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-  renderCards(tag?(allPosts[room]||[]).filter(p=>p.tag===tag):(allPosts[room]||[]), `grid-${room}`, room);
-}
-
-function showPage(id) {
-  document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
-  const page = document.getElementById(`page-${id}`);
-  if(page) page.classList.add('active');
-  const btn = document.getElementById(`sb-${id}`);
-  if(btn) btn.classList.add('active');
-  currentRoom = id;
-  if(id!=='home'&&id!=='contact') loadPage(id);
-}
-
-function toggleDD(id) {
-  document.querySelectorAll('.dd').forEach(d=>{ if(d.id!==id) d.classList.remove('open'); });
-  document.getElementById(id).classList.toggle('open');
-}
-function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open')); }
-document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
-function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]||m); }
-
-// ===== POST MODAL =====
 const postForms = {
-  live: `
-    <div class="mf-group"><label>Stream Title *</label><input id="pf-title" placeholder="e.g. NinjaX Gaming"></div>
-    <div class="mf-row">
-      <div class="mf-group"><label>Game • Type</label><input id="pf-desc" placeholder="Valorant • Ranked"></div>
-      <div class="mf-group"><label>Type</label><select id="pf-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="Live News">📰 News</option></select></div>
-    </div>
-    <div class="mf-group"><label>Stream URL</label><input id="pf-url" placeholder="https://youtube.com/live/..."></div>
-    <div class="mf-group"><label>Thumbnail</label><div class="mf-img-upload"><input type="file" id="pf-img" accept="image/*" style="display:none" onchange="previewPostImg()"><label for="pf-img" class="mf-img-label">📁 Upload Image</label><img id="pf-preview" class="mf-img-preview"></div></div>`,
-
-  tournaments: `
-    <div class="mf-group"><label>Tournament Name *</label><input id="pf-title" placeholder="e.g. Community Cup #5"></div>
-    <div class="mf-row">
-      <div class="mf-group"><label>Game • Teams</label><input id="pf-desc" placeholder="Valorant • 16 teams"></div>
-      <div class="mf-group"><label>Type</label><select id="pf-tag"><option value="Registration">📋 Registration</option><option value="Global">🌍 Global</option><option value="Tournament News">📰 News</option></select></div>
-    </div>
-    <div class="mf-group"><label>Tournament URL</label><input id="pf-url" placeholder="https://..."></div>
-    <div class="mf-group"><label>Banner Image</label><div class="mf-img-upload"><input type="file" id="pf-img" accept="image/*" style="display:none" onchange="previewPostImg()"><label for="pf-img" class="mf-img-label">📁 Upload Image</label><img id="pf-preview" class="mf-img-preview"></div></div>
-    <div class="mf-group"><label>Description</label><textarea id="pf-content" rows="3" placeholder="Details about the tournament..."></textarea></div>`,
-
-  highlights: `
-    <div class="mf-group"><label>Title</label><input id="pf-title" placeholder="e.g. Insane 1v5 clutch"></div>
-    <div class="mf-row">
-      <div class="mf-group"><label>Player • Game</label><input id="pf-desc" placeholder="NinjaX • CS2"></div>
-      <div class="mf-group"><label>Type</label><select id="pf-tag" onchange="toggleHighlightFields()"><option value="Video">📹 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 Tournament</option></select></div>
-    </div>
-    <div id="pf-video-field" class="mf-group"><label>Video URL (YouTube or MP4)</label><input id="pf-url" placeholder="https://youtube.com/..."></div>
-    <div id="pf-photo-field" class="mf-group" style="display:none"><label>Photo</label><div class="mf-img-upload"><input type="file" id="pf-img" accept="image/*" style="display:none" onchange="previewPostImg()"><label for="pf-img" class="mf-img-label">📁 Upload Photo</label><img id="pf-preview" class="mf-img-preview"></div></div>`,
-
-  'yt-videos': `
-    <div class="mf-group"><label>YouTube Video URL *</label><input id="pf-url" placeholder="https://youtube.com/watch?v=..."></div>
-    <div class="mf-group"><label>Title (optional)</label><input id="pf-title" placeholder="Video title"></div>
-    <div class="mf-group"><label>Description</label><input id="pf-desc" placeholder="Short description"></div>
-    <div class="mf-group"><label>Tag</label><select id="pf-tag"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select></div>`
+  live: `<div class="mf-group"><label>Stream Title</label><input id="pf-title"></div><div class="mf-row"><div class="mf-group"><label>Game</label><input id="pf-desc"></div><div class="mf-group"><label>Type</label><select id="pf-tag"><option>Live Now</option><option>Pre Lives</option></select></div></div><div class="mf-group"><label>Stream URL</label><input id="pf-url"></div><div class="mf-group"><label>Thumbnail</label><div class="mf-img-upload"><input type="file" id="pf-img" accept="image/*" style="display:none" onchange="previewPostImg()"><label for="pf-img" class="mf-img-label">📁 Upload Image</label><img id="pf-preview" class="mf-img-preview"></div></div>`,
+  tournaments: `<div class="mf-group"><label>Tournament Name</label><input id="pf-title"></div><div class="mf-row"><div class="mf-group"><label>Game</label><input id="pf-desc"></div><div class="mf-group"><label>Type</label><select id="pf-tag"><option>Registration</option><option>Global</option></select></div></div><div class="mf-group"><label>URL</label><input id="pf-url"></div><div class="mf-group"><label>Description</label><textarea id="pf-content" rows="3"></textarea></div>`,
+  highlights: `<div class="mf-group"><label>Title</label><input id="pf-title"></div><div class="mf-row"><div class="mf-group"><label>Player/Game</label><input id="pf-desc"></div><div class="mf-group"><label>Type</label><select id="pf-tag"><option>Video</option><option>Photo</option></select></div></div><div id="pf-video-field"><div class="mf-group"><label>Video URL</label><input id="pf-url"></div></div><div id="pf-photo-field" style="display:none"><div class="mf-group"><label>Photo</label><div class="mf-img-upload"><input type="file" id="pf-img" accept="image/*" onchange="previewPostImg()"><label for="pf-img" class="mf-img-label">Upload</label><img id="pf-preview" class="mf-img-preview"></div></div></div>`,
+  'yt-videos': `<div class="mf-group"><label>YouTube URL</label><input id="pf-url"></div><div class="mf-group"><label>Title (optional)</label><input id="pf-title"></div><div class="mf-group"><label>Tag</label><select id="pf-tag"><option>Video</option><option>VIP</option></select></div>`
 };
 
 function openPostModal(room) {
-  if(window.userRole === 'guest' || !window.userId) {
-    openLoginModal(room);
-    return;
-  }
+  if(window.userRole === 'guest') { openLoginModal(); return; }
   currentRoom = room;
   document.getElementById('postModalTitle').textContent = `➕ Post in ${roomLabels[room]}`;
   document.getElementById('postFormContent').innerHTML = postForms[room] || '';
-  document.getElementById('postOk').style.display = 'none';
-  document.getElementById('postErr').style.display = 'none';
-  currentPostImg = null;
   document.getElementById('postModal').classList.add('open');
 }
-
 function closePostModal() { document.getElementById('postModal').classList.remove('open'); }
-
-function toggleHighlightFields() {
-  const tag = document.getElementById('pf-tag')?.value;
-  const videoField = document.getElementById('pf-video-field');
-  const photoField = document.getElementById('pf-photo-field');
-  if(!videoField||!photoField) return;
-  if(tag==='Photo') { videoField.style.display='none'; photoField.style.display='block'; }
-  else { videoField.style.display='block'; photoField.style.display='none'; }
-}
-
 function previewPostImg() {
   const file = document.getElementById('pf-img')?.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    currentPostImg = e.target.result;
-    const prev = document.getElementById('pf-preview');
-    if(prev) { prev.src = e.target.result; prev.style.display = 'block'; }
-  };
-  reader.readAsDataURL(file);
+  if(file) { const reader = new FileReader(); reader.onload = e => { currentPostImg = e.target.result; const prev = document.getElementById('pf-preview'); if(prev) { prev.src = e.target.result; prev.style.display = 'block'; } }; reader.readAsDataURL(file); }
 }
-
 async function submitPost() {
-  const room = currentRoom;
   const title = document.getElementById('pf-title')?.value.trim() || '';
   const desc = document.getElementById('pf-desc')?.value.trim() || '';
   const url = document.getElementById('pf-url')?.value.trim() || '';
-  const tag = document.getElementById('pf-tag')?.value || room;
+  const tag = document.getElementById('pf-tag')?.value || currentRoom;
   const content = document.getElementById('pf-content')?.value.trim() || null;
-
-  if(!title && !url) {
-    const erEl = document.getElementById('postErr');
-    erEl.textContent = '❌ Please enter a title or URL!';
-    erEl.style.display = 'block';
-    return;
-  }
-
-  // Highlights validation
-  if(room==='highlights') {
-    if((tag==='Video'||tag==='Pro'||tag==='Tournament') && !url) {
-      const erEl = document.getElementById('postErr');
-      erEl.textContent = '❌ Please enter a video URL for this type!';
-      erEl.style.display = 'block';
-      return;
-    }
-    if(tag==='Photo' && !currentPostImg) {
-      const erEl = document.getElementById('postErr');
-      erEl.textContent = '❌ Please upload a photo!';
-      erEl.style.display = 'block';
-      return;
-    }
-  }
-
-  const btn = document.getElementById('postSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Publishing...';
-
-  const body = {
-    title: title || (url ? '🎬 Video' : '📄 Post'),
-    description: desc,
-    icon: currentPostImg || '📄',
-    url, tag, room, content,
-    posted_by: window.userId || null
-  };
-
+  if(!title && !url) { showPostErr('Please enter title or URL'); return; }
+  const body = { title: title||'Post', description: desc, icon: currentPostImg || '📄', url, tag, room: currentRoom, content, posted_by: window.userId };
+  const btn = document.getElementById('postSubmitBtn'); btn.disabled = true; btn.textContent = 'Publishing...';
   try {
     const { error } = await db.from('posts').insert(body);
     if(error) throw error;
     document.getElementById('postOk').style.display = 'block';
-    document.getElementById('postErr').style.display = 'none';
-    btn.disabled = false; btn.textContent = '➕ Publish';
-    loadPage(room);
-    setTimeout(() => closePostModal(), 2000);
-  } catch(e) {
-    const erEl = document.getElementById('postErr');
-    erEl.textContent = '❌ ' + e.message;
-    erEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = '➕ Publish';
-  }
+    setTimeout(() => closePostModal(), 1500);
+  } catch(e) { showPostErr(e.message); }
+  finally { btn.disabled = false; btn.textContent = '➕ Publish'; }
 }
+function showPostErr(msg) { const el = document.getElementById('postErr'); el.textContent = '❌ '+msg; el.style.display = 'block'; }
 
-// ===== LOGIN MODAL =====
-let pendingRoom = '';
-function openLoginModal(room) {
-  pendingRoom = room;
-  document.getElementById('loginModal').classList.add('open');
-  document.getElementById('lm-err').style.display = 'none';
-  document.getElementById('lm-ok').style.display = 'none';
-}
-function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
-
-function switchLMTab(tab) {
-  document.querySelectorAll('.lm-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.lm-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelector(tab==='login'?'.lm-tab:first-child':'.lm-tab:last-child').classList.add('active');
-  document.getElementById('lm-'+tab).classList.add('active');
-}
-
-async function doLMLogin() {
-  const email = document.getElementById('lm-email').value.trim();
-  const pw = document.getElementById('lm-password').value;
-  if(!email||!pw) { showLMMsg('Please fill all fields!', 'err'); return; }
-  const { data, error } = await db.auth.signInWithPassword({ email, password: pw });
-  if(error) { showLMMsg('❌ ' + error.message, 'err'); return; }
-  showLMMsg('✅ Welcome! Loading...', 'ok');
-  await checkAuth();
-  setTimeout(() => { closeLoginModal(); if(pendingRoom) openPostModal(pendingRoom); }, 1000);
-}
-
-async function doLMRegister() {
-  const username = document.getElementById('lm-username').value.trim();
-  const email = document.getElementById('lm-remail').value.trim();
-  const pw = document.getElementById('lm-rpassword').value;
-  if(!username||!email||!pw) { showLMMsg('Please fill all fields!', 'err'); return; }
-  if(pw.length<6) { showLMMsg('Password must be 6+ characters!', 'err'); return; }
-  const { data, error } = await db.auth.signUp({ email, password: pw, options: { data: { username } } });
-  if(error) { showLMMsg('❌ ' + error.message, 'err'); return; }
-  if(data.user) await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user' });
-  showLMMsg('✅ Account created! You can now login.', 'ok');
-  setTimeout(() => switchLMTab('login'), 2000);
-}
-
-function showLMMsg(text, type) {
-  const el = document.getElementById('lm-'+type);
-  el.textContent = text; el.style.display = 'block';
-  const other = document.getElementById(type==='err'?'lm-ok':'lm-err');
-  if(other) other.style.display = 'none';
-}
-
-// ===== AUTH =====
+// Auth functions
 async function checkAuth() {
   const { data: { session } } = await db.auth.getSession();
-  const guestArea = document.getElementById('area-guest');
-  const userArea = document.getElementById('area-user');
-  if(session && session.user) {
-    guestArea.style.display = 'none';
-    userArea.style.display = 'flex';
+  const guest = document.getElementById('area-guest'), userArea = document.getElementById('area-user');
+  if(session?.user) {
+    guest.style.display = 'none'; userArea.style.display = 'flex';
     const { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
     document.getElementById('user-name').textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
     const badge = document.getElementById('user-badge');
-    if(profile?.role && profile.role !== 'user') {
-      badge.textContent = profile.role.toUpperCase();
-      badge.style.display = 'inline-block';
-    }
-    window.userRole = profile?.role || 'user';
-    window.userId = session.user.id;
-  } else {
-    guestArea.style.display = 'flex';
-    userArea.style.display = 'none';
-    window.userRole = 'guest';
-    window.userId = null;
-  }
+    if(profile?.role && profile.role !== 'user') { badge.textContent = profile.role.toUpperCase(); badge.style.display = 'inline-block'; }
+    window.userRole = profile?.role || 'user'; window.userId = session.user.id;
+  } else { guest.style.display = 'flex'; userArea.style.display = 'none'; window.userRole = 'guest'; window.userId = null; }
 }
-
-async function doLogout() {
-  await db.auth.signOut();
-  window.location.reload();
+async function doLogout() { await db.auth.signOut(); window.location.reload(); }
+function openLoginModal() { document.getElementById('loginModal').classList.add('open'); }
+function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
+async function doLogin() {
+  const email = document.getElementById('lm-email').value, pw = document.getElementById('lm-password').value;
+  const { error } = await db.auth.signInWithPassword({ email, password: pw });
+  if(error) { const errDiv = document.getElementById('lm-err'); errDiv.textContent = error.message; errDiv.style.display = 'block'; }
+  else { closeLoginModal(); checkAuth(); }
 }
-
-// Expose functions
-window.showPage = showPage;
-window.filterPosts = filterPosts;
-window.toggleDD = toggleDD;
-window.closeDD = closeDD;
-window.openPostModal = openPostModal;
-
 checkAuth();
+window.openPostModal = openPostModal;
 </script>
 </body>
 </html>
