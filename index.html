@@ -122,16 +122,19 @@
 </div>
 
 <script>
-// ==================== 1. تكوين Supabase (مرة واحدة) ====================
-const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-if (!window._supabaseClient) {
-  window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
-const supabase = window._supabaseClient;
+// ==================== تكوين Supabase (مرة واحدة فقط) ====================
+(function() {
+  const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+  if (!window._supabaseClient) {
+    window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  window.supabaseClient = window._supabaseClient;
+})();
+const supabase = window.supabaseClient;
 let allPosts = {};
 
-// ==================== 2. تعريف الدوال أولاً (لضمان وجودها) ====================
+// ==================== تعريف الدوال (لضمان وجودها قبل الاستخدام) ====================
 function extractYouTubeId(url) {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
   return match ? match[1] : null;
@@ -261,7 +264,13 @@ function closeDD() {
 }
 document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
 
-// ==================== 3. إنشاء الأقسام ديناميكياً ====================
+// ربط الدوال بـ window لاستخدامها في onclick
+window.showPage = showPage;
+window.filterPosts = filterPosts;
+window.toggleDD = toggleDD;
+window.closeDD = closeDD;
+
+// ==================== إنشاء الأقسام ديناميكياً ====================
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects'];
 const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
@@ -315,15 +324,8 @@ rooms.forEach(room => {
   mainContainer.appendChild(pageDiv);
 });
 
-// ==================== 4. ربط الدوال بـ window لاستخدامها في onclick ====================
-window.showPage = showPage;
-window.filterPosts = filterPosts;
-window.toggleDD = toggleDD;
-window.closeDD = closeDD;
-
-// ==================== 5. وظائف المصادقة ====================
+// ==================== المصادقة ====================
 const authSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 async function checkAuth() {
   try {
     const { data: { session } } = await authSupabase.auth.getSession();
@@ -332,7 +334,6 @@ async function checkAuth() {
     if (session && session.user) {
       if (loginLink) loginLink.style.display = 'none';
       if (userArea) userArea.style.display = 'flex';
-      // محاولة جلب الملف الشخصي (إذا كان الجدول موجوداً)
       try {
         const { data: profile } = await authSupabase.from('profiles').select('username,role').eq('id', session.user.id).single();
         const userName = document.getElementById('user-name');
@@ -346,7 +347,6 @@ async function checkAuth() {
         window.userId = session.user.id;
         window.userEmail = session.user.email;
       } catch (e) {
-        // جدول profiles غير موجود أو مشكلة أخرى – نستخدم بيانات أساسية
         const userName = document.getElementById('user-name');
         if (userName) userName.textContent = '👋 ' + session.user.email.split('@')[0];
         window.userRole = 'user';
@@ -358,22 +358,21 @@ async function checkAuth() {
       if (userArea) userArea.style.display = 'none';
       window.userRole = 'guest';
     }
-  } catch (e) { console.warn('Auth check error:', e); }
+  } catch (e) { console.warn(e); }
 }
-
 window.doLogout = async function() {
   await authSupabase.auth.signOut();
   window.location.reload();
 };
 
-// ==================== 6. تسجيل الزيارة (اختياري) ====================
+// ==================== تسجيل الزيارة ====================
 (function trackVisit() {
   const lastVisit = localStorage.getItem('virtux_last_visit');
   const now = Date.now();
   const oneDay = 24 * 60 * 60 * 1000;
   if (!lastVisit || (now - parseInt(lastVisit)) > oneDay) {
     localStorage.setItem('virtux_last_visit', now);
-    fetch(`${SUPABASE_URL}/rest/v1/rpc/log_visit`, {
+    fetch('https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1/rpc/log_visit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
       body: JSON.stringify({ page_url: window.location.pathname })
@@ -381,9 +380,15 @@ window.doLogout = async function() {
   }
 })();
 
-// ==================== 7. بدء التشغيل بعد تحميل DOM ====================
+// ==================== بدء التشغيل ====================
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
+  // تحميل القسم النشط إذا لم يكن home أو contact
+  const activePage = document.querySelector('.vx-page.active');
+  if (activePage && activePage.id !== 'page-home' && activePage.id !== 'page-contact') {
+    const room = activePage.id.replace('page-', '');
+    loadPage(room);
+  }
 });
 </script>
 </body>
