@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtux — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh;display:flex;flex-direction:column}
+    .topbar{display:flex;align-items:center;padding:12px 20px;background:#000718;border-bottom:1px solid #9fb000}
+    .logo{font-size:20px;font-weight:700;color:#d4e800;letter-spacing:2px;text-decoration:none}
+    .logo span{color:#fff;font-weight:400}
+    .back{margin-left:auto;font-size:13px;color:#9fb000;text-decoration:none;border:1px solid #9fb000;padding:4px 12px;border-radius:5px}
+    .back:hover{background:#9fb000;color:#000}
+    .container{flex:1;display:flex;align-items:center;justify-content:center;padding:20px}
+    .auth-box{background:#050e30;border:1px solid #9fb000;border-radius:16px;padding:36px 32px;width:100%;max-width:400px}
+    .auth-box h1{color:#d4e800;font-size:22px;margin-bottom:6px;text-align:center}
+    .auth-box p{color:#667;font-size:13px;margin-bottom:24px;text-align:center}
+    .tabs{display:flex;gap:0;margin-bottom:24px;border:1px solid #1e2d6b;border-radius:8px;overflow:hidden}
+    .tab{flex:1;padding:10px;text-align:center;font-size:13px;cursor:pointer;background:#0a1540;color:#aab;border:none;font-family:'Poppins',sans-serif;transition:all 0.2s}
+    .tab.active{background:#9fb000;color:#000;font-weight:600}
+    .form-group{margin-bottom:14px}
+    .form-group label{display:block;font-size:12px;color:#9fb000;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+    .form-group input{width:100%;padding:10px 14px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:14px;font-family:'Poppins',sans-serif}
+    .form-group input:focus{outline:none;border-color:#9fb000}
+    .btn-auth{width:100%;padding:11px;background:#9fb000;color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;margin-top:6px;transition:background 0.2s}
+    .btn-auth:hover{background:#d4e800}
+    .btn-auth:disabled{background:#445;color:#778;cursor:not-allowed}
+    .msg{padding:10px 14px;border-radius:7px;font-size:13px;margin-bottom:14px;display:none}
+    .msg.ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90}
+    .msg.err{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55}
+    .divider{text-align:center;color:#445;font-size:12px;margin:16px 0}
+    .form-panel{display:none}
+    .form-panel.active{display:block}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="index.html" class="logo">VIRT<span>UX</span></a>
+    <a href="index.html" class="back">← Back to Site</a>
+  </div>
+  <div class="container">
+    <div class="auth-box">
+      <h1>🎮 Welcome to Virtux</h1>
+      <p>Join the gaming community</p>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('login')">Login</button>
+        <button class="tab" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <div class="msg" id="authMsg"></div>
+
+      <!-- LOGIN -->
+      <div class="form-panel active" id="panel-login">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn-auth" onclick="doLogin()" id="btn-login">Login</button>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="form-panel" id="panel-register">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="reg-username" placeholder="GamerName123">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doRegister()">
+        </div>
+        <button class="btn-auth" onclick="doRegister()" id="btn-register">Create Account</button>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+const SB_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SB_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const db = window.supabase.createClient(SB_URL, SB_KEY);
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  hideMsg();
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('authMsg');
+  el.textContent = text;
+  el.className = 'msg ' + type;
+  el.style.display = 'block';
+}
+function hideMsg() {
+  document.getElementById('authMsg').style.display = 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Logging in...';
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
+    showMsg('❌ ' + error.message, 'err');
+    btn.disabled = false; btn.textContent = 'Login';
+  } else {
+    showMsg('✅ Welcome back! Redirecting...', 'ok');
+    setTimeout(() => window.location.href = 'index.html', 1500);
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!username || !email || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
+  if (error) {
+    showMsg('❌ ' + error.message, 'err');
+    btn.disabled = false; btn.textContent = 'Create Account';
+  } else {
+    // Create profile
+    if (data.user) {
+      await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user' });
+    }
+    showMsg('✅ Account created! You can now login.', 'ok');
+    btn.disabled = false; btn.textContent = 'Create Account';
+    setTimeout(() => switchTab('login'), 2000);
+  }
+}
+
+// Check if already logged in
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session) window.location.href = 'index.html';
+});
+</script>
+</body>
+</html>
