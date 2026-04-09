@@ -122,14 +122,9 @@
 </div>
 
 <script>
-// منع إعادة تعريف supabase
-if (!window._supabaseClient) {
-  const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SUPABASE_KEY_PUB = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-  window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
-const supabase = window._supabaseClient;
+const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
 
 // قائمة الأقسام
@@ -194,7 +189,7 @@ async function loadPage(room) {
   if (!el) return;
   el.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
   try {
-    const { data, error } = await supabase.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+    const { data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false });
     if (error) throw error;
     allPosts[room] = data || [];
     renderCards(allPosts[room], gridId, room);
@@ -338,7 +333,7 @@ window.toggleDD = toggleDD;
 window.closeDD = closeDD;
 
 // Auth
-const authDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY_PUB || SUPABASE_KEY);
+const authDb = db;
 
 async function checkAuth() {
   const { data: { session } } = await authDb.auth.getSession();
