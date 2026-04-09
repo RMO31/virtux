@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
@@ -53,7 +52,7 @@
     .post-card:hover{border-color:#9fb000}
     .post-card-img{width:100%;height:160px;object-fit:cover}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#0a1540,#1a2d80);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-    .post-card-video{width:100%;aspect-ratio:16/9;background:#000;display:flex;align-items:center;justify-content:center}
+    .post-card-video{width:100%;aspect-ratio:16/9;background:#000}
     .post-card-video video{width:100%;height:100%;object-fit:cover}
     .post-card-video iframe{width:100%;height:100%;border:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
@@ -98,6 +97,7 @@
     .img-upload label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer}
     .img-preview{width:40px;height:40px;border-radius:6px;object-fit:cover;display:none}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="vx-root">
@@ -124,20 +124,20 @@
     </div>
     <div class="vx-main">
       <div class="vx-page active" id="page-home"><div class="home-hero"><h1>Welcome to Virtux 🎮</h1><p>Your English-speaking gaming community</p></div><div class="empty-home"><p>✨ Home page content will be added soon.</p></div></div>
-      <!-- باقي الأقسام سيتم إنشاؤها ديناميكياً -->
     </div>
   </div>
 </div>
 
 <script>
-// ==================== إعدادات Supabase (مرة واحدة) ====================
+// ==================== تهيئة Supabase (مرة واحدة فقط) ====================
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 let allPosts = {};
 
-// ==================== قائمة الأقسام ====================
+// قائمة الأقسام
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects'];
 const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
@@ -145,15 +145,48 @@ const roomLabels = {
   'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives', projects: '🌐 Projects'
 };
 
-// ==================== إنشاء واجهة الأقسام ديناميكياً ====================
+// إنشاء الأقسام ديناميكياً
 const mainContainer = document.querySelector('.vx-main');
 rooms.forEach(room => {
   const pageDiv = document.createElement('div');
   pageDiv.className = 'vx-page';
   pageDiv.id = `page-${room}`;
+  let filterBar = '';
+  if (room === 'live') {
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="filterPosts('live','',this)">All</button>
+      <button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button>
+      <button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button>
+      <button class="filter-btn" onclick="filterPosts('live','VIP',this)">VIP</button>
+    </div>`;
+  } else if (room === 'tournaments') {
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button>
+      <button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button>
+      <button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button>
+      <button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">VIP</button>
+    </div>`;
+  } else if (room === 'highlights') {
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button>
+      <button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button>
+      <button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button>
+      <button class="filter-btn" onclick="filterPosts('highlights','Video',this)">Video</button>
+      <button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">Photo</button>
+    </div>`;
+  } else if (room === 'subscribers') {
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="filterPosts('subscribers','',this)">All</button>
+      <button class="filter-btn" onclick="filterPosts('subscribers','YouTube',this)">YouTube</button>
+      <button class="filter-btn" onclick="filterPosts('subscribers','Member',this)">Members</button>
+      <button class="filter-btn" onclick="filterPosts('subscribers','Donor',this)">Donors</button>
+      <button class="filter-btn" onclick="filterPosts('subscribers','VIP',this)">VIP</button>
+      <button class="filter-btn" onclick="filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button>
+    </div>`;
+  }
   pageDiv.innerHTML = `
     <div class="page-header"><h2>${roomLabels[room]}</h2></div>
-    <div class="filter-bar">${room === 'live' ? '<button class="filter-btn active" onclick="filterPosts(\'live\',\'\',this)">All</button><button class="filter-btn" onclick="filterPosts(\'live\',\'Live Now\',this)">Live Now</button><button class="filter-btn" onclick="filterPosts(\'live\',\'Pre Lives\',this)">Pre Lives</button><button class="filter-btn" onclick="filterPosts(\'live\',\'VIP\',this)">VIP</button>' : ''}</div>
+    ${filterBar}
     <div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>
   `;
   mainContainer.appendChild(pageDiv);
@@ -217,7 +250,7 @@ function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">No posts yet 🎮</div>'; return; }
   
-  // معاملة خاصة للقنوات (subscribers و yt-channels)
+  // معاملة خاصة للقنوات
   if (room === 'subscribers' || room === 'yt-channels') {
     el.innerHTML = posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
@@ -241,16 +274,21 @@ function renderCards(posts, gridId, room) {
   // باقي الأقسام
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
+    // فيديو محلي
     if (p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'))) {
       mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
-    } else if (p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'))) {
-      const videoId = p.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
+    }
+    // يوتيوب (باستخدام iframe)
+    else if (p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'))) {
+      const videoId = extractYouTubeId(p.url);
       if (videoId) {
-        mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+        mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
       } else {
         mediaContent = `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
-    } else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+    }
+    // صورة أو رمز
+    else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
       mediaContent = `<img class="post-card-img" src="${p.icon}">`;
     } else {
       mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
@@ -283,6 +321,10 @@ function renderCards(posts, gridId, room) {
       </div>
     </div>`;
   }).join('');
+}
+function extractYouTubeId(url) {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
+  return match ? match[1] : null;
 }
 function filterPosts(room, tag, btn) {
   if (btn && btn.closest('.filter-bar')) {
@@ -322,11 +364,11 @@ function closeDD() {
 }
 document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
 
-// ==================== تسجيل الزيارة (بسيط) ====================
+// ==================== تسجيل الزيارة (بدون تجمد) ====================
 (function trackVisit() {
   const lastVisit = localStorage.getItem('virtux_last_visit');
   const now = Date.now();
-  const oneDay = 24*60*60*1000;
+  const oneDay = 24 * 60 * 60 * 1000;
   if (!lastVisit || (now - parseInt(lastVisit)) > oneDay) {
     localStorage.setItem('virtux_last_visit', now);
     fetch(`${SUPABASE_URL}/rest/v1/rpc/log_visit`, {
@@ -337,7 +379,7 @@ document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD()
   }
 })();
 
-// ==================== ربط الدوال العامة ====================
+// ربط الدوال العامة
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
