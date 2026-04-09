@@ -114,13 +114,13 @@
 </div>
 
 <script>
-// تهيئة Supabase (مرة واحدة)
+// ==================== 1. تهيئة Supabase (مرة واحدة) ====================
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
 
-// قائمة الأقسام
+// ==================== 2. قائمة الأقسام ====================
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects'];
 const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
@@ -128,7 +128,7 @@ const roomLabels = {
   'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives', projects: '🌐 Projects'
 };
 
-// إنشاء الأقسام ديناميكياً
+// ==================== 3. إنشاء الأقسام ديناميكياً ====================
 const mainContainer = document.querySelector('.vx-main');
 rooms.forEach(room => {
   const pageDiv = document.createElement('div');
@@ -175,12 +175,12 @@ rooms.forEach(room => {
   mainContainer.appendChild(pageDiv);
 });
 
-// تحميل المنشورات
+// ==================== 4. وظائف العرض ====================
 async function loadPage(room) {
   const gridId = `grid-${room}`;
   const el = document.getElementById(gridId);
   if (!el) return;
-  el.innerHTML = '<div class="loading-state">Loading...</div>';
+  el.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
   try {
     const { data, error } = await supabase.from('posts').select('*').eq('room', room).order('id', { ascending: false });
     if (error) throw error;
@@ -188,22 +188,22 @@ async function loadPage(room) {
     renderCards(allPosts[room], gridId, room);
   } catch(e) {
     console.error(e);
-    el.innerHTML = '<div class="empty-state">Failed to load posts.</div>';
+    el.innerHTML = '<div class="empty-state">فشل التحميل</div>';
   }
 }
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
-  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">No posts yet 🎮</div>'; return; }
+  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
   
-  // القنوات (شبكة)
+  // معاملة القنوات
   if (room === 'subscribers' || room === 'yt-channels') {
     el.innerHTML = posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">Visit Channel</a>` : '';
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
       let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} subscribers`;
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
       return `<div class="channel-card">
         ${avatar}
         <div class="channel-info">
@@ -217,7 +217,7 @@ function renderCards(posts, gridId, room) {
     return;
   }
   
-  // بطاقات عادية
+  // باقي الأقسام
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
     // فيديو محلي
@@ -245,15 +245,15 @@ function renderCards(posts, gridId, room) {
     let summary = '';
     if (p.content) summary = p.content.substring(0, 150).trim() + (p.content.length > 150 ? '...' : '');
     else if (p.description) summary = p.description.substring(0, 150);
-    const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 Read more</a>` : '';
+    const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
     let actions = '';
     if (p.url) {
       if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/')) {
-        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ Download</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
       } else if (p.url.includes('youtube.com') || p.url.includes('youtu.be')) {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">▶️ Watch on YouTube</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-link">▶️ مشاهدة على يوتيوب</a>`;
       } else {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 Link</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
       }
     }
     
@@ -310,7 +310,7 @@ function escapeHtml(str) {
   return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
 }
 
-// تسجيل الزيارة (اختياري، لن يسبب تجمداً)
+// ==================== 5. تسجيل الزيارة (اختياري، لا يسبب تجمداً) ====================
 (function trackVisit() {
   const lastVisit = localStorage.getItem('virtux_last_visit');
   const now = Date.now();
@@ -325,15 +325,8 @@ function escapeHtml(str) {
   }
 })();
 
-// تحميل الصفحة الرئيسية (Home) لا يحتوي على منشورات، لكن عند النقر على الأقسام يتم التحميل
-// نبدأ بتحميل القسم الأول تلقائياً (اختياري)
-setTimeout(() => {
-  const activePage = document.querySelector('.vx-page.active');
-  if (activePage && activePage.id !== 'page-home') {
-    const room = activePage.id.replace('page-', '');
-    loadPage(room);
-  }
-}, 100);
+// ==================== 6. تحميل الصفحة الأولية (Home) لا يحتاج منشورات ====================
+// لا شيء إضافي
 </script>
 </body>
 </html>
