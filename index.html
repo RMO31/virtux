@@ -94,23 +94,23 @@
   <div class="vx-topbar">
     <div class="vx-logo">VIRT<span>UX</span></div>
     <div class="vx-topnav">
-      <div class="dd" id="dd-news"><button class="dd-btn" onclick="toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="showPage('gaming-news');closeDD()">📰 Gaming News</a><a onclick="showPage('youtube-news');closeDD()">▶️ Youtube News</a></div></div>
-      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="showPage('yt-channels');closeDD()">📺 Channels</a><a onclick="showPage('yt-videos');closeDD()">🎬 Videos</a><a onclick="showPage('yt-lives');closeDD()">🔴 Lives</a></div></div>
-      <div class="dd" id="dd-collab"><button class="dd-btn" onclick="toggleDD('dd-collab')">Collab ▾</button><div class="dd-menu"><a onclick="showPage('projects');closeDD()">🌐 Projects</a></div></div>
+      <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 Gaming News</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ Youtube News</a></div></div>
+      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a><a onclick="window.showPage('yt-lives');window.closeDD()">🔴 Lives</a></div></div>
+      <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">Collab ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 Projects</a></div></div>
     </div>
     <div class="user-area" id="userArea"></div>
   </div>
   <div class="vx-ticker"><div class="ticker-label">LIVE</div><div class="ticker-track"><span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span><span class="ticker-item">🔴 <span>NinjaX</span> is live now</span><span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span><span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span></div></div>
   <div class="vx-body">
     <div class="vx-sidebar">
-      <button class="sb-btn active" id="sb-home" onclick="showPage('home')">🏠 Home</button>
+      <button class="sb-btn active" id="sb-home" onclick="window.showPage('home')">🏠 Home</button>
       <div class="sb-section">Content</div>
-      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
-      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
-      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
+      <button class="sb-btn" id="sb-live" onclick="window.showPage('live')">🔴 Live</button>
+      <button class="sb-btn" id="sb-tournaments" onclick="window.showPage('tournaments')">🏆 Tournaments</button>
+      <button class="sb-btn" id="sb-highlights" onclick="window.showPage('highlights')">🎬 Highlights</button>
       <div class="sb-section">Community</div>
-      <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <button class="sb-btn" id="sb-contact" onclick="showPage('contact')">📞 Contact</button>
+      <button class="sb-btn" id="sb-subscribers" onclick="window.showPage('subscribers')">👥 Subscribers</button>
+      <button class="sb-btn" id="sb-contact" onclick="window.showPage('contact')">📞 Contact</button>
     </div>
     <div class="vx-main">
       <div class="vx-page active" id="page-home"><div class="home-hero"><h1>Welcome to Virtux 🎮</h1><p>Your English-speaking gaming community</p></div><div class="empty-home"><p>✨ Home page content will be added soon.</p></div></div>
@@ -119,14 +119,11 @@
 </div>
 
 <script>
-// ==================== تهيئة Supabase (مرة واحدة فقط، مع تجنب التعريف المزدوج) ====================
-if (typeof window.supabaseClient === 'undefined') {
-  const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
-const supabase = window.supabaseClient;
+// ==================== تهيئة Supabase (مرة واحدة فقط) ====================
+const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 let allPosts = {};
 
@@ -147,34 +144,34 @@ rooms.forEach(room => {
   let filterBar = '';
   if (room === 'live') {
     filterBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="filterPosts('live','',this)">All</button>
-      <button class="filter-btn" onclick="filterPosts('live','Live Now',this)">Live Now</button>
-      <button class="filter-btn" onclick="filterPosts('live','Pre Lives',this)">Pre Lives</button>
-      <button class="filter-btn" onclick="filterPosts('live','VIP',this)">VIP</button>
+      <button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','Live Now',this)">Live Now</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button>
     </div>`;
   } else if (room === 'tournaments') {
     filterBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="filterPosts('tournaments','',this)">All</button>
-      <button class="filter-btn" onclick="filterPosts('tournaments','Registration',this)">Registration</button>
-      <button class="filter-btn" onclick="filterPosts('tournaments','Global',this)">Global</button>
-      <button class="filter-btn" onclick="filterPosts('tournaments','VIP',this)">VIP</button>
+      <button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','Registration',this)">Registration</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','Global',this)">Global</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button>
     </div>`;
   } else if (room === 'highlights') {
     filterBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="filterPosts('highlights','',this)">All</button>
-      <button class="filter-btn" onclick="filterPosts('highlights','Pro',this)">Pro</button>
-      <button class="filter-btn" onclick="filterPosts('highlights','Tournament',this)">Tournament</button>
-      <button class="filter-btn" onclick="filterPosts('highlights','Video',this)">Video</button>
-      <button class="filter-btn" onclick="filterPosts('highlights','Photo',this)">Photo</button>
+      <button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button>
     </div>`;
   } else if (room === 'subscribers') {
     filterBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="filterPosts('subscribers','',this)">All</button>
-      <button class="filter-btn" onclick="filterPosts('subscribers','YouTube',this)">YouTube</button>
-      <button class="filter-btn" onclick="filterPosts('subscribers','Member',this)">Members</button>
-      <button class="filter-btn" onclick="filterPosts('subscribers','Donor',this)">Donors</button>
-      <button class="filter-btn" onclick="filterPosts('subscribers','VIP',this)">VIP</button>
-      <button class="filter-btn" onclick="filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button>
+      <button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">All</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button>
+      <button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button>
     </div>`;
   }
   pageDiv.innerHTML = `
@@ -195,12 +192,12 @@ async function checkAuth() {
 function updateUI() {
   const userArea = document.getElementById('userArea');
   if (currentUser) {
-    userArea.innerHTML = `<span class="user-email">${currentUser.email}</span><button class="auth-btn" onclick="logout()">Logout</button>`;
+    userArea.innerHTML = `<span class="user-email">${currentUser.email}</span><button class="auth-btn" onclick="window.logout()">Logout</button>`;
   } else {
-    userArea.innerHTML = `<button class="auth-btn" onclick="showAuthModal()">Login / Sign up</button>`;
+    userArea.innerHTML = `<button class="auth-btn" onclick="window.showAuthModal()">Login / Sign up</button>`;
   }
 }
-function showAuthModal() {
+window.showAuthModal = function() {
   const email = prompt('Email:');
   if (!email) return;
   const password = prompt('Password:');
@@ -217,11 +214,11 @@ function showAuthModal() {
       else alert('Account created! You can now login.');
     });
   }
-}
-async function logout() {
+};
+window.logout = async function() {
   await supabase.auth.signOut();
   checkAuth();
-}
+};
 
 // ==================== عرض المنشورات ====================
 async function loadPage(room) {
@@ -314,7 +311,7 @@ function extractYouTubeId(url) {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
   return match ? match[1] : null;
 }
-function filterPosts(room, tag, btn) {
+window.filterPosts = function(room, tag, btn) {
   if (btn && btn.closest('.filter-bar')) {
     btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -322,8 +319,8 @@ function filterPosts(room, tag, btn) {
   const posts = allPosts[room] || [];
   const filtered = tag ? posts.filter(p => p.tag === tag) : posts;
   renderCards(filtered, `grid-${room}`, room);
-}
-function showPage(id) {
+};
+window.showPage = function(id) {
   document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
   const page = document.getElementById(`page-${id}`);
@@ -331,7 +328,7 @@ function showPage(id) {
   const btn = document.getElementById(`sb-${id}`);
   if (btn) btn.classList.add('active');
   if (id !== 'home' && id !== 'contact') loadPage(id);
-}
+};
 function loadCurrentPage() {
   const activePage = document.querySelector('.vx-page.active');
   if (activePage) {
@@ -343,14 +340,14 @@ function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
 }
-function toggleDD(id) {
+window.toggleDD = function(id) {
   document.querySelectorAll('.dd').forEach(d => { if(d.id !== id) d.classList.remove('open'); });
   document.getElementById(id).classList.toggle('open');
-}
-function closeDD() {
+};
+window.closeDD = function() {
   document.querySelectorAll('.dd').forEach(d => d.classList.remove('open'));
-}
-document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
+};
+document.addEventListener('click', e => { if(!e.target.closest('.dd')) window.closeDD(); });
 
 // ==================== تسجيل الزيارة ====================
 (function trackVisit() {
@@ -359,21 +356,13 @@ document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD()
   const oneDay = 24 * 60 * 60 * 1000;
   if (!lastVisit || (now - parseInt(lastVisit)) > oneDay) {
     localStorage.setItem('virtux_last_visit', now);
-    fetch('https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1/rpc/log_visit', {
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/log_visit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
       body: JSON.stringify({ page_url: window.location.pathname })
     }).catch(e => console.log('Visit log error:', e));
   }
 })();
-
-// ربط الدوال العامة
-window.showPage = showPage;
-window.filterPosts = filterPosts;
-window.toggleDD = toggleDD;
-window.closeDD = closeDD;
-window.logout = logout;
-window.showAuthModal = showAuthModal;
 
 // بدء التشغيل
 checkAuth();
