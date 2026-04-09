@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux - Article</title>
+  <title>Virtux — قراءة المقال</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;padding:20px}
+    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh;padding:20px}
     .container{max-width:800px;margin:0 auto;background:#050e30;border-radius:16px;border:1px solid #9fb000;overflow:hidden}
     .header{background:#000718;padding:16px 20px;border-bottom:1px solid #9fb000}
     .header h1{color:#d4e800;font-size:22px}
@@ -23,6 +24,7 @@
     .footer{margin-top:30px;text-align:center;padding:16px;border-top:1px solid #1e2d6b;font-size:12px;color:#667}
     .loading{text-align:center;padding:50px;color:#9fb000}
     .error{text-align:center;padding:50px;color:#f55}
+    iframe, video{max-width:100%;border-radius:8px;margin:10px 0}
   </style>
 </head>
 <body>
@@ -36,24 +38,86 @@
   </div>
   <div class="footer">Virtux Gaming Community</div>
 </div>
+
 <script>
-const SB_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+// Supabase configuration
+const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 async function loadArticle() {
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get('id');
-  if (!id) { document.getElementById('article-content').innerHTML = '<div class="error">❌ No article ID provided.</div>'; return; }
+  if (!id) {
+    document.getElementById('article-content').innerHTML = '<div class="error">❌ No article ID provided.</div>';
+    return;
+  }
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/posts?id=eq.${id}`, { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } });
-    const data = await res.json();
-    if (!data || data.length === 0) throw new Error('Article not found');
-    const post = data[0];
-    const isImg = post.icon && (post.icon.startsWith('data:') || post.icon.startsWith('http'));
-    const mediaHtml = isImg ? `<img class="article-img" src="${post.icon}" alt="${post.title}">` : `<div class="article-emoji">${post.icon || '📄'}</div>`;
-    const contentHtml = post.content ? post.content.replace(/\n/g, '<br>') : (post.description || 'No content available.');
-    document.getElementById('article-content').innerHTML = `${mediaHtml}<div class="content"><h1 class="title">${post.title}</h1><div class="meta">🏷️ ${post.tag || post.room} &nbsp;|&nbsp; 📅 ${new Date().toLocaleDateString()}</div><div class="article-body">${contentHtml}</div>${post.url ? `<div style="margin-top:20px"><a href="${post.url}" target="_blank" style="background:#9fb000;color:#000;padding:8px 16px;border-radius:8px;text-decoration:none">🔗 رابط إضافي</a></div>` : ''}</div>`;
-  } catch (err) { document.getElementById('article-content').innerHTML = `<div class="error">❌ ${err.message}</div>`; }
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    if (!data) throw new Error('Article not found');
+    const post = data;
+    
+    // تحديد نوع الوسائط (صورة أو فيديو أو رمز)
+    let mediaHtml = '';
+    if (post.url && (post.url.match(/\.(mp4|webm)$/i) || post.url.includes('/storage/v1/object/public/videos/'))) {
+      mediaHtml = `<div style="text-align:center; margin:10px 0;"><video src="${post.url}" controls style="max-width:100%; border-radius:8px;"></video></div>`;
+    } else if (post.url && (post.url.includes('youtube.com/watch') || post.url.includes('youtu.be'))) {
+      const videoId = post.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
+      if (videoId) {
+        mediaHtml = `<div style="text-align:center; margin:10px 0;"><iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+      } else {
+        mediaHtml = `<img class="article-img" src="${post.icon || ''}" alt="${escapeHtml(post.title)}">`;
+      }
+    } else if (post.icon && (post.icon.startsWith('data:') || post.icon.startsWith('http'))) {
+      mediaHtml = `<img class="article-img" src="${post.icon}" alt="${escapeHtml(post.title)}">`;
+    } else {
+      mediaHtml = `<div class="article-emoji">${post.icon || '📄'}</div>`;
+    }
+    
+    const contentHtml = post.content ? post.content.replace(/\n/g, '<br>') : (post.description || 'لا يوجد محتوى.');
+    const metaHtml = `
+      <div class="meta">
+        🏷️ ${escapeHtml(post.tag || post.room)} &nbsp;|&nbsp;
+        📅 ${new Date(post.created_at || Date.now()).toLocaleDateString()}
+        ${post.user_email ? ` &nbsp;|&nbsp; ✍️ ${escapeHtml(post.user_email)}` : ''}
+      </div>
+    `;
+    
+    let extraLink = '';
+    if (post.url && !post.url.includes('youtube.com') && !post.url.match(/\.(mp4|webm)$/i)) {
+      extraLink = `<div style="margin-top:20px; text-align:center;"><a href="${post.url}" target="_blank" style="background:#9fb000;color:#000;padding:8px 16px;border-radius:8px;text-decoration:none;">🔗 رابط إضافي</a></div>`;
+    }
+    
+    document.getElementById('article-content').innerHTML = `
+      ${mediaHtml}
+      <div class="content">
+        <h1 class="title">${escapeHtml(post.title)}</h1>
+        ${metaHtml}
+        <div class="article-body">${contentHtml}</div>
+        ${extraLink}
+      </div>
+    `;
+  } catch (err) {
+    console.error(err);
+    document.getElementById('article-content').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+  }
 }
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
 loadArticle();
 </script>
 </body>
