@@ -191,24 +191,43 @@
       <!-- Subscribers -->
       <div class="ap" id="ap-subscribers">
         <div class="page-title">👥 Subscribers</div>
-        <div class="card"><h3>➕ إضافة قناة يوتيوب (رابط فقط)</h3>
+
+        <!-- Youtuber / Youtuber VIP - بروابط -->
+        <div class="card">
+          <h3>🔔 إضافة Youtuber / Youtuber VIP (برابط)</h3>
           <div class="ok" id="ok-subscribers">✅ تمت الإضافة!</div>
           <div class="er" id="er-subscribers"></div>
           <div class="fg">
             <input class="full" id="subscribers-url" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@RMO-MR)">
             <select id="subscribers-tag">
-              <option value="YouTube">🔔 YouTube</option>
+              <option value="Youtuber">🔔 Youtuber</option>
+              <option value="Youtuber VIP">👑 Youtuber VIP</option>
+            </select>
+            <textarea class="full" id="subscribers-content" placeholder="وصف إضافي (اختياري)" rows="2"></textarea>
+          </div>
+          <button class="btn-pub" onclick="addYouTubeChannel('subscribers')">➕ إضافة Youtuber</button>
+        </div>
+
+        <!-- Member / Donor / Collaboration - بحث عن مستخدم -->
+        <div class="card">
+          <h3>⭐ إضافة Member / Donor / Collaboration (من المستخدمين)</h3>
+          <div class="ok" id="ok-sub-user">✅ تمت الإضافة!</div>
+          <div class="er" id="er-sub-user"></div>
+          <div class="fg">
+            <input class="full" id="sub-user-search" placeholder="ابحث باسم المستخدم..." oninput="searchUsers(this.value)">
+            <div class="full" id="user-search-results" style="background:#0a1540;border:1px solid #1e2d6b;border-radius:7px;max-height:180px;overflow-y:auto;display:none;"></div>
+            <input class="full" id="sub-user-selected" placeholder="المستخدم المختار..." readonly style="background:#050e30;color:#9fb000;">
+            <input type="hidden" id="sub-user-id">
+            <select id="sub-user-role" class="full">
               <option value="Member">⭐ Member</option>
               <option value="Donor">🎁 Donor</option>
               <option value="Collaboration">🌐 Collaboration</option>
-              <option value="VIP">👑 VIP</option>
-              <option value="Youtuber VIP">👑 Youtuber VIP</option>
             </select>
-            <textarea class="full" id="subscribers-content" placeholder="وصف إضافي (اختياري)" rows="3"></textarea>
           </div>
-          <button class="btn-pub" onclick="addYouTubeChannel('subscribers')">➕ إضافة</button>
+          <button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة</button>
         </div>
-        <div class="card"><h3>القنوات المضافة</h3>
+
+        <div class="card"><h3>القائمة</h3>
           <div id="list-subscribers" class="posts-list"><div class="loading">جاري التحميل...</div></div>
         </div>
       </div>
@@ -994,6 +1013,73 @@ async function deleteUser(userId) {
     });
     loadDashboard();
   } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ==================== بحث مستخدمين للـ Subscribers ====================
+async function searchUsers(query) {
+  const resultsDiv = document.getElementById('user-search-results');
+  if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?username=ilike.*${encodeURIComponent(query)}*&select=id,username,email,role`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    const users = await res.json();
+    if (!Array.isArray(users) || !users.length) {
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div style="padding:10px;color:#667;font-size:13px;">لا يوجد مستخدم بهذا الاسم</div>';
+      return;
+    }
+    resultsDiv.style.display = 'block';
+    resultsDiv.innerHTML = users.map(u => `
+      <div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #1e2d6b;font-size:13px;color:#ddd;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='#1a2d80'" onmouseout="this.style.background=''">
+        <span style="font-size:18px;">👤</span>
+        <div>
+          <div style="font-weight:600;color:#d4e800;">${u.username}</div>
+          <div style="font-size:11px;color:#667;">${u.email || ''}</div>
+        </div>
+        <span style="margin-left:auto;font-size:11px;background:#0f1e55;color:#9fb000;border-radius:3px;padding:2px 6px;">${u.role?.toUpperCase() || 'USER'}</span>
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+function selectUser(id, username) {
+  document.getElementById('sub-user-id').value = id;
+  document.getElementById('sub-user-selected').value = username;
+  document.getElementById('sub-user-search').value = '';
+  document.getElementById('user-search-results').style.display = 'none';
+}
+
+async function addUserSubscriber() {
+  const userId = document.getElementById('sub-user-id').value;
+  const username = document.getElementById('sub-user-selected').value;
+  const role = document.getElementById('sub-user-role').value;
+  if (!userId || !username) {
+    document.getElementById('er-sub-user').textContent = '❌ يرجى البحث عن مستخدم أولاً';
+    document.getElementById('er-sub-user').style.display = 'block';
+    setTimeout(() => document.getElementById('er-sub-user').style.display = 'none', 3000);
+    return;
+  }
+  const body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '', content: null };
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) {
+      document.getElementById('sub-user-id').value = '';
+      document.getElementById('sub-user-selected').value = '';
+      document.getElementById('sub-user-search').value = '';
+      const ok = document.getElementById('ok-sub-user');
+      ok.style.display = 'block';
+      setTimeout(() => ok.style.display = 'none', 3000);
+      loadPosts('subscribers');
+    } else {
+      document.getElementById('er-sub-user').textContent = '❌ فشل الإضافة';
+      document.getElementById('er-sub-user').style.display = 'block';
+      setTimeout(() => document.getElementById('er-sub-user').style.display = 'none', 3000);
+    }
+  } catch(e) { console.error(e); }
 }
 </script>
 </body>

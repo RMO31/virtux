@@ -94,9 +94,9 @@
       <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a><a onclick="window.showPage('yt-lives');window.closeDD()">🔴 Lives</a></div></div>
       <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">Collab ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 Projects</a></div></div>
     </div>
-    <div id="auth-btn-area" style="margin-left:8px;">
+    <div id="auth-btn-area" style="margin-left:8px;display:flex;align-items:center;gap:8px;">
       <a href="auth.html" id="btn-login-link" style="background:transparent;border:1px solid #9fb000;color:#d4e800;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;font-family:'Poppins',sans-serif;">Login</a>
-      <div id="btn-user-area" style="display:none;display:flex;align-items:center;gap:8px;">
+      <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
         <span id="user-name" style="font-size:13px;color:#d4e800;"></span>
         <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#1a2d80;color:#9fb000;display:none;"></span>
         <button onclick="doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">Logout</button>
@@ -346,7 +346,7 @@ async function checkAuth() {
   const userArea = document.getElementById('btn-user-area');
   if (session && session.user) {
     if (loginLink) loginLink.style.display = 'none';
-    if (userArea) userArea.style.display = 'flex';
+    if (userArea) { userArea.style.display = 'flex'; userArea.style.removeProperty('display'); userArea.style.display = 'flex'; }
     const { data: profile } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
     const userName = document.getElementById('user-name');
     const roleBadge = document.getElementById('user-role-badge');
