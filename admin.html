@@ -79,7 +79,6 @@
     .channel-name-admin{font-size:13px;font-weight:600;color:#d4e800}
     .channel-sub-admin{font-size:11px;color:#aaa}
     .channel-link-admin{color:#9fb000;font-size:11px;text-decoration:none}
-    /* تنسيق خانة المعاينة على اليمين */
     .preview-panel{background:#0a1540;border:1px solid #1e2d6b;border-radius:12px;padding:16px;margin-top:16px;display:flex;flex-direction:column;align-items:center}
     .preview-media{width:100%;max-height:200px;object-fit:contain;border-radius:8px;margin-bottom:12px}
     .preview-buttons{display:flex;gap:8px;justify-content:center}
@@ -322,26 +321,25 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة (مع خانة معاينة على اليمين) ====================
+// ==================== نموذج الإضافة (مع معاينة وإصلاح الصورة) ====================
 function getAddForm(room) {
   if (room === 'highlights') {
-    // نموذج Highlights مع معاينة على اليمين
     return `<div class="card"><h3>➕ إضافة منشور</h3>
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
       <div class="form-with-preview">
         <div>
           <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان (اختياري)"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
           <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
             <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
           </div>
-          <div class="fg"><select id="tag-${room}"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option></select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
+          <div class="fg"><select id="tag-${room}"><option value="Pro">🏅 Pro (فيديو)</option><option value="Tournament">🏆 بطولة (فيديو)</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
           <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
         </div>
         <div class="preview-panel">
           <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-${room}" class="preview-media" style="display:none;">
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
           <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
           <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
           <div class="preview-buttons">
@@ -388,14 +386,41 @@ function getAddForm(room) {
 // ==================== دوال مساعدة للمعاينة في Highlights ====================
 function clearMedia(room) {
   if (room !== 'highlights') return;
-  document.getElementById(`preview-${room}`).style.display = 'none';
-  document.getElementById(`preview-video-${room}`).style.display = 'none';
-  document.getElementById(`preview-text-${room}`).style.display = 'block';
+  const previewImg = document.getElementById(`preview-img-${room}`);
+  const previewVideo = document.getElementById(`preview-video-${room}`);
+  const previewText = document.getElementById(`preview-text-${room}`);
+  if (previewImg) previewImg.style.display = 'none';
+  if (previewVideo) previewVideo.style.display = 'none';
+  if (previewText) previewText.style.display = 'block';
   document.getElementById(`url-${room}`).value = '';
   document.getElementById(`icon-${room}`).value = '';
   document.getElementById(`imgfile-${room}`).value = '';
   document.getElementById(`videofile-${room}`).value = '';
   delete document.getElementById(`icon-${room}`)._imgData;
+}
+
+function handleImageUpload(room) {
+  const fileInput = document.getElementById(`imgfile-${room}`);
+  const file = fileInput?.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const previewImg = document.getElementById(`preview-img-${room}`);
+    const previewVideo = document.getElementById(`preview-video-${room}`);
+    const previewText = document.getElementById(`preview-text-${room}`);
+    if (previewImg) {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
+    }
+    if (previewVideo) previewVideo.style.display = 'none';
+    if (previewText) previewText.style.display = 'none';
+    const iconField = document.getElementById(`icon-${room}`);
+    iconField.value = '🖼️';
+    iconField._imgData = e.target.result;
+    // مسح أي رابط فيديو سابق
+    document.getElementById(`url-${room}`).value = '';
+  };
+  reader.readAsDataURL(file);
 }
 
 async function uploadVideoToBucket(room) {
@@ -425,15 +450,18 @@ async function uploadVideoToBucket(room) {
         titleField.value = file.name.replace(/\.[^/.]+$/, '');
       }
       // تحديث المعاينة
-      let previewImg = document.getElementById(`preview-${room}`);
-      let previewVideo = document.getElementById(`preview-video-${room}`);
-      let previewText = document.getElementById(`preview-text-${room}`);
+      const previewImg = document.getElementById(`preview-img-${room}`);
+      const previewVideo = document.getElementById(`preview-video-${room}`);
+      const previewText = document.getElementById(`preview-text-${room}`);
       if (previewImg) previewImg.style.display = 'none';
       if (previewVideo) {
         previewVideo.src = publicUrl;
         previewVideo.style.display = 'block';
       }
       if (previewText) previewText.style.display = 'none';
+      // مسح أي صورة مرفوعة سابقة
+      document.getElementById(`icon-${room}`).value = '';
+      delete document.getElementById(`icon-${room}`)._imgData;
       alert('✅ تم رفع الفيديو! الرابط جاهز.');
     } else {
       let errText = await res.text();
@@ -443,30 +471,7 @@ async function uploadVideoToBucket(room) {
   finally { if (btn) btn.disabled = false; }
 }
 
-function previewImg(room) {
-  let file = document.getElementById(`imgfile-${room}`).files[0];
-  if (!file) return;
-  let reader = new FileReader();
-  reader.onload = e => {
-    let previewImg = document.getElementById(`preview-${room}`);
-    let previewVideo = document.getElementById(`preview-video-${room}`);
-    let previewText = document.getElementById(`preview-text-${room}`);
-    if (previewImg) {
-      previewImg.src = e.target.result;
-      previewImg.style.display = 'block';
-    }
-    if (previewVideo) previewVideo.style.display = 'none';
-    if (previewText) previewText.style.display = 'none';
-    let iconField = document.getElementById(`icon-${room}`);
-    iconField.value = '🖼️';
-    iconField._imgData = e.target.result;
-    // مسح حقل url إذا كان هناك صورة (لأنه سيتم حفظ الصورة في icon)
-    document.getElementById(`url-${room}`).value = '';
-  };
-  reader.readAsDataURL(file);
-}
-
-// ==================== دوال الإضافة والحذف والتعديل ====================
+// ==================== دوال الإضافة مع التحقق الذكي ====================
 async function addPost(room) {
   console.log('addPost called for room:', room);
   
@@ -490,20 +495,29 @@ async function addPost(room) {
   let icon = getSafeValue(iconEl);
   let tag = tagEl ? tagEl.value : room;
 
+  console.log('Raw tag value:', tag);
+
+  // بيانات الصورة المرفوعة (base64)
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
 
+  // تحديد ما إذا كان الوسم يشير إلى صورة (بغض النظر عن حالة الأحرف أو وجود مسافات)
+  const isPhotoTag = tag.toLowerCase().includes('photo') || tag.includes('صورة');
+  // تحديد ما إذا كان هناك صورة صالحة (بيانات base64 أو رابط صورة)
+  const hasValidImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  // تحديد ما إذا كان هناك فيديو صالح (رابط يوتيوب أو رابط فيديو مرفوع)
+  const hasValidVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+
+  console.log('isPhotoTag:', isPhotoTag, 'hasValidImage:', hasValidImage, 'hasValidVideo:', hasValidVideo);
+
   if (room === 'highlights') {
-    const isVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-    const isPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-    
-    if (tag === 'Photo') {
-      if (!isPhoto) {
+    if (isPhotoTag) {
+      if (!hasValidImage) {
         showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.');
         return;
       }
     } else {
-      if (!isVideo) {
+      if (!hasValidVideo) {
         showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب أو رابط فيديو صالح.');
         return;
       }
@@ -528,6 +542,7 @@ async function addPost(room) {
     const okDiv = document.getElementById(`ok-${room}`);
     if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
 
+    // تفريغ الحقول
     if (titleEl) titleEl.value = '';
     if (descEl) descEl.value = '';
     if (urlEl) urlEl.value = '';
@@ -538,7 +553,7 @@ async function addPost(room) {
     const videoInput = document.getElementById(`videofile-${room}`);
     if (videoInput) videoInput.value = '';
     // إعادة تعيين المعاينة
-    const previewImg = document.getElementById(`preview-${room}`);
+    const previewImg = document.getElementById(`preview-img-${room}`);
     const previewVideo = document.getElementById(`preview-video-${room}`);
     const previewText = document.getElementById(`preview-text-${room}`);
     if (previewImg) previewImg.style.display = 'none';
@@ -635,7 +650,7 @@ function getTagOptionsForEdit(room, currentTag) {
   let opts = '';
   if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
   else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option>`;
+  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (فيديو)</option><option value="Tournament">🏆 بطولة (فيديو)</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option>`;
   else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
   else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
   else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option>`;
@@ -833,7 +848,7 @@ window.deletePost = deletePost;
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.saveEditPost = saveEditPost;
-window.previewImg = previewImg;
+window.handleImageUpload = handleImageUpload;
 window.uploadVideoToBucket = uploadVideoToBucket;
 window.addYouTubeChannel = addYouTubeChannel;
 window.addYouTubeVideo = addYouTubeVideo;
