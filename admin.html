@@ -372,7 +372,7 @@ function refreshDashboard() { loadDashboard(); }
 async function setRole(userId, role) { await supabaseClient.from('profiles').update({ role }).eq('id', userId); loadDashboard(); }
 async function deleteUser(userId) { if(!confirm('حذف المستخدم نهائياً؟')) return; await supabaseClient.from('profiles').delete().eq('id', userId); loadDashboard(); }
 
-// ==================== تحميل صفحة المحتوى (لجميع الغرف) ====================
+// ==================== تحميل صفحة المحتوى ====================
 async function loadContentPage(room) {
   let container = document.getElementById(`content-${room}`);
   if (!container) return;
@@ -427,7 +427,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة (تم إضافة دعم الفيديو لـ projects) ====================
+// ==================== نموذج الإضافة لكل غرفة ====================
 function getAddForm(room) {
   if (room === 'home') {
     return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
@@ -470,7 +470,6 @@ function getAddForm(room) {
       </div>
     </div>`;
   } else if (room === 'projects') {
-    // إضافة دعم الفيديو والمعاينة لغرفة Projects
     return `<div class="card"><h3>➕ إضافة مشروع (فيديو/صورة/نص)</h3>
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
       <div class="form-with-preview">
@@ -647,25 +646,71 @@ async function addPost(room) {
 }
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
 async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
+
+// ==================== دوال التعديل المصححة ====================
+function getTagOptionsForEdit(room, currentTag) {
+  let opts = '';
+  if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
+  else if (room === 'home') opts = `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`;
+  else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
+  else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
+  else if (room === 'subscribers') opts = `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`;
+  else if (room === 'yt-channels') opts = `<option value="Channel">📺 Channel</option>`;
+  else if (room === 'yt-videos') opts = `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'yt-lives') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
+  else opts = `<option value="default">عام</option>`;
+  return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
+}
+
 async function openEditModal(id) {
   let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
-  if (error) return;
+  if (error) {
+    console.error('خطأ في جلب المنشور:', error);
+    alert('فشل تحميل بيانات المنشور');
+    return;
+  }
   currentEditPost = data;
   let modalBody = document.getElementById('editModalBody');
-  modalBody.innerHTML = `<div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div><div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div><div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div><div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div><div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, data.tag)}</select></div><div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div><div class="fg"><div class="img-upload"><input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()"><label for="edit-imgfile">📁 رفع صورة جديدة</label><img id="edit-imgpreview" class="img-preview" src=""></div></div><div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div><button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button><button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${currentEditPost.id}, '${currentEditPost.room}'); closeEditModal();">🗑️ حذف المنشور</button>`;
+  let tagOptions = getTagOptionsForEdit(data.room, data.tag);
+  modalBody.innerHTML = `
+    <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
+    <div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
+    <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div>
+    <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div>
+    <div class="fg"><select id="edit-tag">${tagOptions}</select></div>
+    <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div>
+    <div class="fg"><div class="img-upload"><input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()"><label for="edit-imgfile">📁 رفع صورة جديدة</label><img id="edit-imgpreview" class="img-preview" src=""></div></div>
+    <div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div>
+    <button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button>
+    <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${currentEditPost.id}, '${currentEditPost.room}'); closeEditModal();">🗑️ حذف المنشور</button>
+  `;
   document.getElementById('editModal').classList.add('open');
 }
+
 function previewEditImg() {
   let file = document.getElementById('edit-imgfile').files[0];
   if (!file) return;
   let reader = new FileReader();
-  reader.onload = e => { let preview = document.getElementById('edit-imgpreview'); preview.src = e.target.result; preview.style.display = 'block'; document.getElementById('edit-icon').value = '🖼️'; document.getElementById('edit-icon')._imgData = e.target.result; };
+  reader.onload = e => {
+    let preview = document.getElementById('edit-imgpreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('edit-icon').value = '🖼️';
+    document.getElementById('edit-icon')._imgData = e.target.result;
+  };
   reader.readAsDataURL(file);
 }
+
 async function uploadEditVideo() {
   let file = document.getElementById('edit-videofile').files[0];
   if (!file) return;
-  if (!file.type.startsWith('video/')) { alert('الملف المختار ليس فيديو'); return; }
+  if (!file.type.startsWith('video/')) {
+    alert('الملف المختار ليس فيديو');
+    return;
+  }
   let fileName = Date.now() + '_' + file.name;
   fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
   let filePath = `highlights/${fileName}`;
@@ -676,25 +721,24 @@ async function uploadEditVideo() {
       let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
       document.getElementById('edit-url').value = publicUrl;
       let titleField = document.getElementById('edit-title');
-      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      if (titleField && !titleField.value.trim()) {
+        titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      }
       alert('✅ تم رفع الفيديو الجديد! الرابط جاهز.');
-    } else { let errText = await res.text(); alert('فشل الرفع: ' + errText); }
-  } catch(e) { alert('خطأ: ' + e.message); }
+    } else {
+      let errText = await res.text();
+      alert('❌ فشل الرفع: ' + errText);
+    }
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+  }
 }
-function getTagOptionsForEdit(room, currentTag) {
-  let opts = '';
-  if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
-  else if (room === 'home') opts = `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`;
-  else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-  else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
-  else opts = `<option value="default">عام</option>`;
-  return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
-}
+
 async function saveEditPost() {
-  if (!currentEditPost) return;
+  if (!currentEditPost) {
+    alert('لا يوجد منشور قيد التعديل');
+    return;
+  }
   let updated = {
     title: document.getElementById('edit-title').value,
     description: document.getElementById('edit-desc').value,
@@ -703,11 +747,21 @@ async function saveEditPost() {
     tag: document.getElementById('edit-tag').value,
     content: document.getElementById('edit-content').value
   };
-  await supabaseClient.from('posts').update(updated).eq('id', currentEditPost.id);
-  closeEditModal();
-  loadContentPage(currentEditPost.room);
-  loadDashboard();
+  let imgData = document.getElementById('edit-icon')._imgData;
+  if (imgData) updated.icon = imgData;
+  try {
+    const { error } = await supabaseClient.from('posts').update(updated).eq('id', currentEditPost.id);
+    if (error) throw error;
+    closeEditModal();
+    loadContentPage(currentEditPost.room);
+    loadDashboard();
+    alert('✅ تم التعديل بنجاح');
+  } catch (e) {
+    console.error(e);
+    alert('❌ فشل التعديل: ' + e.message);
+  }
 }
+
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
 // ==================== دوال يوتيوب والمستخدمين ====================
@@ -739,14 +793,21 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
 </script>
 
 <script>
-// ===== REALISTIC MISSILE ANIMATION (بحر وصواريخ) - نفس الكود السابق =====
+// ===== REALISTIC MISSILE ANIMATION (بحر وصواريخ) =====
 (function() {
   const canvas = document.getElementById('bgCanvas');
   const ctx = canvas.getContext('2d');
   function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
   resize(); window.addEventListener('resize', resize);
-  // ... (الكود الكامل للرسوم المتحركة، موجود مسبقاً)
-  // لتجنب التكرار، تم حذفه هنا ولكن سيكون موجوداً في الملف النهائي
+  const stars = Array.from({length:250}, () => ({ x: Math.random(), y: Math.random(), r: Math.random()*1.4+0.2, twinkle: Math.random()*Math.PI*2, speed: 0.005+Math.random()*0.01 }));
+  const smokePool = [];
+  class SmokeParticle { constructor(x, y, color) { this.x=x; this.y=y; this.vx=(Math.random()-0.5)*0.8; this.vy=Math.random()*0.5; this.r=3+Math.random()*5; this.life=1; this.decay=0.015+Math.random()*0.02; this.color=color||'180,120,60'; this.grow=0.3+Math.random()*0.5; } update() { this.x+=this.vx; this.y+=this.vy; this.r+=this.grow; this.life-=this.decay; this.vx*=0.98; this.vy*=0.98; } draw() { ctx.save(); ctx.globalAlpha=this.life*0.4; ctx.fillStyle=`rgba(${this.color},${this.life*0.4})`; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+  class Missile { constructor() { this.reset(true); } reset(initial) { const W=canvas.width, H=canvas.height; this.launchX=W*(0.05+Math.random()*0.9); this.launchY=H*0.68+Math.random()*H*0.05; this.x=this.launchX; this.y=this.launchY; this.targetX=W*(0.05+Math.random()*0.9); this.targetY=H*(0.03+Math.random()*0.2); const dx=this.targetX-this.launchX, dy=this.targetY-this.launchY, dist=Math.sqrt(dx*dx+dy*dy); this.speed=3.5+Math.random()*2.5; this.angle=Math.atan2(dy,dx); this.vx=Math.cos(this.angle)*this.speed; this.vy=Math.sin(this.angle)*this.speed; this.trail=[]; this.maxTrail=22; this.alive=true; this.exploding=false; this.explodeX=0; this.explodeY=0; this.explodeParticles=[]; this.explodeTime=0; this.delay=initial?Math.random()*200:40+Math.random()*180; this.active=false; } update() { if(this.delay>0){ this.delay--; return; } this.active=true; if(this.exploding){ this.explodeTime++; this.explodeParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.vx*=0.97; p.life-=p.decay; p.r*=0.995; }); this.explodeParticles=this.explodeParticles.filter(p=>p.life>0); if(this.explodeTime>80) this.reset(false); return; } const dx=this.targetX-this.x, dy=this.targetY-this.y, dist=Math.sqrt(dx*dx+dy*dy); const targetAngle=Math.atan2(dy,dx); let da=targetAngle-this.angle; while(da>Math.PI) da-=Math.PI*2; while(da<-Math.PI) da+=Math.PI*2; this.angle+=da*0.04; this.vx=Math.cos(this.angle)*this.speed; this.vy=Math.sin(this.angle)*this.speed; this.x+=this.vx; this.y+=this.vy; this.trail.unshift({x:this.x,y:this.y}); if(this.trail.length>this.maxTrail) this.trail.pop(); const tail=this.trail[this.trail.length-1]||{x:this.x,y:this.y}; if(Math.random()<0.7) smokePool.push(new SmokeParticle(tail.x,tail.y,'160,100,40')); if(Math.random()<0.3) smokePool.push(new SmokeParticle(tail.x+(Math.random()-0.5)*4,tail.y+(Math.random()-0.5)*4,'80,80,80')); if(dist<this.speed*1.5){ this.exploding=true; this.explodeX=this.x; this.explodeY=this.y; for(let i=0;i<55;i++){ const ang=Math.random()*Math.PI*2, spd=1+Math.random()*6, colors=['#ff4400','#ff8800','#ffcc00','#fff','#ff2200','#ff6600']; this.explodeParticles.push({x:this.x,y:this.y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, r:2+Math.random()*4, life:1, decay:0.012+Math.random()*0.025, color:colors[Math.floor(Math.random()*colors.length)] }); } this.shockwave={r:0, maxR:60, life:1}; } } draw() { if(!this.active) return; if(this.exploding){ if(this.shockwave && this.shockwave.r<this.shockwave.maxR){ this.shockwave.r+=3.5; this.shockwave.life-=0.06; ctx.save(); ctx.globalAlpha=this.shockwave.life*0.5; ctx.strokeStyle='#ff8800'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(this.explodeX,this.explodeY,this.shockwave.r,0,Math.PI*2); ctx.stroke(); ctx.restore(); } if(this.explodeTime<15){ ctx.save(); ctx.globalAlpha=(1-this.explodeTime/15)*0.6; const grd=ctx.createRadialGradient(this.explodeX,this.explodeY,0,this.explodeX,this.explodeY,40+this.explodeTime*2); grd.addColorStop(0,'rgba(255,200,50,0.9)'); grd.addColorStop(0.4,'rgba(255,80,0,0.6)'); grd.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(this.explodeX,this.explodeY,40+this.explodeTime*2,0,Math.PI*2); ctx.fill(); ctx.restore(); } this.explodeParticles.forEach(p=>{ ctx.save(); ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=6; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); ctx.restore(); }); return; } if(this.trail.length<2) return; for(let i=1;i<this.trail.length;i++){ const t=1-i/this.trail.length; ctx.save(); ctx.globalAlpha=t*0.85; ctx.strokeStyle=t>0.5?`rgba(255,${100+Math.floor(t*155)},0,1)`:`rgba(255,80,0,${t*1.5})`; ctx.lineWidth=t*4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(this.trail[i-1].x,this.trail[i-1].y); ctx.lineTo(this.trail[i].x,this.trail[i].y); ctx.stroke(); ctx.restore(); } const head=this.trail[0]; const bodyAngle=this.angle; ctx.save(); ctx.translate(head.x,head.y); ctx.rotate(bodyAngle); ctx.fillStyle='#c8c8d0'; ctx.shadowColor='#ff8800'; ctx.shadowBlur=12; ctx.beginPath(); ctx.ellipse(0,0,9,3,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#e8e8f0'; ctx.beginPath(); ctx.moveTo(9,0); ctx.lineTo(16,0); ctx.lineTo(9,-2.5); ctx.closePath(); ctx.fill(); ctx.fillStyle='#888'; ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-14,-7); ctx.lineTo(-8,-2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-14,7); ctx.lineTo(-8,2); ctx.closePath(); ctx.fill(); const flameLen=8+Math.random()*6; const flameGrd=ctx.createLinearGradient(-9,0,-9-flameLen,0); flameGrd.addColorStop(0,'rgba(255,200,50,1)'); flameGrd.addColorStop(0.4,'rgba(255,80,0,0.8)'); flameGrd.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=flameGrd; ctx.beginPath(); ctx.moveTo(-9,-2.5); ctx.lineTo(-9-flameLen,0); ctx.lineTo(-9,2.5); ctx.closePath(); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.4; const glow=ctx.createRadialGradient(head.x,head.y,0,head.x,head.y,18); glow.addColorStop(0,'rgba(255,150,0,0.8)'); glow.addColorStop(1,'rgba(255,50,0,0)'); ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(head.x,head.y,18,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+  function drawLaunchers(W,H){ const groundY=H*0.68; const count=4; for(let i=0;i<count;i++){ const lx=W*(0.1+i*0.25), ly=groundY; ctx.save(); ctx.fillStyle='#0f0e08'; ctx.strokeStyle='#2a2510'; ctx.lineWidth=1; ctx.beginPath(); ctx.rect(lx-20,ly-6,40,10); ctx.fill(); ctx.stroke(); for(let w=-1;w<=1;w+=2){ ctx.fillStyle='#1a1810'; ctx.beginPath(); ctx.arc(lx+w*14,ly+4,5,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#0a0908'; ctx.beginPath(); ctx.arc(lx+w*14,ly+4,2,0,Math.PI*2); ctx.fill(); } ctx.strokeStyle='#3a3820'; ctx.lineWidth=4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(lx,ly-6); ctx.lineTo(lx-8,ly-36); ctx.stroke(); ctx.strokeStyle='#4a4830'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(lx-4,ly-6); ctx.lineTo(lx-12,ly-36); ctx.stroke(); ctx.translate(lx-8,ly-28); ctx.rotate(-Math.PI/5); ctx.fillStyle='#505058'; ctx.beginPath(); ctx.ellipse(0,0,12,3.5,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#888890'; ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(18,0); ctx.lineTo(12,-3); ctx.closePath(); ctx.fill(); ctx.restore(); } }
+  let waveT=0; const missiles=Array.from({length:5},()=>new Missile());
+  function drawScene(){ const W=canvas.width, H=canvas.height; const sky=ctx.createLinearGradient(0,0,0,H*0.68); sky.addColorStop(0,'#000408'); sky.addColorStop(0.6,'#000c18'); sky.addColorStop(1,'#001020'); ctx.fillStyle=sky; ctx.fillRect(0,0,W,H); stars.forEach(s=>{ s.twinkle+=s.speed; const alpha=0.3+0.7*Math.abs(Math.sin(s.twinkle)); ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle='#ffffff'; ctx.shadowColor='#aaccff'; ctx.shadowBlur=2; ctx.beginPath(); ctx.arc(s.x*W,s.y*H*0.65,s.r,0,Math.PI*2); ctx.fill(); ctx.restore(); }); ctx.save(); ctx.fillStyle='#f0e8c8'; ctx.shadowColor='#f0e8c8'; ctx.shadowBlur=25; ctx.beginPath(); ctx.arc(W*0.82,H*0.1,30,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#000c18'; ctx.shadowBlur=0; ctx.beginPath(); ctx.arc(W*0.82+14,H*0.1-6,26,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.08; const moonGlow=ctx.createRadialGradient(W*0.82,H*0.1,0,W*0.82,H*0.1,120); moonGlow.addColorStop(0,'#f0e8c8'); moonGlow.addColorStop(1,'transparent'); ctx.fillStyle=moonGlow; ctx.beginPath(); ctx.arc(W*0.82,H*0.1,120,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.12; const horizGlow=ctx.createLinearGradient(0,H*0.6,0,H*0.68); horizGlow.addColorStop(0,'rgba(255,150,50,0)'); horizGlow.addColorStop(1,'rgba(255,150,50,0.4)'); ctx.fillStyle=horizGlow; ctx.fillRect(0,H*0.6,W,H*0.08); ctx.restore(); const sea=ctx.createLinearGradient(0,H*0.68,0,H); sea.addColorStop(0,'#001828'); sea.addColorStop(0.5,'#000e1a'); sea.addColorStop(1,'#000608'); ctx.fillStyle=sea; ctx.fillRect(0,H*0.68,W,H*0.32); ctx.save(); ctx.globalAlpha=0.12; for(let ry=0;ry<8;ry++){ const rw=20-ry*1.5, rx=W*0.82-rw/2+Math.sin(waveT*0.8+ry)*8, ryy=H*0.69+ry*14; ctx.fillStyle='#f0e8c8'; ctx.fillRect(rx,ryy,rw,4); } ctx.restore(); waveT+=0.018; for(let w=0;w<4;w++){ ctx.save(); ctx.strokeStyle=`rgba(0,80,140,${0.1+w*0.04})`; ctx.lineWidth=1.2; ctx.beginPath(); for(let x=0;x<=W;x+=3){ const y=H*0.682+w*9+Math.sin(x*0.012+waveT+w*0.8)*5+Math.sin(x*0.025+waveT*1.4+w)*3; x===0?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.stroke(); ctx.restore(); } const shore=ctx.createLinearGradient(0,H*0.66,0,H*0.70); shore.addColorStop(0,'#1a1408'); shore.addColorStop(1,'#0d0a04'); ctx.fillStyle=shore; ctx.beginPath(); ctx.moveTo(0,H*0.70); for(let x=0;x<=W;x+=W/30){ const y=H*0.668+Math.sin(x*0.04)*3+(x/W)*6; ctx.lineTo(x,y); } ctx.lineTo(W,H*0.70); ctx.closePath(); ctx.fill(); ctx.fillStyle='#080604'; ctx.beginPath(); ctx.moveTo(0,H*0.73); for(let x=0;x<=W;x+=W/40){ ctx.lineTo(x,H*0.67+Math.sin(x*0.03+1)*5+x/W*8); } ctx.lineTo(W,H*0.73); ctx.closePath(); ctx.fill(); drawLaunchers(W,H); smokePool.forEach(s=>s.update()); smokePool.forEach(s=>s.draw()); for(let i=smokePool.length-1;i>=0;i--) if(smokePool[i].life<=0) smokePool.splice(i,1); if(smokePool.length>400) smokePool.splice(0,smokePool.length-400); }
+  function animate(){ ctx.clearRect(0,0,canvas.width,canvas.height); drawScene(); missiles.forEach(m=>{ m.update(); m.draw(); }); requestAnimationFrame(animate); }
+  animate();
 })();
 </script>
 </body>
