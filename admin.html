@@ -374,27 +374,35 @@ async function addPost(room) {
   const iconEl = document.getElementById(`icon-${room}`);
   const tagEl = document.getElementById(`tag-${room}`);
 
-  console.log('Elements found:', { titleEl: !!titleEl, urlEl: !!urlEl, descEl: !!descEl, contentEl: !!contentEl, iconEl: !!iconEl, tagEl: !!tagEl });
+  // دالة مساعدة للحصول على القيمة بأمان
+  function getSafeValue(el, fieldName) {
+    if (!el) {
+      console.error(`Element ${fieldName} not found`);
+      return null;
+    }
+    if (el.value === undefined) {
+      console.error(`Element ${fieldName} has no value property, tagName:`, el.tagName);
+      return null;
+    }
+    return el.value.trim();
+  }
 
-  // التحقق من وجود العناصر الأساسية (خاصة في Highlights)
-  if (!titleEl || !urlEl || !descEl || !contentEl || !iconEl || !tagEl) {
-    const msg = '❌ خطأ في النموذج: بعض الحقول مفقودة. يرجى تحديث الصفحة والمحاولة مرة أخرى.';
-    showError(room, msg);
-    console.error(msg);
+  let title = getSafeValue(titleEl, 'title');
+  let url = getSafeValue(urlEl, 'url');
+  let desc = getSafeValue(descEl, 'desc');
+  let content = getSafeValue(contentEl, 'content');
+  let icon = getSafeValue(iconEl, 'icon');
+  let tag = tagEl ? tagEl.value : null;
+
+  if (title === null || url === null || desc === null || content === null || icon === null || tag === null) {
+    showError(room, '❌ بعض الحقول مفقودة أو تالفة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
     return;
   }
 
-  let title = titleEl.value.trim();
-  let url = urlEl.value.trim();
-  let desc = descEl.value.trim();
-  let content = contentEl.value.trim();
-  let icon = iconEl.value;
-  let tag = tagEl.value;
+  console.log('Form values:', { title, url, desc, content, icon: icon?.substring(0,30), tag });
 
-  let imgData = iconEl._imgData || '';
+  let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
-
-  console.log('Form values:', { title, url, desc, content, icon: icon.substring(0,30), tag });
 
   // منع النشر في Highlights إذا لم يوجد فيديو أو صورة
   if (room === 'highlights') {
@@ -434,7 +442,7 @@ async function addPost(room) {
     if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
 
     // تفريغ الحقول
-    titleEl.value = '';
+    if (titleEl) titleEl.value = '';
     if (descEl) descEl.value = '';
     if (urlEl) urlEl.value = '';
     if (iconEl) iconEl.value = '';
