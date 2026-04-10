@@ -189,7 +189,15 @@
       </div>
     </div>
   </div>
-  <div class="vx-ticker"><div class="ticker-label">LIVE</div><div class="ticker-track"><span class="ticker-item">🏆 <span>ESL Pro League</span> — Finals in 3 days</span><span class="ticker-item">🔴 <span>NinjaX</span> is live now</span><span class="ticker-item">📰 <span>Valorant</span> new agent revealed</span><span class="ticker-item">🎮 <span>FazeRush</span> new highlight</span></div></div>
+  
+  <!-- شريط الأخبار الديناميكي -->
+  <div class="vx-ticker">
+    <div class="ticker-label">LIVE</div>
+    <div class="ticker-track" id="ticker-track">
+      <div class="loading-state">جاري تحميل الأخبار...</div>
+    </div>
+  </div>
+  
   <div class="vx-body">
     <div class="vx-sidebar">
       <button class="sb-btn active" id="sb-home" onclick="window.showPage('home')">🏠 Home</button>
@@ -273,7 +281,6 @@ async function loadPage(room) {
 }
 
 function isVIPContent(post) {
-  // المحتوى المخصص لـ VIP: إذا كان الوسم "VIP" أو "Youtuber VIP" أو موجوداً في غرف معينة مع وسم VIP
   return post.tag === 'VIP' || post.tag === 'Youtuber VIP';
 }
 
@@ -281,7 +288,6 @@ function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
   
-  // عرض القنوات بشكل خاص (لا ينطبق عليه التقييد)
   if (room === 'subscribers' || room === 'yt-channels') {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
@@ -294,19 +300,15 @@ function renderCards(posts, gridId, room) {
     return;
   }
   
-  // التحقق من صلاحية المستخدم لمشاهدة محتوى VIP
   const userRole = window.userRole || 'guest';
   const allowedRoles = ['member', 'vip', 'admin'];
   const canViewVIP = allowedRoles.includes(userRole);
   
-  // عرض البطاقات العادية
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
     const isRestricted = isVIPContent(p) && !canViewVIP;
     
-    // إذا كان المحتوى مقيداً، نعرض صورة مصغرة مع قفل
     if (isRestricted) {
-      // استخدام الصورة المصغرة إذا وجدت، وإلا أيقونة قفل
       let thumb = '';
       if (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) {
         thumb = `<img class="post-card-img" src="${p.icon}">`;
@@ -315,7 +317,6 @@ function renderCards(posts, gridId, room) {
       }
       mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">هذا المحتوى للأعضاء فقط</span></div></div>`;
     } else {
-      // عرض عادي
       const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
       
@@ -407,6 +408,42 @@ function escapeHtml(str) {
   return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
 }
 
+// تحميل الأخبار من قاعدة البيانات
+async function loadTickerNews() {
+  const track = document.getElementById('ticker-track');
+  if (!track) return;
+  try {
+    const { data, error } = await db.from('posts')
+      .select('title, url')
+      .eq('room', 'ticker')
+      .order('id', { ascending: false })
+      .limit(10);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>';
+      return;
+    }
+    // تكرار الأخبار لضمان استمرار الحركة (نكرر المصفوفة مرتين)
+    const items = [...data, ...data];
+    track.innerHTML = items.map(item => {
+      const text = item.title;
+      const url = item.url;
+      if (url) {
+        return `<span class="ticker-item"><a href="${url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(text)}</a></span>`;
+      } else {
+        return `<span class="ticker-item">📢 ${escapeHtml(text)}</span>`;
+      }
+    }).join('');
+    // إعادة تشغيل الأنيميشن (للتأكد)
+    track.style.animation = 'none';
+    track.offsetHeight; // force reflow
+    track.style.animation = 'ticker 28s linear infinite';
+  } catch(e) {
+    console.error('خطأ في تحميل الأخبار:', e);
+    track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>';
+  }
+}
+
 // تسجيل الزيارة
 (function trackVisit() {
   const lastVisit = localStorage.getItem('virtux_last_visit');
@@ -437,7 +474,6 @@ async function checkAuth() {
     if (loginLink) loginLink.style.display = 'none';
     if (userArea) userArea.style.display = 'flex';
     let { data: profile, error } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
-    // إذا لم يكن هناك ملف شخصي (للمستخدمين الجدد عبر OAuth أو التسجيل)، نقوم بإنشائه تلقائياً
     if (!profile && !error) {
       const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
       const { error: insertError } = await authDb.from('profiles').insert({
@@ -447,7 +483,6 @@ async function checkAuth() {
         role: 'user'
       });
       if (!insertError) {
-        // إعادة جلب الملف الشخصي
         const { data: newProfile } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
         profile = newProfile;
       }
@@ -473,7 +508,6 @@ async function doLogout() {
   window.location.reload();
 }
 
-// تعديل زر Login لفتح نافذة تسجيل الدخول
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => {
   e.preventDefault();
   const email = prompt('أدخل بريدك الإلكتروني:');
@@ -487,6 +521,7 @@ document.getElementById('btn-login-link')?.addEventListener('click', (e) => {
 });
 
 checkAuth();
+loadTickerNews(); // تحميل الأخبار عند بدء الصفحة
 </script>
 </body>
 </html>

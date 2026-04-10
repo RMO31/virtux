@@ -90,6 +90,9 @@
     .role-buttons button{margin-left:5px;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer}
     .recent-member-item{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1e2d6b}
     .recent-avatar{width:36px;height:36px;border-radius:50%;background:#1a2d80;display:flex;align-items:center;justify-content:center;font-size:16px}
+    .news-item{display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #1e2d6b}
+    .news-text{flex:1;font-size:13px}
+    .news-link{font-size:11px;color:#9fb000;text-decoration:none}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -221,17 +224,15 @@ function loadContact() {
   container.innerHTML = `<div class="card"><h3>معلومات الاتصال</h3><p>بريد: admin@virtux.gg</p><p>ديسكورد: virtux_official</p></div>`;
 }
 
-// ==================== Dashboard محسّن مع Recent Members و Role Management ====================
+// ==================== Dashboard ====================
 async function loadDashboard() {
   let container = document.getElementById('content-dashboard');
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    // جلب جميع المستخدمين
     let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     if (!users) users = [];
 
-    // إحصائيات سريعة
     let total = users.length;
     let vipCount = users.filter(u => u.role === 'vip').length;
     let memberCount = users.filter(u => u.role === 'member').length;
@@ -246,7 +247,6 @@ async function loadDashboard() {
       <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">عادي</div></div>
     </div>`;
 
-    // Recent Members (أحدث 5)
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
     if (users.length) {
       let recent = users.slice(0, 5);
@@ -270,7 +270,6 @@ async function loadDashboard() {
     }
     recentMembersHtml += `</div>`;
 
-    // Role Management Card
     let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
       <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
       <div id="roleSearchResults" class="role-search-results"></div>
@@ -279,7 +278,16 @@ async function loadDashboard() {
       </div>
     </div>`;
 
-    // قائمة المستخدمين الكاملة (اختياري) يمكن إضافتها أسفل
+    // قسم إدارة الأخبار
+    let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
+      <div class="fg">
+        <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
+        <input class="full" id="newsUrl" placeholder="رابط (اختياري)">
+      </div>
+      <button class="btn-pub" onclick="addNews()">➕ إضافة خبر</button>
+      <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
+    </div>`;
+
     let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
       let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
       let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
@@ -300,8 +308,72 @@ async function loadDashboard() {
       </div>`;
     }).join('') + `</div></div>`;
 
-    container.innerHTML = statsHtml + recentMembersHtml + roleManagementHtml + fullUsersHtml;
+    container.innerHTML = statsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
+    loadNewsList();
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
+}
+
+// دوال إدارة الأخبار
+async function loadNewsList() {
+  let { data: news, error } = await supabaseClient.from('posts')
+    .select('*')
+    .eq('room', 'ticker')
+    .order('id', { ascending: false });
+  if (error) return;
+  let container = document.getElementById('newsList');
+  if (!container) return;
+  if (!news || news.length === 0) {
+    container.innerHTML = '<div class="empty">لا توجد أخبار. أضف خبراً الآن.</div>';
+    return;
+  }
+  container.innerHTML = news.map(item => `
+    <div class="news-item" id="news-${item.id}">
+      <div class="news-text">${escapeHtml(item.title)}</div>
+      ${item.url ? `<a href="${item.url}" target="_blank" class="news-link">رابط</a>` : ''}
+      <button class="btn-edit" onclick="editNews(${item.id})">✏️</button>
+      <button class="btn-del" onclick="deleteNews(${item.id})">🗑️</button>
+    </div>
+  `).join('');
+}
+
+async function addNews() {
+  let title = document.getElementById('newsTitle').value.trim();
+  let url = document.getElementById('newsUrl').value.trim();
+  if (!title) {
+    alert('يرجى إدخال نص الخبر');
+    return;
+  }
+  let { error } = await supabaseClient.from('posts').insert({
+    title: title,
+    url: url || null,
+    room: 'ticker',
+    tag: 'news',
+    icon: '📢',
+    content: null
+  });
+  if (error) {
+    alert('فشل إضافة الخبر: ' + error.message);
+    return;
+  }
+  document.getElementById('newsTitle').value = '';
+  document.getElementById('newsUrl').value = '';
+  loadNewsList();
+}
+
+async function deleteNews(id) {
+  if (!confirm('هل تريد حذف هذا الخبر؟')) return;
+  await supabaseClient.from('posts').delete().eq('id', id);
+  loadNewsList();
+}
+
+async function editNews(id) {
+  let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
+  if (error) return;
+  let newTitle = prompt('تعديل نص الخبر:', data.title);
+  if (newTitle === null) return;
+  let newUrl = prompt('تعديل الرابط (اختياري):', data.url || '');
+  await supabaseClient.from('posts').update({ title: newTitle, url: newUrl || null }).eq('id', id);
+  loadNewsList();
 }
 
 async function searchUsersForRole(query) {
@@ -412,7 +484,6 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة (مختصر مع الحفاظ على الوظائف السابقة) ====================
 function getAddForm(room) {
   if (room === 'highlights') {
     return `<div class="card"><h3>➕ إضافة منشور</h3>
@@ -479,7 +550,6 @@ function getAddForm(room) {
   }
 }
 
-// ==================== دوال مساعدة للمعاينة والإضافة (نفس السابق) ====================
 function clearMedia(room) {
   if (room !== 'highlights') return;
   const previewImg = document.getElementById(`preview-img-${room}`);
@@ -735,7 +805,7 @@ async function saveEditPost() {
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// ==================== دوال يوتيوب والمستخدمين (مختصرة) ====================
+// ==================== دوال يوتيوب والمستخدمين ====================
 async function fetchYouTubeChannelInfo(url) {
   try {
     let handle = url.split('@')[1]?.split(/[\/?]/)[0];
@@ -919,6 +989,10 @@ window.deleteUser = deleteUser;
 window.clearMedia = clearMedia;
 window.refreshDashboard = refreshDashboard;
 window.searchUsersForRole = searchUsersForRole;
+window.addNews = addNews;
+window.deleteNews = deleteNews;
+window.editNews = editNews;
+window.loadNewsList = loadNewsList;
 </script>
 </body>
 </html>
