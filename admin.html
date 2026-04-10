@@ -73,7 +73,6 @@
     .modal-top h2{font-size:16px;color:#d4e800}
     .modal-close{background:transparent;border:1px solid #556;color:#aaa;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:16px}
     .modal-body{padding:18px}
-    /* تنسيق قنوات يوتيوب في لوحة التحكم */
     .channel-card-admin{background:#0a1540;border:1px solid #1e2d6b;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
     .channel-avatar-admin{width:50px;height:50px;border-radius:50%;object-fit:cover}
     .channel-info-admin{flex:1}
@@ -287,7 +286,6 @@ async function loadContentPage(room) {
       } else {
         postsHtml = `<div class="card"><h3>📋 المنشورات</h3><div class="posts-list">` + posts.map(p => {
           let media = '';
-          // دعم جميع صيغ الفيديو (أي فيديو)
           const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
           const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
           if (isVideo) 
@@ -325,7 +323,7 @@ function getAddForm(room) {
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
       <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير">
       <div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div>
-      <div class="img-upload full"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو (أي صيغة)</label></div>
+      <div class="img-upload full"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
       <select id="tag-${room}"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option></select>
       <input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل" rows="4"></textarea></div>
       <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
@@ -366,6 +364,8 @@ function getAddForm(room) {
 
 // ==================== دوال الإضافة والحذف والتعديل (مع التحقق من وجود العناصر) ====================
 async function addPost(room) {
+  console.log('addPost called for room:', room);
+  
   // الحصول على العناصر مع التحقق من وجودها
   const titleEl = document.getElementById(`title-${room}`);
   const urlEl = document.getElementById(`url-${room}`);
@@ -374,9 +374,13 @@ async function addPost(room) {
   const iconEl = document.getElementById(`icon-${room}`);
   const tagEl = document.getElementById(`tag-${room}`);
 
+  console.log('Elements found:', { titleEl: !!titleEl, urlEl: !!urlEl, descEl: !!descEl, contentEl: !!contentEl, iconEl: !!iconEl, tagEl: !!tagEl });
+
   // التحقق من وجود العناصر الأساسية (خاصة في Highlights)
   if (!titleEl || !urlEl || !descEl || !contentEl || !iconEl || !tagEl) {
-    showError(room, '❌ خطأ في النموذج: بعض الحقول مفقودة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+    const msg = '❌ خطأ في النموذج: بعض الحقول مفقودة. يرجى تحديث الصفحة والمحاولة مرة أخرى.';
+    showError(room, msg);
+    console.error(msg);
     return;
   }
 
@@ -390,10 +394,14 @@ async function addPost(room) {
   let imgData = iconEl._imgData || '';
   if (imgData) icon = imgData;
 
+  console.log('Form values:', { title, url, desc, content, icon: icon.substring(0,30), tag });
+
   // منع النشر في Highlights إذا لم يوجد فيديو أو صورة
   if (room === 'highlights') {
     const isVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
     const isPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    
+    console.log('Highlights validation:', { isVideo, isPhoto, tag });
     
     if (!isVideo && !isPhoto) {
       showError(room, '❌ يجب رفع صورة أو فيديو على الأقل قبل النشر!');
@@ -406,7 +414,10 @@ async function addPost(room) {
       if (!isVideo) { showError(room, '❌ خانة الفيديو: يجب رفع فيديو أو رابط يوتيوب.'); return; }
     }
   } else {
-    if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
+    if (!title && !url && !icon) {
+      showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.');
+      return;
+    }
   }
 
   if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : '📄 منشور';
@@ -437,8 +448,10 @@ async function addPost(room) {
 
     loadContentPage(room);
     loadDashboard();
+    console.log('Post published successfully');
   } catch (e) {
     showError(room, e.message);
+    console.error('Error publishing:', e);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -511,14 +524,12 @@ async function uploadVideoToBucket(room) {
     return;
   }
   
-  // التحقق من نوع الملف (فيديو)
   if (!file.type.startsWith('video/')) {
     alert('الملف المختار ليس فيديو. يرجى اختيار ملف فيديو صالح.');
     return;
   }
   
   let fileName = Date.now() + '_' + file.name;
-  // إزالة المسافات والأحرف الخاصة من اسم الملف
   fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
   let filePath = `highlights/${fileName}`;
   let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
@@ -532,7 +543,6 @@ async function uploadVideoToBucket(room) {
       document.getElementById(`url-${room}`).value = publicUrl;
       let titleField = document.getElementById(`title-${room}`);
       if (titleField && !titleField.value.trim()) {
-        // استخدام اسم الملف كعنوان (بدون الامتداد)
         let baseName = file.name.replace(/\.[^/.]+$/, '');
         titleField.value = baseName;
       }
