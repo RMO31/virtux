@@ -7,126 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{
-      font-family:'Poppins',sans-serif;
-      background: linear-gradient(145deg, #0a5f7a 0%, #1e3b4a 30%, #2c5a3e 60%, #c2a575 100%);
-      color:#fff;
-      min-height:100vh;
-      position:relative;
-      overflow-x:hidden;
-    }
-    /* موجات البحر */
-    .wave-bg {
-      position:fixed;
-      bottom:0;
-      left:0;
-      width:100%;
-      height:180px;
-      background: repeating-linear-gradient(transparent 0px, transparent 28px, rgba(255,255,255,0.1) 28px, rgba(255,255,255,0.2) 32px);
-      pointer-events:none;
-      z-index:0;
-    }
-    .wave-bg:before {
-      content:"";
-      position:absolute;
-      bottom:0;
-      left:0;
-      width:200%;
-      height:100%;
-      background: radial-gradient(ellipse at 20% 100%, rgba(70,130,200,0.4) 0%, transparent 70%);
-      animation: waveMove 12s linear infinite;
-    }
-    @keyframes waveMove {
-      0%{ transform:translateX(0);}
-      100%{ transform:translateX(-50%);}
-    }
-    /* منصات الإطلاق */
-    .launchpad {
-      position:fixed;
-      bottom:20px;
-      z-index:5;
-      width:120px;
-      text-align:center;
-    }
-    .launchpad-left { left: 5%; }
-    .launchpad-center { left: 45%; transform:translateX(-50%); }
-    .launchpad-right { right: 5%; left:auto; }
-    .pad-base {
-      width:80px;
-      height:20px;
-      background:#4a4a4a;
-      border-radius:10px 10px 0 0;
-      margin:0 auto;
-      box-shadow:0 -3px 0 #222;
-      position:relative;
-    }
-    .pad-base:before {
-      content:"";
-      position:absolute;
-      top:-10px;
-      left:50%;
-      transform:translateX(-50%);
-      width:30px;
-      height:12px;
-      background:#666;
-      border-radius:4px;
-    }
-    .missile {
-      width:20px;
-      height:60px;
-      background: linear-gradient(90deg, #b0b0b0, #e0e0e0, #b0b0b0);
-      border-radius: 10px 10px 4px 4px;
-      margin:0 auto;
-      position:relative;
-      animation: readyToLaunch 1.2s infinite ease-in-out;
-      transform-origin: bottom;
-    }
-    .missile:before {
-      content:"▲";
-      position:absolute;
-      top:-12px;
-      left:50%;
-      transform:translateX(-50%);
-      color:#ff5500;
-      font-size:16px;
-      text-shadow:0 0 3px red;
-    }
-    .missile:after {
-      content:"";
-      position:absolute;
-      bottom:-8px;
-      left:50%;
-      transform:translateX(-50%);
-      width:24px;
-      height:8px;
-      background:#ff8800;
-      border-radius:50%;
-      filter:blur(3px);
-      animation: smokePuff 1s infinite;
-    }
-    @keyframes readyToLaunch {
-      0%{ transform:translateY(0px) rotate(0deg);}
-      50%{ transform:translateY(-6px) rotate(1deg);}
-      100%{ transform:translateY(0px) rotate(0deg);}
-    }
-    @keyframes smokePuff {
-      0%{ opacity:0.5; transform:scale(0.8);}
-      100%{ opacity:1; transform:scale(1.2);}
-    }
-    /* شفافية البطاقات */
-    #loginPage .login-box, .card, .pi, .channel-card-admin, .preview-panel, .modal-box, .stats-grid .stat-card, .recent-member-item, .role-search-result-item, .news-item {
-      background: rgba(10, 20, 40, 0.85) !important;
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(212, 175, 55, 0.5);
-    }
-    .sidebar, .topbar, .main {
-      background: transparent !important;
-    }
-    .vx-sidebar, .topbar {
-      background: rgba(0, 7, 24, 0.7) !important;
-      backdrop-filter: blur(8px);
-    }
-    /* باقي الأنماط الأساسية */
+    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
     #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh}
     .login-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;padding:36px 32px;width:340px;text-align:center}
     .login-box h1{color:#d4e800;font-size:24px;margin-bottom:6px}
@@ -216,12 +97,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<!-- موجات البحر -->
-<div class="wave-bg"></div>
-<!-- منصات الإطلاق -->
-<div class="launchpad launchpad-left"><div class="pad-base"></div><div class="missile"></div></div>
-<div class="launchpad launchpad-center"><div class="pad-base"></div><div class="missile"></div></div>
-<div class="launchpad launchpad-right"><div class="pad-base"></div><div class="missile"></div></div>
 
 <div id="loginPage">
   <div class="login-box">
@@ -403,6 +278,7 @@ async function loadDashboard() {
       </div>
     </div>`;
 
+    // قسم إدارة الأخبار
     let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
       <div class="fg">
         <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
@@ -437,6 +313,7 @@ async function loadDashboard() {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
 
+// دوال إدارة الأخبار
 async function loadNewsList() {
   let { data: news, error } = await supabaseClient.from('posts')
     .select('*')
