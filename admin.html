@@ -268,7 +268,6 @@ async function loadContentPage(room) {
     let addForm = getAddForm(room);
     let postsHtml = '';
     if (posts && posts.length) {
-      // معاملة خاصة لعرض القنوات في قسم yt-channels
       if (room === 'yt-channels') {
         postsHtml = `<div class="card"><h3>📋 القنوات</h3><div class="posts-list">` + posts.map(p => {
           let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
@@ -288,9 +287,12 @@ async function loadContentPage(room) {
       } else {
         postsHtml = `<div class="card"><h3>📋 المنشورات</h3><div class="posts-list">` + posts.map(p => {
           let media = '';
-          if (p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'))) 
+          // دعم جميع صيغ الفيديو (أي فيديو)
+          const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
+          const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+          if (isVideo) 
             media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
-          else if (p.url && p.url.includes('youtube.com')) {
+          else if (isYouTube) {
             let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
             media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`;
           } else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) 
@@ -323,7 +325,7 @@ function getAddForm(room) {
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
       <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير">
       <div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div>
-      <div class="img-upload full"><input type="file" id="videofile-${room}" accept="video/mp4,video/webm" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+      <div class="img-upload full"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو (أي صيغة)</label></div>
       <select id="tag-${room}"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option></select>
       <input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل" rows="4"></textarea></div>
       <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
@@ -390,18 +392,18 @@ async function addPost(room) {
 
   // منع النشر في Highlights إذا لم يوجد فيديو أو صورة
   if (room === 'highlights') {
-    const hasVideo = url && (url.match(/\.(mp4|webm)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-    const hasPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    const isVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+    const isPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
     
-    if (!hasVideo && !hasPhoto) {
+    if (!isVideo && !isPhoto) {
       showError(room, '❌ يجب رفع صورة أو فيديو على الأقل قبل النشر!');
       return;
     }
     if (tag === 'Photo') {
-      if (!hasPhoto) { showError(room, '❌ خانة الصورة: يجب رفع صورة أو رابط صورة.'); return; }
-      if (hasVideo) { showError(room, '❌ خانة الصورة لا تقبل فيديو! غيّر النوع إلى Video.'); return; }
+      if (!isPhoto) { showError(room, '❌ خانة الصورة: يجب رفع صورة أو رابط صورة.'); return; }
+      if (isVideo) { showError(room, '❌ خانة الصورة لا تقبل فيديو! غيّر النوع إلى Video.'); return; }
     } else {
-      if (!hasVideo) { showError(room, '❌ خانة الفيديو: يجب رفع فيديو أو رابط يوتيوب.'); return; }
+      if (!isVideo) { showError(room, '❌ خانة الفيديو: يجب رفع فيديو أو رابط يوتيوب.'); return; }
     }
   } else {
     if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
@@ -500,7 +502,7 @@ async function saveEditPost() {
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// ==================== رفع فيديو ====================
+// ==================== رفع فيديو يدعم جميع الصيغ ====================
 async function uploadVideoToBucket(room) {
   let fileInput = document.getElementById(`videofile-${room}`);
   let file = fileInput?.files[0];
@@ -508,25 +510,48 @@ async function uploadVideoToBucket(room) {
     alert('لم تختر ملفاً');
     return;
   }
+  
+  // التحقق من نوع الملف (فيديو)
+  if (!file.type.startsWith('video/')) {
+    alert('الملف المختار ليس فيديو. يرجى اختيار ملف فيديو صالح.');
+    return;
+  }
+  
   let fileName = Date.now() + '_' + file.name;
+  // إزالة المسافات والأحرف الخاصة من اسم الملف
+  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
   let filePath = `highlights/${fileName}`;
   let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
   let btn = document.querySelector(`#ap-${room} .btn-pub`);
   if (btn) btn.disabled = true;
+  
   try {
     let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
     if (res.ok) {
       let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
       document.getElementById(`url-${room}`).value = publicUrl;
       let titleField = document.getElementById(`title-${room}`);
-      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
-      alert('✅ تم رفع الفيديو! الرابط جاهز.');
+      if (titleField && !titleField.value.trim()) {
+        // استخدام اسم الملف كعنوان (بدون الامتداد)
+        let baseName = file.name.replace(/\.[^/.]+$/, '');
+        titleField.value = baseName;
+      }
+      alert('✅ تم رفع الفيديو بنجاح! الرابط جاهز.');
     } else {
       let errText = await res.text();
-      alert(`❌ فشل الرفع: ${errText}\n\nتأكد من وجود bucket "videos" في Supabase وأنه عام، وأضف سياسات INSERT و SELECT.`);
+      console.error('Upload error:', errText);
+      if (errText.includes('bucket not found') || res.status === 400) {
+        alert('❌ فشل الرفع: تأكد من وجود bucket "videos" في Supabase وأنه عام، وأضف سياسات INSERT و SELECT.\n\nللتحقق: اذهب إلى Storage → bucket "videos" → Policies → أضف سياسة INSERT و SELECT.');
+      } else {
+        alert('❌ فشل الرفع: ' + errText);
+      }
     }
-  } catch(e) { alert('خطأ: ' + e.message); }
-  finally { if (btn) btn.disabled = false; }
+  } catch(e) {
+    console.error('Upload exception:', e);
+    alert('خطأ في الاتصال: ' + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function previewImg(room) {
