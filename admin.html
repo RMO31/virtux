@@ -321,11 +321,11 @@ function getAddForm(room) {
   if (room === 'highlights') {
     return `<div class="card"><h3>➕ إضافة منشور</h3>
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير">
-      <div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div>
+      <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان (اختياري)"><input id="desc-${room}" placeholder="وصف قصير (اختياري)">
+      <div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src=""></div>
       <div class="img-upload full"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
       <select id="tag-${room}"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option></select>
-      <input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل" rows="4"></textarea></div>
+      <input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
       <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
   } else if (room === 'yt-channels') {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3>
@@ -354,15 +354,15 @@ function getAddForm(room) {
     else tagOptions = `<option value="default">عام</option>`;
     return `<div class="card"><h3>➕ إضافة منشور</h3>
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير">
-      <div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div>
+      <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)">
+      <div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src=""></div>
       <select id="tag-${room}">${tagOptions}</select>
-      <input class="full" id="url-${room}" placeholder="رابط"><textarea class="full" id="content-${room}" placeholder="محتوى طويل" rows="4"></textarea></div>
+      <input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
       <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
   }
 }
 
-// ==================== دوال الإضافة والحذف والتعديل (مع التحقق من وجود العناصر) ====================
+// ==================== دوال الإضافة والحذف والتعديل (مع تحسين التحقق) ====================
 async function addPost(room) {
   console.log('addPost called for room:', room);
   
@@ -374,17 +374,17 @@ async function addPost(room) {
   const iconEl = document.getElementById(`icon-${room}`);
   const tagEl = document.getElementById(`tag-${room}`);
 
-  // دالة مساعدة للحصول على القيمة بأمان
+  // دالة مساعدة للحصول على القيمة بأمان (تسمح بالقيم الفارغة)
   function getSafeValue(el, fieldName) {
     if (!el) {
-      console.error(`Element ${fieldName} not found`);
-      return null;
+      console.warn(`Element ${fieldName} not found, using empty string`);
+      return '';
     }
     if (el.value === undefined) {
-      console.error(`Element ${fieldName} has no value property, tagName:`, el.tagName);
-      return null;
+      console.warn(`Element ${fieldName} has no value property, using empty string`);
+      return '';
     }
-    return el.value.trim();
+    return (el.value || '').trim();
   }
 
   let title = getSafeValue(titleEl, 'title');
@@ -392,15 +392,11 @@ async function addPost(room) {
   let desc = getSafeValue(descEl, 'desc');
   let content = getSafeValue(contentEl, 'content');
   let icon = getSafeValue(iconEl, 'icon');
-  let tag = tagEl ? tagEl.value : null;
-
-  if (title === null || url === null || desc === null || content === null || icon === null || tag === null) {
-    showError(room, '❌ بعض الحقول مفقودة أو تالفة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
-    return;
-  }
+  let tag = tagEl ? (tagEl.value || room) : room;
 
   console.log('Form values:', { title, url, desc, content, icon: icon?.substring(0,30), tag });
 
+  // إذا كان هناك صورة مرفوعة (بيانات base64)
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
 
@@ -441,7 +437,7 @@ async function addPost(room) {
     const okDiv = document.getElementById(`ok-${room}`);
     if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
 
-    // تفريغ الحقول
+    // تفريغ الحقول (اختياري)
     if (titleEl) titleEl.value = '';
     if (descEl) descEl.value = '';
     if (urlEl) urlEl.value = '';
