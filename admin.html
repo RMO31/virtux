@@ -453,7 +453,7 @@ function getAddForm(room) {
       </div>
     </div>`;
   } else if (room === 'highlights') {
-    return `<div class="card"><h3>➕ إضافة منشور</h3>
+    return `<div class="card"><h3>➕ إضافة مقطع مميز (فيديو/صورة)</h3>
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
       <div class="form-with-preview">
         <div>
@@ -492,6 +492,77 @@ function getAddForm(room) {
         </div>
       </div>
     </div>`;
+  } else if (room === 'gaming-news') {
+    return `<div class="card"><h3>➕ إضافة خبر (مع دعم الفيديو)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="عنوان الخبر *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى الخبر الطويل" rows="6"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+  } else if (room === 'youtube-news') {
+    return `<div class="card"><h3>➕ إضافة خبر يوتيوب (مع دعم الفيديو)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="عنوان الخبر *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى الخبر الطويل" rows="6"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+  } else if (room === 'live' || room === 'tournaments') {
+    // إضافة رفع فيديو لهاتين الغرفتين أيضاً
+    let tagOptions = room === 'live' ? `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>` : `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+    return `<div class="card"><h3>➕ إضافة منشور (مع دعم الفيديو)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
   } else if (room === 'yt-channels') {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"><textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
   } else if (room === 'subscribers') {
@@ -507,10 +578,9 @@ function getAddForm(room) {
   } else if (room === 'yt-lives') {
     return `<div class="card"><h3>➕ إضافة بث مباشر يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث أو قناة"><select id="type-${room}"><option value="single">🔴 بث عادي</option><option value="channel">👑 قناة VIP (أحدث بث)</option></select><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeLive()">➕ إضافة</button></div>`;
   } else {
+    // باقي الغرف التي لم نضف لها معاينة فيديو (مثل subscribers, yt-channels, ...) لكنها لا تحتاج
     let tagOptions = '';
-    if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'tournaments') tagOptions = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'gaming-news') tagOptions = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
+    if (room === 'gaming-news') tagOptions = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
     else if (room === 'youtube-news') tagOptions = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
     else tagOptions = `<option value="default">عام</option>`;
     return `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}">${tagOptions}</select><input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
@@ -519,7 +589,7 @@ function getAddForm(room) {
 
 // ==================== دوال مساعدة للمعاينة والإضافة ====================
 function clearMedia(room) {
-  if (room !== 'highlights' && room !== 'home' && room !== 'projects') return;
+  if (room !== 'highlights' && room !== 'home' && room !== 'projects' && room !== 'gaming-news' && room !== 'youtube-news' && room !== 'live' && room !== 'tournaments') return;
   const previewImg = document.getElementById(`preview-img-${room}`);
   const previewVideo = document.getElementById(`preview-video-${room}`);
   const previewText = document.getElementById(`preview-text-${room}`);
@@ -612,10 +682,15 @@ async function addPost(room) {
     if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
     else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
     else { if (!title && !url && !icon && !content) { showError(room, '❌ المشروع فارغ. أدخل عنواناً أو وسائط.'); return; } }
+  } else if (room === 'gaming-news' || room === 'youtube-news' || room === 'live' || room === 'tournaments') {
+    // نسمح بنشر صورة أو فيديو أو نص فقط (لا نطلب عنواناً إلزامياً إذا كان هناك وسائط)
+    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+    else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو محتوى.'); return; } }
   } else {
     if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
   }
-  if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : (room === 'home' ? '📄 مقال' : (room === 'projects' ? '🌐 مشروع' : '📄 منشور'));
+  if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : (room === 'home' ? '📄 مقال' : (room === 'projects' ? '🌐 مشروع' : (room === 'gaming-news' ? '📰 خبر' : (room === 'youtube-news' ? '▶️ خبر' : (room === 'live' ? '🔴 بث' : (room === 'tournaments' ? '🏆 بطولة' : '📄 منشور'))))));
   const body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
   const btn = document.querySelector(`#ap-${room} .btn-pub`);
   if (btn) btn.disabled = true;
@@ -655,8 +730,8 @@ function getTagOptionsForEdit(room, currentTag) {
   else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
   else if (room === 'home') opts = `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`;
   else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-  else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
+  else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
   else if (room === 'subscribers') opts = `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`;
   else if (room === 'yt-channels') opts = `<option value="Channel">📺 Channel</option>`;
   else if (room === 'yt-videos') opts = `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`;
