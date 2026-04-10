@@ -7,10 +7,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
-    #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh;position:relative;overflow:hidden;background:#000a1a}
-    #loginPage canvas{position:absolute;inset:0;z-index:0}
-    .login-box{background:rgba(5,14,48,0.92);border:1px solid #9fb000;border-radius:14px;padding:36px 32px;width:340px;text-align:center;position:relative;z-index:1;backdrop-filter:blur(4px)}
+    body{font-family:'Poppins',sans-serif;background:#000a18;color:#fff;min-height:100vh;overflow:hidden}
+    #bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+    #loginPage,#adminPage{position:relative;z-index:1}
+    #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh;background:transparent}
+    .login-box{background:rgba(3,8,28,0.88);border:1px solid #9fb000;border-radius:14px;padding:36px 32px;width:340px;text-align:center;backdrop-filter:blur(6px);box-shadow:0 0 40px rgba(159,176,0,0.15)}
     .login-box h1{color:#d4e800;font-size:24px;margin-bottom:6px}
     .login-box p{color:#667;font-size:13px;margin-bottom:24px}
     .login-box input{width:100%;padding:10px 14px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:14px;margin-bottom:12px}
@@ -18,8 +19,8 @@
     .btn-login{width:100%;padding:10px;background:#9fb000;color:#000;border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer}
     .btn-login:hover{background:#d4e800}
     .err{color:#f55;font-size:12px;margin-top:8px;display:none}
-    #adminPage{display:none;height:100vh;flex-direction:column}
-    .topbar{background:#000718;border-bottom:1px solid #9fb000;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+    #adminPage{display:none;height:100vh;flex-direction:column;background:transparent}
+    .topbar{background:rgba(0,7,24,0.92);border-bottom:1px solid #9fb000;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(4px)}
     .topbar h1{color:#d4e800;font-size:16px}
     .topbar-right{display:flex;align-items:center;gap:10px}
     .conn{font-size:12px;padding:3px 10px;border-radius:4px;background:#0f3d2e;color:#4caf90;border:1px solid #0f6e56}
@@ -27,12 +28,12 @@
     .btn-logout{background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer}
     .btn-logout:hover{background:#f55;color:#fff}
     .body{display:flex;flex:1;height:calc(100vh - 46px)}
-    .sidebar{width:190px;background:#050c2e;border-right:1px solid #1e2d6b;padding:12px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+    .sidebar{width:190px;background:rgba(5,12,46,0.88);border-right:1px solid #1e2d6b;padding:12px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;backdrop-filter:blur(3px)}
     .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left}
     .sb-btn:hover,.sb-btn.active{background:#1a2d80;color:#d4e800}
     .sb-btn.active{border-left:3px solid #d4e800}
     .sb-sec{font-size:10px;color:#556;text-transform:uppercase;letter-spacing:1px;padding:10px 12px 3px}
-    .main{flex:1;padding:20px;overflow-y:auto;background:#01042e}
+    .main{flex:1;padding:20px;overflow-y:auto;background:rgba(1,4,46,0.82);backdrop-filter:blur(2px)}
     .ap{display:none}
     .ap.active{display:block}
     .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
@@ -98,9 +99,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<canvas id="bgCanvas"></canvas>
 
 <div id="loginPage">
-  <canvas id="bgCanvas"></canvas>
   <div class="login-box">
     <h1>🎮 Virtux Admin</h1>
     <p>أدخل كلمة المرور</p>
@@ -998,241 +999,497 @@ window.loadNewsList = loadNewsList;
 </script>
 
 <script>
-// ===== BACKGROUND ANIMATION: Missile Launch from Beach =====
-const canvas = document.getElementById('bgCanvas');
-const ctx = canvas.getContext('2d');
+// ===== REALISTIC MISSILE ANIMATION =====
+(function() {
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
 
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener('resize', resize);
-
-// Stars
-const stars = Array.from({length:200}, () => ({
-  x: Math.random(), y: Math.random(),
-  r: Math.random()*1.5+0.3,
-  a: Math.random()
-}));
-
-// Missiles
-class Missile {
-  constructor() { this.reset(); }
-  reset() {
-    this.x = (0.1 + Math.random() * 0.8) * canvas.width;
-    this.y = canvas.height * 0.62 - 10 + Math.random()*20;
-    this.targetX = (Math.random()) * canvas.width;
-    this.targetY = canvas.height * 0.05 + Math.random() * canvas.height * 0.15;
-    this.progress = 0;
-    this.speed = 0.002 + Math.random() * 0.003;
-    this.trail = [];
-    this.exploded = false;
-    this.explodeTimer = 0;
-    this.explodeParticles = [];
-    this.delay = Math.random() * 300;
-    this.active = false;
-    this.color = Math.random() > 0.5 ? '#ff4400' : '#ff8800';
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
-  update() {
-    if(this.delay > 0) { this.delay--; return; }
-    this.active = true;
-    if(this.exploded) {
-      this.explodeTimer++;
-      this.explodeParticles.forEach(p => {
-        p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life--;
-        p.vx *= 0.98;
-      });
-      this.explodeParticles = this.explodeParticles.filter(p => p.life > 0);
-      if(this.explodeTimer > 60) this.reset();
-      return;
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Stars
+  const stars = Array.from({length:250}, () => ({
+    x: Math.random(), y: Math.random(),
+    r: Math.random()*1.4+0.2,
+    twinkle: Math.random()*Math.PI*2,
+    speed: 0.005+Math.random()*0.01
+  }));
+
+  // Smoke particles
+  const smokePool = [];
+
+  class SmokeParticle {
+    constructor(x, y, color) {
+      this.x = x; this.y = y;
+      this.vx = (Math.random()-0.5)*0.8;
+      this.vy = Math.random()*0.5;
+      this.r = 3+Math.random()*5;
+      this.life = 1;
+      this.decay = 0.015+Math.random()*0.02;
+      this.color = color || '180,120,60';
+      this.grow = 0.3+Math.random()*0.5;
     }
-    this.progress += this.speed;
-    const cx = this.x + (this.targetX - this.x) * this.progress;
-    const cy = this.y + (this.targetY - this.y) * this.progress - Math.sin(this.progress * Math.PI) * 80;
-    this.trail.push({x:cx, y:cy});
-    if(this.trail.length > 18) this.trail.shift();
-    if(this.progress >= 1) {
-      this.exploded = true;
-      for(let i=0; i<28; i++) {
-        const ang = (Math.PI*2/28)*i + Math.random()*0.2;
-        const spd = 2+Math.random()*3;
-        this.explodeParticles.push({x:cx,y:cy,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:40+Math.random()*20,color:this.color});
-      }
+    update() {
+      this.x += this.vx; this.y += this.vy;
+      this.r += this.grow; this.life -= this.decay;
+      this.vx *= 0.98; this.vy *= 0.98;
     }
-  }
-  draw() {
-    if(!this.active) return;
-    if(this.exploded) {
-      this.explodeParticles.forEach(p => {
-        ctx.save();
-        ctx.globalAlpha = p.life/60;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2.5, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-      });
-      return;
-    }
-    // Trail
-    for(let i=1; i<this.trail.length; i++) {
-      const t = i/this.trail.length;
+    draw() {
       ctx.save();
-      ctx.globalAlpha = t * 0.7;
-      ctx.strokeStyle = this.color;
-      ctx.lineWidth = t * 3;
+      ctx.globalAlpha = this.life * 0.4;
+      ctx.fillStyle = `rgba(${this.color},${this.life*0.4})`;
       ctx.beginPath();
-      ctx.moveTo(this.trail[i-1].x, this.trail[i-1].y);
-      ctx.lineTo(this.trail[i].x, this.trail[i].y);
-      ctx.stroke();
-      ctx.restore();
-    }
-    // Head
-    if(this.trail.length > 0) {
-      const h = this.trail[this.trail.length-1];
-      ctx.save();
-      ctx.fillStyle = '#fff';
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(h.x, h.y, 3, 0, Math.PI*2);
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
       ctx.fill();
       ctx.restore();
     }
   }
-}
 
-// Launcher platforms
-const launchers = Array.from({length:5}, (_, i) => ({
-  x: (0.1 + i*0.2) * canvas.width,
-  y: 0
-}));
+  class Missile {
+    constructor() { this.reset(true); }
 
-// Waves
-let waveTime = 0;
-const missiles = Array.from({length:6}, () => new Missile());
+    reset(initial) {
+      const W = canvas.width, H = canvas.height;
+      this.launchX = W * (0.05 + Math.random() * 0.9);
+      this.launchY = H * 0.68 + Math.random() * H * 0.05;
+      this.x = this.launchX;
+      this.y = this.launchY;
 
-function drawScene() {
-  const W = canvas.width, H = canvas.height;
+      // Random target in upper sky
+      this.targetX = W * (0.05 + Math.random() * 0.9);
+      this.targetY = H * (0.03 + Math.random() * 0.2);
 
-  // Sky gradient
-  const sky = ctx.createLinearGradient(0, 0, 0, H*0.6);
-  sky.addColorStop(0, '#000a18');
-  sky.addColorStop(1, '#001830');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, H*0.7);
+      // Physics
+      const dx = this.targetX - this.launchX;
+      const dy = this.targetY - this.launchY;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      this.speed = 3.5 + Math.random() * 2.5;
+      this.angle = Math.atan2(dy, dx);
+      this.vx = Math.cos(this.angle) * this.speed;
+      this.vy = Math.sin(this.angle) * this.speed;
 
-  // Stars
-  stars.forEach(s => {
-    ctx.save();
-    ctx.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(Date.now()*0.001 + s.a*10));
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(s.x*W, s.y*H*0.55, s.r, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  });
+      this.trail = [];
+      this.maxTrail = 22;
+      this.smoke = [];
 
-  // Moon
-  ctx.save();
-  ctx.fillStyle = '#fffde0';
-  ctx.shadowColor = '#fffde0';
-  ctx.shadowBlur = 30;
-  ctx.beginPath();
-  ctx.arc(W*0.85, H*0.1, 28, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = '#001222';
-  ctx.beginPath();
-  ctx.arc(W*0.85+12, H*0.1-6, 24, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
+      this.alive = true;
+      this.exploding = false;
+      this.explodeX = 0; this.explodeY = 0;
+      this.explodeParticles = [];
+      this.explodeTime = 0;
 
-  // Moon reflection on water
-  const moonRef = ctx.createLinearGradient(W*0.82, H*0.65, W*0.88, H);
-  moonRef.addColorStop(0, 'rgba(255,253,200,0.18)');
-  moonRef.addColorStop(1, 'rgba(255,253,200,0)');
-  ctx.fillStyle = moonRef;
-  ctx.fillRect(W*0.8, H*0.65, W*0.12, H*0.35);
+      this.delay = initial ? Math.random()*200 : 40+Math.random()*180;
+      this.active = false;
 
-  // Sea
-  const sea = ctx.createLinearGradient(0, H*0.63, 0, H);
-  sea.addColorStop(0, '#001830');
-  sea.addColorStop(0.4, '#001020');
-  sea.addColorStop(1, '#000810');
-  ctx.fillStyle = sea;
-  ctx.fillRect(0, H*0.63, W, H*0.37);
-
-  // Waves
-  waveTime += 0.02;
-  for(let w=0; w<3; w++) {
-    ctx.save();
-    ctx.strokeStyle = `rgba(0,120,200,${0.12+w*0.04})`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    for(let x=0; x<=W; x+=4) {
-      const y = H*0.635 + w*8 + Math.sin(x*0.015+waveTime+w*1.2)*6 + Math.sin(x*0.03+waveTime*1.3)*3;
-      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      // Guidance: slight steering
+      this.steerProgress = 0;
+      this.length = dist;
     }
-    ctx.stroke();
-    ctx.restore();
+
+    update() {
+      if(this.delay > 0) { this.delay--; return; }
+      this.active = true;
+
+      if(this.exploding) {
+        this.explodeTime++;
+        this.explodeParticles.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          p.vy += 0.12; p.vx *= 0.97;
+          p.life -= p.decay;
+          p.r *= 0.995;
+        });
+        this.explodeParticles = this.explodeParticles.filter(p => p.life > 0);
+        if(this.explodeTime > 80) this.reset(false);
+        return;
+      }
+
+      // Steer slightly toward target
+      const dx = this.targetX - this.x;
+      const dy = this.targetY - this.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      const targetAngle = Math.atan2(dy, dx);
+      let da = targetAngle - this.angle;
+      while(da > Math.PI) da -= Math.PI*2;
+      while(da < -Math.PI) da += Math.PI*2;
+      this.angle += da * 0.04;
+      this.vx = Math.cos(this.angle) * this.speed;
+      this.vy = Math.sin(this.angle) * this.speed;
+
+      this.x += this.vx;
+      this.y += this.vy;
+
+      this.trail.unshift({x:this.x, y:this.y});
+      if(this.trail.length > this.maxTrail) this.trail.pop();
+
+      // Smoke from exhaust
+      const tail = this.trail[this.trail.length-1] || {x:this.x, y:this.y};
+      if(Math.random() < 0.7) {
+        smokePool.push(new SmokeParticle(tail.x, tail.y, '160,100,40'));
+      }
+      if(Math.random() < 0.3) {
+        smokePool.push(new SmokeParticle(tail.x+(Math.random()-0.5)*4, tail.y+(Math.random()-0.5)*4, '80,80,80'));
+      }
+
+      // Explode at target
+      if(dist < this.speed * 1.5) {
+        this.exploding = true;
+        this.explodeX = this.x;
+        this.explodeY = this.y;
+        // Big explosion
+        for(let i=0; i<55; i++) {
+          const ang = Math.random()*Math.PI*2;
+          const spd = 1+Math.random()*6;
+          const colors = ['#ff4400','#ff8800','#ffcc00','#fff','#ff2200','#ff6600'];
+          this.explodeParticles.push({
+            x:this.x, y:this.y,
+            vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd,
+            r:2+Math.random()*4,
+            life:1, decay:0.012+Math.random()*0.025,
+            color:colors[Math.floor(Math.random()*colors.length)]
+          });
+        }
+        // Shockwave ring
+        this.shockwave = {r:0, maxR:60, life:1};
+      }
+    }
+
+    draw() {
+      if(!this.active) return;
+
+      if(this.exploding) {
+        // Shockwave
+        if(this.shockwave && this.shockwave.r < this.shockwave.maxR) {
+          this.shockwave.r += 3.5;
+          this.shockwave.life -= 0.06;
+          ctx.save();
+          ctx.globalAlpha = this.shockwave.life * 0.5;
+          ctx.strokeStyle = '#ff8800';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(this.explodeX, this.explodeY, this.shockwave.r, 0, Math.PI*2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        // Explosion glow
+        if(this.explodeTime < 15) {
+          ctx.save();
+          ctx.globalAlpha = (1 - this.explodeTime/15) * 0.6;
+          const grd = ctx.createRadialGradient(this.explodeX, this.explodeY, 0, this.explodeX, this.explodeY, 40+this.explodeTime*2);
+          grd.addColorStop(0,'rgba(255,200,50,0.9)');
+          grd.addColorStop(0.4,'rgba(255,80,0,0.6)');
+          grd.addColorStop(1,'rgba(255,0,0,0)');
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(this.explodeX, this.explodeY, 40+this.explodeTime*2, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        }
+        // Particles
+        this.explodeParticles.forEach(p => {
+          ctx.save();
+          ctx.globalAlpha = p.life;
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        });
+        return;
+      }
+
+      if(this.trail.length < 2) return;
+
+      // Trail glow
+      for(let i=1; i<this.trail.length; i++) {
+        const t = 1 - i/this.trail.length;
+        ctx.save();
+        ctx.globalAlpha = t * 0.85;
+        ctx.strokeStyle = t > 0.5 ? `rgba(255,${100+Math.floor(t*155)},0,1)` : `rgba(255,80,0,${t*1.5})`;
+        ctx.lineWidth = t * 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.trail[i-1].x, this.trail[i-1].y);
+        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Missile body
+      const head = this.trail[0];
+      const bodyAngle = this.angle;
+      ctx.save();
+      ctx.translate(head.x, head.y);
+      ctx.rotate(bodyAngle);
+      // Body
+      ctx.fillStyle = '#c8c8d0';
+      ctx.shadowColor = '#ff8800';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 9, 3, 0, 0, Math.PI*2);
+      ctx.fill();
+      // Nose cone
+      ctx.fillStyle = '#e8e8f0';
+      ctx.beginPath();
+      ctx.moveTo(9, 0);
+      ctx.lineTo(16, 0);
+      ctx.lineTo(9, -2.5);
+      ctx.closePath();
+      ctx.fill();
+      // Fins
+      ctx.fillStyle = '#888';
+      ctx.beginPath();
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(-14, -7);
+      ctx.lineTo(-8, -2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-8, 0);
+      ctx.lineTo(-14, 7);
+      ctx.lineTo(-8, 2);
+      ctx.closePath();
+      ctx.fill();
+      // Exhaust flame
+      const flameLen = 8 + Math.random()*6;
+      const flameGrd = ctx.createLinearGradient(-9, 0, -9-flameLen, 0);
+      flameGrd.addColorStop(0, 'rgba(255,200,50,1)');
+      flameGrd.addColorStop(0.4, 'rgba(255,80,0,0.8)');
+      flameGrd.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = flameGrd;
+      ctx.beginPath();
+      ctx.moveTo(-9, -2.5);
+      ctx.lineTo(-9-flameLen, 0);
+      ctx.lineTo(-9, 2.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Engine glow
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      const glow = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 18);
+      glow.addColorStop(0, 'rgba(255,150,0,0.8)');
+      glow.addColorStop(1, 'rgba(255,50,0,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(head.x, head.y, 18, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
-  // Beach/land
-  const land = ctx.createLinearGradient(0, H*0.6, 0, H*0.65);
-  land.addColorStop(0, '#1a1000');
-  land.addColorStop(1, '#0d0800');
-  ctx.fillStyle = land;
-  ctx.beginPath();
-  ctx.moveTo(0, H*0.65);
-  for(let x=0; x<=W; x+=W/20) {
-    ctx.lineTo(x, H*0.62 + Math.sin(x*0.05)*4 + (x/W)*8);
+  // Launcher structures
+  function drawLaunchers(W, H) {
+    const groundY = H * 0.68;
+    const count = 4;
+    for(let i=0; i<count; i++) {
+      const lx = W * (0.1 + i * 0.25);
+      const ly = groundY;
+      ctx.save();
+      // Platform base
+      ctx.fillStyle = '#0f0e08';
+      ctx.strokeStyle = '#2a2510';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.rect(lx-20, ly-6, 40, 10);
+      ctx.fill(); ctx.stroke();
+      // Wheels
+      for(let w=-1; w<=1; w+=2) {
+        ctx.fillStyle = '#1a1810';
+        ctx.beginPath();
+        ctx.arc(lx+w*14, ly+4, 5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#0a0908';
+        ctx.beginPath();
+        ctx.arc(lx+w*14, ly+4, 2, 0, Math.PI*2);
+        ctx.fill();
+      }
+      // Launcher arm (angled)
+      ctx.strokeStyle = '#3a3820';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(lx, ly-6);
+      ctx.lineTo(lx-8, ly-36);
+      ctx.stroke();
+      ctx.strokeStyle = '#4a4830';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(lx-4, ly-6);
+      ctx.lineTo(lx-12, ly-36);
+      ctx.stroke();
+      // Missile on launcher
+      ctx.translate(lx-8, ly-28);
+      ctx.rotate(-Math.PI/5);
+      ctx.fillStyle = '#505058';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 12, 3.5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#888890';
+      ctx.beginPath();
+      ctx.moveTo(12, 0); ctx.lineTo(18, 0); ctx.lineTo(12, -3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
   }
-  ctx.lineTo(W, H*0.65);
-  ctx.closePath();
-  ctx.fill();
 
-  // Launcher platforms
-  launchers.forEach(l => {
-    l.y = H*0.62 + Math.sin(l.x*0.05)*4 + (l.x/W)*8;
-    // Platform base
+  // Scene
+  let waveT = 0;
+  const missiles = Array.from({length:5}, () => new Missile());
+
+  function drawScene() {
+    const W = canvas.width, H = canvas.height;
+
+    // Night sky
+    const sky = ctx.createLinearGradient(0, 0, 0, H*0.68);
+    sky.addColorStop(0, '#000408');
+    sky.addColorStop(0.6, '#000c18');
+    sky.addColorStop(1, '#001020');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    stars.forEach(s => {
+      s.twinkle += s.speed;
+      const alpha = 0.3 + 0.7*Math.abs(Math.sin(s.twinkle));
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#aaccff';
+      ctx.shadowBlur = 2;
+      ctx.beginPath();
+      ctx.arc(s.x*W, s.y*H*0.65, s.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // Moon
     ctx.save();
-    ctx.fillStyle = '#1a1200';
-    ctx.strokeStyle = '#3a2800';
-    ctx.lineWidth = 1;
+    ctx.fillStyle = '#f0e8c8';
+    ctx.shadowColor = '#f0e8c8';
+    ctx.shadowBlur = 25;
     ctx.beginPath();
-    ctx.rect(l.x-12, l.y-8, 24, 12);
-    ctx.fill(); ctx.stroke();
-    // Launcher arm
-    ctx.fillStyle = '#2a2000';
-    ctx.strokeStyle = '#9fb000';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.rect(l.x-3, l.y-22, 6, 16);
-    ctx.fill(); ctx.stroke();
-    // Missile on launcher
-    ctx.fillStyle = '#cc3300';
-    ctx.beginPath();
-    ctx.rect(l.x-2, l.y-32, 4, 12);
+    ctx.arc(W*0.82, H*0.1, 30, 0, Math.PI*2);
     ctx.fill();
-    ctx.fillStyle = '#ff6600';
+    // Moon shadow
+    ctx.fillStyle = '#000c18';
+    ctx.shadowBlur = 0;
     ctx.beginPath();
-    ctx.moveTo(l.x-2, l.y-32);
-    ctx.lineTo(l.x+2, l.y-32);
-    ctx.lineTo(l.x, l.y-38);
+    ctx.arc(W*0.82+14, H*0.1-6, 26, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // Moon glow
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    const moonGlow = ctx.createRadialGradient(W*0.82, H*0.1, 0, W*0.82, H*0.1, 120);
+    moonGlow.addColorStop(0, '#f0e8c8');
+    moonGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = moonGlow;
+    ctx.beginPath();
+    ctx.arc(W*0.82, H*0.1, 120, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // Horizon glow (city lights far away)
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    const horizGlow = ctx.createLinearGradient(0, H*0.6, 0, H*0.68);
+    horizGlow.addColorStop(0, 'rgba(255,150,50,0)');
+    horizGlow.addColorStop(1, 'rgba(255,150,50,0.4)');
+    ctx.fillStyle = horizGlow;
+    ctx.fillRect(0, H*0.6, W, H*0.08);
+    ctx.restore();
+
+    // Sea
+    const sea = ctx.createLinearGradient(0, H*0.68, 0, H);
+    sea.addColorStop(0, '#001828');
+    sea.addColorStop(0.5, '#000e1a');
+    sea.addColorStop(1, '#000608');
+    ctx.fillStyle = sea;
+    ctx.fillRect(0, H*0.68, W, H*0.32);
+
+    // Moon reflection on water
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    for(let ry=0; ry<8; ry++) {
+      const rw = 20 - ry*1.5;
+      const rx = W*0.82 - rw/2 + Math.sin(waveT*0.8+ry)*8;
+      const ryy = H*0.69 + ry*14;
+      ctx.fillStyle = '#f0e8c8';
+      ctx.fillRect(rx, ryy, rw, 4);
+    }
+    ctx.restore();
+
+    // Waves
+    waveT += 0.018;
+    for(let w=0; w<4; w++) {
+      ctx.save();
+      ctx.strokeStyle = `rgba(0,80,140,${0.1+w*0.04})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for(let x=0; x<=W; x+=3) {
+        const y = H*0.682 + w*9 + Math.sin(x*0.012+waveT+w*0.8)*5 + Math.sin(x*0.025+waveT*1.4+w)*3;
+        x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Shore/beach
+    const shore = ctx.createLinearGradient(0, H*0.66, 0, H*0.70);
+    shore.addColorStop(0, '#1a1408');
+    shore.addColorStop(1, '#0d0a04');
+    ctx.fillStyle = shore;
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.70);
+    for(let x=0; x<=W; x+=W/30) {
+      const y = H*0.668 + Math.sin(x*0.04)*3 + (x/W)*6;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, H*0.70);
     ctx.closePath();
     ctx.fill();
-    ctx.restore();
-  });
-}
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawScene();
-  missiles.forEach(m => { m.update(); m.draw(); });
-  requestAnimationFrame(animate);
-}
-animate();
+    // Dark land mass behind launchers
+    ctx.fillStyle = '#080604';
+    ctx.beginPath();
+    ctx.moveTo(0, H*0.73);
+    for(let x=0; x<=W; x+=W/40) {
+      ctx.lineTo(x, H*0.67 + Math.sin(x*0.03+1)*5 + x/W*8);
+    }
+    ctx.lineTo(W, H*0.73);
+    ctx.closePath();
+    ctx.fill();
+
+    // Launchers
+    drawLaunchers(W, H);
+
+    // Smoke
+    smokePool.forEach(s => s.update());
+    smokePool.forEach(s => s.draw());
+    for(let i=smokePool.length-1; i>=0; i--) {
+      if(smokePool[i].life <= 0) smokePool.splice(i,1);
+    }
+    if(smokePool.length > 400) smokePool.splice(0, smokePool.length-400);
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawScene();
+    missiles.forEach(m => { m.update(); m.draw(); });
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+})();
 </script>
 </body>
 </html>
