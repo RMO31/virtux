@@ -266,7 +266,7 @@ function getTagOptions(room) {
   return `<option value="default">عام</option>`;
 }
 
-// ==================== تحميل المنشورات وعرضها مع أزرار ====================
+// ==================== تحميل المنشورات وعرضها مع أزرار ودعم الفيديو ====================
 async function loadPosts(room) {
   const container = document.getElementById(`list-${room}`);
   if (!container) return;
@@ -281,21 +281,36 @@ async function loadPosts(room) {
       return;
     }
     container.innerHTML = data.map(p => {
-      let iconHtml = p.icon;
-      if (p.icon && (p.icon.startsWith('data:image') || p.icon.startsWith('http'))) {
-        iconHtml = `<img src="${p.icon}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">`;
+      let mediaHtml = '';
+      const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
+      const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+      
+      if (isLocalVideo) {
+        mediaHtml = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
+      } else if (isYouTube) {
+        const videoId = p.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/)?.[1];
+        if (videoId) {
+          mediaHtml = `<img src="https://img.youtube.com/vi/${videoId}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">`;
+        } else {
+          mediaHtml = `<div class="pi-icon">${p.icon || '📹'}</div>`;
+        }
       } else {
-        iconHtml = p.icon || '📄';
-        if (iconHtml.length > 10) iconHtml = iconHtml.substring(0,10)+'…';
+        let iconHtml = p.icon;
+        if (iconHtml && (iconHtml.startsWith('data:') || iconHtml.startsWith('http'))) {
+          mediaHtml = `<img src="${iconHtml}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
+        } else {
+          mediaHtml = `<div class="pi-icon">${iconHtml || '📄'}</div>`;
+        }
       }
+      
       return `<div class="pi" id="pi-${p.id}">
-        <div class="pi-icon">${iconHtml}</div>
+        <div style="width:80px; flex-shrink:0;">${mediaHtml}</div>
         <div class="pi-info">
           <div class="pi-title">${escapeHtml(p.title)}</div>
           <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
           <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex; gap:6px;">
           <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
           <button class="btn-del" onclick="deletePost(${p.id}, '${p.room}')">🗑️ حذف</button>
         </div>
@@ -350,7 +365,6 @@ async function openEditModal(id) {
 
 function getTagOptionsForEdit(room, currentTag) {
   const options = getTagOptions(room);
-  // نضيف خاصية selected للوسم الحالي
   return options.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
 }
 
@@ -406,31 +420,31 @@ async function addPost(room) {
     });
     if (res.ok) {
       // تفريغ الحقول
-      document.getElementById(`${room}-title`).value = '';
-      if(document.getElementById(`${room}-desc`)) document.getElementById(`${room}-desc`).value = '';
-      if(document.getElementById(`${room}-icon`)) document.getElementById(`${room}-icon`).value = '';
-      if(document.getElementById(`${room}-url`)) document.getElementById(`${room}-url`).value = '';
-      if(document.getElementById(`${room}-content`)) document.getElementById(`${room}-content`).value = '';
+      if (document.getElementById(`${room}-title`)) document.getElementById(`${room}-title`).value = '';
+      if (document.getElementById(`${room}-desc`)) document.getElementById(`${room}-desc`).value = '';
+      if (document.getElementById(`${room}-icon`)) document.getElementById(`${room}-icon`).value = '';
+      if (document.getElementById(`${room}-url`)) document.getElementById(`${room}-url`).value = '';
+      if (document.getElementById(`${room}-content`)) document.getElementById(`${room}-content`).value = '';
       const preview = document.getElementById(`${room}-imgpreview`);
-      if(preview) { preview.style.display = 'none'; preview.src = ''; }
+      if (preview) { preview.style.display = 'none'; preview.src = ''; }
       const fileInput = document.getElementById(`${room}-imgfile`);
-      if(fileInput) fileInput.value = '';
+      if (fileInput) fileInput.value = '';
       const videoInput = document.getElementById(`${room}-videofile`);
-      if(videoInput) videoInput.value = '';
+      if (videoInput) videoInput.value = '';
       const okDiv = document.getElementById(`ok-${room}`);
-      if(okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 3000); }
+      if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 3000); }
       loadPosts(room);
       loadDashboard();
     } else {
       const err = await res.json();
       const erDiv = document.getElementById(`er-${room}`);
-      if(erDiv) { erDiv.textContent = '❌ ' + (err.message || err.hint || 'خطأ'); erDiv.style.display = 'block'; setTimeout(() => erDiv.style.display = 'none', 5000); }
+      if (erDiv) { erDiv.textContent = '❌ ' + (err.message || err.hint || 'خطأ'); erDiv.style.display = 'block'; setTimeout(() => erDiv.style.display = 'none', 5000); }
     }
   } catch(e) {
     const erDiv = document.getElementById(`er-${room}`);
-    if(erDiv) { erDiv.textContent = '❌ خطأ في الاتصال'; erDiv.style.display = 'block'; setTimeout(() => erDiv.style.display = 'none', 5000); }
+    if (erDiv) { erDiv.textContent = '❌ خطأ في الاتصال'; erDiv.style.display = 'block'; setTimeout(() => erDiv.style.display = 'none', 5000); }
   } finally {
-    if(btn) { btn.disabled = false; btn.textContent = '➕ نشر'; }
+    if (btn) { btn.disabled = false; btn.textContent = '➕ نشر'; }
   }
 }
 
