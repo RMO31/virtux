@@ -316,7 +316,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة حسب نوع القسم ====================
+// ==================== نموذج الإضافة ====================
 function getAddForm(room) {
   if (room === 'highlights') {
     return `<div class="card"><h3>➕ إضافة منشور</h3>
@@ -389,35 +389,27 @@ async function addPost(room) {
 
   console.log('Selected tag:', tag);
 
-  // إذا كان هناك صورة مرفوعة (بيانات base64)
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
 
-  // معالجة خاصة لقسم Highlights
   if (room === 'highlights') {
-    // التحقق من وجود فيديو (يوتيوب أو رابط فيديو مرفوع)
     const isVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-    // التحقق من وجود صورة (رابط صورة أو ملف مرفوع)
     const isPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
     
     console.log('isVideo:', isVideo, 'isPhoto:', isPhoto, 'tag:', tag);
     
-    // إذا كان الوسم هو "Photo" (صورة)
     if (tag === 'Photo') {
       if (!isPhoto) {
         showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.');
         return;
       }
-    } 
-    // أي وسوم أخرى (Pro, Tournament, Video) تتطلب فيديو
-    else {
+    } else {
       if (!isVideo) {
         showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب أو رابط فيديو صالح.');
         return;
       }
     }
   } else {
-    // الأقسام الأخرى
     if (!title && !url && !icon) {
       showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.');
       return;
@@ -468,7 +460,7 @@ function showError(room, msg) {
 }
 
 async function deletePost(id, room) {
-  if (!confirm('حذف المنشور؟')) return;
+  if (!confirm('حذف المنشور نهائياً؟')) return;
   await supabaseClient.from('posts').delete().eq('id', id);
   loadContentPage(room);
   loadDashboard();
@@ -482,12 +474,58 @@ async function openEditModal(id) {
   modalBody.innerHTML = `
     <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
     <div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
-    <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة" value="${escapeHtml(data.icon||'')}"></div>
-    <div class="fg"><input class="full" id="edit-url" placeholder="رابط" value="${escapeHtml(data.url||'')}"></div>
+    <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div>
+    <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div>
     <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, data.tag)}</select></div>
-    <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى" rows="5">${escapeHtml(data.content||'')}</textarea></div>
-    <button class="btn-pub" onclick="saveEditPost()">💾 حفظ</button>`;
+    <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div>
+    <div class="fg"><div class="img-upload"><input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()"><label for="edit-imgfile">📁 رفع صورة جديدة</label><img id="edit-imgpreview" class="img-preview" src=""></div></div>
+    <div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div>
+    <button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button>
+    <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${currentEditPost.id}, '${currentEditPost.room}'); closeEditModal();">🗑️ حذف المنشور</button>
+  `;
   document.getElementById('editModal').classList.add('open');
+}
+
+function previewEditImg() {
+  let file = document.getElementById('edit-imgfile').files[0];
+  if (!file) return;
+  let reader = new FileReader();
+  reader.onload = e => {
+    let preview = document.getElementById('edit-imgpreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('edit-icon').value = '🖼️';
+    document.getElementById('edit-icon')._imgData = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadEditVideo() {
+  let file = document.getElementById('edit-videofile').files[0];
+  if (!file) return;
+  if (!file.type.startsWith('video/')) {
+    alert('الملف المختار ليس فيديو');
+    return;
+  }
+  let fileName = Date.now() + '_' + file.name;
+  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  let filePath = `highlights/${fileName}`;
+  let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
+  try {
+    let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
+    if (res.ok) {
+      let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
+      document.getElementById('edit-url').value = publicUrl;
+      let titleField = document.getElementById('edit-title');
+      if (titleField && !titleField.value.trim()) {
+        titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      }
+      alert('✅ تم رفع الفيديو الجديد! الرابط جاهز.');
+    } else {
+      let errText = await res.text();
+      alert('فشل الرفع: ' + errText);
+    }
+  } catch(e) { alert('خطأ: ' + e.message); }
 }
 
 function getTagOptionsForEdit(room, currentTag) {
@@ -519,7 +557,7 @@ async function saveEditPost() {
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// ==================== رفع فيديو ====================
+// ==================== رفع فيديو في الإضافة ====================
 async function uploadVideoToBucket(room) {
   let fileInput = document.getElementById(`videofile-${room}`);
   let file = fileInput?.files[0];
@@ -527,19 +565,16 @@ async function uploadVideoToBucket(room) {
     alert('لم تختر ملفاً');
     return;
   }
-  
   if (!file.type.startsWith('video/')) {
-    alert('الملف المختار ليس فيديو. يرجى اختيار ملف فيديو صالح.');
+    alert('الملف المختار ليس فيديو');
     return;
   }
-  
   let fileName = Date.now() + '_' + file.name;
   fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
   let filePath = `highlights/${fileName}`;
   let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
   let btn = document.querySelector(`#ap-${room} .btn-pub`);
   if (btn) btn.disabled = true;
-  
   try {
     let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
     if (res.ok) {
@@ -547,25 +582,15 @@ async function uploadVideoToBucket(room) {
       document.getElementById(`url-${room}`).value = publicUrl;
       let titleField = document.getElementById(`title-${room}`);
       if (titleField && !titleField.value.trim()) {
-        let baseName = file.name.replace(/\.[^/.]+$/, '');
-        titleField.value = baseName;
+        titleField.value = file.name.replace(/\.[^/.]+$/, '');
       }
-      alert('✅ تم رفع الفيديو بنجاح! الرابط جاهز.');
+      alert('✅ تم رفع الفيديو! الرابط جاهز.');
     } else {
       let errText = await res.text();
-      console.error('Upload error:', errText);
-      if (errText.includes('bucket not found') || res.status === 400) {
-        alert('❌ فشل الرفع: تأكد من وجود bucket "videos" في Supabase وأنه عام، وأضف سياسات INSERT و SELECT.\n\nللتحقق: اذهب إلى Storage → bucket "videos" → Policies → أضف سياسة INSERT و SELECT.');
-      } else {
-        alert('❌ فشل الرفع: ' + errText);
-      }
+      alert('❌ فشل الرفع: ' + errText);
     }
-  } catch(e) {
-    console.error('Upload exception:', e);
-    alert('خطأ في الاتصال: ' + e.message);
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+  } catch(e) { alert('خطأ: ' + e.message); }
+  finally { if (btn) btn.disabled = false; }
 }
 
 function previewImg(room) {
@@ -605,7 +630,7 @@ async function addYouTubeChannel(room) {
   let url = document.getElementById(`url-${room}`).value.trim();
   if (!url) { alert('أدخل رابط القناة'); return; }
   let info = await fetchYouTubeChannelInfo(url);
-  if (!info) { alert('تعذر جلب معلومات القناة. تأكد من الرابط ومفتاح API.'); return; }
+  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
   let extraContent = document.getElementById(`content-${room}`)?.value.trim() || '';
   let body = {
     title: info.title,
