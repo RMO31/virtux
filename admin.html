@@ -126,13 +126,13 @@
 </div>
 
 <script>
-// ==================== إعدادات Supabase ====================
+// ==================== إعدادات Supabase (استخدام supabaseClient لتجنب التعارض) ====================
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const ADMIN_PASSWORD = 'virtux2025';
 
-let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentEditPost = null;
 let currentPage = 'dashboard';
 
@@ -211,7 +211,7 @@ async function loadDashboard() {
   let container = document.getElementById('content-dashboard');
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    let { data: users, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     let total = users?.length || 0;
     let vipCount = users?.filter(u => u.role === 'vip').length || 0;
@@ -243,12 +243,12 @@ async function loadDashboard() {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
 async function setRole(userId, role) {
-  await supabase.from('profiles').update({ role }).eq('id', userId);
+  await supabaseClient.from('profiles').update({ role }).eq('id', userId);
   loadDashboard();
 }
 async function deleteUser(userId) {
   if (!confirm('حذف المستخدم نهائياً؟')) return;
-  await supabase.from('profiles').delete().eq('id', userId);
+  await supabaseClient.from('profiles').delete().eq('id', userId);
   loadDashboard();
 }
 
@@ -258,7 +258,7 @@ async function loadContentPage(room) {
   if (!container) return;
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    let { data: posts, error } = await supabase.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+    let { data: posts, error } = await supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false });
     if (error) throw error;
     let addForm = getAddForm(room);
     let postsHtml = '';
@@ -368,7 +368,7 @@ async function addPost(room) {
   let btn = document.querySelector(`#ap-${room} .btn-pub`);
   if (btn) btn.disabled = true;
   try {
-    let { error } = await supabase.from('posts').insert(body);
+    let { error } = await supabaseClient.from('posts').insert(body);
     if (error) throw error;
     let okDiv = document.getElementById(`ok-${room}`);
     if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
@@ -396,12 +396,12 @@ function showError(room, msg) {
 }
 async function deletePost(id, room) {
   if (!confirm('حذف المنشور؟')) return;
-  await supabase.from('posts').delete().eq('id', id);
+  await supabaseClient.from('posts').delete().eq('id', id);
   loadContentPage(room);
   loadDashboard();
 }
 async function openEditModal(id) {
-  let { data, error } = await supabase.from('posts').select('*').eq('id', id).single();
+  let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
   if (error) return;
   currentEditPost = data;
   let modalBody = document.getElementById('editModalBody');
@@ -436,7 +436,7 @@ async function saveEditPost() {
     tag: document.getElementById('edit-tag').value,
     content: document.getElementById('edit-content').value
   };
-  await supabase.from('posts').update(updated).eq('id', currentEditPost.id);
+  await supabaseClient.from('posts').update(updated).eq('id', currentEditPost.id);
   closeEditModal();
   loadContentPage(currentEditPost.room);
   loadDashboard();
@@ -496,7 +496,7 @@ async function addYouTubeChannel(room) {
   let info = await fetchYouTubeChannelInfo(url);
   if (!info) { alert('تعذر جلب معلومات القناة'); return; }
   let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() };
-  await supabase.from('posts').insert(body);
+  await supabaseClient.from('posts').insert(body);
   loadContentPage(room);
 }
 async function fetchYouTubeVideoInfo(url) {
@@ -530,7 +530,7 @@ async function addYouTubeVideo(room) {
   let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url);
   if (!info) { alert('تعذر جلب الفيديو'); return; }
   let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() };
-  await supabase.from('posts').insert(body);
+  await supabaseClient.from('posts').insert(body);
   loadContentPage(room);
 }
 async function fetchLiveFromChannel(channelUrl) {
@@ -557,8 +557,8 @@ async function addYouTubeLive() {
   let tag = document.getElementById(`tag-yt-lives`).value;
   let body = { title: info.title, description: info.description, icon: info.thumbnail || '🔴', url: info.videoUrl, tag: tag, room: 'yt-lives', content: document.getElementById(`content-yt-lives`).value.trim() };
   let liveBody = { ...body, room: 'live' };
-  await supabase.from('posts').insert(body);
-  await supabase.from('posts').insert(liveBody);
+  await supabaseClient.from('posts').insert(body);
+  await supabaseClient.from('posts').insert(liveBody);
   loadContentPage('yt-lives');
   loadContentPage('live');
 }
@@ -567,7 +567,7 @@ async function addYouTubeLive() {
 async function searchUsers(query) {
   let resultsDiv = document.getElementById('user-search-results');
   if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; }
-  let { data: users, error } = await supabase.from('profiles').select('id,username,email').ilike('username', `%${query}%`);
+  let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`);
   if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; }
   resultsDiv.style.display = 'block';
   resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join('');
@@ -583,7 +583,7 @@ async function addUserSubscriber() {
   let role = document.getElementById('sub-user-role').value;
   if (!userId || !username) { alert('اختر مستخدم أولاً'); return; }
   let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' };
-  await supabase.from('posts').insert(body);
+  await supabaseClient.from('posts').insert(body);
   loadContentPage('subscribers');
 }
 
