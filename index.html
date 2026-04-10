@@ -37,7 +37,7 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
-    /* خلفية صفحة الهوم الجديدة - لوحة حربية */
+    /* خلفية صفحة الهوم - لوحة حربية */
     .home-hero {
       position: relative;
       background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
@@ -219,7 +219,7 @@
       color: #aaa;
     }
     
-    /* باقي الأنماط للغرف الأخرى (كما هي) */
+    /* باقي الأنماط للغرف الأخرى */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -285,12 +285,9 @@
     </div>
   </div>
   
-  <!-- شريط الأخبار الديناميكي -->
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
-    <div class="ticker-track" id="ticker-track">
-      <div class="loading-state">جاري تحميل الأخبار...</div>
-    </div>
+    <div class="ticker-track" id="ticker-track"><div class="loading-state">جاري تحميل الأخبار...</div></div>
   </div>
   
   <div class="vx-body">
@@ -316,10 +313,7 @@
           <div class="home-subtitle">مجتمع الألعاب والنخبة</div>
           <div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div>
         </div>
-        <!-- حاوية منشورات HOME -->
-        <div id="home-posts-container" class="home-posts-grid">
-          <div class="loading-state">جاري تحميل المحتوى...</div>
-        </div>
+        <div id="home-posts-container" class="home-posts-grid"><div class="loading-state">جاري تحميل المحتوى...</div></div>
       </div>
     </div>
   </div>
@@ -364,6 +358,7 @@ contactPage.innerHTML = `<div class="page-header"><h2>📞 Contact Virtux</h2></
 mainContainer.appendChild(contactPage);
 
 async function loadPage(room) {
+  console.log(`تحميل الغرفة: ${room}`);
   const el = document.getElementById(`grid-${room}`);
   if (!el) return;
   el.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
@@ -378,9 +373,7 @@ async function loadPage(room) {
   }
 }
 
-function isVIPContent(post) {
-  return post.tag === 'VIP' || post.tag === 'Youtuber VIP';
-}
+function isVIPContent(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
@@ -408,49 +401,26 @@ function renderCards(posts, gridId, room) {
     
     if (isRestricted) {
       let thumb = '';
-      if (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) {
-        thumb = `<img class="post-card-img" src="${p.icon}">`;
-      } else {
-        thumb = `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
-      }
+      if (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) thumb = `<img class="post-card-img" src="${p.icon}">`;
+      else thumb = `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
       mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">هذا المحتوى للأعضاء فقط</span></div></div>`;
     } else {
       const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-      
-      if (isLocalVideo) {
-        mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video></div>`;
-      }
-      else if (isYouTube) {
-        const videoId = extractYouTubeId(p.url);
-        if (videoId) {
-          mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
-        } else {
-          mediaContent = `<img class="post-card-img" src="${p.icon || '📹'}">`;
-        }
-      }
-      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
-        mediaContent = `<img class="post-card-img" src="${p.icon}">`;
-      }
-      else {
-        mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
-      }
+      if (isLocalVideo) mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video></div>`;
+      else if (isYouTube) { const videoId = extractYouTubeId(p.url); mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`; }
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
+      else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
     
     let summary = '';
     if (p.content) summary = p.content.substring(0, 150).trim() + (p.content.length > 150 ? '...' : '');
     else if (p.description) summary = p.description.substring(0, 150);
     const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
-    
     let actions = '';
     if (!isRestricted && p.url) {
-      if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/')) {
-        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
-      } else if (p.url.includes('youtube.com') || p.url.includes('youtu.be')) {
-        // لا نضيف زر يوتيوب إضافي
-      } else {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
-      }
+      if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/')) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
+      else if (!p.url.includes('youtube.com') && !p.url.includes('youtu.be')) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
     }
     
     return `<div class="post-card">
@@ -467,22 +437,17 @@ function renderCards(posts, gridId, room) {
   }).join('');
 }
 
-function extractYouTubeId(url) {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
-  return match ? match[1] : null;
-}
+function extractYouTubeId(url) { const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/); return match ? match[1] : null; }
 
 function filterPosts(room, tag, btn) {
-  if (btn && btn.closest('.filter-bar')) {
-    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
+  if (btn && btn.closest('.filter-bar')) { btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
   const posts = allPosts[room] || [];
   const filtered = tag ? posts.filter(p => p.tag === tag) : posts;
   renderCards(filtered, `grid-${room}`, room);
 }
 
 function showPage(id) {
+  console.log(`الانتقال إلى: ${id}`);
   document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
   const page = document.getElementById(`page-${id}`);
@@ -493,21 +458,13 @@ function showPage(id) {
   if (id === 'home') loadHomePosts();
 }
 
-function toggleDD(id) {
-  document.querySelectorAll('.dd').forEach(d => { if(d.id !== id) d.classList.remove('open'); });
-  document.getElementById(id).classList.toggle('open');
-}
-function closeDD() {
-  document.querySelectorAll('.dd').forEach(d => d.classList.remove('open'));
-}
+function toggleDD(id) { document.querySelectorAll('.dd').forEach(d => { if(d.id !== id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
+function closeDD() { document.querySelectorAll('.dd').forEach(d => d.classList.remove('open')); }
 document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
-}
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m] || m); }
 
-// ==================== دوال تحميل وعرض منشورات HOME ====================
+// ========== HOME POSTS ==========
 async function loadHomePosts() {
   const container = document.getElementById('home-posts-container');
   if (!container) return;
@@ -515,15 +472,9 @@ async function loadHomePosts() {
   try {
     const { data, error } = await db.from('posts').select('*').eq('room', 'home').order('id', { ascending: false });
     if (error) throw error;
-    if (!data || data.length === 0) {
-      container.innerHTML = '<div class="empty-state">لا توجد منشورات في الصفحة الرئيسية بعد.</div>';
-      return;
-    }
+    if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state">لا توجد منشورات في الصفحة الرئيسية بعد.</div>'; return; }
     renderHomePosts(data, container);
-  } catch(e) {
-    console.error(e);
-    container.innerHTML = '<div class="empty-state">فشل تحميل المحتوى</div>';
-  }
+  } catch(e) { console.error(e); container.innerHTML = '<div class="empty-state">فشل تحميل المحتوى</div>'; }
 }
 
 function renderHomePosts(posts, container) {
@@ -532,25 +483,12 @@ function renderHomePosts(posts, container) {
     const isVideo = post.url && (post.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || post.url.includes('/storage/v1/object/public/videos/'));
     const isYouTube = post.url && (post.url.includes('youtube.com/watch') || post.url.includes('youtu.be'));
     const isImage = post.icon && (post.icon.startsWith('http') || post.icon.startsWith('data:'));
-
-    if (isVideo) {
-      mediaHtml = `<video class="home-post-media" src="${post.url}" controls preload="metadata"></video>`;
-    } else if (isYouTube) {
-      const videoId = extractYouTubeId(post.url);
-      if (videoId) {
-        mediaHtml = `<iframe class="home-post-media" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
-      } else {
-        mediaHtml = `<img class="home-post-media" src="${post.icon || '📹'}">`;
-      }
-    } else if (isImage) {
-      mediaHtml = `<img class="home-post-media" src="${post.icon}">`;
-    } else {
-      mediaHtml = `<div class="home-post-media" style="display:flex; align-items:center; justify-content:center; background:#2a2a3a; font-size:48px;">${post.icon || '📄'}</div>`;
-    }
-
-    const summary = post.content ? post.content.substring(0, 120) + (post.content.length > 120 ? '...' : '') : (post.description || '');
+    if (isVideo) mediaHtml = `<video class="home-post-media" src="${post.url}" controls preload="metadata"></video>`;
+    else if (isYouTube) { const videoId = extractYouTubeId(post.url); mediaHtml = videoId ? `<iframe class="home-post-media" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>` : `<img class="home-post-media" src="${post.icon || '📹'}">`; }
+    else if (isImage) mediaHtml = `<img class="home-post-media" src="${post.icon}">`;
+    else mediaHtml = `<div class="home-post-media" style="display:flex; align-items:center; justify-content:center; background:#2a2a3a; font-size:48px;">${post.icon || '📄'}</div>`;
+    const summary = post.content ? post.content.substring(0,120) + (post.content.length>120?'...':'') : (post.description || '');
     const tag = post.tag || 'Article';
-
     return `<div class="home-post-card" data-id="${post.id}">
       ${mediaHtml}
       <div class="home-post-body">
@@ -586,62 +524,26 @@ function showFullPost(postId) {
   });
 }
 
-// ==================== الأخبار والمصادقة ====================
+// ========== TICKER NEWS ==========
 async function loadTickerNews() {
   const track = document.getElementById('ticker-track');
   if (!track) return;
   try {
-    const { data, error } = await db.from('posts')
-      .select('title, url')
-      .eq('room', 'ticker')
-      .order('id', { ascending: false })
-      .limit(10);
+    const { data, error } = await db.from('posts').select('title, url').eq('room', 'ticker').order('id', { ascending: false }).limit(10);
     if (error) throw error;
-    if (!data || data.length === 0) {
-      track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>';
-      return;
-    }
+    if (!data || data.length === 0) { track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>'; return; }
     const items = [...data, ...data];
     track.innerHTML = items.map(item => {
       const text = item.title;
       const url = item.url;
-      if (url) {
-        return `<span class="ticker-item"><a href="${url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(text)}</a></span>`;
-      } else {
-        return `<span class="ticker-item">📢 ${escapeHtml(text)}</span>`;
-      }
+      if (url) return `<span class="ticker-item"><a href="${url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(text)}</a></span>`;
+      else return `<span class="ticker-item">📢 ${escapeHtml(text)}</span>`;
     }).join('');
-    track.style.animation = 'none';
-    track.offsetHeight;
-    track.style.animation = 'ticker 28s linear infinite';
-  } catch(e) {
-    console.error('خطأ في تحميل الأخبار:', e);
-    track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>';
-  }
+    track.style.animation = 'none'; track.offsetHeight; track.style.animation = 'ticker 28s linear infinite';
+  } catch(e) { console.error(e); track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>'; }
 }
 
-// تسجيل الزيارة
-(function trackVisit() {
-  const lastVisit = localStorage.getItem('virtux_last_visit');
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-  if (!lastVisit || (now - parseInt(lastVisit)) > oneDay) {
-    localStorage.setItem('virtux_last_visit', now);
-    fetch('https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1/rpc/log_visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-      body: JSON.stringify({ page_url: window.location.pathname })
-    }).catch(e => console.log('Visit log error:', e));
-  }
-})();
-
-window.showPage = showPage;
-window.filterPosts = filterPosts;
-window.toggleDD = toggleDD;
-window.closeDD = closeDD;
-window.showFullPost = showFullPost;
-
-// Auth
+// ========== AUTH ==========
 const authDb = db;
 async function checkAuth() {
   const { data: { session } } = await authDb.auth.getSession();
@@ -653,37 +555,23 @@ async function checkAuth() {
     let { data: profile, error } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
     if (!profile && !error) {
       const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      const { error: insertError } = await authDb.from('profiles').insert({
-        id: session.user.id,
-        username: userName,
-        email: session.user.email,
-        role: 'user'
-      });
-      if (!insertError) {
-        const { data: newProfile } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
-        profile = newProfile;
-      }
+      await authDb.from('profiles').insert({ id: session.user.id, username: userName, email: session.user.email, role: 'user' });
+      const { data: newProfile } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
+      profile = newProfile;
     }
     const userName = document.getElementById('user-name');
     const roleBadge = document.getElementById('user-role-badge');
     if (userName) userName.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
-    if (roleBadge && profile?.role && profile.role !== 'user') {
-      roleBadge.textContent = profile.role.toUpperCase();
-      roleBadge.style.display = 'inline-block';
-    }
+    if (roleBadge && profile?.role && profile.role !== 'user') { roleBadge.textContent = profile.role.toUpperCase(); roleBadge.style.display = 'inline-block'; }
     window.userRole = profile?.role || 'user';
     window.userId = session.user.id;
-    window.userEmail = session.user.email;
   } else {
     if (loginLink) loginLink.style.display = 'inline-block';
     if (userArea) userArea.style.display = 'none';
     window.userRole = 'guest';
   }
 }
-async function doLogout() {
-  await authDb.auth.signOut();
-  window.location.reload();
-}
+async function doLogout() { await authDb.auth.signOut(); window.location.reload(); }
 
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => {
   e.preventDefault();
@@ -691,11 +579,16 @@ document.getElementById('btn-login-link')?.addEventListener('click', (e) => {
   if (!email) return;
   const password = prompt('أدخل كلمة المرور:');
   if (!password) return;
-  authDb.auth.signInWithPassword({ email, password }).then(({ error }) => {
-    if (error) alert('فشل تسجيل الدخول: ' + error.message);
-    else window.location.reload();
-  });
+  authDb.auth.signInWithPassword({ email, password }).then(({ error }) => { if (error) alert('فشل تسجيل الدخول: ' + error.message); else window.location.reload(); });
 });
+
+// ربط الدوال العامة
+window.showPage = showPage;
+window.filterPosts = filterPosts;
+window.toggleDD = toggleDD;
+window.closeDD = closeDD;
+window.showFullPost = showFullPost;
+window.doLogout = doLogout;
 
 checkAuth();
 loadTickerNews();
