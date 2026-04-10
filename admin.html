@@ -385,7 +385,9 @@ async function addPost(room) {
   let desc = getSafeValue(descEl);
   let content = getSafeValue(contentEl);
   let icon = getSafeValue(iconEl);
-  let tag = tagEl ? (tagEl.value || room) : room;
+  let tag = tagEl ? tagEl.value : room;
+
+  console.log('Selected tag:', tag);
 
   // إذا كان هناك صورة مرفوعة (بيانات base64)
   let imgData = iconEl?._imgData || '';
@@ -393,18 +395,22 @@ async function addPost(room) {
 
   // معالجة خاصة لقسم Highlights
   if (room === 'highlights') {
+    // التحقق من وجود فيديو (يوتيوب أو رابط فيديو مرفوع)
     const isVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+    // التحقق من وجود صورة (رابط صورة أو ملف مرفوع)
     const isPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
     
-    // التحقق حسب نوع الوسم
+    console.log('isVideo:', isVideo, 'isPhoto:', isPhoto, 'tag:', tag);
+    
+    // إذا كان الوسم هو "Photo" (صورة)
     if (tag === 'Photo') {
-      // يجب وجود صورة فقط
       if (!isPhoto) {
         showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.');
         return;
       }
-    } else {
-      // Pro, Tournament, Video - يجب وجود فيديو
+    } 
+    // أي وسوم أخرى (Pro, Tournament, Video) تتطلب فيديو
+    else {
       if (!isVideo) {
         showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب أو رابط فيديو صالح.');
         return;
