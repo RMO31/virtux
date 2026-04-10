@@ -283,13 +283,13 @@ function renderCards(posts, gridId, room) {
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
     
-    // 1. التحقق من الفيديو المحلي (المرفوع من الكمبيوتر)
+    // 1. التحقق من الفيديو المحلي (المرفوع من الكمبيوتر) - الأولوية القصوى
     const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
     // 2. التحقق من يوتيوب
     const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
     
     if (isLocalVideo) {
-      // عرض فيديو محلي كمشغل مباشر
+      // عرض فيديو محلي كمشغل مباشر بحجم كامل
       mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video></div>`;
     }
     else if (isYouTube) {
