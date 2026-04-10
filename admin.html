@@ -471,7 +471,7 @@ async function uploadVideoToBucket(room) {
   finally { if (btn) btn.disabled = false; }
 }
 
-// ==================== دوال الإضافة مع التحقق الذكي ====================
+// ==================== دوال الإضافة مع التحقق الذكي (صورة فقط عند Photo) ====================
 async function addPost(room) {
   console.log('addPost called for room:', room);
   
@@ -495,29 +495,26 @@ async function addPost(room) {
   let icon = getSafeValue(iconEl);
   let tag = tagEl ? tagEl.value : room;
 
-  console.log('Raw tag value:', tag);
+  console.log('Selected tag:', tag);
 
-  // بيانات الصورة المرفوعة (base64)
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
 
-  // تحديد ما إذا كان الوسم يشير إلى صورة (بغض النظر عن حالة الأحرف أو وجود مسافات)
-  const isPhotoTag = tag.toLowerCase().includes('photo') || tag.includes('صورة');
-  // تحديد ما إذا كان هناك صورة صالحة (بيانات base64 أو رابط صورة)
-  const hasValidImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-  // تحديد ما إذا كان هناك فيديو صالح (رابط يوتيوب أو رابط فيديو مرفوع)
-  const hasValidVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-
-  console.log('isPhotoTag:', isPhotoTag, 'hasValidImage:', hasValidImage, 'hasValidVideo:', hasValidVideo);
+  // التحقق من وجود صورة صالحة (base64 أو رابط صورة)
+  const hasImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  // التحقق من وجود فيديو صالح
+  const hasVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
 
   if (room === 'highlights') {
-    if (isPhotoTag) {
-      if (!hasValidImage) {
+    if (tag === 'Photo') {
+      // نريد صورة فقط - لا نطلب فيديو
+      if (!hasImage) {
         showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.');
         return;
       }
     } else {
-      if (!hasValidVideo) {
+      // Pro, Tournament, Video - نريد فيديو فقط
+      if (!hasVideo) {
         showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب أو رابط فيديو صالح.');
         return;
       }
