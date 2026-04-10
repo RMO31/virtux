@@ -3,250 +3,725 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux — Gaming Community</title>
+  <title>Virtux Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* جميع الأنماط السابقة كما هي (خلفية حربية، أعلام، صواريخ، إلخ) */
-    /* ... */
-    /* أضفنا نمطاً إضافياً لشبكة منشورات HOME */
-    .home-posts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 24px;
-      padding: 30px 20px;
-      background: #0a0a0a;
-    }
-    .home-post-card {
-      background: #1e1e2e;
-      border: 1px solid #333;
-      border-radius: 16px;
-      overflow: hidden;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .home-post-card:hover {
-      transform: translateY(-4px);
-      border-color: #d4af37;
-    }
-    .home-post-media {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      background: #111;
-    }
-    .home-post-body {
-      padding: 16px;
-    }
-    .home-post-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: #d4af37;
-      margin-bottom: 8px;
-    }
-    .home-post-summary {
-      font-size: 14px;
-      color: #aaa;
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
-    .home-post-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
-    }
-    .home-post-tag {
-      font-size: 11px;
-      background: #2a2a3a;
-      color: #d4af37;
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
-    .btn-read-more {
-      background: #d4af37;
-      color: #000;
-      border: none;
-      border-radius: 30px;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .modal-fullpost {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .modal-fullpost-content {
-      background: #1e1e2e;
-      border: 1px solid #d4af37;
-      border-radius: 20px;
-      max-width: 800px;
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 24px;
-      position: relative;
-    }
-    .modal-fullpost-close {
-      position: absolute;
-      top: 12px;
-      right: 20px;
-      font-size: 28px;
-      cursor: pointer;
-      color: #aaa;
-    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Poppins',sans-serif;background:#000a18;color:#fff;min-height:100vh;overflow:hidden}
+    #bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+    #loginPage,#adminPage{position:relative;z-index:1}
+    #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh;background:transparent}
+    .login-box{background:rgba(3,8,28,0.88);border:1px solid #9fb000;border-radius:14px;padding:36px 32px;width:340px;text-align:center;backdrop-filter:blur(6px);box-shadow:0 0 40px rgba(159,176,0,0.15)}
+    .login-box h1{color:#d4e800;font-size:24px;margin-bottom:6px}
+    .login-box p{color:#667;font-size:13px;margin-bottom:24px}
+    .login-box input{width:100%;padding:10px 14px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:14px;margin-bottom:12px}
+    .login-box input:focus{outline:none;border-color:#9fb000}
+    .btn-login{width:100%;padding:10px;background:#9fb000;color:#000;border:none;border-radius:7px;font-size:15px;font-weight:700;cursor:pointer}
+    .btn-login:hover{background:#d4e800}
+    .err{color:#f55;font-size:12px;margin-top:8px;display:none}
+    #adminPage{display:none;height:100vh;flex-direction:column;background:transparent}
+    .topbar{background:rgba(0,7,24,0.92);border-bottom:1px solid #9fb000;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(4px)}
+    .topbar h1{color:#d4e800;font-size:16px}
+    .topbar-right{display:flex;align-items:center;gap:10px}
+    .conn{font-size:12px;padding:3px 10px;border-radius:4px;background:#0f3d2e;color:#4caf90;border:1px solid #0f6e56}
+    .conn.fail{background:#3d0f0f;color:#f55;border-color:#6e0f0f}
+    .btn-logout{background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer}
+    .btn-logout:hover{background:#f55;color:#fff}
+    .body{display:flex;flex:1;height:calc(100vh - 46px)}
+    .sidebar{width:190px;background:rgba(5,12,46,0.88);border-right:1px solid #1e2d6b;padding:12px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;backdrop-filter:blur(3px)}
+    .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left}
+    .sb-btn:hover,.sb-btn.active{background:#1a2d80;color:#d4e800}
+    .sb-btn.active{border-left:3px solid #d4e800}
+    .sb-sec{font-size:10px;color:#556;text-transform:uppercase;letter-spacing:1px;padding:10px 12px 3px}
+    .main{flex:1;padding:20px;overflow-y:auto;background:rgba(1,4,46,0.82);backdrop-filter:blur(2px)}
+    .ap{display:none}
+    .ap.active{display:block}
+    .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
+    .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
+    .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+    .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .fg input,.fg select,.fg textarea{padding:9px 12px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:13px;width:100%}
+    .full{grid-column:1/-1}
+    .btn-pub{background:#9fb000;color:#000;border:none;border-radius:7px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer}
+    .btn-pub:hover{background:#d4e800}
+    .btn-pub:disabled{background:#445;color:#778;cursor:not-allowed}
+    .ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
+    .er{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
+    .img-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .img-upload input[type=file]{display:none}
+    .img-upload label{background:#1a2d80;color:#9fb000;border:1px solid #1e2d6b;border-radius:7px;padding:8px 12px;font-size:12px;cursor:pointer}
+    .img-preview{width:40px;height:40px;border-radius:6px;object-fit:cover;display:none}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+    .stat-card{background:#050e30;border:1px solid #1e2d6b;border-radius:10px;padding:14px;text-align:center}
+    .stat-number{font-size:28px;font-weight:700;color:#d4e800}
+    .stat-label{font-size:11px;color:#667;margin-top:4px}
+    .posts-list{display:flex;flex-direction:column;gap:8px}
+    .pi{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+    .pi-icon{width:40px;height:40px;border-radius:6px;object-fit:cover;display:flex;align-items:center;justify-content:center;background:#0f1e55;font-size:20px}
+    .pi-info{flex:1}
+    .pi-title{font-size:13px;font-weight:600;color:#ddd}
+    .pi-meta{font-size:11px;color:#667;margin-top:2px}
+    .pi-tag{display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:3px;padding:1px 7px;margin-top:3px}
+    .btn-edit{background:#1a2d80;border:1px solid #9fb000;color:#9fb000;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer}
+    .btn-del{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer}
+    .btn-edit:hover{background:#9fb000;color:#000}
+    .btn-del:hover{background:#f55;color:#fff}
+    .empty{text-align:center;color:#445;padding:30px;font-size:13px}
+    .loading{text-align:center;color:#667;padding:20px;font-size:13px}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,4,0.85);z-index:1000;align-items:center;justify-content:center}
+    .modal-overlay.open{display:flex}
+    .modal-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto}
+    .modal-top{background:#000718;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e2d6b}
+    .modal-top h2{font-size:16px;color:#d4e800}
+    .modal-close{background:transparent;border:1px solid #556;color:#aaa;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:16px}
+    .modal-body{padding:18px}
+    .channel-card-admin{background:#0a1540;border:1px solid #1e2d6b;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .channel-avatar-admin{width:50px;height:50px;border-radius:50%;object-fit:cover}
+    .channel-info-admin{flex:1}
+    .channel-name-admin{font-size:13px;font-weight:600;color:#d4e800}
+    .channel-sub-admin{font-size:11px;color:#aaa}
+    .channel-link-admin{color:#9fb000;font-size:11px;text-decoration:none}
+    .preview-panel{background:#0a1540;border:1px solid #1e2d6b;border-radius:12px;padding:16px;margin-top:16px;display:flex;flex-direction:column;align-items:center}
+    .preview-media{width:100%;max-height:200px;object-fit:contain;border-radius:8px;margin-bottom:12px}
+    .preview-buttons{display:flex;gap:8px;justify-content:center}
+    .form-with-preview{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+    @media (max-width:768px){.form-with-preview{grid-template-columns:1fr}}
+    .role-search-input{width:100%;padding:10px;margin-bottom:10px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff}
+    .role-search-results{max-height:200px;overflow-y:auto;margin-bottom:10px}
+    .role-search-result-item{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+    .role-buttons button{margin-left:5px;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer}
+    .recent-member-item{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1e2d6b}
+    .recent-avatar{width:36px;height:36px;border-radius:50%;background:#1a2d80;display:flex;align-items:center;justify-content:center;font-size:16px}
+    .news-item{display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #1e2d6b}
+    .news-text{flex:1;font-size:13px}
+    .news-link{font-size:11px;color:#9fb000;text-decoration:none}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div class="vx-root">
-  <!-- الهيدر وشريط الأخبار كما هو -->
-  <div class="vx-topbar">...</div>
-  <div class="vx-ticker">...</div>
-  <div class="vx-body">
-    <div class="vx-sidebar">...</div>
-    <div class="vx-main">
-      <div class="vx-page active" id="page-home">
-        <div class="home-hero">
-          <div class="flags-container">...</div>
-          <div class="home-title">مرحباً بكم في VIRTUX</div>
-          <div class="home-subtitle">مجتمع الألعاب والنخبة</div>
-          <div class="missile"></div>...
-        </div>
-        <!-- حاوية منشورات HOME -->
-        <div id="home-posts-container" class="home-posts-grid">
-          <div class="loading-state">جاري تحميل المحتوى...</div>
-        </div>
-      </div>
+<canvas id="bgCanvas"></canvas>
+
+<div id="loginPage">
+  <div class="login-box">
+    <h1>🎮 Virtux Admin</h1>
+    <p>أدخل كلمة المرور</p>
+    <input type="password" id="pw" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-login" onclick="login()">دخول</button>
+    <div class="err" id="loginErr">كلمة المرور خاطئة!</div>
+  </div>
+</div>
+
+<div id="adminPage">
+  <div class="topbar">
+    <h1>🎮 Virtux Admin Panel</h1>
+    <div class="topbar-right">
+      <span class="conn" id="connStatus">جارٍ الاتصال...</span>
+      <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
     </div>
+  </div>
+  <div class="body">
+    <div class="sidebar">
+      <button class="sb-btn active" id="sb-dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
+      <div class="sb-sec">الأقسام</div>
+      <button class="sb-btn" id="sb-home" onclick="showPage('home')">🏠 Home</button>
+      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
+      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
+      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
+      <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
+      <div class="sb-sec">أخبار</div>
+      <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
+      <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
+      <div class="sb-sec">يوتيوب</div>
+      <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
+      <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
+      <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 Lives</button>
+      <div class="sb-sec">تعاون</div>
+      <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Projects</button>
+    </div>
+    <div class="main" id="mainContainer"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-top"><h2>✏️ تعديل المنشور</h2><button class="modal-close" onclick="closeEditModal()">✕</button></div>
+    <div class="modal-body" id="editModalBody"></div>
   </div>
 </div>
 
 <script>
+// ==================== إعدادات Supabase ====================
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let allPosts = {};
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
+const ADMIN_PASSWORD = 'virtux2025';
 
-// باقي تعريفات rooms, roomLabels, إلخ كما هي (لا نضيف home إلى القائمة لأننا سنعالجها يدوياً)
-// لكن نحتاج إلى تحميل منشورات home عند فتح الصفحة
+let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentEditPost = null;
 
-async function loadHomePosts() {
-  const container = document.getElementById('home-posts-container');
-  if (!container) return;
-  container.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m] || m);
+}
+
+// ==================== تسجيل الدخول ====================
+async function checkConn() {
   try {
-    const { data, error } = await db.from('posts').select('*').eq('room', 'home').order('id', { ascending: false });
-    if (error) throw error;
-    if (!data || data.length === 0) {
-      container.innerHTML = '<div class="empty-state">لا توجد منشورات في الصفحة الرئيسية بعد.</div>';
-      return;
-    }
-    renderHomePosts(data, container);
-  } catch(e) {
-    console.error(e);
-    container.innerHTML = '<div class="empty-state">فشل تحميل المحتوى</div>';
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/posts?limit=1`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+    let el = document.getElementById('connStatus');
+    if (res.ok) { el.textContent = '✅ متصل'; el.className = 'conn'; }
+    else { el.textContent = '❌ خطأ'; el.className = 'conn fail'; }
+  } catch(e) { 
+    document.getElementById('connStatus').textContent = '❌ لا إنترنت';
+    document.getElementById('connStatus').className = 'conn fail';
   }
 }
 
-function renderHomePosts(posts, container) {
-  container.innerHTML = posts.map(post => {
-    let mediaHtml = '';
-    const isVideo = post.url && (post.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || post.url.includes('/storage/v1/object/public/videos/'));
-    const isYouTube = post.url && (post.url.includes('youtube.com/watch') || post.url.includes('youtu.be'));
-    const isImage = post.icon && (post.icon.startsWith('http') || post.icon.startsWith('data:'));
+function login() {
+  if (document.getElementById('pw').value === ADMIN_PASSWORD) {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('adminPage').style.display = 'flex';
+    checkConn();
+    buildPages();
+    showPage('dashboard');
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+function logout() { window.location.reload(); }
 
-    if (isVideo) {
-      mediaHtml = `<video class="home-post-media" src="${post.url}" controls preload="metadata"></video>`;
-    } else if (isYouTube) {
-      const videoId = extractYouTubeId(post.url);
-      if (videoId) {
-        mediaHtml = `<iframe class="home-post-media" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
-      } else {
-        mediaHtml = `<img class="home-post-media" src="${post.icon || '📹'}">`;
-      }
-    } else if (isImage) {
-      mediaHtml = `<img class="home-post-media" src="${post.icon}">`;
+// ==================== بناء الصفحات ====================
+function buildPages() {
+  let main = document.getElementById('mainContainer');
+  main.innerHTML = '';
+  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects', 'contact'];
+  rooms.forEach(room => {
+    let div = document.createElement('div');
+    div.className = 'ap';
+    div.id = `ap-${room}`;
+    div.innerHTML = `<div class="page-title">${getRoomTitle(room)}</div><div id="content-${room}">جاري التحميل...</div>`;
+    main.appendChild(div);
+  });
+}
+function getRoomTitle(room) {
+  let titles = {
+    dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
+    subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
+    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos', 'yt-lives':'🔴 Youtube Lives',
+    projects:'🌐 Projects', contact:'📞 Contact'
+  };
+  return titles[room] || room;
+}
+function showPage(id) {
+  document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+  let target = document.getElementById(`ap-${id}`);
+  if (target) target.classList.add('active');
+  let btn = document.getElementById(`sb-${id}`);
+  if (btn) btn.classList.add('active');
+  if (id === 'dashboard') loadDashboard();
+  else if (id === 'contact') loadContact();
+  else loadContentPage(id);
+}
+function loadContact() {
+  let container = document.getElementById('content-contact');
+  container.innerHTML = `<div class="card"><h3>معلومات الاتصال</h3><p>بريد: admin@virtux.gg</p><p>ديسكورد: virtux_official</p></div>`;
+}
+
+// ==================== Dashboard ====================
+async function loadDashboard() {
+  let container = document.getElementById('content-dashboard');
+  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+  try {
+    let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!users) users = [];
+    let total = users.length;
+    let vipCount = users.filter(u => u.role === 'vip').length;
+    let memberCount = users.filter(u => u.role === 'member').length;
+    let modCount = users.filter(u => u.role === 'moderator').length;
+    let userCount = users.filter(u => u.role === 'user' || (!u.role)).length;
+
+    let statsHtml = `<div class="stats-grid">
+      <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">إجمالي المستخدمين</div></div>
+      <div class="stat-card"><div class="stat-number">${vipCount}</div><div class="stat-label">VIP</div></div>
+      <div class="stat-card"><div class="stat-number">${memberCount}</div><div class="stat-label">Member</div></div>
+      <div class="stat-card"><div class="stat-number">${modCount}</div><div class="stat-label">Moderator</div></div>
+      <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">عادي</div></div>
+    </div>`;
+
+    let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
+    if (users.length) {
+      let recent = users.slice(0, 5);
+      recentMembersHtml += `<div class="posts-list">`;
+      recent.forEach(u => {
+        let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
+        let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
+        let date = new Date(u.created_at).toLocaleDateString('ar-EG');
+        recentMembersHtml += `<div class="recent-member-item">
+          <div class="recent-avatar">👤</div>
+          <div class="pi-info">
+            <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
+            <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
+            <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;">${u.role?.toUpperCase() || 'USER'}</span>
+          </div>
+        </div>`;
+      });
+      recentMembersHtml += `</div>`;
     } else {
-      mediaHtml = `<div class="home-post-media" style="display:flex; align-items:center; justify-content:center; background:#2a2a3a; font-size:48px;">${post.icon || '📄'}</div>`;
+      recentMembersHtml += `<div class="empty">لا يوجد مستخدمون بعد.</div>`;
     }
+    recentMembersHtml += `</div>`;
 
-    const summary = post.content ? post.content.substring(0, 120) + (post.content.length > 120 ? '...' : '') : (post.description || '');
-    const tag = post.tag || 'Article';
+    let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
+      <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
+      <div id="roleSearchResults" class="role-search-results"></div>
+      <div style="margin-top:10px;">
+        <button class="btn-edit" onclick="refreshDashboard()" style="width:100%;">🔄 تحديث البيانات</button>
+      </div>
+    </div>`;
 
-    return `<div class="home-post-card" data-id="${post.id}">
-      ${mediaHtml}
-      <div class="home-post-body">
-        <div class="home-post-title">${escapeHtml(post.title)}</div>
-        <div class="home-post-summary">${escapeHtml(summary)}</div>
-        <div class="home-post-footer">
-          <span class="home-post-tag">${escapeHtml(tag)}</span>
-          <button class="btn-read-more" onclick="showFullPost(${post.id})">📖 اقرأ المزيد</button>
+    let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
+      <div class="fg">
+        <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
+        <input class="full" id="newsUrl" placeholder="رابط (اختياري)">
+      </div>
+      <button class="btn-pub" onclick="addNews()">➕ إضافة خبر</button>
+      <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
+    </div>`;
+
+    let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
+      let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
+      let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
+      return `<div class="pi" id="user-${u.id}">
+        <div class="pi-icon">👤</div>
+        <div class="pi-info">
+          <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
+          <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
+          <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;margin-top:3px;">${u.role?.toUpperCase() || 'USER'}</span>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          ${u.role !== 'vip' ? `<button class="btn-edit" onclick="setRole('${u.id}','vip')">👑 VIP</button>` : ''}
+          ${u.role !== 'member' ? `<button class="btn-edit" onclick="setRole('${u.id}','member')">⭐ Member</button>` : ''}
+          ${u.role !== 'moderator' ? `<button class="btn-edit" onclick="setRole('${u.id}','moderator')">🛡️ Mod</button>` : ''}
+          ${u.role !== 'user' ? `<button class="btn-edit" onclick="setRole('${u.id}','user')">👤 User</button>` : ''}
+          <button class="btn-del" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
+        </div>
+      </div>`;
+    }).join('') + `</div></div>`;
+
+    container.innerHTML = statsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
+    loadNewsList();
+  } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
+}
+
+// دوال إدارة الأخبار
+async function loadNewsList() {
+  let { data: news, error } = await supabaseClient.from('posts')
+    .select('*')
+    .eq('room', 'ticker')
+    .order('id', { ascending: false });
+  if (error) return;
+  let container = document.getElementById('newsList');
+  if (!container) return;
+  if (!news || news.length === 0) {
+    container.innerHTML = '<div class="empty">لا توجد أخبار. أضف خبراً الآن.</div>';
+    return;
+  }
+  container.innerHTML = news.map(item => `
+    <div class="news-item" id="news-${item.id}">
+      <div class="news-text">${escapeHtml(item.title)}</div>
+      ${item.url ? `<a href="${item.url}" target="_blank" class="news-link">رابط</a>` : ''}
+      <button class="btn-edit" onclick="editNews(${item.id})">✏️</button>
+      <button class="btn-del" onclick="deleteNews(${item.id})">🗑️</button>
+    </div>
+  `).join('');
+}
+async function addNews() {
+  let title = document.getElementById('newsTitle').value.trim();
+  let url = document.getElementById('newsUrl').value.trim();
+  if (!title) { alert('يرجى إدخال نص الخبر'); return; }
+  let { error } = await supabaseClient.from('posts').insert({ title, url: url||null, room:'ticker', tag:'news', icon:'📢', content:null });
+  if (error) { alert('فشل إضافة الخبر: '+error.message); return; }
+  document.getElementById('newsTitle').value = ''; document.getElementById('newsUrl').value = '';
+  loadNewsList();
+}
+async function deleteNews(id) { if(!confirm('حذف الخبر؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadNewsList(); }
+async function editNews(id) {
+  let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
+  if (error) return;
+  let newTitle = prompt('تعديل نص الخبر:', data.title);
+  if (newTitle === null) return;
+  let newUrl = prompt('تعديل الرابط (اختياري):', data.url||'');
+  await supabaseClient.from('posts').update({ title: newTitle, url: newUrl||null }).eq('id', id);
+  loadNewsList();
+}
+async function searchUsersForRole(query) {
+  let resultsDiv = document.getElementById('roleSearchResults');
+  if (!query || query.length < 2) { resultsDiv.innerHTML = ''; return; }
+  try {
+    let { data: users, error } = await supabaseClient.from('profiles')
+      .select('id,username,email,role')
+      .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
+    if (error) throw error;
+    if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
+    resultsDiv.innerHTML = users.map(u => `<div class="role-search-result-item"><div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)} • الرتبة: ${u.role||'user'}</small></div><div class="role-buttons">${u.role!=='vip'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'vip\')">VIP</button>':''}${u.role!=='member'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'member\')">Member</button>':''}${u.role!=='moderator'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'moderator\')">Mod</button>':''}${u.role!=='user'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'user\')">User</button>':''}<button class="btn-del" onclick="deleteUser(\''+u.id+'\')">حذف</button></div></div>`).join('');
+  } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
+}
+function refreshDashboard() { loadDashboard(); }
+async function setRole(userId, role) { await supabaseClient.from('profiles').update({ role }).eq('id', userId); loadDashboard(); }
+async function deleteUser(userId) { if(!confirm('حذف المستخدم نهائياً؟')) return; await supabaseClient.from('profiles').delete().eq('id', userId); loadDashboard(); }
+
+// ==================== تحميل صفحة المحتوى (لجميع الغرف) ====================
+async function loadContentPage(room) {
+  let container = document.getElementById(`content-${room}`);
+  if (!container) return;
+  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+  try {
+    let { data: posts, error } = await supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+    if (error) throw error;
+    let addForm = getAddForm(room);
+    let postsHtml = '';
+    if (posts && posts.length) {
+      if (room === 'yt-channels') {
+        postsHtml = `<div class="card"><h3>📋 القنوات</h3><div class="posts-list">` + posts.map(p => {
+          let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
+          return `<div class="channel-card-admin">
+            ${avatar}
+            <div class="channel-info-admin">
+              <div class="channel-name-admin">${escapeHtml(p.title)}</div>
+              <div class="channel-sub-admin">${escapeHtml(p.description || '')}</div>
+              <a href="${p.url}" target="_blank" class="channel-link-admin">زيارة القناة</a>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️</button>
+            </div>
+          </div>`;
+        }).join('') + `</div></div>`;
+      } else {
+        postsHtml = `<div class="card"><h3>📋 المنشورات</h3><div class="posts-list">` + posts.map(p => {
+          let media = '';
+          const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
+          const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+          if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
+          else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
+          else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
+          else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
+          return `<div class="pi" id="pi-${p.id}">
+            <div style="width:80px; flex-shrink:0;">${media}</div>
+            <div class="pi-info">
+              <div class="pi-title">${escapeHtml(p.title)}</div>
+              <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
+              <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️ حذف</button>
+            </div>
+          </div>`;
+        }).join('') + `</div></div>`;
+      }
+    } else postsHtml = '<div class="card"><div class="empty">لا توجد منشورات.</div></div>';
+    container.innerHTML = addForm + postsHtml;
+  } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
+}
+
+// ==================== نموذج الإضافة لكل غرفة ====================
+function getAddForm(room) {
+  if (room === 'home') {
+    return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Article">📄 مقال (نص)</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="المقال الكامل (نص طويل)" rows="8"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
         </div>
       </div>
     </div>`;
-  }).join('');
-}
-
-function extractYouTubeId(url) {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
-  return match ? match[1] : null;
-}
-
-function showFullPost(postId) {
-  // البحث عن المنشور في allPosts (أو جلب مباشرة)
-  // سنقوم بجلب البيانات من قاعدة البيانات لعرض النافذة
-  db.from('posts').select('*').eq('id', postId).single().then(({ data, error }) => {
-    if (error || !data) return;
-    const modal = document.createElement('div');
-    modal.className = 'modal-fullpost';
-    modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
-    modal.innerHTML = `
-      <div class="modal-fullpost-content">
-        <div class="modal-fullpost-close" onclick="this.closest('.modal-fullpost').remove()">&times;</div>
-        <h2 style="color:#d4af37; margin-bottom:12px;">${escapeHtml(data.title)}</h2>
-        ${data.icon && (data.icon.startsWith('http') || data.icon.startsWith('data:')) ? `<img src="${data.icon}" style="max-width:100%; border-radius:12px; margin-bottom:16px;">` : ''}
-        ${data.url && (data.url.match(/\.(mp4|webm)/i) || data.url.includes('/storage/v1/object/public/videos/')) ? `<video src="${data.url}" controls style="width:100%; border-radius:12px; margin-bottom:16px;"></video>` : ''}
-        ${data.url && data.url.includes('youtube.com') ? `<iframe src="https://www.youtube.com/embed/${extractYouTubeId(data.url)}" style="width:100%; aspect-ratio:16/9; border-radius:12px; margin-bottom:16px;" allowfullscreen></iframe>` : ''}
-        <div style="line-height:1.7; color:#ddd;">${escapeHtml(data.content || 'لا يوجد محتوى إضافي.').replace(/\n/g, '<br>')}</div>
-        ${data.url && !data.url.match(/\.(mp4|webm)/i) && !data.url.includes('youtube.com') ? `<a href="${data.url}" target="_blank" style="display:inline-block; margin-top:16px; background:#d4af37; color:#000; padding:8px 16px; border-radius:30px; text-decoration:none;">🔗 رابط إضافي</a>` : ''}
+  } else if (room === 'highlights') {
+    return `<div class="card"><h3>➕ إضافة منشور</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان (اختياري)"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">...</div>
       </div>
-    `;
-    document.body.appendChild(modal);
-  });
+    </div>`;
+  } else if (room === 'yt-channels') {
+    return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"><textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
+  } else if (room === 'subscribers') {
+    return `<div class="card"><h3>🔔 إضافة Youtuber (برابط)</h3>...<div class="card"><h3>⭐ إضافة Member/Donor (من المستخدمين)</h3>...</div>`;
+  } else if (room === 'yt-videos') {
+    return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3>...</div>`;
+  } else if (room === 'yt-lives') {
+    return `<div class="card"><h3>➕ إضافة بث مباشر يوتيوب</h3>...</div>`;
+  } else {
+    let tagOptions = '';
+    if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
+    else if (room === 'tournaments') tagOptions = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+    else if (room === 'gaming-news') tagOptions = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
+    else if (room === 'youtube-news') tagOptions = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
+    else if (room === 'projects') tagOptions = `<option value="Project">🌐 مشروع</option>`;
+    else tagOptions = `<option value="default">عام</option>`;
+    return `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}">${tagOptions}</select><input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+  }
 }
 
-// تسجيل الدخول وباقي الدوال (كما هي في index.html الأصلي)
-// ... (checkAuth, doLogout, loadPage, showPage, إلخ)
-// لكننا نحتاج إلى تعديل showPage لاستدعاء loadHomePosts عند فتح home
-function originalShowPage(id) {
-  document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
-  const page = document.getElementById(`page-${id}`);
-  if (page) page.classList.add('active');
-  const btn = document.getElementById(`sb-${id}`);
-  if (btn) btn.classList.add('active');
-  if (id !== 'home' && id !== 'contact') loadPage(id);
-  if (id === 'home') loadHomePosts(); // تحميل منشورات home
+// ==================== دوال مساعدة للمعاينة والإضافة ====================
+function clearMedia(room) {
+  if (room !== 'highlights' && room !== 'home') return;
+  const previewImg = document.getElementById(`preview-img-${room}`);
+  const previewVideo = document.getElementById(`preview-video-${room}`);
+  const previewText = document.getElementById(`preview-text-${room}`);
+  if (previewImg) previewImg.style.display = 'none';
+  if (previewVideo) previewVideo.style.display = 'none';
+  if (previewText) previewText.style.display = 'block';
+  document.getElementById(`url-${room}`).value = '';
+  document.getElementById(`icon-${room}`).value = '';
+  document.getElementById(`imgfile-${room}`).value = '';
+  document.getElementById(`videofile-${room}`).value = '';
+  delete document.getElementById(`icon-${room}`)._imgData;
 }
-window.showPage = originalShowPage;
-window.filterPosts = filterPosts;
-window.toggleDD = toggleDD;
-window.closeDD = closeDD;
-window.showFullPost = showFullPost;
+function handleImageUpload(room) {
+  const fileInput = document.getElementById(`imgfile-${room}`);
+  const file = fileInput?.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const previewImg = document.getElementById(`preview-img-${room}`);
+    const previewVideo = document.getElementById(`preview-video-${room}`);
+    const previewText = document.getElementById(`preview-text-${room}`);
+    if (previewImg) { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
+    if (previewVideo) previewVideo.style.display = 'none';
+    if (previewText) previewText.style.display = 'none';
+    const iconField = document.getElementById(`icon-${room}`);
+    iconField.value = '🖼️';
+    iconField._imgData = e.target.result;
+    document.getElementById(`url-${room}`).value = '';
+  };
+  reader.readAsDataURL(file);
+}
+async function uploadVideoToBucket(room) {
+  let fileInput = document.getElementById(`videofile-${room}`);
+  let file = fileInput?.files[0];
+  if (!file) { alert('لم تختر ملفاً'); return; }
+  if (!file.type.startsWith('video/')) { alert('الملف المختار ليس فيديو'); return; }
+  let fileName = Date.now() + '_' + file.name;
+  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  let filePath = `highlights/${fileName}`;
+  let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
+  let btn = document.querySelector(`#ap-${room} .btn-pub`);
+  if (btn) btn.disabled = true;
+  try {
+    let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
+    if (res.ok) {
+      let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
+      document.getElementById(`url-${room}`).value = publicUrl;
+      let titleField = document.getElementById(`title-${room}`);
+      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      const previewImg = document.getElementById(`preview-img-${room}`);
+      const previewVideo = document.getElementById(`preview-video-${room}`);
+      const previewText = document.getElementById(`preview-text-${room}`);
+      if (previewImg) previewImg.style.display = 'none';
+      if (previewVideo) { previewVideo.src = publicUrl; previewVideo.style.display = 'block'; }
+      if (previewText) previewText.style.display = 'none';
+      document.getElementById(`icon-${room}`).value = '';
+      delete document.getElementById(`icon-${room}`)._imgData;
+      alert('✅ تم رفع الفيديو! الرابط جاهز.');
+    } else { let errText = await res.text(); alert('❌ فشل الرفع: ' + errText); }
+  } catch(e) { alert('خطأ: ' + e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+async function addPost(room) {
+  const titleEl = document.getElementById(`title-${room}`);
+  const urlEl = document.getElementById(`url-${room}`);
+  const descEl = document.getElementById(`desc-${room}`);
+  const contentEl = document.getElementById(`content-${room}`);
+  const iconEl = document.getElementById(`icon-${room}`);
+  const tagEl = document.getElementById(`tag-${room}`);
+  function getSafeValue(el) { if (!el) return ''; if (el.value === undefined) return ''; return (el.value || '').trim(); }
+  let title = getSafeValue(titleEl);
+  let url = getSafeValue(urlEl);
+  let desc = getSafeValue(descEl);
+  let content = getSafeValue(contentEl);
+  let icon = getSafeValue(iconEl);
+  let tag = tagEl ? tagEl.value : room;
+  let imgData = iconEl?._imgData || '';
+  if (imgData) icon = imgData;
+  const hasImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  const hasVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+  if (room === 'highlights') {
+    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ عند اختيار "فيديو"، يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+    else { if (!hasImage && !hasVideo) { showError(room, '❌ في Pro / Tournament، يجب رفع صورة أو فيديو.'); return; } }
+  } else if (room === 'home') {
+    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+    else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المقال فارغ. أدخل عنواناً أو محتوى.'); return; } }
+  } else {
+    if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
+  }
+  if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : (room === 'home' ? '📄 مقال' : '📄 منشور');
+  const body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
+  const btn = document.querySelector(`#ap-${room} .btn-pub`);
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await supabaseClient.from('posts').insert(body);
+    if (error) throw error;
+    const okDiv = document.getElementById(`ok-${room}`);
+    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
+    if (titleEl) titleEl.value = '';
+    if (descEl) descEl.value = '';
+    if (urlEl) urlEl.value = '';
+    if (iconEl) iconEl.value = '';
+    if (contentEl) contentEl.value = '';
+    const fileInput = document.getElementById(`imgfile-${room}`);
+    if (fileInput) fileInput.value = '';
+    const videoInput = document.getElementById(`videofile-${room}`);
+    if (videoInput) videoInput.value = '';
+    const previewImg = document.getElementById(`preview-img-${room}`);
+    const previewVideo = document.getElementById(`preview-video-${room}`);
+    const previewText = document.getElementById(`preview-text-${room}`);
+    if (previewImg) previewImg.style.display = 'none';
+    if (previewVideo) previewVideo.style.display = 'none';
+    if (previewText) previewText.style.display = 'block';
+    loadContentPage(room);
+    loadDashboard();
+  } catch (e) { showError(room, e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
+async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
+async function openEditModal(id) {
+  let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
+  if (error) return;
+  currentEditPost = data;
+  let modalBody = document.getElementById('editModalBody');
+  modalBody.innerHTML = `<div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div><div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div><div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div><div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div><div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, data.tag)}</select></div><div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div><div class="fg"><div class="img-upload"><input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()"><label for="edit-imgfile">📁 رفع صورة جديدة</label><img id="edit-imgpreview" class="img-preview" src=""></div></div><div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div><button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button><button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${currentEditPost.id}, '${currentEditPost.room}'); closeEditModal();">🗑️ حذف المنشور</button>`;
+  document.getElementById('editModal').classList.add('open');
+}
+function previewEditImg() {
+  let file = document.getElementById('edit-imgfile').files[0];
+  if (!file) return;
+  let reader = new FileReader();
+  reader.onload = e => { let preview = document.getElementById('edit-imgpreview'); preview.src = e.target.result; preview.style.display = 'block'; document.getElementById('edit-icon').value = '🖼️'; document.getElementById('edit-icon')._imgData = e.target.result; };
+  reader.readAsDataURL(file);
+}
+async function uploadEditVideo() {
+  let file = document.getElementById('edit-videofile').files[0];
+  if (!file) return;
+  if (!file.type.startsWith('video/')) { alert('الملف المختار ليس فيديو'); return; }
+  let fileName = Date.now() + '_' + file.name;
+  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  let filePath = `highlights/${fileName}`;
+  let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
+  try {
+    let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
+    if (res.ok) {
+      let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
+      document.getElementById('edit-url').value = publicUrl;
+      let titleField = document.getElementById('edit-title');
+      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      alert('✅ تم رفع الفيديو الجديد! الرابط جاهز.');
+    } else { let errText = await res.text(); alert('فشل الرفع: ' + errText); }
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+function getTagOptionsForEdit(room, currentTag) {
+  let opts = '';
+  if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
+  else if (room === 'home') opts = `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`;
+  else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
+  else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option>`;
+  else opts = `<option value="default">عام</option>`;
+  return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
+}
+async function saveEditPost() {
+  if (!currentEditPost) return;
+  let updated = {
+    title: document.getElementById('edit-title').value,
+    description: document.getElementById('edit-desc').value,
+    icon: document.getElementById('edit-icon').value,
+    url: document.getElementById('edit-url').value,
+    tag: document.getElementById('edit-tag').value,
+    content: document.getElementById('edit-content').value
+  };
+  await supabaseClient.from('posts').update(updated).eq('id', currentEditPost.id);
+  closeEditModal();
+  loadContentPage(currentEditPost.room);
+  loadDashboard();
+}
+function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// تشغيل تحميل منشورات home عند بدء الصفحة
-checkAuth();
-loadHomePosts();
+// ==================== دوال يوتيوب والمستخدمين ====================
+async function fetchYouTubeChannelInfo(url) {
+  try { let handle = url.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url }; return null; } catch(e) { return null; }
+}
+async function addYouTubeChannel(room) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { alert('أدخل رابط القناة'); return; }
+  let info = await fetchYouTubeChannelInfo(url);
+  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
+  let extraContent = document.getElementById(`content-${room}`)?.value.trim() || '';
+  let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'), room: room, content: extraContent };
+  let btn = document.querySelector(`#ap-${room} .btn-pub`);
+  if (btn) btn.disabled = true;
+  try { let { error } = await supabaseClient.from('posts').insert(body); if (error) throw error; document.getElementById(`url-${room}`).value = ''; if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = ''; let okDiv = document.getElementById(`ok-${room}`); if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); } loadContentPage(room); loadDashboard(); } catch(e) { alert('خطأ: ' + e.message); } finally { if (btn) btn.disabled = false; }
+}
+async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
+async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
+async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
+async function fetchLiveFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let liveApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&maxResults=1&key=${YOUTUBE_API_KEY}`; let liveRes = await fetch(liveApi); let liveData = await liveRes.json(); let video = liveData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
+async function addYouTubeLive() { let url = document.getElementById(`url-yt-lives`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-yt-lives`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchLiveFromChannel(url); if (!info) { alert('تعذر جلب البث'); return; } let tag = document.getElementById(`tag-yt-lives`).value; let body = { title: info.title, description: info.description, icon: info.thumbnail || '🔴', url: info.videoUrl, tag: tag, room: 'yt-lives', content: document.getElementById(`content-yt-lives`).value.trim() }; let liveBody = { ...body, room: 'live' }; await supabaseClient.from('posts').insert(body); await supabaseClient.from('posts').insert(liveBody); loadContentPage('yt-lives'); loadContentPage('live'); }
+async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
+function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
+async function addUserSubscriber() { let userId = document.getElementById('sub-user-id').value; let username = document.getElementById('sub-user-selected').value; let role = document.getElementById('sub-user-role').value; if (!userId || !username) { alert('اختر مستخدم أولاً'); return; } let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' }; await supabaseClient.from('posts').insert(body); loadContentPage('subscribers'); }
+
+// ربط الدوال
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.addYouTubeLive = addYouTubeLive; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+</script>
+
+<script>
+// ===== REALISTIC MISSILE ANIMATION (بحر وصواريخ) =====
+(function() {
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const stars = Array.from({length:250}, () => ({ x: Math.random(), y: Math.random(), r: Math.random()*1.4+0.2, twinkle: Math.random()*Math.PI*2, speed: 0.005+Math.random()*0.01 }));
+  const smokePool = [];
+  class SmokeParticle { constructor(x, y, color) { this.x=x; this.y=y; this.vx=(Math.random()-0.5)*0.8; this.vy=Math.random()*0.5; this.r=3+Math.random()*5; this.life=1; this.decay=0.015+Math.random()*0.02; this.color=color||'180,120,60'; this.grow=0.3+Math.random()*0.5; } update() { this.x+=this.vx; this.y+=this.vy; this.r+=this.grow; this.life-=this.decay; this.vx*=0.98; this.vy*=0.98; } draw() { ctx.save(); ctx.globalAlpha=this.life*0.4; ctx.fillStyle=`rgba(${this.color},${this.life*0.4})`; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+  class Missile { constructor() { this.reset(true); } reset(initial) { const W=canvas.width, H=canvas.height; this.launchX=W*(0.05+Math.random()*0.9); this.launchY=H*0.68+Math.random()*H*0.05; this.x=this.launchX; this.y=this.launchY; this.targetX=W*(0.05+Math.random()*0.9); this.targetY=H*(0.03+Math.random()*0.2); const dx=this.targetX-this.launchX, dy=this.targetY-this.launchY, dist=Math.sqrt(dx*dx+dy*dy); this.speed=3.5+Math.random()*2.5; this.angle=Math.atan2(dy,dx); this.vx=Math.cos(this.angle)*this.speed; this.vy=Math.sin(this.angle)*this.speed; this.trail=[]; this.maxTrail=22; this.alive=true; this.exploding=false; this.explodeX=0; this.explodeY=0; this.explodeParticles=[]; this.explodeTime=0; this.delay=initial?Math.random()*200:40+Math.random()*180; this.active=false; } update() { if(this.delay>0){ this.delay--; return; } this.active=true; if(this.exploding){ this.explodeTime++; this.explodeParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.vx*=0.97; p.life-=p.decay; p.r*=0.995; }); this.explodeParticles=this.explodeParticles.filter(p=>p.life>0); if(this.explodeTime>80) this.reset(false); return; } const dx=this.targetX-this.x, dy=this.targetY-this.y, dist=Math.sqrt(dx*dx+dy*dy); const targetAngle=Math.atan2(dy,dx); let da=targetAngle-this.angle; while(da>Math.PI) da-=Math.PI*2; while(da<-Math.PI) da+=Math.PI*2; this.angle+=da*0.04; this.vx=Math.cos(this.angle)*this.speed; this.vy=Math.sin(this.angle)*this.speed; this.x+=this.vx; this.y+=this.vy; this.trail.unshift({x:this.x,y:this.y}); if(this.trail.length>this.maxTrail) this.trail.pop(); const tail=this.trail[this.trail.length-1]||{x:this.x,y:this.y}; if(Math.random()<0.7) smokePool.push(new SmokeParticle(tail.x,tail.y,'160,100,40')); if(Math.random()<0.3) smokePool.push(new SmokeParticle(tail.x+(Math.random()-0.5)*4,tail.y+(Math.random()-0.5)*4,'80,80,80')); if(dist<this.speed*1.5){ this.exploding=true; this.explodeX=this.x; this.explodeY=this.y; for(let i=0;i<55;i++){ const ang=Math.random()*Math.PI*2, spd=1+Math.random()*6, colors=['#ff4400','#ff8800','#ffcc00','#fff','#ff2200','#ff6600']; this.explodeParticles.push({x:this.x,y:this.y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, r:2+Math.random()*4, life:1, decay:0.012+Math.random()*0.025, color:colors[Math.floor(Math.random()*colors.length)] }); } this.shockwave={r:0, maxR:60, life:1}; } } draw() { if(!this.active) return; if(this.exploding){ if(this.shockwave && this.shockwave.r<this.shockwave.maxR){ this.shockwave.r+=3.5; this.shockwave.life-=0.06; ctx.save(); ctx.globalAlpha=this.shockwave.life*0.5; ctx.strokeStyle='#ff8800'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(this.explodeX,this.explodeY,this.shockwave.r,0,Math.PI*2); ctx.stroke(); ctx.restore(); } if(this.explodeTime<15){ ctx.save(); ctx.globalAlpha=(1-this.explodeTime/15)*0.6; const grd=ctx.createRadialGradient(this.explodeX,this.explodeY,0,this.explodeX,this.explodeY,40+this.explodeTime*2); grd.addColorStop(0,'rgba(255,200,50,0.9)'); grd.addColorStop(0.4,'rgba(255,80,0,0.6)'); grd.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(this.explodeX,this.explodeY,40+this.explodeTime*2,0,Math.PI*2); ctx.fill(); ctx.restore(); } this.explodeParticles.forEach(p=>{ ctx.save(); ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=6; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); ctx.restore(); }); return; } if(this.trail.length<2) return; for(let i=1;i<this.trail.length;i++){ const t=1-i/this.trail.length; ctx.save(); ctx.globalAlpha=t*0.85; ctx.strokeStyle=t>0.5?`rgba(255,${100+Math.floor(t*155)},0,1)`:`rgba(255,80,0,${t*1.5})`; ctx.lineWidth=t*4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(this.trail[i-1].x,this.trail[i-1].y); ctx.lineTo(this.trail[i].x,this.trail[i].y); ctx.stroke(); ctx.restore(); } const head=this.trail[0]; const bodyAngle=this.angle; ctx.save(); ctx.translate(head.x,head.y); ctx.rotate(bodyAngle); ctx.fillStyle='#c8c8d0'; ctx.shadowColor='#ff8800'; ctx.shadowBlur=12; ctx.beginPath(); ctx.ellipse(0,0,9,3,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#e8e8f0'; ctx.beginPath(); ctx.moveTo(9,0); ctx.lineTo(16,0); ctx.lineTo(9,-2.5); ctx.closePath(); ctx.fill(); ctx.fillStyle='#888'; ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-14,-7); ctx.lineTo(-8,-2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-14,7); ctx.lineTo(-8,2); ctx.closePath(); ctx.fill(); const flameLen=8+Math.random()*6; const flameGrd=ctx.createLinearGradient(-9,0,-9-flameLen,0); flameGrd.addColorStop(0,'rgba(255,200,50,1)'); flameGrd.addColorStop(0.4,'rgba(255,80,0,0.8)'); flameGrd.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=flameGrd; ctx.beginPath(); ctx.moveTo(-9,-2.5); ctx.lineTo(-9-flameLen,0); ctx.lineTo(-9,2.5); ctx.closePath(); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.4; const glow=ctx.createRadialGradient(head.x,head.y,0,head.x,head.y,18); glow.addColorStop(0,'rgba(255,150,0,0.8)'); glow.addColorStop(1,'rgba(255,50,0,0)'); ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(head.x,head.y,18,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+  function drawLaunchers(W,H){ const groundY=H*0.68; const count=4; for(let i=0;i<count;i++){ const lx=W*(0.1+i*0.25), ly=groundY; ctx.save(); ctx.fillStyle='#0f0e08'; ctx.strokeStyle='#2a2510'; ctx.lineWidth=1; ctx.beginPath(); ctx.rect(lx-20,ly-6,40,10); ctx.fill(); ctx.stroke(); for(let w=-1;w<=1;w+=2){ ctx.fillStyle='#1a1810'; ctx.beginPath(); ctx.arc(lx+w*14,ly+4,5,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#0a0908'; ctx.beginPath(); ctx.arc(lx+w*14,ly+4,2,0,Math.PI*2); ctx.fill(); } ctx.strokeStyle='#3a3820'; ctx.lineWidth=4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(lx,ly-6); ctx.lineTo(lx-8,ly-36); ctx.stroke(); ctx.strokeStyle='#4a4830'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(lx-4,ly-6); ctx.lineTo(lx-12,ly-36); ctx.stroke(); ctx.translate(lx-8,ly-28); ctx.rotate(-Math.PI/5); ctx.fillStyle='#505058'; ctx.beginPath(); ctx.ellipse(0,0,12,3.5,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#888890'; ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(18,0); ctx.lineTo(12,-3); ctx.closePath(); ctx.fill(); ctx.restore(); } }
+  let waveT=0; const missiles=Array.from({length:5},()=>new Missile());
+  function drawScene(){ const W=canvas.width, H=canvas.height; const sky=ctx.createLinearGradient(0,0,0,H*0.68); sky.addColorStop(0,'#000408'); sky.addColorStop(0.6,'#000c18'); sky.addColorStop(1,'#001020'); ctx.fillStyle=sky; ctx.fillRect(0,0,W,H); stars.forEach(s=>{ s.twinkle+=s.speed; const alpha=0.3+0.7*Math.abs(Math.sin(s.twinkle)); ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle='#ffffff'; ctx.shadowColor='#aaccff'; ctx.shadowBlur=2; ctx.beginPath(); ctx.arc(s.x*W,s.y*H*0.65,s.r,0,Math.PI*2); ctx.fill(); ctx.restore(); }); ctx.save(); ctx.fillStyle='#f0e8c8'; ctx.shadowColor='#f0e8c8'; ctx.shadowBlur=25; ctx.beginPath(); ctx.arc(W*0.82,H*0.1,30,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#000c18'; ctx.shadowBlur=0; ctx.beginPath(); ctx.arc(W*0.82+14,H*0.1-6,26,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.08; const moonGlow=ctx.createRadialGradient(W*0.82,H*0.1,0,W*0.82,H*0.1,120); moonGlow.addColorStop(0,'#f0e8c8'); moonGlow.addColorStop(1,'transparent'); ctx.fillStyle=moonGlow; ctx.beginPath(); ctx.arc(W*0.82,H*0.1,120,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.12; const horizGlow=ctx.createLinearGradient(0,H*0.6,0,H*0.68); horizGlow.addColorStop(0,'rgba(255,150,50,0)'); horizGlow.addColorStop(1,'rgba(255,150,50,0.4)'); ctx.fillStyle=horizGlow; ctx.fillRect(0,H*0.6,W,H*0.08); ctx.restore(); const sea=ctx.createLinearGradient(0,H*0.68,0,H); sea.addColorStop(0,'#001828'); sea.addColorStop(0.5,'#000e1a'); sea.addColorStop(1,'#000608'); ctx.fillStyle=sea; ctx.fillRect(0,H*0.68,W,H*0.32); ctx.save(); ctx.globalAlpha=0.12; for(let ry=0;ry<8;ry++){ const rw=20-ry*1.5, rx=W*0.82-rw/2+Math.sin(waveT*0.8+ry)*8, ryy=H*0.69+ry*14; ctx.fillStyle='#f0e8c8'; ctx.fillRect(rx,ryy,rw,4); } ctx.restore(); waveT+=0.018; for(let w=0;w<4;w++){ ctx.save(); ctx.strokeStyle=`rgba(0,80,140,${0.1+w*0.04})`; ctx.lineWidth=1.2; ctx.beginPath(); for(let x=0;x<=W;x+=3){ const y=H*0.682+w*9+Math.sin(x*0.012+waveT+w*0.8)*5+Math.sin(x*0.025+waveT*1.4+w)*3; x===0?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.stroke(); ctx.restore(); } const shore=ctx.createLinearGradient(0,H*0.66,0,H*0.70); shore.addColorStop(0,'#1a1408'); shore.addColorStop(1,'#0d0a04'); ctx.fillStyle=shore; ctx.beginPath(); ctx.moveTo(0,H*0.70); for(let x=0;x<=W;x+=W/30){ const y=H*0.668+Math.sin(x*0.04)*3+(x/W)*6; ctx.lineTo(x,y); } ctx.lineTo(W,H*0.70); ctx.closePath(); ctx.fill(); ctx.fillStyle='#080604'; ctx.beginPath(); ctx.moveTo(0,H*0.73); for(let x=0;x<=W;x+=W/40){ ctx.lineTo(x,H*0.67+Math.sin(x*0.03+1)*5+x/W*8); } ctx.lineTo(W,H*0.73); ctx.closePath(); ctx.fill(); drawLaunchers(W,H); smokePool.forEach(s=>s.update()); smokePool.forEach(s=>s.draw()); for(let i=smokePool.length-1;i>=0;i--) if(smokePool[i].life<=0) smokePool.splice(i,1); if(smokePool.length>400) smokePool.splice(0,smokePool.length-400); }
+  function animate(){ ctx.clearRect(0,0,canvas.width,canvas.height); drawScene(); missiles.forEach(m=>{ m.update(); m.draw(); }); requestAnimationFrame(animate); }
+  animate();
+})();
 </script>
 </body>
 </html>
