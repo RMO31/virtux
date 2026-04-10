@@ -362,21 +362,37 @@ function getAddForm(room) {
   }
 }
 
-// ==================== دوال الإضافة والحذف والتعديل ====================
+// ==================== دوال الإضافة والحذف والتعديل (مع التحقق من وجود العناصر) ====================
 async function addPost(room) {
-  let title = document.getElementById(`title-${room}`)?.value.trim() || '';
-  let url = document.getElementById(`url-${room}`)?.value.trim() || '';
-  let desc = document.getElementById(`desc-${room}`)?.value.trim() || '';
-  let content = document.getElementById(`content-${room}`)?.value.trim() || '';
-  let icon = document.getElementById(`icon-${room}`)?.value || '';
-  let tag = document.getElementById(`tag-${room}`)?.value || room;
-  let imgData = document.getElementById(`icon-${room}`)?._imgData || '';
+  // الحصول على العناصر مع التحقق من وجودها
+  const titleEl = document.getElementById(`title-${room}`);
+  const urlEl = document.getElementById(`url-${room}`);
+  const descEl = document.getElementById(`desc-${room}`);
+  const contentEl = document.getElementById(`content-${room}`);
+  const iconEl = document.getElementById(`icon-${room}`);
+  const tagEl = document.getElementById(`tag-${room}`);
+
+  // التحقق من وجود العناصر الأساسية (خاصة في Highlights)
+  if (!titleEl || !urlEl || !descEl || !contentEl || !iconEl || !tagEl) {
+    showError(room, '❌ خطأ في النموذج: بعض الحقول مفقودة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+    return;
+  }
+
+  let title = titleEl.value.trim();
+  let url = urlEl.value.trim();
+  let desc = descEl.value.trim();
+  let content = contentEl.value.trim();
+  let icon = iconEl.value;
+  let tag = tagEl.value;
+
+  let imgData = iconEl._imgData || '';
   if (imgData) icon = imgData;
-  
+
   // منع النشر في Highlights إذا لم يوجد فيديو أو صورة
   if (room === 'highlights') {
-    let hasVideo = url && (url.match(/\.(mp4|webm)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-    let hasPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    const hasVideo = url && (url.match(/\.(mp4|webm)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+    const hasPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    
     if (!hasVideo && !hasPhoto) {
       showError(room, '❌ يجب رفع صورة أو فيديو على الأقل قبل النشر!');
       return;
@@ -390,44 +406,55 @@ async function addPost(room) {
   } else {
     if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
   }
+
   if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : '📄 منشور';
-  
-  let body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
-  let btn = document.querySelector(`#ap-${room} .btn-pub`);
+
+  const body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
+  const btn = document.querySelector(`#ap-${room} .btn-pub`);
   if (btn) btn.disabled = true;
+
   try {
-    let { error } = await supabaseClient.from('posts').insert(body);
+    const { error } = await supabaseClient.from('posts').insert(body);
     if (error) throw error;
-    let okDiv = document.getElementById(`ok-${room}`);
+
+    const okDiv = document.getElementById(`ok-${room}`);
     if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
+
     // تفريغ الحقول
-    document.getElementById(`title-${room}`).value = '';
-    if (document.getElementById(`desc-${room}`)) document.getElementById(`desc-${room}`).value = '';
-    if (document.getElementById(`url-${room}`)) document.getElementById(`url-${room}`).value = '';
-    if (document.getElementById(`icon-${room}`)) document.getElementById(`icon-${room}`).value = '';
-    if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = '';
-    let preview = document.getElementById(`preview-${room}`);
+    titleEl.value = '';
+    if (descEl) descEl.value = '';
+    if (urlEl) urlEl.value = '';
+    if (iconEl) iconEl.value = '';
+    if (contentEl) contentEl.value = '';
+    const preview = document.getElementById(`preview-${room}`);
     if (preview) { preview.style.display = 'none'; preview.src = ''; }
-    let fileInput = document.getElementById(`imgfile-${room}`);
+    const fileInput = document.getElementById(`imgfile-${room}`);
     if (fileInput) fileInput.value = '';
-    let videoInput = document.getElementById(`videofile-${room}`);
+    const videoInput = document.getElementById(`videofile-${room}`);
     if (videoInput) videoInput.value = '';
+
     loadContentPage(room);
     loadDashboard();
-  } catch(e) { showError(room, e.message); }
-  finally { if (btn) btn.disabled = false; }
+  } catch (e) {
+    showError(room, e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
+
 function showError(room, msg) {
   let er = document.getElementById(`er-${room}`);
   if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); }
   else alert(msg);
 }
+
 async function deletePost(id, room) {
   if (!confirm('حذف المنشور؟')) return;
   await supabaseClient.from('posts').delete().eq('id', id);
   loadContentPage(room);
   loadDashboard();
 }
+
 async function openEditModal(id) {
   let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
   if (error) return;
@@ -443,6 +470,7 @@ async function openEditModal(id) {
     <button class="btn-pub" onclick="saveEditPost()">💾 حفظ</button>`;
   document.getElementById('editModal').classList.add('open');
 }
+
 function getTagOptionsForEdit(room, currentTag) {
   let opts = '';
   if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -454,6 +482,7 @@ function getTagOptionsForEdit(room, currentTag) {
   else opts = `<option value="default">عام</option>`;
   return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
 }
+
 async function saveEditPost() {
   if (!currentEditPost) return;
   let updated = {
@@ -499,6 +528,7 @@ async function uploadVideoToBucket(room) {
   } catch(e) { alert('خطأ: ' + e.message); }
   finally { if (btn) btn.disabled = false; }
 }
+
 function previewImg(room) {
   let file = document.getElementById(`imgfile-${room}`).files[0];
   if (!file) return;
