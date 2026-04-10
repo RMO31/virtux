@@ -211,17 +211,16 @@ async function loadDashboard() {
   let container = document.getElementById('content-dashboard');
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    // Try to get users from profiles table
     let { data: users, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
-    // Also check auth for any users not in profiles (shouldn't happen but just in case)
-    if (!users) users = [];
     let total = users?.length || 0;
     let vipCount = users?.filter(u => u.role === 'vip').length || 0;
+    let memberCount = users?.filter(u => u.role === 'member').length || 0;
     let html = `<div class="stats-grid">
       <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">إجمالي المستخدمين</div></div>
       <div class="stat-card"><div class="stat-number">${vipCount}</div><div class="stat-label">VIP</div></div>
-      <div class="stat-card"><div class="stat-number">${total - vipCount}</div><div class="stat-label">عادي</div></div>
+      <div class="stat-card"><div class="stat-number">${memberCount}</div><div class="stat-label">Member</div></div>
+      <div class="stat-card"><div class="stat-number">${total - vipCount - memberCount}</div><div class="stat-label">عادي</div></div>
     </div>`;
     if (users && users.length) {
       html += `<div class="card"><h3>👥 المستخدمون</h3><div class="posts-list">` + users.map(u => `
@@ -234,11 +233,12 @@ async function loadDashboard() {
           </div>
           <div style="display:flex; gap:6px;">
             ${u.role !== 'vip' ? `<button class="btn-edit" onclick="setRole('${u.id}','vip')">👑 VIP</button>` : ''}
+            ${u.role !== 'member' ? `<button class="btn-edit" onclick="setRole('${u.id}','member')">⭐ Member</button>` : ''}
             ${u.role !== 'user' ? `<button class="btn-edit" onclick="setRole('${u.id}','user')">👤 User</button>` : ''}
             <button class="btn-del" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
           </div>
         </div>`).join('') + `</div></div>`;
-    } else html += '<div class="card"><div class="empty">لا يوجد مستخدمون بعد.</div></div>';
+    } else html += '<div class="card"><div class="empty">لا يوجد مستخدمون بعد. تأكد من أن المستخدمين يسجلون دخولهم عبر index.html لإنشاء ملفاتهم الشخصية.</div></div>';
     container.innerHTML = html;
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
@@ -260,9 +260,7 @@ async function loadContentPage(room) {
   try {
     let { data: posts, error } = await supabase.from('posts').select('*').eq('room', room).order('id', { ascending: false });
     if (error) throw error;
-    // بناء نموذج الإضافة
     let addForm = getAddForm(room);
-    // بناء قائمة المنشورات
     let postsHtml = '';
     if (posts && posts.length) {
       postsHtml = `<div class="card"><h3>📋 المنشورات</h3><div class="posts-list">` + posts.map(p => {
@@ -319,7 +317,6 @@ function getAddForm(room) {
   } else if (room === 'yt-lives') {
     return `<div class="card"><h3>➕ إضافة بث مباشر يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث أو قناة"><select id="type-${room}"><option value="single">🔴 بث عادي</option><option value="channel">👑 قناة VIP (أحدث بث)</option></select><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeLive()">➕ إضافة</button></div>`;
   } else {
-    // الأقسام العادية
     let tagOptions = '';
     if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
     else if (room === 'tournaments') tagOptions = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
@@ -348,17 +345,15 @@ async function addPost(room) {
   let imgData = document.getElementById(`icon-${room}`)?._imgData || '';
   if (imgData) icon = imgData;
   
-  // التحقق من عدم الفارغية
+  // منع النشر في Highlights إذا لم يوجد فيديو أو صورة
   if (room === 'highlights') {
-    let tagVal = tag;
     let hasVideo = url && (url.match(/\.(mp4|webm)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
     let hasPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-    // Must have at least video OR image
     if (!hasVideo && !hasPhoto) {
       showError(room, '❌ يجب رفع صورة أو فيديو على الأقل قبل النشر!');
       return;
     }
-    if (tagVal === 'Photo') {
+    if (tag === 'Photo') {
       if (!hasPhoto) { showError(room, '❌ خانة الصورة: يجب رفع صورة أو رابط صورة.'); return; }
       if (hasVideo) { showError(room, '❌ خانة الصورة لا تقبل فيديو! غيّر النوع إلى Video.'); return; }
     } else {
