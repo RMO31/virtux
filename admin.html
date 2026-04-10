@@ -362,11 +362,11 @@ function getAddForm(room) {
   }
 }
 
-// ==================== دوال الإضافة والحذف والتعديل (مع تحسين التحقق) ====================
+// ==================== دوال الإضافة والحذف والتعديل ====================
 async function addPost(room) {
   console.log('addPost called for room:', room);
   
-  // الحصول على العناصر مع التحقق من وجودها
+  // الحصول على العناصر
   const titleEl = document.getElementById(`title-${room}`);
   const urlEl = document.getElementById(`url-${room}`);
   const descEl = document.getElementById(`desc-${room}`);
@@ -374,50 +374,44 @@ async function addPost(room) {
   const iconEl = document.getElementById(`icon-${room}`);
   const tagEl = document.getElementById(`tag-${room}`);
 
-  // دالة مساعدة للحصول على القيمة بأمان (تسمح بالقيم الفارغة)
-  function getSafeValue(el, fieldName) {
-    if (!el) {
-      console.warn(`Element ${fieldName} not found, using empty string`);
-      return '';
-    }
-    if (el.value === undefined) {
-      console.warn(`Element ${fieldName} has no value property, using empty string`);
-      return '';
-    }
+  function getSafeValue(el) {
+    if (!el) return '';
+    if (el.value === undefined) return '';
     return (el.value || '').trim();
   }
 
-  let title = getSafeValue(titleEl, 'title');
-  let url = getSafeValue(urlEl, 'url');
-  let desc = getSafeValue(descEl, 'desc');
-  let content = getSafeValue(contentEl, 'content');
-  let icon = getSafeValue(iconEl, 'icon');
+  let title = getSafeValue(titleEl);
+  let url = getSafeValue(urlEl);
+  let desc = getSafeValue(descEl);
+  let content = getSafeValue(contentEl);
+  let icon = getSafeValue(iconEl);
   let tag = tagEl ? (tagEl.value || room) : room;
-
-  console.log('Form values:', { title, url, desc, content, icon: icon?.substring(0,30), tag });
 
   // إذا كان هناك صورة مرفوعة (بيانات base64)
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
 
-  // منع النشر في Highlights إذا لم يوجد فيديو أو صورة
+  // معالجة خاصة لقسم Highlights
   if (room === 'highlights') {
     const isVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
     const isPhoto = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
     
-    console.log('Highlights validation:', { isVideo, isPhoto, tag });
-    
-    if (!isVideo && !isPhoto) {
-      showError(room, '❌ يجب رفع صورة أو فيديو على الأقل قبل النشر!');
-      return;
-    }
+    // التحقق حسب نوع الوسم
     if (tag === 'Photo') {
-      if (!isPhoto) { showError(room, '❌ خانة الصورة: يجب رفع صورة أو رابط صورة.'); return; }
-      if (isVideo) { showError(room, '❌ خانة الصورة لا تقبل فيديو! غيّر النوع إلى Video.'); return; }
+      // يجب وجود صورة فقط
+      if (!isPhoto) {
+        showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.');
+        return;
+      }
     } else {
-      if (!isVideo) { showError(room, '❌ خانة الفيديو: يجب رفع فيديو أو رابط يوتيوب.'); return; }
+      // Pro, Tournament, Video - يجب وجود فيديو
+      if (!isVideo) {
+        showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب أو رابط فيديو صالح.');
+        return;
+      }
     }
   } else {
+    // الأقسام الأخرى
     if (!title && !url && !icon) {
       showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.');
       return;
@@ -437,7 +431,7 @@ async function addPost(room) {
     const okDiv = document.getElementById(`ok-${room}`);
     if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
 
-    // تفريغ الحقول (اختياري)
+    // تفريغ الحقول
     if (titleEl) titleEl.value = '';
     if (descEl) descEl.value = '';
     if (urlEl) urlEl.value = '';
@@ -519,7 +513,7 @@ async function saveEditPost() {
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// ==================== رفع فيديو يدعم جميع الصيغ ====================
+// ==================== رفع فيديو ====================
 async function uploadVideoToBucket(room) {
   let fileInput = document.getElementById(`videofile-${room}`);
   let file = fileInput?.files[0];
