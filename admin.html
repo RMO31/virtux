@@ -2,10 +2,10 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* نفس الأنماط السابقة مع إضافة تحسينات بسيطة */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh}
     #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh}
@@ -25,15 +25,13 @@
     .conn.fail{background:#3d0f0f;color:#f55;border-color:#6e0f0f}
     .btn-logout{background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer}
     .btn-logout:hover{background:#f55;color:#fff}
-    .body{display:flex;flex:1;height:calc(100vh - 46px)}
+    .body{display:flex;flex:1;overflow:hidden}
     .sidebar{width:190px;background:#050c2e;border-right:1px solid #1e2d6b;padding:12px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
     .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left}
     .sb-btn:hover,.sb-btn.active{background:#1a2d80;color:#d4e800}
     .sb-btn.active{border-left:3px solid #d4e800}
     .sb-sec{font-size:10px;color:#556;text-transform:uppercase;letter-spacing:1px;padding:10px 12px 3px}
     .main{flex:1;padding:20px;overflow-y:auto;background:#01042e}
-    .ap{display:none}
-    .ap.active{display:block}
     .page-title{font-size:18px;color:#d4e800;font-weight:700;margin-bottom:16px}
     .card{background:#050e30;border:1px solid #1e2d6b;border-radius:12px;padding:18px;margin-bottom:18px}
     .card h3{color:#9fb000;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
@@ -66,7 +64,6 @@
     .btn-del:hover{background:#f55;color:#fff}
     .empty{text-align:center;color:#445;padding:30px;font-size:13px}
     .loading{text-align:center;color:#667;padding:20px;font-size:13px}
-    
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,4,0.85);z-index:1000;align-items:center;justify-content:center}
     .modal-overlay.open{display:flex}
     .modal-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto}
@@ -115,17 +112,7 @@
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Projects</button>
     </div>
-
-    <div class="main">
-      <div class="ap active" id="ap-dashboard">
-        <div class="page-title">📊 Dashboard</div>
-        <div class="stats-grid" id="visitor-stats"></div>
-        <div class="card">
-          <h3>👥 المستخدمون المسجلون</h3>
-          <div id="registered-users-list" class="posts-list"><div class="loading">جاري التحميل...</div></div>
-        </div>
-      </div>
-    </div>
+    <div class="main" id="mainContainer"></div>
   </div>
 </div>
 
@@ -137,29 +124,25 @@
 </div>
 
 <script>
+// ==================== إعدادات ====================
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const ADMIN_PASSWORD = 'virtux2025';
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m] || m);
-}
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m] || m); }
+
+let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentEditPost = null;
 
 // ==================== تسجيل الدخول ====================
 async function checkConn() {
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?limit=1`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    const el = document.getElementById('connStatus');
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/posts?limit=1`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+    let el = document.getElementById('connStatus');
     if (res.ok) { el.textContent = '✅ متصل'; el.className = 'conn'; }
-    else { el.textContent = '❌ خطأ ' + res.status; el.className = 'conn fail'; }
-  } catch(e) {
-    document.getElementById('connStatus').textContent = '❌ لا إنترنت';
-    document.getElementById('connStatus').className = 'conn fail';
-  }
+    else { el.textContent = '❌ خطأ'; el.className = 'conn fail'; }
+  } catch(e) { document.getElementById('connStatus').textContent = '❌ لا إنترنت'; document.getElementById('connStatus').className = 'conn fail'; }
 }
 
 function login() {
@@ -169,189 +152,242 @@ function login() {
     checkConn();
     loadDashboard();
     buildPages();
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-  }
+  } else { document.getElementById('loginErr').style.display = 'block'; }
 }
+function logout() { window.location.reload(); }
 
-function logout() {
-  document.getElementById('loginPage').style.display = 'flex';
-  document.getElementById('adminPage').style.display = 'none';
-  document.getElementById('pw').value = '';
-}
-
-// ==================== بناء الأقسام ====================
-let currentEditPost = null;
-
+// ==================== بناء الصفحات ====================
 function buildPages() {
-  const mainContainer = document.querySelector('.main');
-  const existing = document.querySelectorAll('.ap:not(#ap-dashboard)');
-  existing.forEach(el => el.remove());
-  
-  const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects'];
-  const roomLabels = {
-    live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights', subscribers:'👥 Subscribers',
-    'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News', 'yt-channels':'📺 Youtube Channels',
-    'yt-videos':'🎬 Youtube Videos', 'yt-lives':'🔴 Youtube Lives', projects:'🌐 Projects'
+  let main = document.getElementById('mainContainer');
+  main.innerHTML = '';
+  let rooms = ['dashboard', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects', 'contact'];
+  let roomLabels = {
+    dashboard:'📊 Dashboard', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
+    subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
+    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos', 'yt-lives':'🔴 Youtube Lives',
+    projects:'🌐 Projects', contact:'📞 Contact'
   };
-  
   rooms.forEach(room => {
-    const ap = document.createElement('div');
-    ap.className = 'ap';
-    ap.id = `ap-${room}`;
-    
-    let formHtml = '';
-    if (room === 'subscribers') {
-      formHtml = `
-        <div class="card"><h3>🔔 إضافة Youtuber / Youtuber VIP (برابط)</h3>
-          <div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div>
-          <div class="fg"><input class="full" id="${room}-url" placeholder="رابط قناة يوتيوب"><select id="${room}-tag"><option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 Youtuber VIP</option></select><textarea class="full" id="${room}-content" placeholder="وصف إضافي" rows="2"></textarea></div>
-          <button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button>
-        </div>
-        <div class="card"><h3>⭐ إضافة Member / Donor / Collaboration (من المستخدمين)</h3>
-          <div class="ok" id="ok-sub-user">✅ تمت الإضافة!</div><div class="er" id="er-sub-user"></div>
-          <div class="fg"><input class="full" id="sub-user-search" placeholder="ابحث باسم المستخدم..." oninput="searchUsers(this.value)"><div class="full" id="user-search-results" style="background:#0a1540;border:1px solid #1e2d6b;border-radius:7px;max-height:180px;overflow-y:auto;display:none;"></div><input class="full" id="sub-user-selected" placeholder="المستخدم المختار..." readonly><input type="hidden" id="sub-user-id"><select id="sub-user-role" class="full"><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option><option value="Collaboration">🌐 Collaboration</option></select></div>
-          <button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة</button>
-        </div>
-      `;
-    } else if (room === 'yt-channels') {
-      formHtml = `<div class="card"><h3>➕ إضافة قناة يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="${room}-url" placeholder="رابط قناة يوتيوب"><select id="${room}-tag"><option value="Channel">📺 Channel</option></select><textarea class="full" id="${room}-content" placeholder="وصف إضافي" rows="3"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
-    } else if (room === 'yt-videos') {
-      formHtml = `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="${room}-url" placeholder="رابط فيديو أو قناة"><select id="${room}-type" class="full"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="${room}-tag"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="${room}-content" placeholder="وصف إضافي" rows="3"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
-    } else if (room === 'yt-lives') {
-      formHtml = `<div class="card"><h3>➕ إضافة بث مباشر يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="${room}-url" placeholder="رابط بث أو قناة"><select id="${room}-type" class="full"><option value="single">🔴 بث عادي</option><option value="channel">👑 قناة VIP (أحدث بث)</option></select><select id="${room}-tag"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="${room}-content" placeholder="وصف إضافي" rows="3"></textarea></div><button class="btn-pub" onclick="addYouTubeLive()">➕ إضافة</button></div>`;
-    } else {
-      const hasVideoUpload = (room === 'highlights');
-      formHtml = `<div class="card"><h3>➕ إضافة منشور</h3>
-        <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-        <div class="fg"><input class="full" id="${room}-title" placeholder="العنوان"><input id="${room}-desc" placeholder="وصف قصير"><div class="img-upload full"><input type="file" id="${room}-imgfile" accept="image/*" onchange="previewImg('${room}')"><label for="${room}-imgfile">📁 رفع صورة</label><input type="text" id="${room}-icon" placeholder="رمز تعبيري"><img id="${room}-imgpreview" class="img-preview" src=""></div>${hasVideoUpload ? `<div class="img-upload full"><input type="file" id="${room}-videofile" accept="video/mp4,video/webm" onchange="uploadVideoToBucket('${room}')"><label for="${room}-videofile">🎥 رفع فيديو (سيتم جلب العنوان تلقائياً)</label></div>` : ''}<select id="${room}-tag">${getTagOptions(room)}</select><input class="full" id="${room}-url" placeholder="رابط (اختياري)"><textarea class="full" id="${room}-content" placeholder="محتوى طويل" rows="4"></textarea></div>
-        <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-      </div>`;
-    }
-    
-    ap.innerHTML = `<div class="page-title">${roomLabels[room]}</div>${formHtml}<div class="card"><h3>📋 المنشورات</h3><div id="list-${room}" class="posts-list"><div class="loading">جاري التحميل...</div></div></div>`;
-    mainContainer.appendChild(ap);
+    let div = document.createElement('div');
+    div.className = 'ap';
+    div.id = `ap-${room}`;
+    if (room === 'dashboard') div.classList.add('active');
+    div.innerHTML = `<div class="page-title">${roomLabels[room]}</div><div id="content-${room}">جاري التحميل...</div>`;
+    main.appendChild(div);
   });
-  
-  const contactAp = document.createElement('div');
-  contactAp.className = 'ap';
-  contactAp.id = 'ap-contact';
-  contactAp.innerHTML = `<div class="page-title">📞 Contact</div><div class="card"><h3>معلومات الاتصال</h3><p>سيتم إضافتها لاحقاً</p></div>`;
-  mainContainer.appendChild(contactAp);
+  loadDashboard(); // fill dashboard content
+  // fill other pages on demand
 }
 
-function getTagOptions(room) {
-  if (room === 'live') return `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
-  if (room === 'tournaments') return `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-  if (room === 'highlights') return `<option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option>`;
-  if (room === 'gaming-news') return `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
-  if (room === 'youtube-news') return `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
-  if (room === 'projects') return `<option value="Project">🌐 مشروع</option>`;
-  return `<option value="default">عام</option>`;
+function showPage(id) {
+  document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
+  let target = document.getElementById(`ap-${id}`);
+  if (target) target.classList.add('active');
+  let btn = document.getElementById(`sb-${id}`);
+  if (btn) btn.classList.add('active');
+  if (id === 'dashboard') loadDashboard();
+  else loadPostsPage(id);
 }
 
-// ==================== تحميل وعرض المنشورات ====================
-async function loadPosts(room) {
-  const container = document.getElementById(`list-${room}`);
+// ==================== Dashboard ====================
+async function loadDashboard() {
+  let container = document.getElementById('content-dashboard');
   if (!container) return;
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?room=eq.${room}&order=id.desc`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) {
-      container.innerHTML = '<div class="empty">لا توجد منشورات.</div>';
-      return;
-    }
-    container.innerHTML = data.map(p => {
-      let mediaHtml = '';
-      const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
-      const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-      
-      if (isLocalVideo) {
-        mediaHtml = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
-      } else if (isYouTube) {
-        const videoId = p.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/)?.[1];
-        if (videoId) {
-          mediaHtml = `<img src="https://img.youtube.com/vi/${videoId}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">`;
-        } else {
-          mediaHtml = `<div class="pi-icon">${p.icon || '📹'}</div>`;
-        }
-      } else {
-        let iconHtml = p.icon;
-        if (iconHtml && (iconHtml.startsWith('data:') || iconHtml.startsWith('http'))) {
-          mediaHtml = `<img src="${iconHtml}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
-        } else {
-          mediaHtml = `<div class="pi-icon">${iconHtml || '📄'}</div>`;
-        }
-      }
-      
-      return `<div class="pi" id="pi-${p.id}">
-        <div style="width:80px; flex-shrink:0;">${mediaHtml}</div>
-        <div class="pi-info">
-          <div class="pi-title">${escapeHtml(p.title)}</div>
-          <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
-          <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
-        </div>
-        <div style="display:flex; gap:6px;">
-          <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
-          <button class="btn-del" onclick="deletePost(${p.id}, '${p.room}')">🗑️ حذف</button>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    console.error(e);
-    container.innerHTML = '<div class="empty">خطأ في التحميل</div>';
-  }
+    // visitor stats (optional)
+    let statsHtml = `<div class="stats-grid"><div class="stat-card"><div class="stat-number">-</div><div class="stat-label">زوار اليوم</div></div><div class="stat-card"><div class="stat-number">-</div><div class="stat-label">إجمالي الزوار</div></div></div>`;
+    // users list
+    let usersRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?order=created_at.desc`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+    let users = await usersRes.json();
+    let usersHtml = '<div class="card"><h3>👥 المستخدمون المسجلون</h3>';
+    if (Array.isArray(users) && users.length) {
+      usersHtml += `<div class="posts-list">` + users.map(u => `<div class="pi"><div class="pi-icon">👤</div><div class="pi-info"><div class="pi-title">${escapeHtml(u.username || u.email)}</div><div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div><span class="pi-tag">${u.role?.toUpperCase() || 'USER'}</span></div><div><button class="btn-edit" onclick="setRole('${u.id}','vip')">VIP</button> <button class="btn-del" onclick="deleteUser('${u.id}')">حذف</button></div></div>`).join('') + `</div>`;
+    } else usersHtml += '<div class="empty">لا يوجد مستخدمون بعد.</div>';
+    usersHtml += '</div>';
+    container.innerHTML = statsHtml + usersHtml;
+  } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; }
+}
+async function setRole(userId, role) {
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, { method: 'PATCH', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) });
+  loadDashboard();
+}
+async function deleteUser(userId) {
+  if (!confirm('حذف المستخدم؟')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, { method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+  loadDashboard();
 }
 
-async function deletePost(id, room) {
-  if (!confirm('هل تريد حذف هذا المنشور نهائياً؟')) return;
+// ==================== تحميل وعرض المنشورات مع نموذج إضافة ====================
+async function loadPostsPage(room) {
+  let container = document.getElementById(`content-${room}`);
+  if (!container) return;
+  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
+    // جلب المنشورات
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/posts?room=eq.${room}&order=id.desc`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+    let posts = await res.json();
+    let postsHtml = '';
+    if (Array.isArray(posts) && posts.length) {
+      postsHtml = `<div class="card"><h3>📋 المنشورات</h3><div class="posts-list">` + posts.map(p => {
+        let media = '';
+        if (p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'))) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
+        else if (p.url && p.url.includes('youtube.com')) media = `<img src="https://img.youtube.com/vi/${p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]}/default.jpg" style="width:80px; height:60px; object-fit:cover;">`;
+        else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
+        return `<div class="pi" id="pi-${p.id}"><div style="width:80px;">${media}</div><div class="pi-info"><div class="pi-title">${escapeHtml(p.title)}</div><div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div><span class="pi-tag">${escapeHtml(p.tag||p.room)}</span></div><div><button class="btn-edit" onclick="openEditModal(${p.id})">تعديل</button> <button class="btn-del" onclick="deletePost(${p.id},'${room}')">حذف</button></div></div>`;
+      }).join('') + `</div></div>`;
+    } else postsHtml = '<div class="empty">لا توجد منشورات.</div>';
+    
+    // نموذج الإضافة حسب نوع القسم
+    let formHtml = '';
+    if (room === 'highlights') {
+      formHtml = `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div><div class="img-upload full"><input type="file" id="videofile-${room}" accept="video/mp4,video/webm" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div><select id="tag-${room}"><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option></select><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+    } else if (room === 'live' || room === 'tournaments' || room === 'gaming-news' || room === 'youtube-news' || room === 'projects') {
+      formHtml = `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}">${getTagOptions(room)}</select><input class="full" id="url-${room}" placeholder="رابط"><textarea class="full" id="content-${room}" placeholder="محتوى طويل" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+    } else if (room === 'subscribers') {
+      formHtml = `<div class="card"><h3>➕ إضافة Youtuber (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب"><select id="tag-${room}"><option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div><div class="card"><h3>⭐ إضافة Member/Donor (من المستخدمين)</h3><div class="ok" id="ok-sub-user">✅ تمت!</div><div class="er" id="er-sub-user"></div><div class="fg"><input class="full" id="sub-user-search" placeholder="ابحث باسم المستخدم..." oninput="searchUsers(this.value)"><div class="full" id="user-search-results" style="background:#0a1540;border:1px solid #1e2d6b;border-radius:7px;max-height:180px;overflow-y:auto;display:none;"></div><input class="full" id="sub-user-selected" placeholder="المستخدم المختار..." readonly><input type="hidden" id="sub-user-id"><select id="sub-user-role"><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option></select></div><button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة</button></div>`;
+    } else if (room === 'yt-channels') {
+      formHtml = `<div class="card"><h3>➕ إضافة قناة يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة"><select id="tag-${room}"><option value="Channel">📺 Channel</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
+    } else if (room === 'yt-videos') {
+      formHtml = `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
+    } else if (room === 'yt-lives') {
+      formHtml = `<div class="card"><h3>➕ إضافة بث مباشر يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث أو قناة"><select id="type-${room}"><option value="single">🔴 بث عادي</option><option value="channel">👑 قناة VIP (أحدث بث)</option></select><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeLive('${room}')">➕ إضافة</button></div>`;
+    } else if (room === 'projects') {
+      formHtml = `<div class="card"><h3>➕ إضافة مشروع</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="اسم المشروع"><input id="desc-${room}" placeholder="وصف قصير"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}"><option value="Project">🌐 مشروع</option></select><input class="full" id="url-${room}" placeholder="رابط"><textarea class="full" id="content-${room}" placeholder="تفاصيل" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+    } else {
+      formHtml = `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}">${getTagOptions(room)}</select><input class="full" id="url-${room}" placeholder="رابط"><textarea class="full" id="content-${room}" placeholder="محتوى طويل" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+    }
+    container.innerHTML = formHtml + postsHtml;
+  } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; }
+}
+function getTagOptions(room) {
+  if (room === 'live') return `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
+  if (room === 'tournaments') return `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+  if (room === 'gaming-news') return `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
+  if (room === 'youtube-news') return `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
+  return `<option value="default">عام</option>`;
+}
+
+// ==================== إضافة منشور ====================
+async function addPost(room) {
+  let title = document.getElementById(`title-${room}`)?.value.trim() || '';
+  let url = document.getElementById(`url-${room}`)?.value.trim() || '';
+  let desc = document.getElementById(`desc-${room}`)?.value.trim() || '';
+  let content = document.getElementById(`content-${room}`)?.value.trim() || '';
+  let icon = document.getElementById(`icon-${room}`)?.value || '';
+  let tag = document.getElementById(`tag-${room}`)?.value || room;
+  let imgData = document.getElementById(`icon-${room}`)?._imgData || '';
+  if (imgData) icon = imgData;
+  
+  // التحقق من عدم الفارغية
+  if (room === 'highlights') {
+    let tagVal = tag;
+    let hasVideo = url && (url.match(/\.(mp4|webm)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+    let hasPhoto = icon && (icon.startsWith('data:') || icon.startsWith('http')) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    if (tagVal === 'Photo') { if (!hasPhoto) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+    else { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+  } else {
+    if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
+  }
+  if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : '📄 منشور';
+  
+  let body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
+  let btn = document.querySelector(`#ap-${room} .btn-pub`);
+  if (btn) btn.disabled = true;
+  try {
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/posts`, { method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (res.ok) {
-      document.getElementById(`pi-${id}`)?.remove();
-      loadPosts(room);
+      document.getElementById(`ok-${room}`).style.display = 'block';
+      setTimeout(() => document.getElementById(`ok-${room}`).style.display = 'none', 2000);
+      // تفريغ الحقول
+      if (document.getElementById(`title-${room}`)) document.getElementById(`title-${room}`).value = '';
+      if (document.getElementById(`desc-${room}`)) document.getElementById(`desc-${room}`).value = '';
+      if (document.getElementById(`url-${room}`)) document.getElementById(`url-${room}`).value = '';
+      if (document.getElementById(`icon-${room}`)) document.getElementById(`icon-${room}`).value = '';
+      if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = '';
+      let preview = document.getElementById(`preview-${room}`);
+      if (preview) { preview.style.display = 'none'; preview.src = ''; }
+      let fileInput = document.getElementById(`imgfile-${room}`);
+      if (fileInput) fileInput.value = '';
+      let videoInput = document.getElementById(`videofile-${room}`);
+      if (videoInput) videoInput.value = '';
+      loadPostsPage(room);
       loadDashboard();
-    } else alert('فشل الحذف');
-  } catch(e) { alert('خطأ في الحذف'); }
+    } else showError(room, 'فشل النشر');
+  } catch(e) { showError(room, e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+function showError(room, msg) {
+  let er = document.getElementById(`er-${room}`);
+  if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); }
+  else alert(msg);
+}
+
+// ==================== رفع فيديو ====================
+async function uploadVideoToBucket(room) {
+  let fileInput = document.getElementById(`videofile-${room}`);
+  let file = fileInput?.files[0];
+  if (!file) return;
+  let fileName = Date.now() + '_' + file.name;
+  let filePath = `highlights/${fileName}`;
+  let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
+  let btn = document.querySelector(`#ap-${room} .btn-pub`);
+  if (btn) btn.disabled = true;
+  try {
+    let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
+    if (res.ok) {
+      let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
+      document.getElementById(`url-${room}`).value = publicUrl;
+      // تعبئة العنوان من اسم الملف
+      let titleField = document.getElementById(`title-${room}`);
+      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      alert('✅ تم رفع الفيديو! تم تعبئة الرابط تلقائياً.');
+    } else { alert('فشل الرفع: تأكد من وجود bucket "videos" في Supabase وجعله عاماً.'); }
+  } catch(e) { alert('خطأ في الرفع: ' + e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+function previewImg(room) {
+  let file = document.getElementById(`imgfile-${room}`).files[0];
+  if (!file) return;
+  let reader = new FileReader();
+  reader.onload = e => {
+    let preview = document.getElementById(`preview-${room}`);
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    let iconField = document.getElementById(`icon-${room}`);
+    iconField.value = '🖼️';
+    iconField._imgData = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==================== حذف منشور ====================
+async function deletePost(id, room) {
+  if (!confirm('حذف المنشور؟')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, { method: 'DELETE', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+  loadPostsPage(room);
+  loadDashboard();
 }
 
 // ==================== تعديل منشور ====================
 async function openEditModal(id) {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    const data = await res.json();
-    if (!data || data.length === 0) return;
-    currentEditPost = data[0];
-    const modalBody = document.getElementById('editModalBody');
-    modalBody.innerHTML = `
-      <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(currentEditPost.title)}"></div>
-      <div class="fg"><input id="edit-desc" placeholder="وصف قصير" value="${escapeHtml(currentEditPost.description||'')}"></div>
-      <div class="fg"><input id="edit-icon" placeholder="رمز تعبيري أو رابط صورة" value="${escapeHtml(currentEditPost.icon||'')}"></div>
-      <div class="fg"><input class="full" id="edit-url" placeholder="رابط" value="${escapeHtml(currentEditPost.url||'')}"></div>
-      <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(currentEditPost.room, currentEditPost.tag)}</select></div>
-      <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(currentEditPost.content||'')}</textarea></div>
-      <button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button>
-    `;
-    document.getElementById('editModal').classList.add('open');
-  } catch(e) { alert('خطأ في تحميل البيانات'); }
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+  let data = await res.json();
+  let post = data[0];
+  if (!post) return;
+  currentEditPost = post;
+  let modalBody = document.getElementById('editModalBody');
+  modalBody.innerHTML = `<div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(post.title)}"></div><div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(post.description||'')}"></div><div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة" value="${escapeHtml(post.icon||'')}"></div><div class="fg"><input class="full" id="edit-url" placeholder="رابط" value="${escapeHtml(post.url||'')}"></div><div class="fg"><select id="edit-tag">${getTagOptionsForEdit(post.room, post.tag)}</select></div><div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى" rows="5">${escapeHtml(post.content||'')}</textarea></div><button class="btn-pub" onclick="saveEditPost()">💾 حفظ</button>`;
+  document.getElementById('editModal').classList.add('open');
 }
-
 function getTagOptionsForEdit(room, currentTag) {
-  const options = getTagOptions(room);
-  return options.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
+  let opts = getTagOptions(room);
+  return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
 }
-
 async function saveEditPost() {
   if (!currentEditPost) return;
-  const updated = {
+  let updated = {
     title: document.getElementById('edit-title').value,
     description: document.getElementById('edit-desc').value,
     icon: document.getElementById('edit-icon').value,
@@ -359,216 +395,118 @@ async function saveEditPost() {
     tag: document.getElementById('edit-tag').value,
     content: document.getElementById('edit-content').value
   };
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${currentEditPost.id}`, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
-    });
-    if (res.ok) {
-      closeEditModal();
-      loadPosts(currentEditPost.room);
-      loadDashboard();
-    } else alert('فشل التعديل');
-  } catch(e) { alert('خطأ في التعديل'); }
+  await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${currentEditPost.id}`, { method: 'PATCH', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+  closeEditModal();
+  loadPostsPage(currentEditPost.room);
+  loadDashboard();
 }
+function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-function closeEditModal() {
-  document.getElementById('editModal').classList.remove('open');
-  currentEditPost = null;
+// ==================== دوال يوتيوب ====================
+async function fetchYouTubeChannelInfo(url) {
+  let handle = url.split('@')[1]?.split(/[\/?]/)[0];
+  if (!handle) return null;
+  let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+  let res = await fetch(apiUrl);
+  let data = await res.json();
+  if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url };
+  return null;
 }
-
-// ==================== إضافة منشور مع منع النشر الفارغ (في جميع الأقسام) ====================
-async function addPost(room) {
-  const title = document.getElementById(`${room}-title`)?.value.trim() || '';
-  const url = document.getElementById(`${room}-url`)?.value.trim() || '';
-  const description = document.getElementById(`${room}-desc`)?.value.trim() || '';
-  const content = document.getElementById(`${room}-content`)?.value.trim() || '';
-  const iconEl = document.getElementById(`${room}-icon`);
-  const icon = iconEl ? (iconEl._imgData || iconEl.value || '') : '';
-  const hasImage = icon && (icon.startsWith('data:') || icon.startsWith('http'));
-  const hasVideo = url && (url.match(/\.(mp4|webm)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-  
-  let isValid = false;
-  let errorMsg = '';
-  
-  if (room === 'highlights') {
-    // في Highlights: يجب وجود فيديو أو صورة (حسب نوع الوسم)
-    const tag = document.getElementById(`${room}-tag`)?.value;
-    if (tag === 'Photo') {
-      if (hasImage || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i))) {
-        isValid = true;
-      } else {
-        errorMsg = '❌ في قسم الصور، يجب رفع صورة أو إضافة رابط صورة.';
-      }
-    } else {
-      // Video, Pro, Tournament: يجب وجود فيديو
-      if (hasVideo) {
-        isValid = true;
-      } else {
-        errorMsg = '❌ في قسم الفيديو، يجب رفع فيديو أو إضافة رابط يوتيوب صالح.';
-      }
-    }
-  } 
-  else if (room === 'subscribers' || room === 'yt-channels' || room === 'yt-videos' || room === 'yt-lives') {
-    // الأقسام التي تعتمد على الرابط
-    if (url) isValid = true;
-    else errorMsg = '❌ يجب إدخال رابط صالح (يوتيوب أو قناة).';
-  }
-  else {
-    // الأقسام العادية: يتطلب عنوان أو رابط أو صورة أو محتوى
-    if (title || url || hasImage || content) {
-      isValid = true;
-    } else {
-      errorMsg = '❌ المنشور فارغ. الرجاء إدخال عنوان أو رابط أو صورة أو محتوى.';
-    }
-  }
-  
-  if (!isValid) {
-    const erDiv = document.getElementById(`er-${room}`);
-    if (erDiv) {
-      erDiv.textContent = errorMsg;
-      erDiv.style.display = 'block';
-      setTimeout(() => erDiv.style.display = 'none', 5000);
-    } else alert(errorMsg);
-    return;
-  }
-  
-  // إذا كان هناك عنوان فارغ ولكن يوجد محتوى، نعطي عنواناً افتراضياً
-  let finalTitle = title;
-  if (!finalTitle && (url || hasImage || content)) {
-    finalTitle = room === 'highlights' ? '🎬 مقطع فيديو' : '📄 منشور';
-    const titleInput = document.getElementById(`${room}-title`);
-    if (titleInput) titleInput.value = finalTitle;
-  }
-  
-  const tag = document.getElementById(`${room}-tag`)?.value || room;
-  const body = { title: finalTitle, description, icon: icon || '📄', url, tag, room, content };
-  const btn = document.querySelector(`#ap-${room} .btn-pub`);
-  if (btn) { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
-  
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify(body)
-    });
-    if (res.ok) {
-      // تفريغ الحقول
-      if (document.getElementById(`${room}-title`)) document.getElementById(`${room}-title`).value = '';
-      if (document.getElementById(`${room}-desc`)) document.getElementById(`${room}-desc`).value = '';
-      if (document.getElementById(`${room}-icon`)) document.getElementById(`${room}-icon`).value = '';
-      if (document.getElementById(`${room}-url`)) document.getElementById(`${room}-url`).value = '';
-      if (document.getElementById(`${room}-content`)) document.getElementById(`${room}-content`).value = '';
-      const preview = document.getElementById(`${room}-imgpreview`);
-      if (preview) { preview.style.display = 'none'; preview.src = ''; }
-      const fileInput = document.getElementById(`${room}-imgfile`);
-      if (fileInput) fileInput.value = '';
-      const videoInput = document.getElementById(`${room}-videofile`);
-      if (videoInput) videoInput.value = '';
-      const okDiv = document.getElementById(`ok-${room}`);
-      if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 3000); }
-      loadPosts(room);
-      loadDashboard();
-    } else {
-      const err = await res.json();
-      const erDiv = document.getElementById(`er-${room}`);
-      if (erDiv) { erDiv.textContent = '❌ ' + (err.message || err.hint || 'خطأ'); erDiv.style.display = 'block'; setTimeout(() => erDiv.style.display = 'none', 5000); }
-    }
-  } catch(e) {
-    const erDiv = document.getElementById(`er-${room}`);
-    if (erDiv) { erDiv.textContent = '❌ خطأ في الاتصال: ' + e.message; erDiv.style.display = 'block'; setTimeout(() => erDiv.style.display = 'none', 5000); }
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '➕ نشر'; }
-  }
+async function addYouTubeChannel(room) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { alert('أدخل رابط القناة'); return; }
+  let info = await fetchYouTubeChannelInfo(url);
+  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
+  let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() };
+  await fetch(`${SUPABASE_URL}/rest/v1/posts`, { method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  loadPostsPage(room);
 }
-
-// ==================== رفع الفيديو إلى Supabase bucket مع تحسينات ====================
-async function uploadVideoToBucket(room) {
-  const fileInput = document.getElementById(`${room}-videofile`);
-  const file = fileInput?.files[0];
-  if (!file) return;
-  
-  // التحقق من وجود bucket قبل الرفع
-  try {
-    const checkBucket = await fetch(`${SUPABASE_URL}/storage/v1/bucket/videos`, {
-      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-    if (!checkBucket.ok) {
-      alert('⚠️ Bucket "videos" غير موجود. يرجى إنشاؤه في Supabase (Storage → New bucket → name: videos, Public: ON) ثم المحاولة مرة أخرى.');
-      return;
-    }
-  } catch(e) {
-    alert('⚠️ لا يمكن الوصول إلى bucket "videos". تأكد من وجوده في Supabase وأنه عام (public).');
-    return;
-  }
-  
-  const fullName = file.name;
-  const dotIndex = fullName.lastIndexOf('.');
-  let baseName = fullName;
-  if (dotIndex > 0) baseName = fullName.substring(0, dotIndex);
-  const titleField = document.getElementById(`${room}-title`);
-  if (titleField && titleField.value.trim() === '') titleField.value = baseName;
-  
-  const fileName = Date.now() + '_' + file.name;
-  const filePath = `highlights/${fileName}`;
-  const uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
-  const btn = document.querySelector(`#ap-${room} .btn-pub`);
-  if (btn) btn.disabled = true;
-  
-  try {
-    const res = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
-      body: file
-    });
-    if (res.ok) {
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
-      const urlField = document.getElementById(`${room}-url`);
-      if (urlField) {
-        urlField.value = publicUrl;
-        alert('✅ تم رفع الفيديو بنجاح! تم تعبئة رابط الفيديو تلقائياً.');
-      }
-    } else {
-      const errText = await res.text();
-      if (errText.includes('bucket not found') || res.status === 400) {
-        alert('⚠️ فشل الرفع: تأكد من وجود bucket باسم "videos" في مشروع Supabase وأنه عام (public).\n\nيمكنك إنشاؤه من Supabase Dashboard → Storage → New bucket (name: videos, Public bucket: ON)');
-      } else {
-        alert('فشل الرفع: ' + errText);
-      }
-    }
-  } catch(e) {
-    alert('خطأ في رفع الفيديو: ' + e.message);
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+async function fetchYouTubeVideoInfo(url) {
+  let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+  if (!vid) return null;
+  let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`;
+  let res = await fetch(apiUrl);
+  let data = await res.json();
+  if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url };
+  return null;
 }
-
-// ==================== دوال يوتيوب وقنوات (مختصرة) ====================
-async function fetchYouTubeChannelInfo(url) { /* نفس الكود السابق */ }
-async function addYouTubeChannel(room) { /* نفس الكود */ }
-async function fetchYouTubeVideoInfo(url) { /* نفس الكود */ }
-async function fetchVideoFromChannel(channelUrl) { /* نفس الكود */ }
-async function addYouTubeVideo(room) { /* نفس الكود */ }
-async function fetchLiveFromChannel(channelUrl) { /* نفس الكود */ }
-async function addYouTubeLive() { /* نفس الكود */ }
-
-// اختصاراً، سأضع دوال يوتيوب كاملة في الملف النهائي (لن أكررها هنا للاختصار، لكنها موجودة في الملف الأصلي وسأضمنها)
-// بما أن المساحة محدودة، سأكمل في الرد التالي الدوال المتبقية.
-
-// ==================== بقية الدوال (Dashboard, مستخدمين, بحث) ====================
-async function loadDashboard() { /* نفس الكود السابق */ }
-async function setRole(userId, role) { /* نفس */ }
-async function deleteUser(userId) { /* نفس */ }
-async function searchUsers(query) { /* نفس */ }
-function selectUser(id, username) { /* نفس */ }
-async function addUserSubscriber() { /* نفس */ }
-function previewImg(room) { /* نفس */ }
-function showPage(id) { /* نفس */ }
-
-// ربط الدوال
-window.login = login;
-window.logout = logout;
+async function fetchVideoFromChannel(channelUrl) {
+  let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0];
+  if (!handle) return null;
+  let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+  let res = await fetch(apiUrl);
+  let data = await res.json();
+  let channelId = data.items?.[0]?.id;
+  if (!channelId) return null;
+  let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`;
+  let videosRes = await fetch(videosApi);
+  let videosData = await videosRes.json();
+  let video = videosData.items?.[0];
+  if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` };
+  return null;
+}
+async function addYouTubeVideo(room) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { alert('أدخل رابط'); return; }
+  let type = document.getElementById(`type-${room}`).value;
+  let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url);
+  if (!info) { alert('تعذر جلب الفيديو'); return; }
+  let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() };
+  await fetch(`${SUPABASE_URL}/rest/v1/posts`, { method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  loadPostsPage(room);
+}
+async function fetchLiveFromChannel(channelUrl) {
+  let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0];
+  if (!handle) return null;
+  let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+  let res = await fetch(apiUrl);
+  let data = await res.json();
+  let channelId = data.items?.[0]?.id;
+  if (!channelId) return null;
+  let liveApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&maxResults=1&key=${YOUTUBE_API_KEY}`;
+  let liveRes = await fetch(liveApi);
+  let liveData = await liveRes.json();
+  let video = liveData.items?.[0];
+  if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` };
+  return null;
+}
+async function addYouTubeLive() {
+  let url = document.getElementById(`url-yt-lives`).value.trim();
+  if (!url) { alert('أدخل رابط'); return; }
+  let type = document.getElementById(`type-yt-lives`).value;
+  let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchLiveFromChannel(url);
+  if (!info) { alert('تعذر جلب البث'); return; }
+  let tag = document.getElementById(`tag-yt-lives`).value;
+  let body = { title: info.title, description: info.description, icon: info.thumbnail || '🔴', url: info.videoUrl, tag: tag, room: 'yt-lives', content: document.getElementById(`content-yt-lives`).value.trim() };
+  let liveBody = { ...body, room: 'live' };
+  await fetch(`${SUPABASE_URL}/rest/v1/posts`, { method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  await fetch(`${SUPABASE_URL}/rest/v1/posts`, { method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(liveBody) });
+  loadPostsPage('yt-lives');
+  loadPostsPage('live');
+}
+async function searchUsers(query) {
+  let resultsDiv = document.getElementById('user-search-results');
+  if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; }
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?username=ilike.*${encodeURIComponent(query)}*&select=id,username,email`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+  let users = await res.json();
+  if (!users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; }
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join('');
+}
+function selectUser(id, username) {
+  document.getElementById('sub-user-id').value = id;
+  document.getElementById('sub-user-selected').value = username;
+  document.getElementById('user-search-results').style.display = 'none';
+}
+async function addUserSubscriber() {
+  let userId = document.getElementById('sub-user-id').value;
+  let username = document.getElementById('sub-user-selected').value;
+  let role = document.getElementById('sub-user-role').value;
+  if (!userId || !username) { alert('اختر مستخدم أولاً'); return; }
+  let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' };
+  await fetch(`${SUPABASE_URL}/rest/v1/posts`, { method: 'POST', headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  loadPostsPage('subscribers');
+}
 window.showPage = showPage;
 window.addPost = addPost;
 window.deletePost = deletePost;
@@ -585,9 +523,8 @@ window.selectUser = selectUser;
 window.addUserSubscriber = addUserSubscriber;
 window.setRole = setRole;
 window.deleteUser = deleteUser;
-
-// استدعاء أولي
-checkConn();
+window.login = login;
+window.logout = logout;
 </script>
 </body>
 </html>
