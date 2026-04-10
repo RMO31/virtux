@@ -321,7 +321,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة (مع معاينة وإصلاح الصورة) ====================
+// ==================== نموذج الإضافة (مع معاينة ومرونة Pro/Tournament) ====================
 function getAddForm(room) {
   if (room === 'highlights') {
     return `<div class="card"><h3>➕ إضافة منشور</h3>
@@ -333,7 +333,12 @@ function getAddForm(room) {
             <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
             <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
           </div>
-          <div class="fg"><select id="tag-${room}"><option value="Pro">🏅 Pro (فيديو)</option><option value="Tournament">🏆 بطولة (فيديو)</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option></select></div>
+          <div class="fg"><select id="tag-${room}">
+            <option value="Pro">🏅 Pro (صورة أو فيديو)</option>
+            <option value="Tournament">🏆 بطولة (صورة أو فيديو)</option>
+            <option value="Video">📹 فيديو (فيديو فقط)</option>
+            <option value="Photo">📷 صورة (صورة فقط)</option>
+          </select></div>
           <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
           <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
         </div>
@@ -417,7 +422,6 @@ function handleImageUpload(room) {
     const iconField = document.getElementById(`icon-${room}`);
     iconField.value = '🖼️';
     iconField._imgData = e.target.result;
-    // مسح أي رابط فيديو سابق
     document.getElementById(`url-${room}`).value = '';
   };
   reader.readAsDataURL(file);
@@ -449,7 +453,6 @@ async function uploadVideoToBucket(room) {
       if (titleField && !titleField.value.trim()) {
         titleField.value = file.name.replace(/\.[^/.]+$/, '');
       }
-      // تحديث المعاينة
       const previewImg = document.getElementById(`preview-img-${room}`);
       const previewVideo = document.getElementById(`preview-video-${room}`);
       const previewText = document.getElementById(`preview-text-${room}`);
@@ -459,7 +462,6 @@ async function uploadVideoToBucket(room) {
         previewVideo.style.display = 'block';
       }
       if (previewText) previewText.style.display = 'none';
-      // مسح أي صورة مرفوعة سابقة
       document.getElementById(`icon-${room}`).value = '';
       delete document.getElementById(`icon-${room}`)._imgData;
       alert('✅ تم رفع الفيديو! الرابط جاهز.');
@@ -471,7 +473,7 @@ async function uploadVideoToBucket(room) {
   finally { if (btn) btn.disabled = false; }
 }
 
-// ==================== دوال الإضافة مع التحقق الذكي (صورة فقط عند Photo) ====================
+// ==================== دوال الإضافة مع التحقق الجديد (Pro/Tournament يسمحان بصورة أو فيديو) ====================
 async function addPost(room) {
   console.log('addPost called for room:', room);
   
@@ -495,27 +497,29 @@ async function addPost(room) {
   let icon = getSafeValue(iconEl);
   let tag = tagEl ? tagEl.value : room;
 
-  console.log('Selected tag:', tag);
-
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
 
-  // التحقق من وجود صورة صالحة (base64 أو رابط صورة)
   const hasImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-  // التحقق من وجود فيديو صالح
   const hasVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
 
   if (room === 'highlights') {
     if (tag === 'Photo') {
-      // نريد صورة فقط - لا نطلب فيديو
+      // صورة فقط
       if (!hasImage) {
         showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.');
         return;
       }
-    } else {
-      // Pro, Tournament, Video - نريد فيديو فقط
+    } else if (tag === 'Video') {
+      // فيديو فقط
       if (!hasVideo) {
-        showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب أو رابط فيديو صالح.');
+        showError(room, '❌ عند اختيار "فيديو"، يجب رفع فيديو أو إضافة رابط يوتيوب أو رابط فيديو صالح.');
+        return;
+      }
+    } else {
+      // Pro أو Tournament: يسمح بصورة أو فيديو
+      if (!hasImage && !hasVideo) {
+        showError(room, '❌ في قسم Pro / Tournament، يجب رفع صورة أو فيديو (أو إضافة رابط).');
         return;
       }
     }
@@ -539,7 +543,6 @@ async function addPost(room) {
     const okDiv = document.getElementById(`ok-${room}`);
     if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
 
-    // تفريغ الحقول
     if (titleEl) titleEl.value = '';
     if (descEl) descEl.value = '';
     if (urlEl) urlEl.value = '';
@@ -549,7 +552,6 @@ async function addPost(room) {
     if (fileInput) fileInput.value = '';
     const videoInput = document.getElementById(`videofile-${room}`);
     if (videoInput) videoInput.value = '';
-    // إعادة تعيين المعاينة
     const previewImg = document.getElementById(`preview-img-${room}`);
     const previewVideo = document.getElementById(`preview-video-${room}`);
     const previewText = document.getElementById(`preview-text-${room}`);
@@ -647,7 +649,7 @@ function getTagOptionsForEdit(room, currentTag) {
   let opts = '';
   if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
   else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (فيديو)</option><option value="Tournament">🏆 بطولة (فيديو)</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option>`;
+  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
   else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
   else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
   else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option>`;
@@ -672,7 +674,7 @@ async function saveEditPost() {
 }
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// ==================== دوال يوتيوب (مختصرة) ====================
+// ==================== دوال يوتيوب ====================
 async function fetchYouTubeChannelInfo(url) {
   try {
     let handle = url.split('@')[1]?.split(/[\/?]/)[0];
