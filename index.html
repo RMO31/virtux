@@ -22,7 +22,7 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار المعدل */
+    /* شريط الأخبار المعدل (حركة من اليمين إلى اليسار، تختفي قبل LIVE) */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -42,27 +42,34 @@
       font-weight: 700;
       white-space: nowrap;
       z-index: 5;
-      margin-right: 10px;
+      margin-right: 0;
       height: 100%;
       display: inline-flex;
       align-items: center;
       letter-spacing: 1px;
+      /* إطار صلب كما كان */
+      border: none;
+      box-shadow: none;
     }
     .ticker-scroll {
       flex: 1;
       overflow: hidden;
       position: relative;
       height: 30px;
+      background: transparent;
     }
     .ticker-track {
-      display: flex;
+      display: inline-flex;
       position: absolute;
       white-space: nowrap;
       will-change: transform;
+      left: 0;
+      top: 0;
+      gap: 0;
     }
     .ticker-item {
       display: inline-block;
-      padding: 0 20px;
+      padding: 0 25px;
       font-size: 13px;
       color: #99aabb;
       line-height: 30px;
@@ -294,7 +301,7 @@
     </div>
   </div>
   
-  <!-- شريط الأخبار المعدل (جافا سكريبت متحرك) -->
+  <!-- شريط الأخبار المعدل (حركة سلسة من اليمين إلى اليسار) -->
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
     <div class="ticker-scroll" id="tickerScroll">
@@ -467,12 +474,12 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== شريط الأخبار الديناميكي (يختفي قبل LIVE ويعود من اليمين) ====================
-let tickerItems = [];      // مصفوفة العناصر النصية
+// ==================== شريط الأخبار الديناميكي (من اليمين إلى اليسار، اختفاء قبل LIVE) ====================
+let tickerItems = [];
+let tickerDOMItems = [];
 let tickerAnimationId = null;
-let tickerPosition = 0;    // الموضع الحالي للشريط (بالبكسل)
-let tickerSpeed = 1;       // سرعة الحركة (بكسل لكل إطار)
-let tickerItemWidths = []; // عرض كل عنصر
+let tickerPosition = 0;
+const TICKER_SPEED = 0.8; // بكسل لكل إطار (حركة سلسة)
 let tickerContainerWidth = 0;
 
 async function loadTickerNews() {
@@ -486,12 +493,8 @@ async function loadTickerNews() {
     if (!data || data.length === 0) {
       tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
     } else {
-      tickerItems = data.map(item => ({
-        text: item.title,
-        url: item.url
-      }));
+      tickerItems = data.map(item => ({ text: item.title, url: item.url }));
     }
-    // إعادة بناء شريط الأخبار
     buildTickerTrack();
     startTickerAnimation();
   } catch(e) {
@@ -506,8 +509,7 @@ function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  tickerItemWidths = [];
-  // إنشاء العناصر
+  tickerDOMItems = [];
   tickerItems.forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
@@ -521,65 +523,51 @@ function buildTickerTrack() {
       span.textContent = `📢 ${item.text}`;
     }
     track.appendChild(span);
-    // قياس العرض
-    tickerItemWidths.push(span.offsetWidth);
+    tickerDOMItems.push(span);
   });
-  // إضافة نسخة إضافية من العناصر لضمان الاستمرارية (لأننا سنزيل الأول عند اختفائه)
-  // لكننا سنعتمد على إعادة الترتيب بدلاً من التكرار
-  // سنقوم بعمل خوارزمية: عندما يختفي العنصر الأول تماماً، ننقله إلى نهاية القائمة ونعيد ضبط الموضع
-  // لذلك نحتاج إلى تخزين عناصر DOM بشكل منفصل
-  tickerDOMItems = Array.from(track.children);
-  // حساب العرض الكلي
-  tickerTotalWidth = tickerItemWidths.reduce((a,b)=>a+b,0) + (tickerItemWidths.length * 40); // 40 بكسل هو padding-left+right
-  // بدء الحركة
+  // تحديث عرض الحاوية
+  const scrollDiv = document.getElementById('tickerScroll');
+  if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
+  // ضبط الموضع الأولي: نبدأ من أقصى اليمين (أي أول عنصر يكون خارج الحاوية من جهة اليمين)
+  // نحتاج لحساب العرض الكلي للمسار
+  let totalWidth = 0;
+  tickerDOMItems.forEach(el => {
+    totalWidth += el.offsetWidth + 50; // 50 بكسل هي padding-left+right (25+25)
+  });
+  tickerPosition = tickerContainerWidth; // يبدأ من الحافة اليمنى للحاوية
+  track.style.transform = `translateX(${tickerPosition}px)`;
 }
 
-let tickerDOMItems = [];
-let tickerTotalWidth = 0;
-let tickerRequestId = null;
-
 function startTickerAnimation() {
-  if (tickerRequestId) cancelAnimationFrame(tickerRequestId);
-  tickerPosition = 0;
+  if (tickerAnimationId) cancelAnimationFrame(tickerAnimationId);
   const track = document.getElementById('tickerTrack');
-  if (!track) return;
-  track.style.transform = `translateX(0px)`;
-  const scrollContainer = document.getElementById('tickerScroll');
-  if (!scrollContainer) return;
-  tickerContainerWidth = scrollContainer.clientWidth;
+  const scrollDiv = document.getElementById('tickerScroll');
+  if (!track || !scrollDiv) return;
   
   function animate() {
-    tickerPosition -= tickerSpeed;
-    // التحقق: إذا كان أول عنصر قد خرج تماماً من الحاوية (أي أن موقعه + عرضه < 0)
+    tickerPosition -= TICKER_SPEED;
+    track.style.transform = `translateX(${tickerPosition}px)`;
+    
+    // التحقق من أول عنصر: إذا كان قد خرج بالكامل من الحاوية (أي أن حافته اليمنى أصبحت <= الحافة اليسرى للحاوية)
     if (tickerDOMItems.length > 0) {
       const firstItem = tickerDOMItems[0];
-      const firstItemWidth = firstItem.offsetWidth;
-      // الموضع الحقيقي للعنصر الأول = tickerPosition + الإزاحة التراكمية للعناصر السابقة (وهي 0 لأنه الأول)
-      // نستخدم getBoundingClientRect بدقة أكثر
-      const rect = firstItem.getBoundingClientRect();
-      const scrollRect = scrollContainer.getBoundingClientRect();
-      // إذا كان العنصر قد تجاوز الحافة اليسرى (أي right < left of container) تقريباً
-      if (rect.right < scrollRect.left) {
-        // إزالة العنصر الأول وإلحاقه بنهاية القائمة
+      const firstRect = firstItem.getBoundingClientRect();
+      const scrollRect = scrollDiv.getBoundingClientRect();
+      // عندما يختفي العنصر تماماً من يسار الحاوية (أي أنه تجاوز كلمة LIVE)
+      if (firstRect.right < scrollRect.left) {
+        // نقل العنصر الأول إلى نهاية القائمة
         track.removeChild(firstItem);
         track.appendChild(firstItem);
-        // إعادة حساب المصفوفة
+        // تحديث المصفوفة
         tickerDOMItems = Array.from(track.children);
-        // إعادة حساب العروض
-        tickerItemWidths = tickerDOMItems.map(el => el.offsetWidth);
-        tickerTotalWidth = tickerItemWidths.reduce((a,b)=>a+b,0) + (tickerItemWidths.length * 40);
-        // تعديل موضع التحريك لتعويض عرض العنصر الذي أزيل
-        // الموضع الحالي يجب أن يزيد بمقدار عرض العنصر المزال لتبدو الحركة مستمرة
-        tickerPosition += firstItemWidth + 40; // + padding
-        // منع القفزات الحادة
-        track.style.transform = `translateX(${tickerPosition}px)`;
-      } else {
+        // إعادة حساب العرض الكلي للعنصر المنقول لضبط الموضع
+        const movedWidth = firstItem.offsetWidth + 50; // + padding
+        // تعديل الموضع لتعويض العنصر الذي أزيل (كي لا يحدث قفزة)
+        tickerPosition += movedWidth;
         track.style.transform = `translateX(${tickerPosition}px)`;
       }
-    } else {
-      track.style.transform = `translateX(${tickerPosition}px)`;
     }
-    tickerRequestId = requestAnimationFrame(animate);
+    tickerAnimationId = requestAnimationFrame(animate);
   }
   animate();
 }
