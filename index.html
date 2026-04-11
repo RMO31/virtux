@@ -22,7 +22,7 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار المعدل (حركة من اليمين إلى اليسار) */
+    /* شريط الأخبار - حركة سريعة من اليمين إلى اليسار */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -467,7 +467,7 @@
 </div>
 
 <script>
-// ========== جميع أكواد JavaScript الأصلية (بدون تغيير) ==========
+// ========== جميع أكواد JavaScript الأصلية (مع تحسين سرعة التيكر) ==========
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -570,12 +570,12 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== شريط الأخبار الديناميكي ====================
+// ==================== شريط الأخبار الديناميكي (سرعة متزايدة، حركة مستمرة) ====================
 let tickerItems = [];
 let tickerDOMItems = [];
 let tickerAnimationId = null;
 let tickerPosition = 0;
-const TICKER_SPEED = 0.8;
+const TICKER_SPEED = 1.8; // زيادة السرعة بشكل ملحوظ (كانت 0.8)
 let tickerContainerWidth = 0;
 
 async function loadTickerNews() {
@@ -623,10 +623,12 @@ function buildTickerTrack() {
   });
   const scrollDiv = document.getElementById('tickerScroll');
   if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
+  // حساب العرض الإجمالي للمسار
   let totalWidth = 0;
   tickerDOMItems.forEach(el => {
-    totalWidth += el.offsetWidth + 50;
+    totalWidth += el.offsetWidth + 50; // 50 بكسل padding left+right
   });
+  // بدء الحركة من أقصى اليمين (يبدأ المسار خارج الحاوية من جهة اليمين)
   tickerPosition = tickerContainerWidth;
   track.style.transform = `translateX(${tickerPosition}px)`;
 }
@@ -636,17 +638,23 @@ function startTickerAnimation() {
   const track = document.getElementById('tickerTrack');
   const scrollDiv = document.getElementById('tickerScroll');
   if (!track || !scrollDiv) return;
+  
   function animate() {
     tickerPosition -= TICKER_SPEED;
     track.style.transform = `translateX(${tickerPosition}px)`;
+    
+    // التحقق من أول عنصر: إذا خرج تماماً من الحاوية (الحافة اليمنى للعنصر < الحافة اليسرى للحاوية)
     if (tickerDOMItems.length > 0) {
       const firstItem = tickerDOMItems[0];
       const firstRect = firstItem.getBoundingClientRect();
       const scrollRect = scrollDiv.getBoundingClientRect();
       if (firstRect.right < scrollRect.left) {
+        // إزالة العنصر الأول وإلحاقه بنهاية القائمة
         track.removeChild(firstItem);
         track.appendChild(firstItem);
+        // تحديث المصفوفة
         tickerDOMItems = Array.from(track.children);
+        // إعادة تعيين الموضع لتعويض عرض العنصر المنقول (للحفاظ على الاستمرارية)
         const movedWidth = firstItem.offsetWidth + 50;
         tickerPosition += movedWidth;
         track.style.transform = `translateX(${tickerPosition}px)`;
