@@ -134,7 +134,7 @@
       <div class="sb-sec">يوتيوب</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 Lives</button>
+      <!-- تم حذف زر "🔴 Lives" المكرر -->
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
     </div>
@@ -194,7 +194,8 @@ function logout() { window.location.reload(); }
 function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
-  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects', 'contact'];
+  // removed 'yt-lives' from rooms list
+  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact'];
   rooms.forEach(room => {
     let div = document.createElement('div');
     div.className = 'ap';
@@ -207,7 +208,7 @@ function getRoomTitle(room) {
   let titles = {
     dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
-    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos', 'yt-lives':'🔴 Youtube Lives',
+    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
     projects:'🌐 Collaboration', contact:'📞 Contact'
   };
   return titles[room] || room;
@@ -427,7 +428,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة ====================
+// ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
 function getAddForm(room) {
   if (room === 'home') {
     return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
@@ -558,8 +559,6 @@ function getAddForm(room) {
       <button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة</button></div>`;
   } else if (room === 'yt-videos') {
     return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
-  } else if (room === 'yt-lives') {
-    return `<div class="card"><h3>➕ إضافة بث مباشر يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث أو قناة"><select id="type-${room}"><option value="single">🔴 بث عادي</option><option value="channel">👑 قناة VIP (أحدث بث)</option></select><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeLive()">➕ إضافة</button></div>`;
   } else {
     let tagOptions = '';
     if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -718,7 +717,6 @@ function getTagOptionsForEdit(room, currentTag) {
   else if (room === 'subscribers') opts = `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`;
   else if (room === 'yt-channels') opts = `<option value="Channel">📺 Channel</option>`;
   else if (room === 'yt-videos') opts = `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'yt-lives') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
   else opts = `<option value="default">عام</option>`;
   return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
 }
@@ -840,14 +838,14 @@ async function addYouTubeChannel(room) {
 async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
 async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
 async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
-async function fetchLiveFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let liveApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&maxResults=1&key=${YOUTUBE_API_KEY}`; let liveRes = await fetch(liveApi); let liveData = await liveRes.json(); let video = liveData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
-async function addYouTubeLive() { let url = document.getElementById(`url-yt-lives`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-yt-lives`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchLiveFromChannel(url); if (!info) { alert('تعذر جلب البث'); return; } let tag = document.getElementById(`tag-yt-lives`).value; let body = { title: info.title, description: info.description, icon: info.thumbnail || '🔴', url: info.videoUrl, tag: tag, room: 'yt-lives', content: document.getElementById(`content-yt-lives`).value.trim() }; let liveBody = { ...body, room: 'live' }; await supabaseClient.from('posts').insert(body); await supabaseClient.from('posts').insert(liveBody); loadContentPage('yt-lives'); loadContentPage('live'); }
+// تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
+
 async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
 function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
 async function addUserSubscriber() { let userId = document.getElementById('sub-user-id').value; let username = document.getElementById('sub-user-selected').value; let role = document.getElementById('sub-user-role').value; if (!userId || !username) { alert('اختر مستخدم أولاً'); return; } let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' }; await supabaseClient.from('posts').insert(body); loadContentPage('subscribers'); }
 
 // ربط الدوال
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.addYouTubeLive = addYouTubeLive; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
 </script>
 
 <script>
