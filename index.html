@@ -6,41 +6,165 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
-    .vx-root{display:flex;flex-direction:column;min-height:100vh}
-    .vx-topbar{display:flex;align-items:center;padding:10px 18px;background:#000;border-bottom:1px solid #d4af37;gap:12px;flex-wrap:wrap}
-    .vx-logo{font-size:22px;font-weight:700;color:#d4af37;letter-spacing:2px}
-    .vx-logo span{color:#fff;font-weight:400}
-    .vx-topnav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
-    .dd{position:relative}
-    .dd-btn{background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer}
-    .dd-btn:hover{background:#d4af37;color:#000}
-    .dd-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#1a1a1a;border:1px solid #d4af37;border-radius:6px;min-width:170px;z-index:999}
-    .dd.open .dd-menu{display:block}
-    .dd-menu a{display:block;color:#ccc;padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #333;text-decoration:none}
-    .dd-menu a:last-child{border-bottom:none}
-    .dd-menu a:hover{background:#d4af37;color:#000}
-    .vx-ticker{background:#000;padding:5px 16px;display:flex;align-items:center;gap:10px;overflow:hidden}
-    .ticker-label{font-size:11px;background:#d4af37;color:#000;padding:2px 8px;border-radius:3px;font-weight:700;white-space:nowrap}
-    .ticker-track{display:flex;gap:30px;animation:ticker 28s linear infinite;white-space:nowrap}
-    @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-    .ticker-item{font-size:12px;color:#99aabb}
-    .ticker-item span{color:#d4af37}
-    .vx-body{display:flex;flex:1}
-    .vx-sidebar{width:180px;background:linear-gradient(180deg,#1a1a1a,#2a2a2a);border-right:1px solid #d4af37;display:flex;flex-direction:column;gap:4px;padding:10px 6px}
-    .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left}
-    .sb-btn:hover,.sb-btn.active{background:#d4af37;color:#000}
-    .sb-btn.active{border-left:3px solid #d4af37}
-    .sb-section{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px;padding:8px 12px 2px}
-    .vx-main{flex:1;max-height:calc(100vh - 84px);overflow-y:auto}
-    .vx-page{display:none}
-    .vx-page.active{display:block}
-    
-    /* ======= خلفية الصفحة الرئيسية الجذابة (مستوحاة من أسلوب الألعاب الإلكتروني) ======= */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #0a0c12;
+      color: #eef;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* خلفية ديناميكية مع خطوط رفعية (رأسية) */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(90deg, 
+        rgba(0, 255, 255, 0.03) 0px, 
+        rgba(0, 255, 255, 0.03) 2px,
+        transparent 2px,
+        transparent 8px),
+        repeating-linear-gradient(0deg, 
+        rgba(255, 215, 0, 0.02) 0px,
+        rgba(255, 215, 0, 0.02) 1px,
+        transparent 1px,
+        transparent 12px);
+      pointer-events: none;
+      z-index: 0;
+      animation: verticalShift 20s linear infinite;
+    }
+
+    @keyframes verticalShift {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 200px; }
+    }
+
+    /* طبقة تدرج خلفية عميقة */
+    .bg-gradient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 30%, #0a1128, #02060c);
+      z-index: -1;
+    }
+
+    .vx-root {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* شريط علوي شفاف مع تأثير زجاجي */
+    .vx-topbar {
+      display: flex;
+      align-items: center;
+      padding: 10px 18px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.5);
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .vx-logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: #d4af37;
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px #ffd966;
+    }
+    .vx-logo span { color: #fff; font-weight: 400; }
+
+    /* القوائم المنسدلة */
+    .dd-btn {
+      background: transparent;
+      border: 1px solid #d4af37;
+      color: #d4af37;
+      padding: 5px 14px;
+      border-radius: 5px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .dd-btn:hover {
+      background: #d4af37;
+      color: #000;
+      box-shadow: 0 0 8px #d4af37;
+    }
+    .dd-menu {
+      background: rgba(20, 20, 30, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid #d4af37;
+    }
+    .dd-menu a:hover {
+      background: #d4af37;
+      color: #000;
+    }
+
+    /* شريط الأخبار */
+    .vx-ticker {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid #d4af37;
+    }
+    .ticker-label {
+      background: #d4af37;
+      color: #000;
+      box-shadow: 0 0 5px #d4af37;
+    }
+
+    /* الشريط الجانبي */
+    .vx-sidebar {
+      width: 180px;
+      background: linear-gradient(145deg, rgba(15, 20, 35, 0.9), rgba(5, 8, 20, 0.95));
+      backdrop-filter: blur(8px);
+      border-right: 1px solid #d4af37;
+      box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+    }
+    .sb-btn {
+      background: transparent;
+      border: none;
+      color: #ccd;
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      transition: 0.2s;
+    }
+    .sb-btn:hover, .sb-btn.active {
+      background: linear-gradient(90deg, #d4af37, #b38f00);
+      color: #000;
+      box-shadow: 0 0 8px #d4af37;
+    }
+    .sb-section {
+      color: #d4af37;
+      font-weight: 600;
+    }
+
+    /* منطقة المحتوى الرئيسية */
+    .vx-main {
+      background: rgba(5, 8, 20, 0.7);
+      backdrop-filter: blur(3px);
+    }
+
+    /* صفحة الهوم - تصميم جديد */
     .home-hero {
       position: relative;
-      background: radial-gradient(circle at 20% 30%, #0f172a, #020617);
       min-height: calc(100vh - 84px);
       display: flex;
       flex-direction: column;
@@ -48,72 +172,35 @@
       justify-content: center;
       text-align: center;
       overflow: hidden;
-      border-bottom: none;
+      background: radial-gradient(ellipse at 30% 40%, rgba(212, 175, 55, 0.1), transparent 70%);
     }
-    /* شبكة خلفية متحركة */
+
+    /* خطوط رفعية متحركة داخل الهوم */
     .home-hero::before {
       content: "";
       position: absolute;
       inset: 0;
-      background-image: 
-        linear-gradient(rgba(0, 255, 255, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 255, 0.08) 1px, transparent 1px);
-      background-size: 50px 50px;
+      background: repeating-linear-gradient(90deg, 
+        rgba(212, 175, 55, 0.15) 0px, 
+        rgba(212, 175, 55, 0.15) 1px,
+        transparent 1px,
+        transparent 40px);
       pointer-events: none;
-      animation: gridMove 20s linear infinite;
+      animation: verticalMove 18s linear infinite;
       z-index: 1;
     }
-    @keyframes gridMove {
-      0% { transform: translate(0, 0); }
-      100% { transform: translate(50px, 50px); }
+
+    @keyframes verticalMove {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(40px); }
     }
-    /* تأثير ضبابي متغير */
-    .home-hero::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at 50% 40%, rgba(0, 150, 255, 0.15), transparent 70%);
-      pointer-events: none;
-      z-index: 1;
-    }
-    /* نجوم متحركة (بسيطة) */
-    .stars {
-      position: absolute;
-      inset: 0;
-      background-image: radial-gradient(2px 2px at 20% 30%, #fff, rgba(0,0,0,0)),
-                        radial-gradient(2px 2px at 80% 70%, #fff, rgba(0,0,0,0)),
-                        radial-gradient(1px 1px at 40% 80%, #fff, rgba(0,0,0,0)),
-                        radial-gradient(3px 3px at 90% 20%, #fff, rgba(0,0,0,0));
-      background-repeat: no-repeat;
-      background-size: 200px 200px, 300px 300px, 250px 250px, 400px 400px;
-      opacity: 0.6;
-      animation: starsFloat 30s linear infinite;
-      pointer-events: none;
-      z-index: 1;
-    }
-    @keyframes starsFloat {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-100px); }
-    }
-    
-    /* إعادة ضبط العناصر الداخلية لتكون فوق الخلفية */
+
+    /* عناصر فوق الخطوط */
     .flags-container, .victory-text, .home-title, .home-subtitle, .missile {
       position: relative;
       z-index: 10;
     }
-    /* تحسين وضوح النصوص مع الخلفية الجديدة */
-    .victory-text {
-      text-shadow: 0 0 20px #00aaff, 0 0 5px #000;
-    }
-    .home-title {
-      text-shadow: 0 0 15px #00aaff, 2px 2px 0 #002244;
-    }
-    .home-subtitle {
-      background: rgba(0, 20, 40, 0.7);
-      backdrop-filter: blur(4px);
-      border: 1px solid #00aaff66;
-    }
-    /* الحفاظ على أعلام والصواريخ كما هي */
+
     .flags-container {
       display: flex;
       justify-content: center;
@@ -121,53 +208,61 @@
       gap: 40px;
       margin-bottom: 30px;
       flex-wrap: wrap;
-      position: relative;
-      z-index: 2;
     }
     .flag {
       width: 140px;
       height: 90px;
       background-size: cover;
       background-position: center;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6), 0 0 8px #d4af37;
+      transition: transform 0.3s;
     }
+    .flag:hover { transform: scale(1.03); }
     .flag-iran { background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/ca/Flag_of_Iran.svg'); }
     .flag-palestine { background-image: url('https://upload.wikimedia.org/wikipedia/commons/0/00/Flag_of_Palestine.svg'); }
+
     .victory-text {
       font-size: 56px;
       font-weight: bold;
       color: #d4af37;
+      text-shadow: 0 0 20px #ffaa00, 0 0 5px #000;
       margin: 20px 0;
-      z-index: 2;
-      font-family: 'Poppins', sans-serif;
+      letter-spacing: 2px;
     }
+
     .home-title {
-      font-size: 48px;
+      font-size: 52px;
       font-weight: 800;
-      color: #d4af37;
+      background: linear-gradient(135deg, #d4af37, #ffdd88);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 20px rgba(0,0,0,0.5);
       margin-top: 20px;
-      z-index: 2;
     }
+
     .home-subtitle {
       font-size: 18px;
-      color: #eee;
-      background: rgba(0,0,0,0.6);
-      padding: 8px 20px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      padding: 8px 24px;
       border-radius: 40px;
-      margin-top: 15px;
-      z-index: 2;
+      border: 1px solid #d4af37;
+      box-shadow: 0 0 10px rgba(212,175,55,0.3);
     }
+
+    /* صواريخ متحركة */
     .missile {
       position: absolute;
       bottom: -80px;
       width: 45px;
       height: 90px;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff4444"><path d="M12,2 L14,8 L22,8 L16,12 L18,18 L12,14 L6,18 L8,12 L2,8 L10,8 L12,2Z"/></svg>') no-repeat center;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff6600"><path d="M12,2 L14,8 L22,8 L16,12 L18,18 L12,14 L6,18 L8,12 L2,8 L10,8 L12,2Z"/></svg>') no-repeat center;
       background-size: contain;
-      filter: drop-shadow(0 0 8px orange);
+      filter: drop-shadow(0 0 12px #ffaa00);
       animation: launch 4s linear infinite;
-      z-index: 15;
+      z-index: 20;
     }
     @keyframes launch {
       0% { bottom: -100px; opacity: 1; transform: translateX(0) rotate(0deg);}
@@ -181,160 +276,76 @@
     .missile:nth-child(5) { left: 65%; animation-duration: 3.8s; animation-delay: 1.8s; width: 40px; height: 80px;}
     .missile:nth-child(6) { left: 80%; animation-duration: 4s; animation-delay: 0.9s; width: 48px; height: 95px;}
     .missile:nth-child(7) { left: 92%; animation-duration: 3.4s; animation-delay: 2.1s; width: 42px; height: 85px;}
-    
-    .empty-home { text-align: center; padding: 60px 20px; color: #aaa; background: rgba(0,0,0,0.3); position: relative; z-index: 10; backdrop-filter: blur(2px); }
-    
-    /* فلتر وبطاقات (لم تتغير) */
-    .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
-    .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
-    .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
-    .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
-    .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column}
-    .post-card:hover{border-color:#d4af37}
-    .post-card-img{width:100%;height:160px;object-fit:cover}
-    .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-    .post-card-video{width:100%;aspect-ratio:16/9;background:#000}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none}
-    .restricted-overlay{position:relative}
-    .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#d4af37;pointer-events:none}
-    .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
-    .post-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column}
-    .post-card-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
-    .post-card-summary{font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.5}
-    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:auto}
-    .post-tag{font-size:11px;background:#2a2a3a;color:#d4af37;border-radius:4px;padding:2px 8px}
-    .post-link{font-size:12px;color:#d4af37;text-decoration:none;background:#2a2a3a;border:1px solid #444;border-radius:5px;padding:4px 10px}
-    .post-link:hover{background:#d4af37;color:#000}
-    .post-dl{font-size:12px;color:#000;text-decoration:none;background:#d4af37;border-radius:5px;padding:4px 10px;font-weight:600}
-    .read-more{font-size:12px;background:#d4af37;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
-    .read-more:hover{background:#e6c300}
-    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
-    .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
-    .channel-card:hover{border-color:#d4af37}
-    .channel-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px}
-    .channel-info{width:100%}
-    .channel-name{font-size:14px;font-weight:600;color:#d4af37;margin-bottom:4px}
-    .channel-sub{font-size:12px;color:#aaa;margin-bottom:8px}
-    .channel-link{font-size:12px;color:#d4af37;text-decoration:none;border:1px solid #d4af37;border-radius:5px;padding:5px 12px;display:inline-block;margin-top:6px}
-    .channel-link:hover{background:#d4af37;color:#000}
-    .empty-state{text-align:center;color:#555;padding:40px;font-size:14px}
-    .loading-state{text-align:center;color:#aaa;padding:30px;font-size:13px}
-    .contact-page{padding:20px}
-    .contact-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-    .contact-card{background:#1e1e2e;border:1px solid #333;border-radius:8px;padding:14px;text-align:center;cursor:pointer}
-    .contact-card:hover{border-color:#d4af37}
-    .cc-icon{font-size:28px;margin-bottom:6px}
-    .cc-name{font-size:13px;color:#d4af37;font-weight:600}
-    .cc-handle{font-size:11px;color:#aaa}
-    .page-header{padding:14px 20px 10px;border-bottom:1px solid #333;background:#0a0a0a}
-    .page-header h2{font-size:17px;color:#d4af37;font-weight:600}
 
-    /* Modal styles (لم تتغير) */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
-    .modal.active { display: flex; }
-    .modal-content {
-      background: #1a1a1a;
-      border: 1px solid #d4af37;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 420px;
-      padding: 28px 24px;
-      position: relative;
-    }
-    .modal-close {
-      position: absolute;
-      top: 12px;
-      right: 18px;
-      font-size: 28px;
-      cursor: pointer;
-      color: #aaa;
-    }
-    .modal-close:hover { color: #d4af37; }
-    .modal h3 {
-      color: #d4af37;
-      margin-bottom: 20px;
-      font-size: 22px;
+    .empty-home {
       text-align: center;
-    }
-    .form-group {
-      margin-bottom: 18px;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 13px;
+      padding: 60px 20px;
       color: #ccc;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      position: relative;
+      z-index: 10;
     }
-    .form-group input {
-      width: 100%;
-      padding: 10px 12px;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      border-radius: 6px;
-      color: #fff;
-      font-size: 14px;
+
+    /* باقي العناصر (البطاقات، الأزرار) مع ألوان متناسقة */
+    .filter-bar {
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
     }
-    .form-group input:focus { outline: none; border-color: #d4af37; }
-    .btn-submit {
-      width: 100%;
+    .filter-btn {
+      background: #1a1e2a;
+      border-color: #444;
+    }
+    .filter-btn.active, .filter-btn:hover {
       background: #d4af37;
       color: #000;
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 8px;
-      font-size: 14px;
+      border-color: #d4af37;
+      box-shadow: 0 0 6px #d4af37;
     }
-    .btn-submit:hover { background: #e6c300; }
-    .auth-switch {
-      text-align: center;
-      margin-top: 18px;
-      font-size: 13px;
-      color: #aaa;
+    .post-card {
+      background: rgba(30, 30, 46, 0.9);
+      backdrop-filter: blur(5px);
+      border: 1px solid #2a2a3a;
+      transition: all 0.2s;
     }
-    .auth-switch a {
+    .post-card:hover {
+      border-color: #d4af37;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+    .post-tag {
+      background: #2a2a3a;
       color: #d4af37;
-      cursor: pointer;
-      text-decoration: none;
     }
-    .google-btn-modal {
-      background: #4285F4;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 15px;
+    .btn-submit, .btn-pub, .read-more, .post-dl {
+      background: #d4af37;
+      color: #000;
     }
-    .google-btn-modal:hover { background: #357ae8; }
-    .error-msg {
-      color: #ff6b6b;
-      font-size: 12px;
-      margin-top: 8px;
-      text-align: center;
+    .btn-submit:hover, .btn-pub:hover {
+      background: #ffdd88;
+      box-shadow: 0 0 8px #d4af37;
     }
-    .auth-buttons-header {
-      display: flex;
-      gap: 8px;
-      align-items: center;
+    .modal-content {
+      background: #0f1222;
+      border: 1px solid #d4af37;
+      box-shadow: 0 0 30px rgba(212,175,55,0.2);
+    }
+    .modal h3, .page-header h2 {
+      color: #d4af37;
+    }
+    .contact-card {
+      background: rgba(30, 30, 46, 0.9);
+      backdrop-filter: blur(5px);
+    }
+    .contact-card:hover {
+      border-color: #d4af37;
+      transform: scale(1.02);
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<div class="bg-gradient"></div>
 <div class="vx-root">
   <div class="vx-topbar">
     <div class="vx-logo">VIRT<span>UX</span></div>
@@ -374,8 +385,6 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
-          <!-- طبقة النجوم المتحركة -->
-          <div class="stars"></div>
           <div class="flags-container"><div class="flag flag-iran"></div><div class="victory-text">النصر للاسلام</div><div class="flag flag-palestine"></div></div>
           <div class="home-title">مرحباً بكم في VIRTUX</div>
           <div class="home-subtitle">مجتمع الألعاب والنخبة</div>
@@ -387,7 +396,7 @@
   </div>
 </div>
 
-<!-- Modal تسجيل الدخول والتسجيل (لم يتغير) -->
+<!-- Modal تسجيل الدخول والتسجيل -->
 <div id="authModal" class="modal">
   <div class="modal-content">
     <span class="modal-close" id="closeModal">&times;</span>
@@ -429,7 +438,7 @@
 </div>
 
 <script>
-// (جميع أكواد JavaScript تبقى كما هي تماماً دون أي تغيير)
+// (جميع أكواد JavaScript الأصلية دون أي تغيير)
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -635,7 +644,6 @@ document.getElementById('doSignupBtn').onclick = async () => {
     document.getElementById('loginPassword').value = '';
   } catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
 };
-// أزرار Google
 document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
