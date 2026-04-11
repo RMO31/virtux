@@ -37,7 +37,7 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
-    /* خلفية صفحة الهوم الجديدة - لوحة حربية */
+    /* خلفية صفحة الهوم */
     .home-hero {
       position: relative;
       background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
@@ -124,7 +124,7 @@
     
     .empty-home { text-align: center; padding: 60px 20px; color: #aaa; background: #111; }
     
-    /* باقي الأنماط */
+    /* فلتر وبطاقات */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -168,14 +168,110 @@
     .cc-handle{font-size:11px;color:#aaa}
     .page-header{padding:14px 20px 10px;border-bottom:1px solid #333;background:#0a0a0a}
     .page-header h2{font-size:17px;color:#d4af37;font-weight:600}
-    
-    /* أزرار المصادقة */
-    .auth-buttons {
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #1a1a1a;
+      border: 1px solid #d4af37;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 420px;
+      padding: 28px 24px;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 18px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #aaa;
+    }
+    .modal-close:hover { color: #d4af37; }
+    .modal h3 {
+      color: #d4af37;
+      margin-bottom: 20px;
+      font-size: 22px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #ccc;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+    }
+    .form-group input:focus { outline: none; border-color: #d4af37; }
+    .btn-submit {
+      width: 100%;
+      background: #d4af37;
+      color: #000;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .btn-submit:hover { background: #e6c300; }
+    .auth-switch {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 13px;
+      color: #aaa;
+    }
+    .auth-switch a {
+      color: #d4af37;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .google-btn-modal {
+      background: #4285F4;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 15px;
+    }
+    .google-btn-modal:hover { background: #357ae8; }
+    .error-msg {
+      color: #ff6b6b;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .auth-buttons-header {
       display: flex;
       gap: 8px;
       align-items: center;
     }
-    .btn-google {
+    .btn-google-header {
       background: #4285F4;
       color: white;
       border: none;
@@ -186,10 +282,6 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      text-decoration: none;
-    }
-    .btn-google:hover {
-      background: #357ae8;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -204,24 +296,21 @@
       <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">📢 Advertisements ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 Collaboration</a></div></div>
     </div>
     <div id="auth-btn-area" style="margin-left:8px;">
-      <div class="auth-buttons">
-        <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">Login</a>
-        <button id="btn-google-login" class="btn-google">G Sign in with Google</button>
+      <div class="auth-buttons-header">
+        <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
+        <button id="btn-google-header" class="btn-google-header">G Google</button>
       </div>
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
         <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
         <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
-        <button onclick="doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">Logout</button>
+        <button onclick="doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
       </div>
     </div>
   </div>
   
-  <!-- شريط الأخبار الديناميكي -->
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
-    <div class="ticker-track" id="ticker-track">
-      <div class="loading-state">جاري تحميل الأخبار...</div>
-    </div>
+    <div class="ticker-track" id="ticker-track"><div class="loading-state">جاري تحميل الأخبار...</div></div>
   </div>
   
   <div class="vx-body">
@@ -238,17 +327,53 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
-          <div class="flags-container">
-            <div class="flag flag-iran"></div>
-            <div class="victory-text">النصر للاسلام</div>
-            <div class="flag flag-palestine"></div>
-          </div>
+          <div class="flags-container"><div class="flag flag-iran"></div><div class="victory-text">النصر للاسلام</div><div class="flag flag-palestine"></div></div>
           <div class="home-title">مرحباً بكم في VIRTUX</div>
           <div class="home-subtitle">مجتمع الألعاب والنخبة</div>
           <div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div>
         </div>
         <div class="empty-home"><p>✨ سيتم إضافة محتوى الصفحة الرئيسية قريباً.</p></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal تسجيل الدخول والتسجيل -->
+<div id="authModal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" id="closeModal">&times;</span>
+    <div id="modal-login">
+      <h3>🔐 تسجيل الدخول</h3>
+      <div class="form-group">
+        <label>البريد الإلكتروني أو اسم المستخدم</label>
+        <input type="text" id="loginIdentifier" placeholder="example@domain.com أو username">
+      </div>
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input type="password" id="loginPassword" placeholder="********">
+      </div>
+      <div id="loginError" class="error-msg"></div>
+      <button class="btn-submit" id="doLoginBtn">دخول</button>
+      <button class="btn-submit google-btn-modal" id="googleModalBtn">G تسجيل الدخول عبر Google</button>
+      <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
+    </div>
+    <div id="modal-signup" style="display:none;">
+      <h3>📝 إنشاء حساب جديد</h3>
+      <div class="form-group">
+        <label>اسم المستخدم</label>
+        <input type="text" id="signupUsername" placeholder="username">
+      </div>
+      <div class="form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="signupEmail" placeholder="example@domain.com">
+      </div>
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input type="password" id="signupPassword" placeholder="********">
+      </div>
+      <div id="signupError" class="error-msg"></div>
+      <button class="btn-submit" id="doSignupBtn">تسجيل</button>
+      <div class="auth-switch">لديك حساب بالفعل؟ <a id="switchToLogin">تسجيل الدخول</a></div>
     </div>
   </div>
 </div>
@@ -263,8 +388,7 @@ const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news'
 const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
   'gaming-news': '📰 Gaming News', 'youtube-news': '▶️ Youtube News', 'yt-channels': '📺 Youtube Channels',
-  'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives',
-  projects: '🌐 Collaboration'
+  'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives', projects: '🌐 Collaboration'
 };
 
 const mainContainer = document.querySelector('.vx-main');
@@ -273,15 +397,10 @@ rooms.forEach(room => {
   pageDiv.className = 'vx-page';
   pageDiv.id = `page-${room}`;
   let filterBar = '';
-  if (room === 'live') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
-  } else if (room === 'tournaments') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
-  } else if (room === 'highlights') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
-  } else if (room === 'subscribers') {
-    filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button><button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button></div>`;
-  }
+  if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
+  else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
+  else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
+  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button><button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button></div>`;
   pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2></div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
   mainContainer.appendChild(pageDiv);
 });
@@ -301,20 +420,14 @@ async function loadPage(room) {
     if (error) throw error;
     allPosts[room] = data || [];
     renderCards(allPosts[room], `grid-${room}`, room);
-  } catch(e) {
-    console.error(e);
-    el.innerHTML = '<div class="empty-state">فشل التحميل</div>';
-  }
+  } catch(e) { el.innerHTML = '<div class="empty-state">فشل التحميل</div>'; }
 }
 
-function isVIPContent(post) {
-  return post.tag === 'VIP' || post.tag === 'Youtuber VIP';
-}
+function isVIPContent(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
-  
   if (room === 'subscribers' || room === 'yt-channels') {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
@@ -326,272 +439,172 @@ function renderCards(posts, gridId, room) {
     }).join('')}</div>`;
     return;
   }
-  
   const userRole = window.userRole || 'guest';
   const allowedRoles = ['member', 'vip', 'admin'];
   const canViewVIP = allowedRoles.includes(userRole);
-  
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
     const isRestricted = isVIPContent(p) && !canViewVIP;
-    
     if (isRestricted) {
-      let thumb = '';
-      if (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) {
-        thumb = `<img class="post-card-img" src="${p.icon}">`;
-      } else {
-        thumb = `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
-      }
-      mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">هذا المحتوى للأعضاء فقط</span></div></div>`;
+      let thumb = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
+      mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">للأعضاء فقط</span></div></div>`;
     } else {
       const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-      
-      if (isLocalVideo) {
-        mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video></div>`;
-      }
-      else if (isYouTube) {
-        const videoId = extractYouTubeId(p.url);
-        if (videoId) {
-          mediaContent = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
-        } else {
-          mediaContent = `<img class="post-card-img" src="${p.icon || '📹'}">`;
-        }
-      }
-      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
-        mediaContent = `<img class="post-card-img" src="${p.icon}">`;
-      }
-      else {
-        mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
-      }
+      if (isLocalVideo) mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video></div>`;
+      else if (isYouTube) { const videoId = extractYouTubeId(p.url); mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`; }
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
+      else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
-    
-    let summary = '';
-    if (p.content) summary = p.content.substring(0, 150).trim() + (p.content.length > 150 ? '...' : '');
-    else if (p.description) summary = p.description.substring(0, 150);
+    let summary = (p.content || p.description || '').substring(0,150);
+    if ((p.content || '').length > 150) summary += '...';
     const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
-    
     let actions = '';
     if (!isRestricted && p.url) {
-      if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/')) {
-        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
-      } else if (p.url.includes('youtube.com') || p.url.includes('youtu.be')) {
-        // لا نضيف زر يوتيوب إضافي
-      } else {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
-      }
+      if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/')) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
+      else if (!p.url.includes('youtube.com') && !p.url.includes('youtu.be')) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
     }
-    
-    return `<div class="post-card">
-      ${mediaContent}
-      <div class="post-card-body">
-        <div class="post-card-title">${escapeHtml(p.title)}</div>
-        <div class="post-card-summary">${summary}</div>
-        <div class="post-card-footer">
-          <span class="post-tag">${escapeHtml(p.tag || '')}</span>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">${actions}${readMoreLink}</div>
-        </div>
-      </div>
-    </div>`;
+    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;">${actions}${readMoreLink}</div></div></div></div>`;
   }).join('');
 }
 
-function extractYouTubeId(url) {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
-  return match ? match[1] : null;
-}
+function extractYouTubeId(url) { const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/); return m ? m[1] : null; }
+function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
+function showPage(id) { document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active')); const page = document.getElementById(`page-${id}`); if(page) page.classList.add('active'); const btn = document.getElementById(`sb-${id}`); if(btn) btn.classList.add('active'); if(id !== 'home' && id !== 'contact') loadPage(id); }
+function toggleDD(id) { document.querySelectorAll('.dd').forEach(d=>{ if(d.id !== id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
+function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open')); }
+document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
+function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-function filterPosts(room, tag, btn) {
-  if (btn && btn.closest('.filter-bar')) {
-    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  const posts = allPosts[room] || [];
-  const filtered = tag ? posts.filter(p => p.tag === tag) : posts;
-  renderCards(filtered, `grid-${room}`, room);
-}
-
-function showPage(id) {
-  document.querySelectorAll('.vx-page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
-  const page = document.getElementById(`page-${id}`);
-  if (page) page.classList.add('active');
-  const btn = document.getElementById(`sb-${id}`);
-  if (btn) btn.classList.add('active');
-  if (id !== 'home' && id !== 'contact') loadPage(id);
-}
-
-function toggleDD(id) {
-  document.querySelectorAll('.dd').forEach(d => { if(d.id !== id) d.classList.remove('open'); });
-  document.getElementById(id).classList.toggle('open');
-}
-function closeDD() {
-  document.querySelectorAll('.dd').forEach(d => d.classList.remove('open'));
-}
-document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
-}
-
-// تحميل الأخبار من قاعدة البيانات
 async function loadTickerNews() {
   const track = document.getElementById('ticker-track');
-  if (!track) return;
+  if(!track) return;
   try {
-    const { data, error } = await db.from('posts')
-      .select('title, url')
-      .eq('room', 'ticker')
-      .order('id', { ascending: false })
-      .limit(10);
-    if (error) throw error;
-    if (!data || data.length === 0) {
-      track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>';
-      return;
-    }
+    const { data, error } = await db.from('posts').select('title, url').eq('room','ticker').order('id',{ascending:false}).limit(10);
+    if(error) throw error;
+    if(!data || !data.length) { track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>'; return; }
     const items = [...data, ...data];
-    track.innerHTML = items.map(item => {
-      const text = item.title;
-      const url = item.url;
-      if (url) {
-        return `<span class="ticker-item"><a href="${url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(text)}</a></span>`;
-      } else {
-        return `<span class="ticker-item">📢 ${escapeHtml(text)}</span>`;
-      }
-    }).join('');
-    track.style.animation = 'none';
-    track.offsetHeight;
-    track.style.animation = 'ticker 28s linear infinite';
-  } catch(e) {
-    console.error('خطأ في تحميل الأخبار:', e);
-    track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>';
-  }
+    track.innerHTML = items.map(item => `<span class="ticker-item">${item.url ? `<a href="${item.url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(item.title)}</a>` : `📢 ${escapeHtml(item.title)}`}</span>`).join('');
+    track.style.animation = 'none'; track.offsetHeight; track.style.animation = 'ticker 28s linear infinite';
+  } catch(e) { track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>'; }
 }
 
-// تسجيل الزيارة
-(function trackVisit() {
-  const lastVisit = localStorage.getItem('virtux_last_visit');
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-  if (!lastVisit || (now - parseInt(lastVisit)) > oneDay) {
-    localStorage.setItem('virtux_last_visit', now);
-    fetch('https://eyqcpkhjzpmawqtilhgl.supabase.co/rest/v1/rpc/log_visit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-      body: JSON.stringify({ page_url: window.location.pathname })
-    }).catch(e => console.log('Visit log error:', e));
+// ========== AUTH with identifier (email OR username) ==========
+async function signInWithEmailOrUsername(identifier, password) {
+  // تحديد ما إذا كان المدخل بريدًا إلكترونيًا أم اسم مستخدم
+  let email = identifier;
+  const isEmail = identifier.includes('@') && identifier.includes('.');
+  if (!isEmail) {
+    // البحث عن البريد الإلكتروني من جدول profiles باستخدام اسم المستخدم
+    const { data, error } = await db.from('profiles').select('email').eq('username', identifier).maybeSingle();
+    if (error || !data) throw new Error('اسم المستخدم غير موجود');
+    email = data.email;
   }
-})();
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
 
-window.showPage = showPage;
-window.filterPosts = filterPosts;
-window.toggleDD = toggleDD;
-window.closeDD = closeDD;
-
-// ========== Auth with Google OAuth ==========
-const authDb = db;
-
-// تسجيل الدخول عبر Google
-async function signInWithGoogle() {
-  const { data, error } = await authDb.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin // العودة إلى نفس الصفحة بعد المصادقة
-    }
+// تسجيل حساب جديد
+async function signUpWithDetails(username, email, password) {
+  // 1. تسجيل المستخدم في auth
+  const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
+  if (error) throw error;
+  if (!data.user) throw new Error('فشل إنشاء الحساب');
+  // 2. إنشاء الملف الشخصي
+  const { error: profileError } = await db.from('profiles').insert({
+    id: data.user.id,
+    username: username,
+    email: email,
+    role: 'user'
   });
-  if (error) {
-    console.error('Google login error:', error);
-    alert('فشل تسجيل الدخول عبر Google: ' + error.message);
-  }
+  if (profileError) console.error('Profile insert error:', profileError);
+  return data;
 }
 
-// التحقق من الجلسة وإنشاء الملف الشخصي تلقائياً إذا لزم الأمر
+// Google OAuth
+async function signInWithGoogle() {
+  const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+  if (error) alert('Google login error: ' + error.message);
+}
+
+// التحقق من الجلسة
 async function checkAuth() {
-  const { data: { session } } = await authDb.auth.getSession();
+  const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
-  const googleBtn = document.getElementById('btn-google-login');
+  const googleHeader = document.getElementById('btn-google-header');
   const userArea = document.getElementById('btn-user-area');
-  
   if (session && session.user) {
-    if (loginLink) loginLink.style.display = 'none';
-    if (googleBtn) googleBtn.style.display = 'none';
-    if (userArea) userArea.style.display = 'flex';
-    
-    // محاولة جلب الملف الشخصي
-    let { data: profile, error } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
-    
-    // إذا لم يكن موجوداً، نقوم بإنشائه (خاصة لمستخدمي Google الجدد)
-    if (!profile && !error) {
-      let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      const { error: insertError } = await authDb.from('profiles').insert({
-        id: session.user.id,
-        username: userName,
-        email: session.user.email,
-        role: 'user'
-      });
-      if (!insertError) {
-        const { data: newProfile } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
-        profile = newProfile;
-      } else {
-        console.error('Error creating profile:', insertError);
-      }
+    if(loginLink) loginLink.style.display = 'none';
+    if(googleHeader) googleHeader.style.display = 'none';
+    if(userArea) userArea.style.display = 'flex';
+    let { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
+    if (!profile) {
+      // إنشاء الملف إذا لم يكن موجودًا (لمستخدمي Google مثلاً)
+      const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+      await db.from('profiles').insert({ id: session.user.id, username: userName, email: session.user.email, role: 'user' });
+      const { data: newProfile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
+      profile = newProfile;
     }
-    
-    const userNameSpan = document.getElementById('user-name');
+    document.getElementById('user-name').textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
     const roleBadge = document.getElementById('user-role-badge');
-    if (userNameSpan) userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
-    if (roleBadge && profile?.role && profile.role !== 'user') {
-      roleBadge.textContent = profile.role.toUpperCase();
-      roleBadge.style.display = 'inline-block';
-    }
+    if(roleBadge && profile?.role && profile.role !== 'user') { roleBadge.textContent = profile.role.toUpperCase(); roleBadge.style.display = 'inline-block'; }
     window.userRole = profile?.role || 'user';
-    window.userId = session.user.id;
-    window.userEmail = session.user.email;
   } else {
-    if (loginLink) loginLink.style.display = 'inline-block';
-    if (googleBtn) googleBtn.style.display = 'inline-flex';
-    if (userArea) userArea.style.display = 'none';
+    if(loginLink) loginLink.style.display = 'inline-block';
+    if(googleHeader) googleHeader.style.display = 'inline-flex';
+    if(userArea) userArea.style.display = 'none';
     window.userRole = 'guest';
   }
 }
 
-// تسجيل الخروج
-async function doLogout() {
-  await authDb.auth.signOut();
-  window.location.reload();
-}
+async function doLogout() { await db.auth.signOut(); window.location.reload(); }
 
-// ربط أزرار المصادقة
-document.getElementById('btn-login-link')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  const email = prompt('أدخل بريدك الإلكتروني:');
-  if (!email) return;
-  const password = prompt('أدخل كلمة المرور:');
-  if (!password) return;
-  authDb.auth.signInWithPassword({ email, password }).then(({ error }) => {
-    if (error) alert('فشل تسجيل الدخول: ' + error.message);
-    else window.location.reload();
-  });
-});
-
-document.getElementById('btn-google-login')?.addEventListener('click', (e) => {
-  e.preventDefault();
-  signInWithGoogle();
-});
-
-// استمع لتغييرات حالة المصادقة (مثل عند العودة من Google)
-authDb.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-    window.location.reload(); // إعادة تحميل الصفحة لتحديث واجهة المستخدم
-  } else if (event === 'SIGNED_OUT') {
+// Modal logic
+const modal = document.getElementById('authModal');
+const loginDiv = document.getElementById('modal-login');
+const signupDiv = document.getElementById('modal-signup');
+function openModal() { modal.classList.add('active'); }
+function closeModal() { modal.classList.remove('active'); loginDiv.style.display = 'block'; signupDiv.style.display = 'none'; document.getElementById('loginError').innerText = ''; document.getElementById('signupError').innerText = ''; }
+document.getElementById('closeModal').onclick = closeModal;
+window.onclick = (e) => { if(e.target === modal) closeModal(); };
+document.getElementById('switchToSignup').onclick = () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; };
+document.getElementById('switchToLogin').onclick = () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; };
+document.getElementById('doLoginBtn').onclick = async () => {
+  const identifier = document.getElementById('loginIdentifier').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errSpan = document.getElementById('loginError');
+  if(!identifier || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
+  try {
+    await signInWithEmailOrUsername(identifier, password);
+    closeModal();
     window.location.reload();
-  }
-});
+  } catch(e) { errSpan.innerText = e.message || 'فشل تسجيل الدخول'; }
+};
+document.getElementById('doSignupBtn').onclick = async () => {
+  const username = document.getElementById('signupUsername').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const errSpan = document.getElementById('signupError');
+  if(!username || !email || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
+  if(password.length < 6) { errSpan.innerText = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; return; }
+  try {
+    await signUpWithDetails(username, email, password);
+    alert('تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.');
+    document.getElementById('switchToLogin').click();
+    document.getElementById('loginIdentifier').value = username;
+    document.getElementById('loginPassword').value = '';
+  } catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
+};
+document.getElementById('googleModalBtn').onclick = () => { signInWithGoogle(); };
+document.getElementById('btn-google-header').onclick = () => { signInWithGoogle(); };
+document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
-// بدء التطبيق
 checkAuth();
 loadTickerNews();
+window.showPage = showPage;
+window.filterPosts = filterPosts;
+window.toggleDD = toggleDD;
+window.closeDD = closeDD;
 </script>
 </body>
 </html>
