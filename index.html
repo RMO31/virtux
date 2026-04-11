@@ -22,26 +22,27 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار */
+    /* شريط الأخبار - حركة دائرية سلسة */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
       display: flex;
       align-items: center;
+      gap: 0;
       overflow: hidden;
       position: relative;
       border-bottom: 1px solid #d4af37;
-      height: 32px;
     }
     .ticker-label {
       font-size: 11px;
       background: #d4af37;
       color: #000;
-      padding: 2px 14px;
+      padding: 2px 12px;
+      border-radius: 0;
       font-weight: 700;
       white-space: nowrap;
       z-index: 5;
-      flex-shrink: 0;
+      margin-right: 0;
       height: 100%;
       display: inline-flex;
       align-items: center;
@@ -51,29 +52,26 @@
       flex: 1;
       overflow: hidden;
       position: relative;
-      height: 32px;
+      height: 30px;
+      background: transparent;
     }
     .ticker-track {
-      display: flex;
+      display: inline-flex;
+      position: absolute;
       white-space: nowrap;
-      animation: tickerMove 40s linear infinite;
       will-change: transform;
-      width: max-content;
-    }
-    @keyframes tickerMove {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
+      left: 0;
+      top: 0;
+      gap: 0;
     }
     .ticker-item {
-      display: inline-flex;
-      align-items: center;
-      padding: 0 30px;
+      display: inline-block;
+      padding: 0 25px;
       font-size: 13px;
       color: #99aabb;
+      line-height: 30px;
       white-space: nowrap;
-      height: 32px;
     }
-    .ticker-item span { color: #d4af37; }
     .ticker-item a {
       color: #d4af37;
       text-decoration: none;
@@ -373,8 +371,8 @@
   
   <!-- شريط الأخبار المعدل -->
   <div class="vx-ticker">
-    <div class="ticker-label">🔴 LIVE</div>
-    <div class="ticker-scroll">
+    <div class="ticker-label">LIVE</div>
+    <div class="ticker-scroll" id="tickerScroll">
       <div class="ticker-track" id="tickerTrack"></div>
     </div>
   </div>
@@ -574,6 +572,11 @@ function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m =>
 
 // ==================== شريط الأخبار الديناميكي (حركة دائرية سلسة بلا فواصل) ====================
 let tickerItems = [];
+let tickerDOMItems = [];
+let tickerAnimationId = null;
+let tickerPosition = 0;
+let tickerContainerWidth = 0;
+const TICKER_SPEED = 2.4; // سرعة جيدة
 
 async function loadTickerNews() {
   try {
@@ -603,32 +606,65 @@ function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  // Build items x2 for seamless loop
-  const buildSet = () => tickerItems.forEach(item => {
+  tickerDOMItems = [];
+  tickerItems.forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
     if (item.url) {
       const a = document.createElement('a');
-      a.href = item.url; a.target = '_blank';
-      a.textContent = '📢 ' + item.text;
+      a.href = item.url;
+      a.target = '_blank';
+      a.textContent = `📢 ${item.text}`;
       span.appendChild(a);
     } else {
-      span.textContent = '📢 ' + item.text;
+      span.textContent = `📢 ${item.text}`;
     }
     track.appendChild(span);
+    tickerDOMItems.push(span);
   });
-  buildSet();
-  buildSet(); // duplicate for seamless loop
-  // Adjust animation duration based on content width
-  requestAnimationFrame(() => {
-    const half = track.scrollWidth / 2;
-    const duration = half / 60; // 60px per second
-    track.style.animationDuration = duration + 's';
+  const scrollDiv = document.getElementById('tickerScroll');
+  if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
+  // حساب العرض الكلي للمسار
+  let totalWidth = 0;
+  tickerDOMItems.forEach(el => {
+    totalWidth += el.offsetWidth + 50; // +50 للـ padding
   });
+  // بدء الحركة من أقصى اليمين (يبدأ المسار خارج الحاوية من جهة اليمين)
+  tickerPosition = tickerContainerWidth;
+  track.style.transform = `translateX(${tickerPosition}px)`;
 }
 
 function startTickerAnimation() {
-  // Animation handled by CSS — nothing needed here
+  if (tickerAnimationId) cancelAnimationFrame(tickerAnimationId);
+  const track = document.getElementById('tickerTrack');
+  const scrollDiv = document.getElementById('tickerScroll');
+  if (!track || !scrollDiv) return;
+  
+  function animate() {
+    tickerPosition -= TICKER_SPEED;
+    track.style.transform = `translateX(${tickerPosition}px)`;
+    
+    // التحقق من العنصر الأول: إذا خرج بالكامل من الحاوية (الحافة اليمنى < الحافة اليسرى للحاوية)
+    if (tickerDOMItems.length > 0) {
+      const firstItem = tickerDOMItems[0];
+      const firstRect = firstItem.getBoundingClientRect();
+      const scrollRect = scrollDiv.getBoundingClientRect();
+      // إذا كان العنصر الأول قد تجاوز الحافة اليسرى تماماً
+      if (firstRect.right < scrollRect.left) {
+        // إزالة العنصر الأول وإلحاقه بنهاية القائمة
+        track.removeChild(firstItem);
+        track.appendChild(firstItem);
+        // تحديث المصفوفة
+        tickerDOMItems = Array.from(track.children);
+        // تعديل الموضع لتعويض عرض العنصر المنقول (للحفاظ على الاستمرارية)
+        const movedWidth = firstItem.offsetWidth + 50;
+        tickerPosition += movedWidth;
+        track.style.transform = `translateX(${tickerPosition}px)`;
+      }
+    }
+    tickerAnimationId = requestAnimationFrame(animate);
+  }
+  animate();
 }
 
 // ========== AUTH ==========
