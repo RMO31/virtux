@@ -22,7 +22,7 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار - حركة دائرية لا نهائية من اليمين إلى اليسار */
+    /* شريط الأخبار - حركة دائرية لا نهائية */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -107,7 +107,6 @@
       padding: 40px 20px;
     }
     
-    /* النص الترحيبي في أعلى المنتصف */
     .home-welcome {
       font-size: 32px;
       font-weight: 600;
@@ -123,7 +122,6 @@
       letter-spacing: 1px;
     }
     
-    /* حاوية المحتوى المزدوج (تعريف + قوانين) */
     .home-content-row {
       display: flex;
       flex-wrap: wrap;
@@ -190,16 +188,11 @@
       color: #ff5555;
       font-size: 16px;
     }
-    .rules-list li.important {
-      font-weight: bold;
-      color: #ffaa66;
-    }
     
-    /* إخفاء الصواريخ والعناصر الفارغة */
     .missile { display: none; }
     .empty-home { display: none; }
     
-    /* فلتر وبطاقات (لم تتغير) */
+    /* فلتر وبطاقات */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -244,7 +237,6 @@
     .page-header{padding:14px 20px 10px;border-bottom:1px solid #333;background:#0a0a0a}
     .page-header h2{font-size:17px;color:#d4af37;font-weight:600}
 
-    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
@@ -370,7 +362,6 @@
     </div>
   </div>
   
-  <!-- شريط الأخبار المعدل بشكل نهائي -->
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
     <div class="ticker-scroll" id="tickerScroll">
@@ -465,9 +456,9 @@
 </div>
 
 <script>
-// ========== جميع أكواد JavaScript الأصلية مع إصلاح حركة التيكر (دائري لا نهائي) ==========
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
 
@@ -568,86 +559,369 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== شريط الأخبار الديناميكي - حل نهائي (دائري لا نهائي) ====================
-let tickerItems = [];
-let tickerAnimationId = null;
-let tickerPosition = 0;
-let tickerContainerWidth = 0;
+// ==================== دوال جلب المعلومات من يوتيوب ====================
+async function fetchYouTubeChannelInfo(url) {
+  try {
+    let handle = url.split('@')[1]?.split(/[\/?]/)[0];
+    if (!handle) return null;
+    let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+    let res = await fetch(apiUrl);
+    let data = await res.json();
+    if (data.items && data.items[0]) {
+      return {
+        title: data.items[0].snippet.title,
+        subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0',
+        thumbnail: data.items[0].snippet.thumbnails?.high?.url
+      };
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+async function fetchYouTubeVideoInfo(url) {
+  let vid = extractYouTubeId(url);
+  if (!vid) return null;
+  let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`;
+  let res = await fetch(apiUrl);
+  let data = await res.json();
+  if (data.items && data.items[0]) {
+    return {
+      title: data.items[0].snippet.title,
+      channelTitle: data.items[0].snippet.channelTitle,
+      thumbnail: data.items[0].snippet.thumbnails?.high?.url,
+      videoUrl: url
+    };
+  }
+  return null;
+}
+
+// ==================== إضافة قناة يوتيوب (رابط فقط) ====================
+async function addYouTubeChannel(room) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { alert('أدخل رابط القناة'); return; }
+  let info = await fetchYouTubeChannelInfo(url);
+  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
+  let body = {
+    title: info.title,
+    description: `${info.subscribers} مشترك`,
+    icon: info.thumbnail || '📺',
+    url: url,
+    tag: 'Channel',
+    room: room,
+    content: ''
+  };
+  try {
+    let { error } = await db.from('posts').insert(body);
+    if (error) throw error;
+    document.getElementById(`url-${room}`).value = '';
+    let okDiv = document.getElementById(`ok-${room}`);
+    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
+    loadContentPage(room);
+    loadDashboard();
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+
+// ==================== إضافة فيديو يوتيوب أو بث مباشر (رابط فقط) ====================
+async function addYouTubeVideo(room, isLive = false) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { alert('أدخل رابط الفيديو أو البث'); return; }
+  let info = await fetchYouTubeVideoInfo(url);
+  if (!info) { alert('تعذر جلب معلومات الفيديو'); return; }
+  let tag = document.getElementById(`tag-${room}`)?.value || (isLive ? 'Live Now' : 'Video');
+  let body = {
+    title: info.title,
+    description: info.channelTitle,
+    icon: info.thumbnail || (isLive ? '🔴' : '📹'),
+    url: info.videoUrl,
+    tag: tag,
+    room: room,
+    content: ''
+  };
+  try {
+    let { error } = await db.from('posts').insert(body);
+    if (error) throw error;
+    document.getElementById(`url-${room}`).value = '';
+    let okDiv = document.getElementById(`ok-${room}`);
+    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
+    loadContentPage(room);
+    if (room === 'live') loadContentPage('live');
+    loadDashboard();
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+
+// ==================== نموذج الإضافة لكل غرفة (معدل) ====================
+function getAddForm(room) {
+  // غرفة القنوات: رابط فقط
+  if (room === 'yt-channels') {
+    return `<div class="card"><h3>➕ إضافة قناة يوتيوب</h3>
+      <div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div>
+      <div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"></div>
+      <button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
+  }
+  // غرفة فيديوهات يوتيوب: رابط فيديو + اختيار تصنيف
+  if (room === 'yt-videos') {
+    return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3>
+      <div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div>
+      <div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو يوتيوب"><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select></div>
+      <button class="btn-pub" onclick="addYouTubeVideo('${room}', false)">➕ إضافة</button></div>`;
+  }
+  // غرفة البث المباشر: رابط بث + اختيار تصنيف
+  if (room === 'live') {
+    return `<div class="card"><h3>➕ إضافة بث مباشر (يوتيوب)</h3>
+      <div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div>
+      <div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث يوتيوب"><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select></div>
+      <button class="btn-pub" onclick="addYouTubeVideo('${room}', true)">➕ إضافة</button></div>`;
+  }
+  // باقي الغرف: نموذج كامل (رفع فيديو/صورة/مقال)
+  if (room === 'highlights') {
+    return `<div class="card"><h3>➕ إضافة مقطع مميز (فيديو/صورة)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان (اختياري)"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  if (room === 'gaming-news' || room === 'youtube-news') {
+    let tagOptions = room === 'gaming-news' ? `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>` : `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
+    return `<div class="card"><h3>➕ إضافة خبر (مع دعم الفيديو)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="عنوان الخبر *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى الخبر الطويل" rows="6"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  if (room === 'tournaments') {
+    return `<div class="card"><h3>➕ إضافة بطولة (مع دعم الفيديو/الصورة)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="اسم البطولة"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="تفاصيل البطولة" rows="4"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  if (room === 'subscribers') {
+    return `<div class="card"><h3>🔔 إدارة المشتركين</h3><div class="empty-state">يمكن إدارة المشتركين من لوحة التحكم.</div></div>`;
+  }
+  if (room === 'projects') {
+    return `<div class="card"><h3>🌐 مشاريع التعاون</h3><div class="empty-state">قيد التطوير.</div></div>`;
+  }
+  // default
+  return `<div class="card"><h3>➕ إضافة منشور</h3><div class="empty-state">نموذج غير متوفر لهذه الغرفة.</div></div>`;
+}
+
+// ==================== دوال مساعدة للرفع (للغرف الكاملة) ====================
+async function handleImageUpload(room) {
+  const fileInput = document.getElementById(`imgfile-${room}`);
+  const file = fileInput?.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const previewImg = document.getElementById(`preview-img-${room}`);
+    const previewVideo = document.getElementById(`preview-video-${room}`);
+    const previewText = document.getElementById(`preview-text-${room}`);
+    if (previewImg) { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
+    if (previewVideo) previewVideo.style.display = 'none';
+    if (previewText) previewText.style.display = 'none';
+    const iconField = document.getElementById(`icon-${room}`);
+    if (iconField) { iconField.value = '🖼️'; iconField._imgData = e.target.result; }
+    document.getElementById(`url-${room}`).value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadVideoToBucket(room) {
+  let fileInput = document.getElementById(`videofile-${room}`);
+  let file = fileInput?.files[0];
+  if (!file) { alert('لم تختر ملفاً'); return; }
+  if (!file.type.startsWith('video/')) { alert('الملف المختار ليس فيديو'); return; }
+  let fileName = Date.now() + '_' + file.name;
+  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  let filePath = `highlights/${fileName}`;
+  let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
+  let btn = document.querySelector(`#ap-${room} .btn-pub`);
+  if (btn) btn.disabled = true;
+  try {
+    let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
+    if (res.ok) {
+      let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
+      document.getElementById(`url-${room}`).value = publicUrl;
+      let titleField = document.getElementById(`title-${room}`);
+      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      const previewImg = document.getElementById(`preview-img-${room}`);
+      const previewVideo = document.getElementById(`preview-video-${room}`);
+      const previewText = document.getElementById(`preview-text-${room}`);
+      if (previewImg) previewImg.style.display = 'none';
+      if (previewVideo) { previewVideo.src = publicUrl; previewVideo.style.display = 'block'; }
+      if (previewText) previewText.style.display = 'none';
+      document.getElementById(`icon-${room}`).value = '';
+      delete document.getElementById(`icon-${room}`)._imgData;
+      alert('✅ تم رفع الفيديو! الرابط جاهز.');
+    } else { let errText = await res.text(); alert('❌ فشل الرفع: ' + errText); }
+  } catch(e) { alert('خطأ: ' + e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+function clearMedia(room) {
+  if (!['highlights', 'gaming-news', 'youtube-news', 'tournaments'].includes(room)) return;
+  const previewImg = document.getElementById(`preview-img-${room}`);
+  const previewVideo = document.getElementById(`preview-video-${room}`);
+  const previewText = document.getElementById(`preview-text-${room}`);
+  if (previewImg) previewImg.style.display = 'none';
+  if (previewVideo) previewVideo.style.display = 'none';
+  if (previewText) previewText.style.display = 'block';
+  document.getElementById(`url-${room}`).value = '';
+  document.getElementById(`icon-${room}`).value = '';
+  document.getElementById(`imgfile-${room}`).value = '';
+  document.getElementById(`videofile-${room}`).value = '';
+  delete document.getElementById(`icon-${room}`)._imgData;
+}
+
+async function addPost(room) {
+  const titleEl = document.getElementById(`title-${room}`);
+  const urlEl = document.getElementById(`url-${room}`);
+  const descEl = document.getElementById(`desc-${room}`);
+  const contentEl = document.getElementById(`content-${room}`);
+  const iconEl = document.getElementById(`icon-${room}`);
+  const tagEl = document.getElementById(`tag-${room}`);
+  function getSafeValue(el) { if (!el) return ''; return (el.value || '').trim(); }
+  let title = getSafeValue(titleEl);
+  let url = getSafeValue(urlEl);
+  let desc = getSafeValue(descEl);
+  let content = getSafeValue(contentEl);
+  let icon = getSafeValue(iconEl);
+  let tag = tagEl ? tagEl.value : room;
+  let imgData = iconEl?._imgData || '';
+  if (imgData) icon = imgData;
+  const hasImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+  const hasVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+  if (!title && !url && !icon && !content && !desc) { showError(room, '❌ المنشور فارغ.'); return; }
+  if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : (room === 'gaming-news' ? '📰 خبر' : (room === 'youtube-news' ? '▶️ خبر' : (room === 'tournaments' ? '🏆 بطولة' : '📄 منشور')));
+  const body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
+  const btn = document.querySelector(`#ap-${room} .btn-pub`);
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await db.from('posts').insert(body);
+    if (error) throw error;
+    const okDiv = document.getElementById(`ok-${room}`);
+    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
+    if (titleEl) titleEl.value = '';
+    if (descEl) descEl.value = '';
+    if (urlEl) urlEl.value = '';
+    if (iconEl) iconEl.value = '';
+    if (contentEl) contentEl.value = '';
+    const fileInput = document.getElementById(`imgfile-${room}`);
+    if (fileInput) fileInput.value = '';
+    const videoInput = document.getElementById(`videofile-${room}`);
+    if (videoInput) videoInput.value = '';
+    const previewImg = document.getElementById(`preview-img-${room}`);
+    const previewVideo = document.getElementById(`preview-video-${room}`);
+    const previewText = document.getElementById(`preview-text-${room}`);
+    if (previewImg) previewImg.style.display = 'none';
+    if (previewVideo) previewVideo.style.display = 'none';
+    if (previewText) previewText.style.display = 'block';
+    loadContentPage(room);
+    loadDashboard();
+  } catch (e) { showError(room, e.message); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
+async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await db.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
+async function loadContentPage(room) { if (!room || room === 'home' || room === 'contact') return; await loadPage(room); }
+
+// ==================== شريط الأخبار ====================
+let tickerItems = [], tickerAnimationId = null, tickerPosition = 0, tickerContainerWidth = 0;
 const TICKER_SPEED = 2.2;
 
 async function loadTickerNews() {
   try {
-    const { data, error } = await db.from('posts')
-      .select('title, url')
-      .eq('room', 'ticker')
-      .order('id', { ascending: false })
-      .limit(15);
+    const { data, error } = await db.from('posts').select('title, url').eq('room', 'ticker').order('id', { ascending: false }).limit(15);
     if (error) throw error;
-    if (!data || data.length === 0) {
-      tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
-    } else {
-      tickerItems = data.map(item => ({ text: item.title, url: item.url }));
-    }
+    if (!data || data.length === 0) tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
+    else tickerItems = data.map(item => ({ text: item.title, url: item.url }));
     buildTickerTrack();
     startTickerAnimation();
-  } catch(e) {
-    console.error(e);
-    tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }];
-    buildTickerTrack();
-    startTickerAnimation();
-  }
+  } catch(e) { console.error(e); tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }]; buildTickerTrack(); startTickerAnimation(); }
 }
 
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  // إضافة العناصر الأصلية + نسخة مكررة لضمان اللانهاية
   const allItems = [...tickerItems, ...tickerItems];
   allItems.forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
-    if (item.url) {
-      const a = document.createElement('a');
-      a.href = item.url;
-      a.target = '_blank';
-      a.textContent = `📢 ${item.text}`;
-      span.appendChild(a);
-    } else {
-      span.textContent = `📢 ${item.text}`;
-    }
+    if (item.url) { const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.textContent = `📢 ${item.text}`; span.appendChild(a); }
+    else span.textContent = `📢 ${item.text}`;
     track.appendChild(span);
   });
   const scrollDiv = document.getElementById('tickerScroll');
   if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
-  // حساب عرض النصف الأول (النسخة الأصلية)
   const children = Array.from(track.children);
   const halfCount = tickerItems.length;
   let originalWidth = 0;
-  for (let i = 0; i < halfCount; i++) {
-    originalWidth += children[i].offsetWidth + 50;
-  }
-  // بدء الحركة: نضع الموضع بحيث تكون بداية النسخة الثانية عند الحافة اليمنى للحاوية
-  // أي نبدأ من -originalWidth + tickerContainerWidth
+  for (let i = 0; i < halfCount; i++) originalWidth += children[i].offsetWidth + 50;
   tickerPosition = tickerContainerWidth;
   track.style.transform = `translateX(${tickerPosition}px)`;
-  window.halfWidth = originalWidth; // نحفظها للاستخدام في الحلقة
+  window.halfWidth = originalWidth;
 }
 
 function startTickerAnimation() {
   if (tickerAnimationId) cancelAnimationFrame(tickerAnimationId);
   const track = document.getElementById('tickerTrack');
   if (!track) return;
-  
   function animate() {
     tickerPosition -= TICKER_SPEED;
     track.style.transform = `translateX(${tickerPosition}px)`;
-    // عندما يصل الموضع إلى -halfWidth، نعيد تعيينه إلى tickerContainerWidth - halfWidth
-    // لضمان استمرارية الحركة دون فجوة
-    if (tickerPosition <= -window.halfWidth) {
-      tickerPosition += window.halfWidth;
-      track.style.transform = `translateX(${tickerPosition}px)`;
-    }
+    if (tickerPosition <= -window.halfWidth) { tickerPosition += window.halfWidth; track.style.transform = `translateX(${tickerPosition}px)`; }
     tickerAnimationId = requestAnimationFrame(animate);
   }
   animate();
@@ -670,12 +944,7 @@ async function signUpWithDetails(username, email, password) {
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
   if (error) throw error;
   if (!data.user) throw new Error('فشل إنشاء الحساب');
-  const { error: profileError } = await db.from('profiles').insert({
-    id: data.user.id,
-    username: username,
-    email: email,
-    role: 'user'
-  });
+  const { error: profileError } = await db.from('profiles').insert({ id: data.user.id, username: username, email: email, role: 'user' });
   if (profileError) console.error('Profile insert error:', profileError);
   return data;
 }
@@ -709,7 +978,6 @@ async function checkAuth() {
     window.userRole = 'guest';
   }
 }
-
 async function doLogout() { await db.auth.signOut(); window.location.reload(); }
 
 // Modal logic
@@ -727,11 +995,8 @@ document.getElementById('doLoginBtn').onclick = async () => {
   const password = document.getElementById('loginPassword').value;
   const errSpan = document.getElementById('loginError');
   if(!identifier || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
-  try {
-    await signInWithEmailOrUsername(identifier, password);
-    closeModal();
-    window.location.reload();
-  } catch(e) { errSpan.innerText = e.message || 'فشل تسجيل الدخول'; }
+  try { await signInWithEmailOrUsername(identifier, password); closeModal(); window.location.reload(); }
+  catch(e) { errSpan.innerText = e.message || 'فشل تسجيل الدخول'; }
 };
 document.getElementById('doSignupBtn').onclick = async () => {
   const username = document.getElementById('signupUsername').value.trim();
@@ -740,24 +1005,29 @@ document.getElementById('doSignupBtn').onclick = async () => {
   const errSpan = document.getElementById('signupError');
   if(!username || !email || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
   if(password.length < 6) { errSpan.innerText = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; return; }
-  try {
-    await signUpWithDetails(username, email, password);
-    alert('تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.');
-    document.getElementById('switchToLogin').click();
-    document.getElementById('loginIdentifier').value = username;
-    document.getElementById('loginPassword').value = '';
-  } catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
+  try { await signUpWithDetails(username, email, password); alert('تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.'); document.getElementById('switchToLogin').click(); document.getElementById('loginIdentifier').value = username; document.getElementById('loginPassword').value = ''; }
+  catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
 };
 document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
-checkAuth();
-loadTickerNews();
+// ربط الدوال العامة
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
 window.closeDD = closeDD;
+window.addYouTubeChannel = addYouTubeChannel;
+window.addYouTubeVideo = addYouTubeVideo;
+window.addPost = addPost;
+window.deletePost = deletePost;
+window.handleImageUpload = handleImageUpload;
+window.uploadVideoToBucket = uploadVideoToBucket;
+window.clearMedia = clearMedia;
+
+checkAuth();
+loadTickerNews();
+showPage('home');
 </script>
 </body>
 </html>
