@@ -6,6 +6,7 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* جميع الأنماط كما هي (لم تتغير) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -339,6 +340,58 @@
       gap: 8px;
       align-items: center;
     }
+
+    /* نافذة اختيار اسم المستخدم بعد Google */
+    .username-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    .username-modal.active { display: flex; }
+    .username-modal .modal-box {
+      background: #1a1a1a;
+      border: 1px solid #d4af37;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      padding: 28px;
+      text-align: center;
+    }
+    .username-modal .modal-box h3 {
+      color: #d4af37;
+      margin-bottom: 15px;
+    }
+    .username-modal .modal-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+    }
+    .username-modal .modal-box button {
+      background: #d4af37;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .username-modal .modal-box button.cancel {
+      background: #555;
+      color: white;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -456,12 +509,27 @@
   </div>
 </div>
 
+<!-- نافذة اختيار اسم المستخدم بعد Google -->
+<div id="usernameModal" class="username-modal">
+  <div class="modal-box">
+    <h3>✨ Choose a username</h3>
+    <p style="color:#ccc; font-size:14px;">Please choose a unique username to complete your registration</p>
+    <input type="text" id="newUsername" placeholder="Username" autocomplete="off">
+    <div style="margin-top:10px;">
+      <button id="confirmUsernameBtn">Confirm</button>
+      <button id="cancelUsernameBtn" class="cancel">Cancel</button>
+    </div>
+    <div id="usernameError" style="color:#f55; margin-top:10px; font-size:12px;"></div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
+let pendingGoogleUser = null; // store user data while waiting for username
 
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
 const roomLabels = {
@@ -650,7 +718,7 @@ async function addYouTubeVideo(room, isLive = false) {
   } catch(e) { alert('خطأ: ' + e.message); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة ====================
+// ==================== نموذج الإضافة لكل غرفة (اختصار للطول) ====================
 function getAddForm(room) {
   if (room === 'yt-channels') {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب</h3>
@@ -891,7 +959,6 @@ function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  // Duplicate items for seamless loop
   [...tickerItems, ...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
@@ -905,7 +972,6 @@ function buildTickerTrack() {
     }
     track.appendChild(span);
   });
-  // Calculate total width and set animation duration
   requestAnimationFrame(() => {
     const totalWidth = track.scrollWidth;
     const halfWidth = totalWidth / 2;
@@ -917,7 +983,7 @@ function buildTickerTrack() {
 
 function startTickerAnimation() {}
 
-// ========== AUTH مع تصحيح كامل لإنشاء الحساب ==========
+// ========== AUTH مع تصحيح كامل (بدون إعادة تحميل لا نهائية) ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -940,11 +1006,9 @@ async function signUpWithDetails(username, email, password) {
   if (password.length < 6) throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
   if (username.length < 3) throw new Error('اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
   
-  // التحقق من عدم وجود اسم مستخدم مكرر
   const { data: existingUser } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
   if (existingUser) throw new Error('اسم المستخدم موجود بالفعل');
   
-  // 1. إنشاء الحساب في auth
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
   if (error) {
     if (error.message.includes('User already registered')) throw new Error('البريد الإلكتروني مسجل بالفعل');
@@ -952,7 +1016,6 @@ async function signUpWithDetails(username, email, password) {
   }
   if (!data.user) throw new Error('فشل إنشاء الحساب');
   
-  // 2. إنشاء الملف الشخصي في جدول profiles
   const { error: profileError } = await db.from('profiles').insert({
     id: data.user.id,
     username: username,
@@ -961,8 +1024,6 @@ async function signUpWithDetails(username, email, password) {
     created_at: new Date().toISOString()
   });
   if (profileError) {
-    console.error('خطأ في إنشاء الملف الشخصي:', profileError);
-    // إذا فشل إدراج الملف الشخصي، نحذف حساب auth للحفاظ على التناسق (اختياري)
     await db.auth.admin.deleteUser(data.user.id).catch(()=>{});
     throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
   }
@@ -993,7 +1054,8 @@ async function signInWithGoogle() {
   }
 }
 
-async function checkAuth() {
+// تحديث واجهة المستخدم بعد تغيير حالة المصادقة (بدون إعادة تحميل)
+async function updateUIAfterAuth() {
   const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
   const userArea = document.getElementById('btn-user-area');
@@ -1002,30 +1064,38 @@ async function checkAuth() {
     if(userArea) userArea.style.display = 'flex';
     let { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
     if (!profile) {
-      // إنشاء ملف شخصي لمستخدم Google الجديد
-      let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      let finalUsername = userName;
-      let counter = 1;
-      while (true) {
-        const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
-        if (!existing) break;
-        finalUsername = `${userName}${counter}`;
-        counter++;
+      // إذا كان المستخدم جديداً ولا يوجد ملف شخصي، نظهر نافذة اختيار اسم المستخدم
+      if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) {
+        // موجود في انتظار الاسم
+        return;
+      } else {
+        // حالة نادرة: حاول إنشاء ملف شخصي تلقائياً
+        let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+        let finalUsername = userName;
+        let counter = 1;
+        while (true) {
+          const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
+          if (!existing) break;
+          finalUsername = `${userName}${counter}`;
+          counter++;
+        }
+        await db.from('profiles').insert({
+          id: session.user.id,
+          username: finalUsername,
+          email: session.user.email,
+          role: 'user',
+          created_at: new Date().toISOString()
+        });
+        const { data: newProfile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
+        profile = newProfile;
       }
-      await db.from('profiles').insert({
-        id: session.user.id,
-        username: finalUsername,
-        email: session.user.email,
-        role: 'user',
-        created_at: new Date().toISOString()
-      });
-      const { data: newProfile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
-      profile = newProfile;
     }
-    document.getElementById('user-name').textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
-    const roleBadge = document.getElementById('user-role-badge');
-    if(roleBadge && profile?.role && profile.role !== 'user') { roleBadge.textContent = profile.role.toUpperCase(); roleBadge.style.display = 'inline-block'; }
-    window.userRole = profile?.role || 'user';
+    if (profile) {
+      document.getElementById('user-name').textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
+      const roleBadge = document.getElementById('user-role-badge');
+      if(roleBadge && profile?.role && profile.role !== 'user') { roleBadge.textContent = profile.role.toUpperCase(); roleBadge.style.display = 'inline-block'; }
+      window.userRole = profile?.role || 'user';
+    }
   } else {
     if(loginLink) loginLink.style.display = 'inline-block';
     if(userArea) userArea.style.display = 'none';
@@ -1033,13 +1103,86 @@ async function checkAuth() {
   }
 }
 
-async function doLogout() { await db.auth.signOut(); window.location.reload(); }
+async function checkAuth() {
+  await updateUIAfterAuth();
+}
 
-db.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN') window.location.reload();
+async function doLogout() { 
+  await db.auth.signOut(); 
+  await updateUIAfterAuth(); // تحديث الواجهة بدون إعادة تحميل
+}
+
+// مراقبة حالة المصادقة وتحديث الواجهة فقط (بدون إعادة تحميل الصفحة)
+db.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN') {
+    // إذا كان المستخدم جديداً (لا يوجد ملف شخصي)، نعرض نافذة اختيار اسم المستخدم
+    const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
+    if (!profile) {
+      pendingGoogleUser = session.user;
+      // إظهار نافذة اختيار اسم المستخدم
+      const usernameModal = document.getElementById('usernameModal');
+      const newUsernameInput = document.getElementById('newUsername');
+      const usernameError = document.getElementById('usernameError');
+      // اقتراح اسم تلقائي
+      let suggested = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+      newUsernameInput.value = suggested;
+      usernameError.innerText = '';
+      usernameModal.classList.add('active');
+    } else {
+      await updateUIAfterAuth();
+    }
+  } else if (event === 'SIGNED_OUT') {
+    await updateUIAfterAuth();
+  }
 });
 
-// Modal logic
+// معالجة تأكيد اسم المستخدم من النافذة المنبثقة
+document.getElementById('confirmUsernameBtn').onclick = async () => {
+  const usernameInput = document.getElementById('newUsername');
+  const username = usernameInput.value.trim();
+  const errorSpan = document.getElementById('usernameError');
+  if (!username || username.length < 3) {
+    errorSpan.innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
+    return;
+  }
+  if (!pendingGoogleUser) {
+    errorSpan.innerText = 'حدث خطأ، حاول مرة أخرى';
+    return;
+  }
+  // التحقق من عدم تكرار اسم المستخدم
+  const { data: existing } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
+  if (existing) {
+    errorSpan.innerText = 'اسم المستخدم موجود بالفعل، اختر اسماً آخر';
+    return;
+  }
+  // إنشاء الملف الشخصي
+  const { error: profileError } = await db.from('profiles').insert({
+    id: pendingGoogleUser.id,
+    username: username,
+    email: pendingGoogleUser.email,
+    role: 'user',
+    created_at: new Date().toISOString()
+  });
+  if (profileError) {
+    errorSpan.innerText = 'حدث خطأ أثناء حفظ الاسم، حاول مرة أخرى';
+    console.error(profileError);
+    return;
+  }
+  // إغلاق النافذة وتحديث الواجهة
+  document.getElementById('usernameModal').classList.remove('active');
+  pendingGoogleUser = null;
+  await updateUIAfterAuth();
+  // إعادة تحميل الصفحة الحالية (اختياري) لتحديث بعض البيانات، لكننا نكتفي بتحديث الواجهة
+};
+
+document.getElementById('cancelUsernameBtn').onclick = () => {
+  document.getElementById('usernameModal').classList.remove('active');
+  pendingGoogleUser = null;
+  // تسجيل الخروج لأنه لم يكمل التسجيل
+  db.auth.signOut();
+};
+
+// Modal logic for login/signup
 const modal = document.getElementById('authModal');
 const loginDiv = document.getElementById('modal-login');
 const signupDiv = document.getElementById('modal-signup');
@@ -1057,7 +1200,7 @@ document.getElementById('doLoginBtn').onclick = async () => {
   try {
     await signInWithEmailOrUsername(identifier, password);
     closeModal();
-    window.location.reload();
+    await updateUIAfterAuth();
   } catch(e) { errSpan.innerText = e.message || 'فشل تسجيل الدخول'; }
 };
 document.getElementById('doSignupBtn').onclick = async () => {
