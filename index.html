@@ -24,54 +24,58 @@
     
     .vx-ticker {
       background: #000;
-      padding: 5px 0;
+      padding: 0;
       display: flex;
-      align-items: center;
-      gap: 0;
+      align-items: stretch;
       overflow: hidden;
       position: relative;
       border-bottom: 1px solid #d4af37;
+      height: 32px;
     }
     .ticker-label {
       font-size: 11px;
       background: #d4af37;
       color: #000;
-      padding: 2px 12px;
-      border-radius: 0;
+      padding: 0 14px;
       font-weight: 700;
       white-space: nowrap;
       z-index: 5;
-      margin-right: 0;
-      height: 100%;
-      display: inline-flex;
-      align-items: center;
-      letter-spacing: 1px;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      letter-spacing: 2px;
+      order: -1;
     }
     .ticker-scroll {
       flex: 1;
       overflow: hidden;
       position: relative;
-      height: 30px;
-      background: transparent;
+      height: 32px;
     }
     .ticker-track {
-      display: inline-flex;
-      position: absolute;
+      display: flex;
       white-space: nowrap;
-      will-change: transform;
+      height: 32px;
+      align-items: center;
+      position: absolute;
       left: 0;
       top: 0;
-      gap: 0;
+      will-change: transform;
+    }
+    @keyframes tickerSlide {
+      0%   { transform: translateX(100vw); }
+      100% { transform: translateX(-100%); }
     }
     .ticker-item {
-      display: inline-block;
-      padding: 0 25px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 30px;
       font-size: 13px;
       color: #99aabb;
-      line-height: 30px;
       white-space: nowrap;
+      height: 32px;
     }
+    .ticker-item span { color: #d4af37; }
     .ticker-item a {
       color: #d4af37;
       text-decoration: none;
@@ -869,8 +873,7 @@ async function deletePost(id, room) { if (!confirm('حذف المنشور نها
 async function loadContentPage(room) { if (!room || room === 'home' || room === 'contact') return; await loadPage(room); }
 
 // ==================== شريط الأخبار ====================
-let tickerItems = [], tickerAnimationId = null, tickerPosition = 0, tickerContainerWidth = 0;
-const TICKER_SPEED = 2.2;
+let tickerItems = [];
 
 async function loadTickerNews() {
   try {
@@ -878,46 +881,41 @@ async function loadTickerNews() {
     if (error) throw error;
     if (!data || data.length === 0) tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
     else tickerItems = data.map(item => ({ text: item.title, url: item.url }));
-    buildTickerTrack();
-    startTickerAnimation();
-  } catch(e) { console.error(e); tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }]; buildTickerTrack(); startTickerAnimation(); }
+  } catch(e) {
+    tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }];
+  }
+  buildTickerTrack();
 }
 
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  const allItems = [...tickerItems, ...tickerItems];
-  allItems.forEach(item => {
+  // Duplicate items for seamless loop
+  [...tickerItems, ...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
-    if (item.url) { const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.textContent = `📢 ${item.text}`; span.appendChild(a); }
-    else span.textContent = `📢 ${item.text}`;
+    if (item.url) {
+      const a = document.createElement('a');
+      a.href = item.url; a.target = '_blank';
+      a.textContent = '📢 ' + item.text;
+      span.appendChild(a);
+    } else {
+      span.textContent = '📢 ' + item.text;
+    }
     track.appendChild(span);
   });
-  const scrollDiv = document.getElementById('tickerScroll');
-  if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
-  const children = Array.from(track.children);
-  const halfCount = tickerItems.length;
-  let originalWidth = 0;
-  for (let i = 0; i < halfCount; i++) originalWidth += children[i].offsetWidth + 50;
-  tickerPosition = tickerContainerWidth;
-  track.style.transform = `translateX(${tickerPosition}px)`;
-  window.halfWidth = originalWidth;
+  // Calculate total width and set animation duration
+  requestAnimationFrame(() => {
+    const totalWidth = track.scrollWidth;
+    const halfWidth = totalWidth / 2;
+    const speed = 80; // px per second
+    const duration = (halfWidth + window.innerWidth) / speed;
+    track.style.animation = `tickerSlide ${duration}s linear infinite`;
+  });
 }
 
-function startTickerAnimation() {
-  if (tickerAnimationId) cancelAnimationFrame(tickerAnimationId);
-  const track = document.getElementById('tickerTrack');
-  if (!track) return;
-  function animate() {
-    tickerPosition -= TICKER_SPEED;
-    track.style.transform = `translateX(${tickerPosition}px)`;
-    if (tickerPosition <= -window.halfWidth) { tickerPosition += window.halfWidth; track.style.transform = `translateX(${tickerPosition}px)`; }
-    tickerAnimationId = requestAnimationFrame(animate);
-  }
-  animate();
-}
+function startTickerAnimation() {}
 
 // ========== AUTH مع تصحيح كامل لإنشاء الحساب ==========
 function isValidEmail(email) {
@@ -973,11 +971,10 @@ async function signUpWithDetails(username, email, password) {
 
 async function signInWithGoogle() {
   try {
-    const redirectUri = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback';
     const { error } = await db.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUri,
+        redirectTo: 'https://rmo31.github.io/virtux/',
         scopes: 'email profile'
       }
     });
