@@ -271,18 +271,6 @@
       gap: 8px;
       align-items: center;
     }
-    .btn-google-header {
-      background: #4285F4;
-      color: white;
-      border: none;
-      padding: 5px 14px;
-      border-radius: 5px;
-      font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -298,7 +286,6 @@
     <div id="auth-btn-area" style="margin-left:8px;">
       <div class="auth-buttons-header">
         <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
-        <button id="btn-google-header" class="btn-google-header">G Google</button>
       </div>
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
         <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
@@ -491,11 +478,9 @@ async function loadTickerNews() {
 
 // ========== AUTH with identifier (email OR username) ==========
 async function signInWithEmailOrUsername(identifier, password) {
-  // تحديد ما إذا كان المدخل بريدًا إلكترونيًا أم اسم مستخدم
   let email = identifier;
   const isEmail = identifier.includes('@') && identifier.includes('.');
   if (!isEmail) {
-    // البحث عن البريد الإلكتروني من جدول profiles باستخدام اسم المستخدم
     const { data, error } = await db.from('profiles').select('email').eq('username', identifier).maybeSingle();
     if (error || !data) throw new Error('اسم المستخدم غير موجود');
     email = data.email;
@@ -504,13 +489,10 @@ async function signInWithEmailOrUsername(identifier, password) {
   if (error) throw error;
 }
 
-// تسجيل حساب جديد
 async function signUpWithDetails(username, email, password) {
-  // 1. تسجيل المستخدم في auth
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
   if (error) throw error;
   if (!data.user) throw new Error('فشل إنشاء الحساب');
-  // 2. إنشاء الملف الشخصي
   const { error: profileError } = await db.from('profiles').insert({
     id: data.user.id,
     username: username,
@@ -521,25 +503,20 @@ async function signUpWithDetails(username, email, password) {
   return data;
 }
 
-// Google OAuth
 async function signInWithGoogle() {
   const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
   if (error) alert('Google login error: ' + error.message);
 }
 
-// التحقق من الجلسة
 async function checkAuth() {
   const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
-  const googleHeader = document.getElementById('btn-google-header');
   const userArea = document.getElementById('btn-user-area');
   if (session && session.user) {
     if(loginLink) loginLink.style.display = 'none';
-    if(googleHeader) googleHeader.style.display = 'none';
     if(userArea) userArea.style.display = 'flex';
     let { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
     if (!profile) {
-      // إنشاء الملف إذا لم يكن موجودًا (لمستخدمي Google مثلاً)
       const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
       await db.from('profiles').insert({ id: session.user.id, username: userName, email: session.user.email, role: 'user' });
       const { data: newProfile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
@@ -551,7 +528,6 @@ async function checkAuth() {
     window.userRole = profile?.role || 'user';
   } else {
     if(loginLink) loginLink.style.display = 'inline-block';
-    if(googleHeader) googleHeader.style.display = 'inline-flex';
     if(userArea) userArea.style.display = 'none';
     window.userRole = 'guest';
   }
@@ -596,7 +572,6 @@ document.getElementById('doSignupBtn').onclick = async () => {
   } catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
 };
 document.getElementById('googleModalBtn').onclick = () => { signInWithGoogle(); };
-document.getElementById('btn-google-header').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
 checkAuth();
