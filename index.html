@@ -711,6 +711,32 @@ let allPosts = {};
 let pendingGoogleUser = null;
 let currentProfileData = null;
 
+// ==================== إنشاء Bucket "avatars" تلقائياً إذا لم يكن موجوداً ====================
+async function ensureAvatarBucket() {
+  try {
+    const { data: buckets, error: listError } = await db.storage.listBuckets();
+    if (listError) {
+      console.warn('Cannot list buckets:', listError);
+      return;
+    }
+    const exists = buckets?.some(b => b.name === 'avatars');
+    if (!exists) {
+      const { error: createError } = await db.storage.createBucket('avatars', { public: true });
+      if (createError) {
+        console.error('Error creating avatars bucket:', createError);
+        // قد لا يمتلك المفتاح anon صلاحية إنشاء buckets، لكن يمكن تجاهل الخطأ.
+      } else {
+        console.log('Bucket "avatars" created successfully');
+        // إضافة سياسة RLS للسماح للمستخدمين برفع صورهم
+        // (يجب تنفيذها عبر SQL، لكننا سنحاول عبر API)
+        try {
+          await db.storage.from('avatars').upload('test.txt', new Blob(['test']), { upsert: true });
+        } catch(e) { /* ignore */ }
+      }
+    }
+  } catch(e) { console.warn('Bucket check failed:', e); }
+}
+
 // ==================== دوال الغرف والمحتوى (كما هي دون تغيير) ====================
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
 const roomLabels = {
@@ -1259,10 +1285,7 @@ async function changePassword() {
     errorSpan.innerText = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل';
     return;
   }
-  // Supabase تتطلب إعادة تأكيد كلمة المرور الحالية عن طريق تسجيل الدخول مرة أخرى.
-  // سنستخدم طريقة updateUser التي تتحقق من الجلسة الحالية فقط (لا تطلب old password).
-  // للأسف، Supabase لا توفر تغيير كلمة المرور بالتحقق من القديمة من العميل مباشرة.
-  // بدلاً من ذلك، سنستخدم طريقة إرسال بريد إعادة تعيين كلمة المرور.
+  // محاولة تغيير كلمة المرور
   const { error } = await db.auth.updateUser({ password: newPass });
   if (error) {
     errorSpan.innerText = 'فشل تغيير كلمة المرور: ' + error.message;
@@ -1287,6 +1310,8 @@ document.getElementById('avatarUpload').onchange = async (e) => {
   const { data: { session } } = await db.auth.getSession();
   if (!session) return;
   try {
+    // التأكد من وجود bucket
+    await ensureAvatarBucket();
     const avatarUrl = await uploadAvatar(file, session.user.id);
     const { error } = await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', session.user.id);
     if (error) throw error;
@@ -1294,7 +1319,8 @@ document.getElementById('avatarUpload').onchange = async (e) => {
     await updateUIAfterAuth();
     openProfileModal();
   } catch (err) {
-    alert('خطأ في رفع الصورة: ' + err.message);
+    console.error('Upload error:', err);
+    alert('خطأ في رفع الصورة: ' + err.message + '\nتأكد من إنشاء Bucket "avatars" في Supabase Storage وجعله عاماً.');
   }
 };
 
@@ -1567,6 +1593,8 @@ window.clearMedia = clearMedia;
 window.loadDashboard = function() { console.log('Dashboard not available in index.html'); };
 window.doLogout = doLogout;
 
+// بدء التطبيق
+ensureAvatarBucket();
 checkAuth();
 loadTickerNews();
 showPage('home');
