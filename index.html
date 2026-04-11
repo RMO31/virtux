@@ -411,7 +411,7 @@
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
         <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
         <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
-        <button onclick="doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
+        <button id="logoutButton" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
       </div>
     </div>
   </div>
@@ -529,7 +529,7 @@ const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
-let pendingGoogleUser = null; // store user data while waiting for username
+let pendingGoogleUser = null;
 
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
 const roomLabels = {
@@ -983,7 +983,7 @@ function buildTickerTrack() {
 
 function startTickerAnimation() {}
 
-// ========== AUTH مع تصحيح كامل (بدون إعادة تحميل لا نهائية) ==========
+// ========== AUTH مع إصلاح كامل لزر الخروج ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -1054,7 +1054,7 @@ async function signInWithGoogle() {
   }
 }
 
-// تحديث واجهة المستخدم بعد تغيير حالة المصادقة (بدون إعادة تحميل)
+// تحديث واجهة المستخدم بعد تغيير حالة المصادقة
 async function updateUIAfterAuth() {
   const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
@@ -1066,10 +1066,9 @@ async function updateUIAfterAuth() {
     if (!profile) {
       // إذا كان المستخدم جديداً ولا يوجد ملف شخصي، نظهر نافذة اختيار اسم المستخدم
       if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) {
-        // موجود في انتظار الاسم
-        return;
+        return; // في انتظار الاسم
       } else {
-        // حالة نادرة: حاول إنشاء ملف شخصي تلقائياً
+        // إنشاء ملف شخصي تلقائياً (حالة نادرة)
         let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
         let finalUsername = userName;
         let counter = 1;
@@ -1107,23 +1106,34 @@ async function checkAuth() {
   await updateUIAfterAuth();
 }
 
-async function doLogout() { 
-  await db.auth.signOut(); 
-  await updateUIAfterAuth(); // تحديث الواجهة بدون إعادة تحميل
+// دالة الخروج المعدلة - تعمل بشكل مؤكد
+async function doLogout() {
+  try {
+    // إغلاق أي نافذة منبثقة مفتوحة
+    document.getElementById('usernameModal')?.classList.remove('active');
+    pendingGoogleUser = null;
+    // تسجيل الخروج من Supabase
+    const { error } = await db.auth.signOut();
+    if (error) throw error;
+    // تحديث الواجهة
+    await updateUIAfterAuth();
+    // إعادة تحميل الصفحة لتنظيف الحالة بالكامل (اختياري ولكنه يضمن عدم وجود بقايا)
+    window.location.reload();
+  } catch (err) {
+    console.error('Logout error:', err);
+    alert('حدث خطأ أثناء تسجيل الخروج، حاول مرة أخرى.');
+  }
 }
 
-// مراقبة حالة المصادقة وتحديث الواجهة فقط (بدون إعادة تحميل الصفحة)
+// مراقبة حالة المصادقة
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN') {
-    // إذا كان المستخدم جديداً (لا يوجد ملف شخصي)، نعرض نافذة اختيار اسم المستخدم
     const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
     if (!profile) {
       pendingGoogleUser = session.user;
-      // إظهار نافذة اختيار اسم المستخدم
       const usernameModal = document.getElementById('usernameModal');
       const newUsernameInput = document.getElementById('newUsername');
       const usernameError = document.getElementById('usernameError');
-      // اقتراح اسم تلقائي
       let suggested = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
       newUsernameInput.value = suggested;
       usernameError.innerText = '';
@@ -1136,7 +1146,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// معالجة تأكيد اسم المستخدم من النافذة المنبثقة
+// معالجة تأكيد اسم المستخدم
 document.getElementById('confirmUsernameBtn').onclick = async () => {
   const usernameInput = document.getElementById('newUsername');
   const username = usernameInput.value.trim();
@@ -1149,13 +1159,11 @@ document.getElementById('confirmUsernameBtn').onclick = async () => {
     errorSpan.innerText = 'حدث خطأ، حاول مرة أخرى';
     return;
   }
-  // التحقق من عدم تكرار اسم المستخدم
   const { data: existing } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
   if (existing) {
     errorSpan.innerText = 'اسم المستخدم موجود بالفعل، اختر اسماً آخر';
     return;
   }
-  // إنشاء الملف الشخصي
   const { error: profileError } = await db.from('profiles').insert({
     id: pendingGoogleUser.id,
     username: username,
@@ -1168,18 +1176,15 @@ document.getElementById('confirmUsernameBtn').onclick = async () => {
     console.error(profileError);
     return;
   }
-  // إغلاق النافذة وتحديث الواجهة
   document.getElementById('usernameModal').classList.remove('active');
   pendingGoogleUser = null;
   await updateUIAfterAuth();
-  // إعادة تحميل الصفحة الحالية (اختياري) لتحديث بعض البيانات، لكننا نكتفي بتحديث الواجهة
 };
 
 document.getElementById('cancelUsernameBtn').onclick = () => {
   document.getElementById('usernameModal').classList.remove('active');
   pendingGoogleUser = null;
-  // تسجيل الخروج لأنه لم يكمل التسجيل
-  db.auth.signOut();
+  db.auth.signOut().then(() => window.location.reload());
 };
 
 // Modal logic for login/signup
@@ -1221,6 +1226,10 @@ document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); 
 document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
+// إضافة مستمع حدث مباشر لزر الخروج (لضمان عمله)
+document.getElementById('logoutButton')?.addEventListener('click', doLogout);
+
+// ربط الدوال العامة
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
@@ -1233,6 +1242,7 @@ window.handleImageUpload = handleImageUpload;
 window.uploadVideoToBucket = uploadVideoToBucket;
 window.clearMedia = clearMedia;
 window.loadDashboard = function() { console.log('Dashboard not available in index.html'); };
+window.doLogout = doLogout; // تصدير الدالة للنطاق العام
 
 checkAuth();
 loadTickerNews();
