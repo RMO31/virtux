@@ -6,6 +6,7 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* جميع الأنماط كما هي (لن أكررها للاختصار، لكنها موجودة في الكود السابق) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -919,7 +920,7 @@ function startTickerAnimation() {
   animate();
 }
 
-// ========== AUTH مع تصحيح نهائي لـ redirect_uri_mismatch ==========
+// ========== AUTH مع التصحيح النهائي لـ redirect_uri ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -962,7 +963,7 @@ async function signUpWithDetails(username, email, password) {
 
 async function signInWithGoogle() {
   try {
-    // عنوان إعادة التوجيه الصحيح الذي يجب تسجيله في Google Cloud Console
+    // استخدام عنوان إعادة التوجيه الصحيح المطابق لما في Google Cloud Console
     const redirectUri = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback';
     const { error } = await db.auth.signInWithOAuth({
       provider: 'google',
@@ -974,13 +975,15 @@ async function signInWithGoogle() {
     if (error) throw error;
   } catch (error) {
     console.error('Google login error:', error);
-    if (error.message && error.message.includes('provider is not enabled')) {
-      alert('❌ تسجيل الدخول عبر Google غير مفعل في لوحة تحكم Supabase.\n\nالرجاء اتباع الخطوات:\n1. اذهب إلى Supabase Dashboard → Authentication → Providers\n2. قم بتفعيل Google (Enable)\n3. أدخل Client ID و Client Secret من Google Cloud Console\n4. تأكد من إضافة عنوان إعادة التوجيه: ' + redirectUri);
-    } else if (error.message && error.message.includes('redirect_uri_mismatch')) {
-      alert('❌ خطأ في عنوان إعادة التوجيه (redirect_uri_mismatch).\n\nالحل:\nفي Google Cloud Console، أضف عنوان إعادة التوجيه التالي ضمن "Authorized redirect URIs":\n' + redirectUri + '\n\nملاحظة: تأكد من إضافة هذا العنوان بالضبط.');
+    let errorMsg = 'فشل تسجيل الدخول عبر Google. ';
+    if (error.message.includes('provider is not enabled')) {
+      errorMsg += 'الموفر غير مفعل في Supabase. الرجاء تفعيل Google Provider في Authentication → Providers.';
+    } else if (error.message.includes('redirect_uri_mismatch')) {
+      errorMsg += 'خطأ في عنوان إعادة التوجيه. تأكد من إضافة هذا الرابط في Google Cloud Console:\nhttps://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback';
     } else {
-      alert('فشل تسجيل الدخول عبر Google: ' + error.message);
+      errorMsg += error.message;
     }
+    alert(errorMsg);
   }
 }
 
@@ -1068,7 +1071,6 @@ document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); 
 document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
-// ربط الدوال العامة
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
