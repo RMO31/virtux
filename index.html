@@ -22,7 +22,7 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار - حركة سريعة وسلسة من اليمين إلى اليسار */
+    /* شريط الأخبار - حركة دائرية سلسة */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -467,7 +467,7 @@
 </div>
 
 <script>
-// ========== جميع أكواد JavaScript الأصلية (مع تحسين سلاسة حركة التيكر) ==========
+// ========== جميع أكواد JavaScript الأصلية مع تحسين حركة التيكر (دائرية بلا فواصل) ==========
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -570,13 +570,13 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== شريط الأخبار الديناميكي (حركة سلسة بدون "لاق") ====================
+// ==================== شريط الأخبار الديناميكي (حركة دائرية سلسة بلا فواصل) ====================
 let tickerItems = [];
 let tickerDOMItems = [];
 let tickerAnimationId = null;
 let tickerPosition = 0;
 let tickerContainerWidth = 0;
-const TICKER_SPEED = 2.2; // سرعة معقولة وسلسة
+const TICKER_SPEED = 2.4; // سرعة جيدة
 
 async function loadTickerNews() {
   try {
@@ -589,15 +589,14 @@ async function loadTickerNews() {
     if (!data || data.length === 0) {
       tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
     } else {
-      // تكرار العناصر مرتين لضمان استمرارية الحركة (حيلة لمنع الفراغ)
-      const doubled = [...data, ...data];
-      tickerItems = doubled.map(item => ({ text: item.title, url: item.url }));
+      // لا نكرر البيانات هنا، سنستخدم آلية النقل الدائري
+      tickerItems = data.map(item => ({ text: item.title, url: item.url }));
     }
     buildTickerTrack();
     startTickerAnimation();
   } catch(e) {
     console.error(e);
-    tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }, { text: '⚠️ فشل تحميل الأخبار', url: null }];
+    tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }];
     buildTickerTrack();
     startTickerAnimation();
   }
@@ -625,7 +624,7 @@ function buildTickerTrack() {
   });
   const scrollDiv = document.getElementById('tickerScroll');
   if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
-  // حساب العرض الإجمالي للمسار (جميع العناصر)
+  // حساب العرض الكلي للمسار
   let totalWidth = 0;
   tickerDOMItems.forEach(el => {
     totalWidth += el.offsetWidth + 50; // +50 للـ padding
@@ -645,18 +644,21 @@ function startTickerAnimation() {
     tickerPosition -= TICKER_SPEED;
     track.style.transform = `translateX(${tickerPosition}px)`;
     
-    // التحقق: عندما يكون المسار قد تحرك بما يكفي لظهور العنصر المكرر، نعيد ضبط الموضع
-    // لكن بما أننا ضاعفنا العناصر، لن تكون هناك حاجة لنقل العناصر يدوياً، فقط نعيد ضبط الموضع عندما يتجاوز نصف المسار
+    // التحقق من العنصر الأول: إذا خرج بالكامل من الحاوية (الحافة اليمنى < الحافة اليسرى للحاوية)
     if (tickerDOMItems.length > 0) {
-      // حساب نصف العرض الإجمالي (لأننا ضاعفنا العناصر)
-      let halfWidth = 0;
-      const halfCount = Math.floor(tickerDOMItems.length / 2);
-      for (let i = 0; i < halfCount; i++) {
-        halfWidth += tickerDOMItems[i].offsetWidth + 50;
-      }
-      // عندما يصل الموضع إلى أقل من -halfWidth، نعيد تعيينه إلى البداية
-      if (tickerPosition <= -halfWidth) {
-        tickerPosition += halfWidth;
+      const firstItem = tickerDOMItems[0];
+      const firstRect = firstItem.getBoundingClientRect();
+      const scrollRect = scrollDiv.getBoundingClientRect();
+      // إذا كان العنصر الأول قد تجاوز الحافة اليسرى تماماً
+      if (firstRect.right < scrollRect.left) {
+        // إزالة العنصر الأول وإلحاقه بنهاية القائمة
+        track.removeChild(firstItem);
+        track.appendChild(firstItem);
+        // تحديث المصفوفة
+        tickerDOMItems = Array.from(track.children);
+        // تعديل الموضع لتعويض عرض العنصر المنقول (للحفاظ على الاستمرارية)
+        const movedWidth = firstItem.offsetWidth + 50;
+        tickerPosition += movedWidth;
         track.style.transform = `translateX(${tickerPosition}px)`;
       }
     }
