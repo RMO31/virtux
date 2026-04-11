@@ -922,7 +922,7 @@ function startTickerAnimation() {
   animate();
 }
 
-// ========== AUTH (مع تصحيح Google OAuth) ==========
+// ========== AUTH (مع تصحيح Google OAuth - Redirect URI) ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -966,10 +966,12 @@ async function signUpWithDetails(username, email, password) {
 
 async function signInWithGoogle() {
   try {
+    // إعادة التوجيه إلى نفس عنوان URL الحالي (بدون معلمات إضافية)
+    const redirectUrl = window.location.origin;
     const { error } = await db.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
         scopes: 'email profile'
       }
     });
@@ -977,7 +979,9 @@ async function signInWithGoogle() {
   } catch (error) {
     console.error('Google login error:', error);
     if (error.message && error.message.includes('provider is not enabled')) {
-      alert('تسجيل الدخول عبر Google غير مفعل في لوحة تحكم Supabase. يرجى تفعيل Google Provider في Authentication → Providers.');
+      alert('❌ تسجيل الدخول عبر Google غير مفعل في لوحة تحكم Supabase.\n\nالرجاء اتباع الخطوات:\n1. اذهب إلى Supabase Dashboard → Authentication → Providers\n2. قم بتفعيل Google (Enable)\n3. أدخل Client ID و Client Secret من Google Cloud Console\n4. تأكد من إضافة عنوان إعادة التوجيه: https://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback');
+    } else if (error.message && error.message.includes('redirect_uri_mismatch')) {
+      alert('❌ خطأ في عنوان إعادة التوجيه (redirect_uri_mismatch).\n\nالحل:\nفي Google Cloud Console، أضف عنوان إعادة التوجيه التالي:\n' + window.location.origin + '\nوأيضاً:\nhttps://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback');
     } else {
       alert('فشل تسجيل الدخول عبر Google: ' + error.message);
     }
