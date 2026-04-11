@@ -22,7 +22,6 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار - حركة دائرية لا نهائية */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -91,7 +90,6 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
-    /* خلفية صفحة الهوم */
     .home-hero {
       position: relative;
       background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
@@ -192,7 +190,6 @@
     .missile { display: none; }
     .empty-home { display: none; }
     
-    /* فلتر وبطاقات */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -922,7 +919,7 @@ function startTickerAnimation() {
   animate();
 }
 
-// ========== AUTH (مع تصحيح كامل لـ Google OAuth وإزالة رسائل التحذير) ==========
+// ========== AUTH مع تصحيح نهائي لـ redirect_uri_mismatch ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -965,22 +962,22 @@ async function signUpWithDetails(username, email, password) {
 
 async function signInWithGoogle() {
   try {
-    // استخدام عنوان إعادة التوجيه الصحيح (يجب أن يكون مسجلاً في Google Cloud Console و Supabase)
-    const redirectUrl = window.location.origin;
+    // عنوان إعادة التوجيه الصحيح الذي يجب تسجيله في Google Cloud Console
+    const redirectUri = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback';
     const { error } = await db.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: redirectUrl,
+        redirectTo: redirectUri,
         scopes: 'email profile'
       }
     });
     if (error) throw error;
   } catch (error) {
-    // عرض رسائل خطأ مفهومة للمستخدم بدلاً من رسائل وحدة التحكم
+    console.error('Google login error:', error);
     if (error.message && error.message.includes('provider is not enabled')) {
-      alert('❌ تسجيل الدخول عبر Google غير مفعل في لوحة تحكم Supabase.\n\nالرجاء اتباع الخطوات:\n1. اذهب إلى Supabase Dashboard → Authentication → Providers\n2. قم بتفعيل Google (Enable)\n3. أدخل Client ID و Client Secret من Google Cloud Console\n4. تأكد من إضافة عنوان إعادة التوجيه: https://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback');
+      alert('❌ تسجيل الدخول عبر Google غير مفعل في لوحة تحكم Supabase.\n\nالرجاء اتباع الخطوات:\n1. اذهب إلى Supabase Dashboard → Authentication → Providers\n2. قم بتفعيل Google (Enable)\n3. أدخل Client ID و Client Secret من Google Cloud Console\n4. تأكد من إضافة عنوان إعادة التوجيه: ' + redirectUri);
     } else if (error.message && error.message.includes('redirect_uri_mismatch')) {
-      alert('❌ خطأ في عنوان إعادة التوجيه (redirect_uri_mismatch).\n\nالحل:\nفي Google Cloud Console، أضف عنوان إعادة التوجيه التالي:\n' + window.location.origin + '\nوأيضاً:\nhttps://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback');
+      alert('❌ خطأ في عنوان إعادة التوجيه (redirect_uri_mismatch).\n\nالحل:\nفي Google Cloud Console، أضف عنوان إعادة التوجيه التالي ضمن "Authorized redirect URIs":\n' + redirectUri + '\n\nملاحظة: تأكد من إضافة هذا العنوان بالضبط.');
     } else {
       alert('فشل تسجيل الدخول عبر Google: ' + error.message);
     }
@@ -1028,7 +1025,6 @@ async function checkAuth() {
 
 async function doLogout() { await db.auth.signOut(); window.location.reload(); }
 
-// استمع لتغييرات حالة المصادقة (مثل العودة من Google)
 db.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN') window.location.reload();
 });
@@ -1085,11 +1081,6 @@ window.handleImageUpload = handleImageUpload;
 window.uploadVideoToBucket = uploadVideoToBucket;
 window.clearMedia = clearMedia;
 window.loadDashboard = function() { console.log('Dashboard not available in index.html'); };
-
-// منع ظهور أخطاء وحدة التحكم غير الضرورية (مثل Self-XSS) - هذا مجرد تجاهل للرسائل، ولكن لا يمكن إزالتها بالكامل
-if (typeof window.console !== 'undefined' && window.console.clear) {
-  // لا نفعل شيئاً، الرسالة تأتي من المتصفح نفسه ولا يمكن إزالتها.
-}
 
 checkAuth();
 loadTickerNews();
