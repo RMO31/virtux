@@ -10,9 +10,8 @@
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
     .vx-topbar{display:flex;align-items:center;padding:10px 18px;background:#000;border-bottom:1px solid #d4af37;gap:12px;flex-wrap:wrap}
-    .vx-logo{font-size:22px;font-weight:700;color:#d4af37;letter-spacing:2px;display:flex;align-items:center;gap:12px}
+    .vx-logo{font-size:22px;font-weight:700;color:#d4af37;letter-spacing:2px}
     .vx-logo span{color:#fff;font-weight:400}
-    .welcome-text{font-size:14px;color:#d4af37;font-weight:400;letter-spacing:0}
     .vx-topnav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
     .dd{position:relative}
     .dd-btn{background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer}
@@ -37,7 +36,7 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
-    /* خلفية الصفحة الرئيسية بدون حركة */
+    /* خلفية صفحة الهوم */
     .home-hero {
       position: relative;
       background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
@@ -50,13 +49,29 @@
       justify-content: center;
       text-align: center;
       border-bottom: none;
+      position: relative;
+    }
+    /* النص الترحيبي داخل غرفة HOME في أعلى اليسار */
+    .home-welcome {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      color: #d4af37;
+      border: 1px solid #d4af37;
+      z-index: 20;
+      font-weight: 500;
     }
     
-    /* إخفاء الصواريخ المتحركة */
+    /* إخفاء الصواريخ والعناصر الفارغة */
     .missile { display: none; }
     .empty-home { display: none; }
     
-    /* باقي الأنماط كما هي */
+    /* فلتر وبطاقات */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -65,8 +80,8 @@
     .post-card:hover{border-color:#d4af37}
     .post-card-img{width:100%;height:160px;object-fit:cover}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-    .post-card-video{width:100%;aspect-ratio:16/9;background:#000}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none}
+    .post-card-video{width:100%;height:200px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;object-fit:cover}
     .restricted-overlay{position:relative}
     .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#d4af37;pointer-events:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
@@ -209,10 +224,7 @@
 <body>
 <div class="vx-root">
   <div class="vx-topbar">
-    <div class="vx-logo">
-      VIRT<span>UX</span>
-      <span class="welcome-text">Welcome to Virtux</span>
-    </div>
+    <div class="vx-logo">VIRT<span>UX</span></div>
     <div class="vx-topnav">
       <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 Gaming News</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ Youtube News</a></div></div>
       <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a></div></div>
@@ -249,7 +261,7 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
-          <!-- تم حذف النص المركزي -->
+          <div class="home-welcome">Welcome to Virtux</div>
         </div>
       </div>
     </div>
@@ -370,8 +382,13 @@ function renderCards(posts, gridId, room) {
     } else {
       const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-      if (isLocalVideo) mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video></div>`;
-      else if (isYouTube) { const videoId = extractYouTubeId(p.url); mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`; }
+      if (isLocalVideo) {
+        mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
+      }
+      else if (isYouTube) {
+        const videoId = extractYouTubeId(p.url);
+        mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
+      }
       else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
       else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
