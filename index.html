@@ -37,12 +37,10 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
-    /* خلفية صفحة الهوم */
+    /* ======= خلفية الصفحة الرئيسية الجذابة (مستوحاة من أسلوب الألعاب الإلكتروني) ======= */
     .home-hero {
       position: relative;
-      background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
-      background-image: repeating-linear-gradient(45deg, rgba(100,80,40,0.2) 0px, rgba(100,80,40,0.2) 2px, transparent 2px, transparent 8px),
-                        repeating-linear-gradient(135deg, rgba(60,40,20,0.3) 0px, rgba(60,40,20,0.3) 1px, transparent 1px, transparent 6px);
+      background: radial-gradient(circle at 20% 30%, #0f172a, #020617);
       min-height: calc(100vh - 84px);
       display: flex;
       flex-direction: column;
@@ -52,6 +50,70 @@
       overflow: hidden;
       border-bottom: none;
     }
+    /* شبكة خلفية متحركة */
+    .home-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      animation: gridMove 20s linear infinite;
+      z-index: 1;
+    }
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+    /* تأثير ضبابي متغير */
+    .home-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(0, 150, 255, 0.15), transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    /* نجوم متحركة (بسيطة) */
+    .stars {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(2px 2px at 20% 30%, #fff, rgba(0,0,0,0)),
+                        radial-gradient(2px 2px at 80% 70%, #fff, rgba(0,0,0,0)),
+                        radial-gradient(1px 1px at 40% 80%, #fff, rgba(0,0,0,0)),
+                        radial-gradient(3px 3px at 90% 20%, #fff, rgba(0,0,0,0));
+      background-repeat: no-repeat;
+      background-size: 200px 200px, 300px 300px, 250px 250px, 400px 400px;
+      opacity: 0.6;
+      animation: starsFloat 30s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+    @keyframes starsFloat {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-100px); }
+    }
+    
+    /* إعادة ضبط العناصر الداخلية لتكون فوق الخلفية */
+    .flags-container, .victory-text, .home-title, .home-subtitle, .missile {
+      position: relative;
+      z-index: 10;
+    }
+    /* تحسين وضوح النصوص مع الخلفية الجديدة */
+    .victory-text {
+      text-shadow: 0 0 20px #00aaff, 0 0 5px #000;
+    }
+    .home-title {
+      text-shadow: 0 0 15px #00aaff, 2px 2px 0 #002244;
+    }
+    .home-subtitle {
+      background: rgba(0, 20, 40, 0.7);
+      backdrop-filter: blur(4px);
+      border: 1px solid #00aaff66;
+    }
+    /* الحفاظ على أعلام والصواريخ كما هي */
     .flags-container {
       display: flex;
       justify-content: center;
@@ -76,7 +138,6 @@
       font-size: 56px;
       font-weight: bold;
       color: #d4af37;
-      text-shadow: 0 0 20px #000, 2px 2px 4px #8b0000;
       margin: 20px 0;
       z-index: 2;
       font-family: 'Poppins', sans-serif;
@@ -85,7 +146,6 @@
       font-size: 48px;
       font-weight: 800;
       color: #d4af37;
-      text-shadow: 0 0 15px #000, 3px 3px 0 #5a3a1a;
       margin-top: 20px;
       z-index: 2;
     }
@@ -107,7 +167,7 @@
       background-size: contain;
       filter: drop-shadow(0 0 8px orange);
       animation: launch 4s linear infinite;
-      z-index: 3;
+      z-index: 15;
     }
     @keyframes launch {
       0% { bottom: -100px; opacity: 1; transform: translateX(0) rotate(0deg);}
@@ -122,9 +182,9 @@
     .missile:nth-child(6) { left: 80%; animation-duration: 4s; animation-delay: 0.9s; width: 48px; height: 95px;}
     .missile:nth-child(7) { left: 92%; animation-duration: 3.4s; animation-delay: 2.1s; width: 42px; height: 85px;}
     
-    .empty-home { text-align: center; padding: 60px 20px; color: #aaa; background: #111; }
+    .empty-home { text-align: center; padding: 60px 20px; color: #aaa; background: rgba(0,0,0,0.3); position: relative; z-index: 10; backdrop-filter: blur(2px); }
     
-    /* فلتر وبطاقات */
+    /* فلتر وبطاقات (لم تتغير) */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -169,7 +229,7 @@
     .page-header{padding:14px 20px 10px;border-bottom:1px solid #333;background:#0a0a0a}
     .page-header h2{font-size:17px;color:#d4af37;font-weight:600}
 
-    /* Modal styles */
+    /* Modal styles (لم تتغير) */
     .modal {
       display: none;
       position: fixed;
@@ -314,6 +374,8 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
+          <!-- طبقة النجوم المتحركة -->
+          <div class="stars"></div>
           <div class="flags-container"><div class="flag flag-iran"></div><div class="victory-text">النصر للاسلام</div><div class="flag flag-palestine"></div></div>
           <div class="home-title">مرحباً بكم في VIRTUX</div>
           <div class="home-subtitle">مجتمع الألعاب والنخبة</div>
@@ -325,7 +387,7 @@
   </div>
 </div>
 
-<!-- Modal تسجيل الدخول والتسجيل -->
+<!-- Modal تسجيل الدخول والتسجيل (لم يتغير) -->
 <div id="authModal" class="modal">
   <div class="modal-content">
     <span class="modal-close" id="closeModal">&times;</span>
@@ -367,6 +429,7 @@
 </div>
 
 <script>
+// (جميع أكواد JavaScript تبقى كما هي تماماً دون أي تغيير)
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
