@@ -23,8 +23,8 @@
     .dd-menu a:hover{background:#d4af37;color:#000}
     .vx-ticker{background:#000;padding:5px 16px;display:flex;align-items:center;gap:10px;overflow:hidden}
     .ticker-label{font-size:11px;background:#d4af37;color:#000;padding:2px 8px;border-radius:3px;font-weight:700;white-space:nowrap}
-    .ticker-track{display:flex;gap:30px;animation:ticker 28s linear infinite;white-space:nowrap}
-    @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .ticker-track{display:flex;gap:30px;white-space:nowrap}
+    /* تم إيقاف الحركة */
     .ticker-item{font-size:12px;color:#99aabb}
     .ticker-item span{color:#d4af37}
     .vx-body{display:flex;flex:1}
@@ -37,7 +37,7 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
-    /* خلفية صفحة الهوم الأصلية */
+    /* خلفية الصفحة الرئيسية بدون حركة */
     .home-hero {
       position: relative;
       background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
@@ -49,38 +49,20 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      overflow: hidden;
       border-bottom: none;
     }
-    .flags-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 40px;
-      margin-bottom: 30px;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 2;
+    
+    /* إخفاء الصواريخ المتحركة */
+    .missile {
+      display: none;
     }
-    .flag {
-      width: 140px;
-      height: 90px;
-      background-size: cover;
-      background-position: center;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    
+    /* إزالة أي محتوى فارغ إضافي */
+    .empty-home {
+      display: none;
     }
-    .flag-iran { background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/ca/Flag_of_Iran.svg'); }
-    .flag-palestine { background-image: url('https://upload.wikimedia.org/wikipedia/commons/0/00/Flag_of_Palestine.svg'); }
-    .victory-text {
-      font-size: 56px;
-      font-weight: bold;
-      color: #d4af37;
-      text-shadow: 0 0 20px #000, 2px 2px 4px #8b0000;
-      margin: 20px 0;
-      z-index: 2;
-      font-family: 'Poppins', sans-serif;
-    }
+    
+    /* تنسيق العنوان فقط */
     .home-title {
       font-size: 48px;
       font-weight: 800;
@@ -89,42 +71,8 @@
       margin-top: 20px;
       z-index: 2;
     }
-    .home-subtitle {
-      font-size: 18px;
-      color: #eee;
-      background: rgba(0,0,0,0.6);
-      padding: 8px 20px;
-      border-radius: 40px;
-      margin-top: 15px;
-      z-index: 2;
-    }
-    .missile {
-      position: absolute;
-      bottom: -80px;
-      width: 45px;
-      height: 90px;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff4444"><path d="M12,2 L14,8 L22,8 L16,12 L18,18 L12,14 L6,18 L8,12 L2,8 L10,8 L12,2Z"/></svg>') no-repeat center;
-      background-size: contain;
-      filter: drop-shadow(0 0 8px orange);
-      animation: launch 4s linear infinite;
-      z-index: 3;
-    }
-    @keyframes launch {
-      0% { bottom: -100px; opacity: 1; transform: translateX(0) rotate(0deg);}
-      50% { opacity: 1; transform: translateX(25px) rotate(6deg);}
-      100% { bottom: 110%; opacity: 0; transform: translateX(-25px) rotate(-6deg);}
-    }
-    .missile:nth-child(1) { left: 5%; animation-duration: 3s; animation-delay: 0s; width: 40px; height: 80px;}
-    .missile:nth-child(2) { left: 20%; animation-duration: 4.2s; animation-delay: 0.7s; width: 50px; height: 100px;}
-    .missile:nth-child(3) { left: 35%; animation-duration: 3.6s; animation-delay: 1.2s; width: 45px; height: 90px;}
-    .missile:nth-child(4) { left: 50%; animation-duration: 4.5s; animation-delay: 0.3s; width: 55px; height: 110px;}
-    .missile:nth-child(5) { left: 65%; animation-duration: 3.8s; animation-delay: 1.8s; width: 40px; height: 80px;}
-    .missile:nth-child(6) { left: 80%; animation-duration: 4s; animation-delay: 0.9s; width: 48px; height: 95px;}
-    .missile:nth-child(7) { left: 92%; animation-duration: 3.4s; animation-delay: 2.1s; width: 42px; height: 85px;}
     
-    .empty-home { text-align: center; padding: 60px 20px; color: #aaa; background: #111; }
-    
-    /* فلتر وبطاقات */
+    /* باقي الأنماط كما هي */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -314,12 +262,10 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
-          <div class="flags-container"><div class="flag flag-iran"></div><div class="victory-text">النصر للاسلام</div><div class="flag flag-palestine"></div></div>
+          <!-- تم حذف الأعلام، نص النصر، والنص الفرعي -->
           <div class="home-title">مرحباً بكم في VIRTUX</div>
-          <div class="home-subtitle">مجتمع الألعاب والنخبة</div>
-          <div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div>
+          <!-- تم حذف الصواريخ والرسالة الفارغة -->
         </div>
-        <div class="empty-home"><p>✨ سيتم إضافة محتوى الصفحة الرئيسية قريباً.</p></div>
       </div>
     </div>
   </div>
@@ -473,7 +419,7 @@ async function loadTickerNews() {
     if(!data || !data.length) { track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>'; return; }
     const items = [...data, ...data];
     track.innerHTML = items.map(item => `<span class="ticker-item">${item.url ? `<a href="${item.url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(item.title)}</a>` : `📢 ${escapeHtml(item.title)}`}</span>`).join('');
-    track.style.animation = 'none'; track.offsetHeight; track.style.animation = 'ticker 28s linear infinite';
+    // تم إيقاف الحركة (لا أنيميشن)
   } catch(e) { track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>'; }
 }
 
