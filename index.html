@@ -10,8 +10,9 @@
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
     .vx-topbar{display:flex;align-items:center;padding:10px 18px;background:#000;border-bottom:1px solid #d4af37;gap:12px;flex-wrap:wrap}
-    .vx-logo{font-size:22px;font-weight:700;color:#d4af37;letter-spacing:2px}
+    .vx-logo{font-size:22px;font-weight:700;color:#d4af37;letter-spacing:2px;display:flex;align-items:center;gap:12px}
     .vx-logo span{color:#fff;font-weight:400}
+    .welcome-text{font-size:14px;color:#d4af37;font-weight:400;letter-spacing:0}
     .vx-topnav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
     .dd{position:relative}
     .dd-btn{background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer}
@@ -24,7 +25,6 @@
     .vx-ticker{background:#000;padding:5px 16px;display:flex;align-items:center;gap:10px;overflow:hidden}
     .ticker-label{font-size:11px;background:#d4af37;color:#000;padding:2px 8px;border-radius:3px;font-weight:700;white-space:nowrap}
     .ticker-track{display:flex;gap:30px;white-space:nowrap}
-    /* تم إيقاف الحركة */
     .ticker-item{font-size:12px;color:#99aabb}
     .ticker-item span{color:#d4af37}
     .vx-body{display:flex;flex:1}
@@ -53,24 +53,8 @@
     }
     
     /* إخفاء الصواريخ المتحركة */
-    .missile {
-      display: none;
-    }
-    
-    /* إزالة أي محتوى فارغ إضافي */
-    .empty-home {
-      display: none;
-    }
-    
-    /* تنسيق العنوان فقط */
-    .home-title {
-      font-size: 48px;
-      font-weight: 800;
-      color: #d4af37;
-      text-shadow: 0 0 15px #000, 3px 3px 0 #5a3a1a;
-      margin-top: 20px;
-      z-index: 2;
-    }
+    .missile { display: none; }
+    .empty-home { display: none; }
     
     /* باقي الأنماط كما هي */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
@@ -225,7 +209,10 @@
 <body>
 <div class="vx-root">
   <div class="vx-topbar">
-    <div class="vx-logo">VIRT<span>UX</span></div>
+    <div class="vx-logo">
+      VIRT<span>UX</span>
+      <span class="welcome-text">Welcome to Virtux</span>
+    </div>
     <div class="vx-topnav">
       <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 Gaming News</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ Youtube News</a></div></div>
       <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a></div></div>
@@ -262,9 +249,7 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
-          <!-- تم حذف الأعلام، نص النصر، والنص الفرعي -->
-          <div class="home-title">مرحباً بكم في VIRTUX</div>
-          <!-- تم حذف الصواريخ والرسالة الفارغة -->
+          <!-- تم حذف النص المركزي -->
         </div>
       </div>
     </div>
@@ -419,7 +404,6 @@ async function loadTickerNews() {
     if(!data || !data.length) { track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>'; return; }
     const items = [...data, ...data];
     track.innerHTML = items.map(item => `<span class="ticker-item">${item.url ? `<a href="${item.url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(item.title)}</a>` : `📢 ${escapeHtml(item.title)}`}</span>`).join('');
-    // تم إيقاف الحركة (لا أنيميشن)
   } catch(e) { track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>'; }
 }
 
