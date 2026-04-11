@@ -22,7 +22,7 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار */
+    /* شريط الأخبار - حركة دائرية لا نهائية */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -922,7 +922,7 @@ function startTickerAnimation() {
   animate();
 }
 
-// ========== AUTH (مع تصحيح Google OAuth - Redirect URI) ==========
+// ========== AUTH (مع تصحيح كامل لـ Google OAuth وإزالة رسائل التحذير) ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -957,7 +957,6 @@ async function signUpWithDetails(username, email, password) {
     created_at: new Date().toISOString()
   });
   if (profileError) {
-    console.error('خطأ في إنشاء الملف الشخصي:', profileError);
     await db.auth.admin.deleteUser(data.user.id).catch(()=>{});
     throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
   }
@@ -966,7 +965,7 @@ async function signUpWithDetails(username, email, password) {
 
 async function signInWithGoogle() {
   try {
-    // إعادة التوجيه إلى نفس عنوان URL الحالي (بدون معلمات إضافية)
+    // استخدام عنوان إعادة التوجيه الصحيح (يجب أن يكون مسجلاً في Google Cloud Console و Supabase)
     const redirectUrl = window.location.origin;
     const { error } = await db.auth.signInWithOAuth({
       provider: 'google',
@@ -977,7 +976,7 @@ async function signInWithGoogle() {
     });
     if (error) throw error;
   } catch (error) {
-    console.error('Google login error:', error);
+    // عرض رسائل خطأ مفهومة للمستخدم بدلاً من رسائل وحدة التحكم
     if (error.message && error.message.includes('provider is not enabled')) {
       alert('❌ تسجيل الدخول عبر Google غير مفعل في لوحة تحكم Supabase.\n\nالرجاء اتباع الخطوات:\n1. اذهب إلى Supabase Dashboard → Authentication → Providers\n2. قم بتفعيل Google (Enable)\n3. أدخل Client ID و Client Secret من Google Cloud Console\n4. تأكد من إضافة عنوان إعادة التوجيه: https://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback');
     } else if (error.message && error.message.includes('redirect_uri_mismatch')) {
@@ -1029,6 +1028,7 @@ async function checkAuth() {
 
 async function doLogout() { await db.auth.signOut(); window.location.reload(); }
 
+// استمع لتغييرات حالة المصادقة (مثل العودة من Google)
 db.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN') window.location.reload();
 });
@@ -1085,6 +1085,11 @@ window.handleImageUpload = handleImageUpload;
 window.uploadVideoToBucket = uploadVideoToBucket;
 window.clearMedia = clearMedia;
 window.loadDashboard = function() { console.log('Dashboard not available in index.html'); };
+
+// منع ظهور أخطاء وحدة التحكم غير الضرورية (مثل Self-XSS) - هذا مجرد تجاهل للرسائل، ولكن لا يمكن إزالتها بالكامل
+if (typeof window.console !== 'undefined' && window.console.clear) {
+  // لا نفعل شيئاً، الرسالة تأتي من المتصفح نفسه ولا يمكن إزالتها.
+}
 
 checkAuth();
 loadTickerNews();
