@@ -6,7 +6,6 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* جميع الأنماط كما هي (لن أكررها للاختصار، لكنها موجودة في الكود السابق) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -920,7 +919,7 @@ function startTickerAnimation() {
   animate();
 }
 
-// ========== AUTH مع التصحيح النهائي لـ redirect_uri ==========
+// ========== AUTH مع تصحيح كامل لإنشاء الحساب ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -942,11 +941,20 @@ async function signUpWithDetails(username, email, password) {
   if (!isValidEmail(email)) throw new Error('البريد الإلكتروني غير صالح');
   if (password.length < 6) throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
   if (username.length < 3) throw new Error('اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
+  
+  // التحقق من عدم وجود اسم مستخدم مكرر
   const { data: existingUser } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
   if (existingUser) throw new Error('اسم المستخدم موجود بالفعل');
+  
+  // 1. إنشاء الحساب في auth
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
-  if (error) throw error;
+  if (error) {
+    if (error.message.includes('User already registered')) throw new Error('البريد الإلكتروني مسجل بالفعل');
+    throw error;
+  }
   if (!data.user) throw new Error('فشل إنشاء الحساب');
+  
+  // 2. إنشاء الملف الشخصي في جدول profiles
   const { error: profileError } = await db.from('profiles').insert({
     id: data.user.id,
     username: username,
@@ -955,6 +963,8 @@ async function signUpWithDetails(username, email, password) {
     created_at: new Date().toISOString()
   });
   if (profileError) {
+    console.error('خطأ في إنشاء الملف الشخصي:', profileError);
+    // إذا فشل إدراج الملف الشخصي، نحذف حساب auth للحفاظ على التناسق (اختياري)
     await db.auth.admin.deleteUser(data.user.id).catch(()=>{});
     throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
   }
@@ -963,7 +973,6 @@ async function signUpWithDetails(username, email, password) {
 
 async function signInWithGoogle() {
   try {
-    // استخدام عنوان إعادة التوجيه الصحيح المطابق لما في Google Cloud Console
     const redirectUri = 'https://eyqcpkhjzpmawqtilhgl.supabase.co/auth/v1/callback';
     const { error } = await db.auth.signInWithOAuth({
       provider: 'google',
@@ -996,6 +1005,7 @@ async function checkAuth() {
     if(userArea) userArea.style.display = 'flex';
     let { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
     if (!profile) {
+      // إنشاء ملف شخصي لمستخدم Google الجديد
       let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
       let finalUsername = userName;
       let counter = 1;
