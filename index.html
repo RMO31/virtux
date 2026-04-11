@@ -341,7 +341,7 @@
       </div>
       <div id="loginError" class="error-msg"></div>
       <button class="btn-submit" id="doLoginBtn">دخول</button>
-      <button class="btn-submit google-btn-modal" id="googleModalBtn">G تسجيل الدخول عبر Google</button>
+      <button class="btn-submit google-btn-modal" id="googleLoginBtn">🔵 تسجيل دخول عن طريق غوغل</button>
       <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
     </div>
     <div id="modal-signup" style="display:none;">
@@ -360,6 +360,7 @@
       </div>
       <div id="signupError" class="error-msg"></div>
       <button class="btn-submit" id="doSignupBtn">تسجيل</button>
+      <button class="btn-submit google-btn-modal" id="googleSignupBtn">🔵 تسجيل عبر Google</button>
       <div class="auth-switch">لديك حساب بالفعل؟ <a id="switchToLogin">تسجيل الدخول</a></div>
     </div>
   </div>
@@ -476,7 +477,7 @@ async function loadTickerNews() {
   } catch(e) { track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>'; }
 }
 
-// ========== AUTH with identifier (email OR username) ==========
+// ========== AUTH ==========
 async function signInWithEmailOrUsername(identifier, password) {
   let email = identifier;
   const isEmail = identifier.includes('@') && identifier.includes('.');
@@ -571,7 +572,9 @@ document.getElementById('doSignupBtn').onclick = async () => {
     document.getElementById('loginPassword').value = '';
   } catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
 };
-document.getElementById('googleModalBtn').onclick = () => { signInWithGoogle(); };
+// أزرار Google
+document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); };
+document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
 checkAuth();
