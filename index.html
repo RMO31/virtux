@@ -22,7 +22,7 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار - حركة دائرية سلسة */
+    /* شريط الأخبار - حركة دائرية لا نهائية من اليمين إلى اليسار */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -47,6 +47,7 @@
       display: inline-flex;
       align-items: center;
       letter-spacing: 1px;
+      flex-shrink: 0;
     }
     .ticker-scroll {
       flex: 1;
@@ -369,7 +370,7 @@
     </div>
   </div>
   
-  <!-- شريط الأخبار المعدل -->
+  <!-- شريط الأخبار المعدل بشكل نهائي -->
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
     <div class="ticker-scroll" id="tickerScroll">
@@ -393,7 +394,6 @@
         <div class="home-hero">
           <div class="home-welcome">Welcome to Virtux</div>
           <div class="home-content-row">
-            <!-- قسم التعريف بالموقع (يسار) -->
             <div class="home-about">
               <h3>🎮 About Virtux</h3>
               <div class="about-text">
@@ -406,7 +406,6 @@
                 <li>👥 Subscribers System</li>
               </ul>
             </div>
-            <!-- قسم القوانين (يمين) -->
             <div class="home-rules">
               <h3>🛑 Rules</h3>
               <ul class="rules-list">
@@ -425,7 +424,6 @@
   </div>
 </div>
 
-<!-- Modal تسجيل الدخول والتسجيل -->
 <div id="authModal" class="modal">
   <div class="modal-content">
     <span class="modal-close" id="closeModal">&times;</span>
@@ -467,7 +465,7 @@
 </div>
 
 <script>
-// ========== جميع أكواد JavaScript الأصلية مع تحسين حركة التيكر (دائرية بلا فواصل) ==========
+// ========== جميع أكواد JavaScript الأصلية مع إصلاح حركة التيكر (دائري لا نهائي) ==========
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -570,13 +568,12 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== شريط الأخبار الديناميكي (حركة دائرية سلسة بلا فواصل) ====================
+// ==================== شريط الأخبار الديناميكي - حل نهائي (دائري لا نهائي) ====================
 let tickerItems = [];
-let tickerDOMItems = [];
 let tickerAnimationId = null;
 let tickerPosition = 0;
 let tickerContainerWidth = 0;
-const TICKER_SPEED = 2.4; // سرعة جيدة
+const TICKER_SPEED = 2.2;
 
 async function loadTickerNews() {
   try {
@@ -589,7 +586,6 @@ async function loadTickerNews() {
     if (!data || data.length === 0) {
       tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
     } else {
-      // لا نكرر البيانات هنا، سنستخدم آلية النقل الدائري
       tickerItems = data.map(item => ({ text: item.title, url: item.url }));
     }
     buildTickerTrack();
@@ -606,8 +602,9 @@ function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  tickerDOMItems = [];
-  tickerItems.forEach(item => {
+  // إضافة العناصر الأصلية + نسخة مكررة لضمان اللانهاية
+  const allItems = [...tickerItems, ...tickerItems];
+  allItems.forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
     if (item.url) {
@@ -620,47 +617,36 @@ function buildTickerTrack() {
       span.textContent = `📢 ${item.text}`;
     }
     track.appendChild(span);
-    tickerDOMItems.push(span);
   });
   const scrollDiv = document.getElementById('tickerScroll');
   if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
-  // حساب العرض الكلي للمسار
-  let totalWidth = 0;
-  tickerDOMItems.forEach(el => {
-    totalWidth += el.offsetWidth + 50; // +50 للـ padding
-  });
-  // بدء الحركة من أقصى اليمين (يبدأ المسار خارج الحاوية من جهة اليمين)
+  // حساب عرض النصف الأول (النسخة الأصلية)
+  const children = Array.from(track.children);
+  const halfCount = tickerItems.length;
+  let originalWidth = 0;
+  for (let i = 0; i < halfCount; i++) {
+    originalWidth += children[i].offsetWidth + 50;
+  }
+  // بدء الحركة: نضع الموضع بحيث تكون بداية النسخة الثانية عند الحافة اليمنى للحاوية
+  // أي نبدأ من -originalWidth + tickerContainerWidth
   tickerPosition = tickerContainerWidth;
   track.style.transform = `translateX(${tickerPosition}px)`;
+  window.halfWidth = originalWidth; // نحفظها للاستخدام في الحلقة
 }
 
 function startTickerAnimation() {
   if (tickerAnimationId) cancelAnimationFrame(tickerAnimationId);
   const track = document.getElementById('tickerTrack');
-  const scrollDiv = document.getElementById('tickerScroll');
-  if (!track || !scrollDiv) return;
+  if (!track) return;
   
   function animate() {
     tickerPosition -= TICKER_SPEED;
     track.style.transform = `translateX(${tickerPosition}px)`;
-    
-    // التحقق من العنصر الأول: إذا خرج بالكامل من الحاوية (الحافة اليمنى < الحافة اليسرى للحاوية)
-    if (tickerDOMItems.length > 0) {
-      const firstItem = tickerDOMItems[0];
-      const firstRect = firstItem.getBoundingClientRect();
-      const scrollRect = scrollDiv.getBoundingClientRect();
-      // إذا كان العنصر الأول قد تجاوز الحافة اليسرى تماماً
-      if (firstRect.right < scrollRect.left) {
-        // إزالة العنصر الأول وإلحاقه بنهاية القائمة
-        track.removeChild(firstItem);
-        track.appendChild(firstItem);
-        // تحديث المصفوفة
-        tickerDOMItems = Array.from(track.children);
-        // تعديل الموضع لتعويض عرض العنصر المنقول (للحفاظ على الاستمرارية)
-        const movedWidth = firstItem.offsetWidth + 50;
-        tickerPosition += movedWidth;
-        track.style.transform = `translateX(${tickerPosition}px)`;
-      }
+    // عندما يصل الموضع إلى -halfWidth، نعيد تعيينه إلى tickerContainerWidth - halfWidth
+    // لضمان استمرارية الحركة دون فجوة
+    if (tickerPosition <= -window.halfWidth) {
+      tickerPosition += window.halfWidth;
+      track.style.transform = `translateX(${tickerPosition}px)`;
     }
     tickerAnimationId = requestAnimationFrame(animate);
   }
