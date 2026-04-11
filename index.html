@@ -168,6 +168,29 @@
     .cc-handle{font-size:11px;color:#aaa}
     .page-header{padding:14px 20px 10px;border-bottom:1px solid #333;background:#0a0a0a}
     .page-header h2{font-size:17px;color:#d4af37;font-weight:600}
+    
+    /* أزرار المصادقة */
+    .auth-buttons {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn-google {
+      background: #4285F4;
+      color: white;
+      border: none;
+      padding: 5px 14px;
+      border-radius: 5px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+    .btn-google:hover {
+      background: #357ae8;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -178,11 +201,13 @@
     <div class="vx-topnav">
       <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 Gaming News</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ Youtube News</a></div></div>
       <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a><a onclick="window.showPage('yt-lives');window.closeDD()">🔴 Lives</a></div></div>
-      <!-- تم التعديل: اسم الزر من Collab إلى 📢 Advertisements، والقائمة الداخلية من 🌐 Projects إلى 🌐 Collaboration -->
       <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">📢 Advertisements ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 Collaboration</a></div></div>
     </div>
     <div id="auth-btn-area" style="margin-left:8px;">
-      <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">Login</a>
+      <div class="auth-buttons">
+        <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">Login</a>
+        <button id="btn-google-login" class="btn-google">G Sign in with Google</button>
+      </div>
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
         <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
         <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
@@ -239,7 +264,7 @@ const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
   'gaming-news': '📰 Gaming News', 'youtube-news': '▶️ Youtube News', 'yt-channels': '📺 Youtube Channels',
   'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives',
-  projects: '🌐 Collaboration'   // تم التعديل: أصبح اسم الصفحة "🌐 Collaboration" بدلاً من Projects
+  projects: '🌐 Collaboration'
 };
 
 const mainContainer = document.querySelector('.vx-main');
@@ -425,7 +450,6 @@ async function loadTickerNews() {
       track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>';
       return;
     }
-    // تكرار الأخبار لضمان استمرار الحركة (نكرر المصفوفة مرتين)
     const items = [...data, ...data];
     track.innerHTML = items.map(item => {
       const text = item.title;
@@ -436,9 +460,8 @@ async function loadTickerNews() {
         return `<span class="ticker-item">📢 ${escapeHtml(text)}</span>`;
       }
     }).join('');
-    // إعادة تشغيل الأنيميشن (للتأكد)
     track.style.animation = 'none';
-    track.offsetHeight; // force reflow
+    track.offsetHeight;
     track.style.animation = 'ticker 28s linear infinite';
   } catch(e) {
     console.error('خطأ في تحميل الأخبار:', e);
@@ -466,18 +489,41 @@ window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
 window.closeDD = closeDD;
 
-// Auth
+// ========== Auth with Google OAuth ==========
 const authDb = db;
+
+// تسجيل الدخول عبر Google
+async function signInWithGoogle() {
+  const { data, error } = await authDb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin // العودة إلى نفس الصفحة بعد المصادقة
+    }
+  });
+  if (error) {
+    console.error('Google login error:', error);
+    alert('فشل تسجيل الدخول عبر Google: ' + error.message);
+  }
+}
+
+// التحقق من الجلسة وإنشاء الملف الشخصي تلقائياً إذا لزم الأمر
 async function checkAuth() {
   const { data: { session } } = await authDb.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
+  const googleBtn = document.getElementById('btn-google-login');
   const userArea = document.getElementById('btn-user-area');
+  
   if (session && session.user) {
     if (loginLink) loginLink.style.display = 'none';
+    if (googleBtn) googleBtn.style.display = 'none';
     if (userArea) userArea.style.display = 'flex';
+    
+    // محاولة جلب الملف الشخصي
     let { data: profile, error } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
+    
+    // إذا لم يكن موجوداً، نقوم بإنشائه (خاصة لمستخدمي Google الجدد)
     if (!profile && !error) {
-      const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+      let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
       const { error: insertError } = await authDb.from('profiles').insert({
         id: session.user.id,
         username: userName,
@@ -487,11 +533,14 @@ async function checkAuth() {
       if (!insertError) {
         const { data: newProfile } = await authDb.from('profiles').select('username,role').eq('id', session.user.id).single();
         profile = newProfile;
+      } else {
+        console.error('Error creating profile:', insertError);
       }
     }
-    const userName = document.getElementById('user-name');
+    
+    const userNameSpan = document.getElementById('user-name');
     const roleBadge = document.getElementById('user-role-badge');
-    if (userName) userName.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
+    if (userNameSpan) userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
     if (roleBadge && profile?.role && profile.role !== 'user') {
       roleBadge.textContent = profile.role.toUpperCase();
       roleBadge.style.display = 'inline-block';
@@ -501,15 +550,19 @@ async function checkAuth() {
     window.userEmail = session.user.email;
   } else {
     if (loginLink) loginLink.style.display = 'inline-block';
+    if (googleBtn) googleBtn.style.display = 'inline-flex';
     if (userArea) userArea.style.display = 'none';
     window.userRole = 'guest';
   }
 }
+
+// تسجيل الخروج
 async function doLogout() {
   await authDb.auth.signOut();
   window.location.reload();
 }
 
+// ربط أزرار المصادقة
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => {
   e.preventDefault();
   const email = prompt('أدخل بريدك الإلكتروني:');
@@ -522,8 +575,23 @@ document.getElementById('btn-login-link')?.addEventListener('click', (e) => {
   });
 });
 
+document.getElementById('btn-google-login')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  signInWithGoogle();
+});
+
+// استمع لتغييرات حالة المصادقة (مثل عند العودة من Google)
+authDb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    window.location.reload(); // إعادة تحميل الصفحة لتحديث واجهة المستخدم
+  } else if (event === 'SIGNED_OUT') {
+    window.location.reload();
+  }
+});
+
+// بدء التطبيق
 checkAuth();
-loadTickerNews(); // تحميل الأخبار عند بدء الصفحة
+loadTickerNews();
 </script>
 </body>
 </html>
