@@ -23,6 +23,23 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
+
+    .btn-user-post{background:#d4af37;color:#000;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;}
+    .btn-user-post:hover{background:#f0c040;}
+    .btn-ytvip-post{background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;}
+    .btn-ytvip-post:hover{background:#d4af37;color:#000;}
+    #upm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:center;justify-content:center;}
+    #upm-modal.active{display:flex;}
+    .upm-box{background:#111;border:1px solid #d4af37;border-radius:14px;width:90%;max-width:460px;max-height:90vh;overflow-y:auto;}
+    .upm-top{background:#000;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #333;}
+    .upm-top h2{font-size:15px;color:#d4af37;}
+    .upm-close{background:transparent;border:1px solid #555;color:#aaa;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:16px;}
+    .upm-body{padding:18px;}
+    #upm-ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90;border-radius:7px;padding:9px;font-size:13px;margin-bottom:12px;display:none;}
+    #upm-err{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55;border-radius:7px;padding:9px;font-size:13px;margin-bottom:12px;display:none;}
+    #upm-submit{width:100%;padding:10px;background:#d4af37;color:#000;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;}
+    #upm-submit:hover{background:#f0c040;}
+    #upm-submit:disabled{background:#555;color:#999;cursor:not-allowed;}
     .vx-ticker {
       background: #000;
       padding: 0;
@@ -652,7 +669,7 @@
       </div>
     </div>
     <div class="profile-field">
-      <label>📛 اسم المستخدم</label>
+      <label>اسم المستخدم</label>
       <input type="text" id="profileUsername" placeholder="اسم المستخدم">
       <div id="usernameFeedback" class="username-feedback"></div>
     </div>
@@ -750,6 +767,13 @@ rooms.forEach(room => {
   const pageDiv = document.createElement('div');
   pageDiv.className = 'vx-page';
   pageDiv.id = `page-${room}`;
+  // Post button for users
+  const postableRooms = ['live','tournaments','highlights','yt-videos'];
+  const postBtn = postableRooms.includes(room)
+    ? `<button class="btn-user-post" onclick="window.openUserPostModal('${room}')">➕ Post</button>` : '';
+  // Youtuber VIP button
+  const ytVipBtn = room === 'yt-videos'
+    ? `<button class="btn-ytvip-post" id="btn-ytvip" onclick="window.openYTVIPModal()" style="display:none;">👑 Post VIP Video</button>` : '';
   let filterBar = '';
   if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
   else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
@@ -1339,15 +1363,21 @@ function isValidEmail(email) {
 }
 
 async function signInWithEmailOrUsername(identifier, password) {
-  let email = identifier;
-  const isEmail = identifier.includes('@') && identifier.includes('.');
+  let email = identifier.trim();
+  if (!email || !password) throw new Error('يرجى ملء جميع الحقول');
+  const isEmail = email.includes('@');
   if (!isEmail) {
-    const { data, error } = await db.from('profiles').select('email').eq('username', identifier).maybeSingle();
+    const { data, error } = await db.from('profiles').select('email').eq('username', email).maybeSingle();
     if (error || !data) throw new Error('اسم المستخدم غير موجود');
     email = data.email;
   }
-  const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (error.message.includes('Invalid login credentials')) throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+    if (error.message.includes('Email not confirmed')) throw new Error('يرجى تأكيد البريد الإلكتروني أولاً');
+    throw new Error(error.message);
+  }
+  return data;
 }
 
 async function signUpWithDetails(username, email, password) {
@@ -1449,6 +1479,13 @@ async function updateUIAfterAuth() {
         userAvatarImg.style.display = 'none';
       }
       window.userRole = profile?.role || 'user';
+      window.currentUserId = session.user.id;
+      window.currentUsername = profile?.username || '';
+      // Show Youtuber VIP button if role is youtuber-vip
+      const ytVipBtn = document.getElementById('btn-ytvip');
+      if (ytVipBtn) {
+        ytVipBtn.style.display = (profile?.role === 'youtuber-vip' || profile?.role === 'vip') ? 'inline-block' : 'none';
+      }
     }
   } else {
     if(loginLink) loginLink.style.display = 'inline-block';
@@ -1579,6 +1616,165 @@ document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfi
 document.getElementById('logoutButton')?.addEventListener('click', doLogout);
 
 // ربط الدوال العامة
+
+// ===== USER POST MODAL =====
+const userPostForms = {
+  live: `
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Stream Title *</label>
+    <input id="upm-title" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="e.g. NinjaX Gaming"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Game • Type</label>
+    <input id="upm-desc" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="Valorant • Ranked"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Stream URL</label>
+    <input id="upm-url" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="https://youtube.com/live/..."></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Type</label>
+    <select id="upm-tag" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;">
+      <option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option>
+    </select></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Thumbnail (optional)</label>
+    <input type="file" id="upm-img" accept="image/*" style="color:#aaa;font-size:12px;" onchange="previewUPMImg()">
+    <img id="upm-preview" style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:6px;"></div>`,
+
+  tournaments: `
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Tournament Name *</label>
+    <input id="upm-title" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="Community Cup #5"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Game • Teams</label>
+    <input id="upm-desc" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="Valorant • 16 teams"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Registration URL</label>
+    <input id="upm-url" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="https://..."></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Type</label>
+    <select id="upm-tag" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;">
+      <option value="Registration">📋 Registration</option><option value="Global">🌍 Global</option>
+    </select></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Banner Image (optional)</label>
+    <input type="file" id="upm-img" accept="image/*" style="color:#aaa;font-size:12px;" onchange="previewUPMImg()">
+    <img id="upm-preview" style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:6px;"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Description</label>
+    <textarea id="upm-content" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" rows="3" placeholder="Details..."></textarea></div>`,
+
+  highlights: `
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Title</label>
+    <input id="upm-title" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="Insane 1v5 clutch"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Player • Game</label>
+    <input id="upm-desc" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="NinjaX • CS2"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Type</label>
+    <select id="upm-tag" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" onchange="toggleUPMFields()">
+      <option value="Video">📹 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option>
+    </select></div>
+    <div id="upm-video-field" style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Video URL</label>
+    <input id="upm-url" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="https://youtube.com/..."></div>
+    <div id="upm-photo-field" style="display:none;margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Upload Photo</label>
+    <input type="file" id="upm-img" accept="image/*" style="color:#aaa;font-size:12px;" onchange="previewUPMImg()">
+    <img id="upm-preview" style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:6px;"></div>`,
+
+  'yt-videos': `
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">YouTube Video URL *</label>
+    <input id="upm-url" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="https://youtube.com/watch?v=..."></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Title (optional)</label>
+    <input id="upm-title" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="Video title"></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Description</label>
+    <input id="upm-desc" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="Short description"></div>`
+};
+
+let upmRoom = '';
+let upmImgData = null;
+
+window.openUserPostModal = function(room) {
+  if (!window.currentUserId) {
+    openModal();
+    return;
+  }
+  upmRoom = room;
+  upmImgData = null;
+  document.getElementById('upm-room-title').textContent = room === 'live' ? '🔴 Live' : room === 'tournaments' ? '🏆 Tournaments' : room === 'highlights' ? '🎬 Highlights' : '🎬 YT Videos';
+  document.getElementById('upm-form-body').innerHTML = userPostForms[room] || '';
+  document.getElementById('upm-ok').style.display = 'none';
+  document.getElementById('upm-err').style.display = 'none';
+  document.getElementById('upm-modal').classList.add('active');
+};
+
+window.openYTVIPModal = function() {
+  upmRoom = 'yt-videos';
+  upmImgData = null;
+  document.getElementById('upm-room-title').textContent = '👑 VIP Video';
+  document.getElementById('upm-form-body').innerHTML = `
+    <div style="background:#2a1500;border:1px solid #d4af37;border-radius:7px;padding:10px;margin-bottom:14px;font-size:12px;color:#d4af37;">👑 This video will be visible to VIP & Member users only</div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">YouTube Video URL *</label>
+    <input id="upm-url" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="https://youtube.com/watch?v=..."></div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;color:#d4af37;display:block;margin-bottom:5px;">Title</label>
+    <input id="upm-title" style="width:100%;padding:9px;border-radius:7px;border:1px solid #333;background:#1a1a1a;color:#fff;font-size:13px;" placeholder="Video title"></div>
+    <input type="hidden" id="upm-tag" value="VIP">`;
+  document.getElementById('upm-ok').style.display = 'none';
+  document.getElementById('upm-err').style.display = 'none';
+  document.getElementById('upm-modal').classList.add('active');
+};
+
+function toggleUPMFields() {
+  const tag = document.getElementById('upm-tag')?.value;
+  const vf = document.getElementById('upm-video-field');
+  const pf = document.getElementById('upm-photo-field');
+  if (!vf || !pf) return;
+  if (tag === 'Photo') { vf.style.display = 'none'; pf.style.display = 'block'; }
+  else { vf.style.display = 'block'; pf.style.display = 'none'; }
+}
+window.toggleUPMFields = toggleUPMFields;
+
+function previewUPMImg() {
+  const file = document.getElementById('upm-img')?.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    upmImgData = e.target.result;
+    const prev = document.getElementById('upm-preview');
+    if (prev) { prev.src = e.target.result; prev.style.display = 'block'; }
+  };
+  reader.readAsDataURL(file);
+}
+window.previewUPMImg = previewUPMImg;
+
+document.getElementById('upm-submit').onclick = async () => {
+  const room = upmRoom;
+  const title = (document.getElementById('upm-title')?.value || '').trim();
+  const desc = (document.getElementById('upm-desc')?.value || '').trim();
+  const url = (document.getElementById('upm-url')?.value || '').trim();
+  const tagEl = document.getElementById('upm-tag');
+  const tag = tagEl ? tagEl.value : room;
+  const content = (document.getElementById('upm-content')?.value || '').trim() || null;
+  const errEl = document.getElementById('upm-err');
+  const okEl = document.getElementById('upm-ok');
+
+  if (!title && !url) { errEl.textContent = '❌ Please enter a title or URL!'; errEl.style.display = 'block'; return; }
+  if ((tag === 'Photo') && !upmImgData) { errEl.textContent = '❌ Please upload a photo!'; errEl.style.display = 'block'; return; }
+  if ((tag === 'Video' || tag === 'Pro') && !url) { errEl.textContent = '❌ Please enter a video URL!'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('upm-submit');
+  btn.disabled = true; btn.textContent = 'Publishing...';
+
+  const body = {
+    title: title || '🎬 Post',
+    description: desc,
+    icon: upmImgData || '📄',
+    url, tag, room, content,
+    posted_by: window.currentUserId || null
+  };
+
+  try {
+    const { error } = await db.from('posts').insert(body);
+    if (error) throw error;
+    okEl.textContent = '✅ Published successfully!';
+    okEl.style.display = 'block';
+    errEl.style.display = 'none';
+    btn.disabled = false; btn.textContent = '➕ Publish';
+    loadPage(room);
+    setTimeout(() => document.getElementById('upm-modal').classList.remove('active'), 1800);
+  } catch(e) {
+    errEl.textContent = '❌ ' + e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = '➕ Publish';
+  }
+};
+
+document.getElementById('upm-close').onclick = () => document.getElementById('upm-modal').classList.remove('active');
+
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
@@ -1599,5 +1795,21 @@ checkAuth();
 loadTickerNews();
 showPage('home');
 </script>
+
+<!-- USER POST MODAL -->
+<div id="upm-modal">
+  <div class="upm-box">
+    <div class="upm-top">
+      <h2>➕ Post in <span id="upm-room-title"></span></h2>
+      <button class="upm-close" id="upm-close">✕</button>
+    </div>
+    <div class="upm-body">
+      <div id="upm-ok"></div>
+      <div id="upm-err"></div>
+      <div id="upm-form-body"></div>
+      <button id="upm-submit" style="margin-top:8px;">➕ Publish</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
