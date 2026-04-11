@@ -6,7 +6,6 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* جميع الأنماط كما هي (لم تتغير) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -392,6 +391,111 @@
       background: #555;
       color: white;
     }
+
+    /* نافذة الملف الشخصي */
+    .profile-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+    }
+    .profile-modal.active { display: flex; }
+    .profile-modal .modal-box {
+      background: #1a1a1a;
+      border: 1px solid #d4af37;
+      border-radius: 16px;
+      width: 95%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 25px;
+    }
+    .profile-modal .modal-box h2 {
+      color: #d4af37;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .profile-avatar {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .profile-avatar img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #d4af37;
+      background: #2a2a2a;
+    }
+    .profile-avatar .avatar-placeholder {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: #2a2a3a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      border: 2px solid #d4af37;
+    }
+    .profile-field {
+      margin-bottom: 15px;
+    }
+    .profile-field label {
+      display: block;
+      margin-bottom: 5px;
+      color: #d4af37;
+      font-weight: 500;
+    }
+    .profile-field input, .profile-field select {
+      width: 100%;
+      padding: 10px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: white;
+    }
+    .profile-field input:focus {
+      outline: none;
+      border-color: #d4af37;
+    }
+    .profile-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .profile-buttons button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-save {
+      background: #d4af37;
+      color: #000;
+    }
+    .btn-cancel {
+      background: #555;
+      color: white;
+    }
+    .change-password-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #444;
+    }
+    .change-password-section h3 {
+      color: #d4af37;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -409,8 +513,12 @@
         <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
       </div>
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
-        <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
-        <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img id="user-avatar-img" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#2a2a3a; display:none;">
+          <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
+          <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
+        </div>
+        <button id="profileButton" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
         <button id="logoutButton" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
       </div>
     </div>
@@ -469,6 +577,7 @@
   </div>
 </div>
 
+<!-- Modal تسجيل الدخول والتسجيل -->
 <div id="authModal" class="modal">
   <div class="modal-content">
     <span class="modal-close" id="closeModal">&times;</span>
@@ -523,6 +632,70 @@
   </div>
 </div>
 
+<!-- نافذة الملف الشخصي (Profile) -->
+<div id="profileModal" class="profile-modal">
+  <div class="modal-box">
+    <h2>👤 الملف الشخصي</h2>
+    <div class="profile-avatar">
+      <div id="profileAvatarContainer">
+        <img id="profileAvatarImg" src="" style="display:none; width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid #d4af37;">
+        <div id="profileAvatarPlaceholder" class="avatar-placeholder" style="display:flex;">👤</div>
+      </div>
+      <div style="margin-top:10px;">
+        <input type="file" id="avatarUpload" accept="image/*" style="display:none;">
+        <button id="changeAvatarBtn" class="btn-submit" style="width:auto; padding:5px 12px; font-size:12px;">📷 تغيير الصورة</button>
+      </div>
+    </div>
+    <div class="profile-field">
+      <label>📛 اسم المستخدم</label>
+      <input type="text" id="profileUsername" readonly disabled style="background:#3a3a4a;">
+    </div>
+    <div class="profile-field">
+      <label>📧 البريد الإلكتروني</label>
+      <input type="email" id="profileEmail" readonly disabled style="background:#3a3a4a;">
+    </div>
+    <div class="profile-field">
+      <label>🎂 تاريخ الميلاد</label>
+      <input type="date" id="profileBirthdate">
+    </div>
+    <div class="profile-field">
+      <label>📍 مكان الولادة</label>
+      <input type="text" id="profileBirthPlace" placeholder="المدينة، الدولة">
+    </div>
+    <div class="profile-field">
+      <label>🌍 البلد الحالي</label>
+      <input type="text" id="profileCountry" placeholder="الدولة">
+    </div>
+    <div class="profile-field">
+      <label>🎮 اللعبة المفضلة</label>
+      <input type="text" id="profileFavoriteGame" placeholder="مثال: Call of Duty, FIFA, etc.">
+    </div>
+    
+    <div class="change-password-section">
+      <h3>🔒 تغيير كلمة المرور</h3>
+      <div class="profile-field">
+        <label>كلمة المرور الحالية</label>
+        <input type="password" id="oldPassword" placeholder="********">
+      </div>
+      <div class="profile-field">
+        <label>كلمة المرور الجديدة</label>
+        <input type="password" id="newPassword" placeholder="********">
+      </div>
+      <div class="profile-field">
+        <label>تأكيد كلمة المرور الجديدة</label>
+        <input type="password" id="confirmNewPassword" placeholder="********">
+      </div>
+      <div id="passwordError" class="error-msg" style="margin-bottom:10px;"></div>
+      <button id="changePasswordBtn" class="btn-submit" style="width:100%;">تغيير كلمة المرور</button>
+    </div>
+    
+    <div class="profile-buttons">
+      <button id="saveProfileBtn" class="btn-save">💾 حفظ التغييرات</button>
+      <button id="closeProfileBtn" class="btn-cancel">إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
@@ -530,6 +703,16 @@ const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
 let pendingGoogleUser = null;
+
+// ==================== إضافة أعمدة جديدة إلى جدول profiles (يجب تشغيلها مرة واحدة) ====================
+// يمكنك تشغيل هذا SQL في Supabase SQL Editor:
+/*
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birthdate DATE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_place TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS country TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS favorite_game TEXT;
+*/
 
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
 const roomLabels = {
@@ -628,7 +811,7 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== دوال جلب المعلومات من يوتيوب ====================
+// ==================== دوال جلب المعلومات من يوتيوب (للغرف الأخرى) ====================
 async function fetchYouTubeChannelInfo(url) {
   try {
     let handle = url.split('@')[1]?.split(/[\/?]/)[0];
@@ -664,7 +847,6 @@ async function fetchYouTubeVideoInfo(url) {
   return null;
 }
 
-// ==================== إضافة قناة يوتيوب (رابط فقط) ====================
 async function addYouTubeChannel(room) {
   let url = document.getElementById(`url-${room}`).value.trim();
   if (!url) { alert('أدخل رابط القناة'); return; }
@@ -690,7 +872,6 @@ async function addYouTubeChannel(room) {
   } catch(e) { alert('خطأ: ' + e.message); }
 }
 
-// ==================== إضافة فيديو يوتيوب أو بث مباشر (رابط فقط) ====================
 async function addYouTubeVideo(room, isLive = false) {
   let url = document.getElementById(`url-${room}`).value.trim();
   if (!url) { alert('أدخل رابط الفيديو أو البث'); return; }
@@ -718,7 +899,7 @@ async function addYouTubeVideo(room, isLive = false) {
   } catch(e) { alert('خطأ: ' + e.message); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة (اختصار للطول) ====================
+// نموذج الإضافة لكل غرفة (اختصار للطول)
 function getAddForm(room) {
   if (room === 'yt-channels') {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب</h3>
@@ -820,7 +1001,6 @@ function getAddForm(room) {
   return `<div class="card"><h3>➕ إضافة منشور</h3><div class="empty-state">نموذج غير متوفر لهذه الغرفة.</div></div>`;
 }
 
-// ==================== دوال مساعدة للرفع (للغرف الكاملة) ====================
 async function handleImageUpload(room) {
   const fileInput = document.getElementById(`imgfile-${room}`);
   const file = fileInput?.files[0];
@@ -975,15 +1155,146 @@ function buildTickerTrack() {
   requestAnimationFrame(() => {
     const totalWidth = track.scrollWidth;
     const halfWidth = totalWidth / 2;
-    const speed = 80; // px per second
+    const speed = 80;
     const duration = (halfWidth + window.innerWidth) / speed;
     track.style.animation = `tickerSlide ${duration}s linear infinite`;
   });
 }
 
-function startTickerAnimation() {}
+// ========== دوال الملف الشخصي ==========
+let currentUserProfile = null;
 
-// ========== AUTH مع إصلاح كامل لزر الخروج ==========
+// رفع الصورة إلى Supabase Storage
+async function uploadAvatar(file, userId) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${userId}-${Date.now()}.${fileExt}`;
+  const filePath = `avatars/${fileName}`;
+  const { error } = await db.storage.from('avatars').upload(filePath, file);
+  if (error) throw error;
+  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath);
+  return publicUrl;
+}
+
+// فتح نافذة الملف الشخصي
+async function openProfileModal() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return;
+  const userId = session.user.id;
+  // جلب بيانات الملف الشخصي
+  const { data: profile, error } = await db.from('profiles').select('*').eq('id', userId).single();
+  if (error) {
+    console.error(error);
+    return;
+  }
+  currentUserProfile = profile;
+  // ملء الحقول
+  document.getElementById('profileUsername').value = profile.username || '';
+  document.getElementById('profileEmail').value = session.user.email;
+  document.getElementById('profileBirthdate').value = profile.birthdate || '';
+  document.getElementById('profileBirthPlace').value = profile.birth_place || '';
+  document.getElementById('profileCountry').value = profile.country || '';
+  document.getElementById('profileFavoriteGame').value = profile.favorite_game || '';
+  // عرض الصورة
+  const avatarImg = document.getElementById('profileAvatarImg');
+  const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
+  if (profile.avatar_url) {
+    avatarImg.src = profile.avatar_url;
+    avatarImg.style.display = 'block';
+    avatarPlaceholder.style.display = 'none';
+  } else {
+    avatarImg.style.display = 'none';
+    avatarPlaceholder.style.display = 'flex';
+  }
+  // إظهار النافذة
+  document.getElementById('profileModal').classList.add('active');
+}
+
+// حفظ التغييرات
+async function saveProfileChanges() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return;
+  const userId = session.user.id;
+  const updates = {
+    birthdate: document.getElementById('profileBirthdate').value || null,
+    birth_place: document.getElementById('profileBirthPlace').value || null,
+    country: document.getElementById('profileCountry').value || null,
+    favorite_game: document.getElementById('profileFavoriteGame').value || null,
+  };
+  const { error } = await db.from('profiles').update(updates).eq('id', userId);
+  if (error) {
+    alert('خطأ في حفظ البيانات: ' + error.message);
+  } else {
+    alert('تم حفظ التغييرات بنجاح!');
+    closeProfileModal();
+    // تحديث الواجهة العلوية (الصورة والاسم)
+    await updateUIAfterAuth();
+  }
+}
+
+// تغيير كلمة المرور
+async function changePassword() {
+  const oldPass = document.getElementById('oldPassword').value;
+  const newPass = document.getElementById('newPassword').value;
+  const confirmPass = document.getElementById('confirmNewPassword').value;
+  const errorSpan = document.getElementById('passwordError');
+  if (!oldPass || !newPass || !confirmPass) {
+    errorSpan.innerText = 'يرجى ملء جميع الحقول';
+    return;
+  }
+  if (newPass !== confirmPass) {
+    errorSpan.innerText = 'كلمة المرور الجديدة وتأكيدها غير متطابقين';
+    return;
+  }
+  if (newPass.length < 6) {
+    errorSpan.innerText = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل';
+    return;
+  }
+  // Supabase لا يوفر طريقة مباشرة لتغيير كلمة المرور من العميل دون تأكيد البريد الإلكتروني.
+  // بدلاً من ذلك، نستخدم تحديث المستخدم (يتطلب جلسة نشطة).
+  const { error } = await db.auth.updateUser({ password: newPass });
+  if (error) {
+    errorSpan.innerText = 'فشل تغيير كلمة المرور: ' + error.message;
+  } else {
+    errorSpan.innerText = '';
+    alert('تم تغيير كلمة المرور بنجاح! سيتم تسجيل خروجك، يرجى تسجيل الدخول مرة أخرى.');
+    await db.auth.signOut();
+    window.location.reload();
+  }
+}
+
+// تغيير الصورة الرمزية
+document.getElementById('changeAvatarBtn').onclick = () => {
+  document.getElementById('avatarUpload').click();
+};
+document.getElementById('avatarUpload').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return;
+  try {
+    const avatarUrl = await uploadAvatar(file, session.user.id);
+    const { error } = await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', session.user.id);
+    if (error) throw error;
+    alert('تم تحديث الصورة بنجاح!');
+    // تحديث الواجهة
+    await updateUIAfterAuth();
+    // إعادة فتح النافذة لتحديث الصورة المعروضة
+    openProfileModal();
+  } catch (err) {
+    alert('خطأ في رفع الصورة: ' + err.message);
+  }
+};
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('active');
+  // مسح حقول كلمة المرور
+  document.getElementById('oldPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmNewPassword').value = '';
+  document.getElementById('passwordError').innerText = '';
+}
+
+// ========== AUTH ==========
 function isValidEmail(email) {
   const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
   return re.test(email);
@@ -1005,17 +1316,14 @@ async function signUpWithDetails(username, email, password) {
   if (!isValidEmail(email)) throw new Error('البريد الإلكتروني غير صالح');
   if (password.length < 6) throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
   if (username.length < 3) throw new Error('اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
-  
   const { data: existingUser } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
   if (existingUser) throw new Error('اسم المستخدم موجود بالفعل');
-  
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
   if (error) {
     if (error.message.includes('User already registered')) throw new Error('البريد الإلكتروني مسجل بالفعل');
     throw error;
   }
   if (!data.user) throw new Error('فشل إنشاء الحساب');
-  
   const { error: profileError } = await db.from('profiles').insert({
     id: data.user.id,
     username: username,
@@ -1041,7 +1349,6 @@ async function signInWithGoogle() {
     });
     if (error) throw error;
   } catch (error) {
-    console.error('Google login error:', error);
     let errorMsg = 'فشل تسجيل الدخول عبر Google. ';
     if (error.message.includes('provider is not enabled')) {
       errorMsg += 'الموفر غير مفعل في Supabase. الرجاء تفعيل Google Provider في Authentication → Providers.';
@@ -1054,21 +1361,22 @@ async function signInWithGoogle() {
   }
 }
 
-// تحديث واجهة المستخدم بعد تغيير حالة المصادقة
 async function updateUIAfterAuth() {
   const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
   const userArea = document.getElementById('btn-user-area');
+  const userNameSpan = document.getElementById('user-name');
+  const roleBadge = document.getElementById('user-role-badge');
+  const userAvatarImg = document.getElementById('user-avatar-img');
   if (session && session.user) {
     if(loginLink) loginLink.style.display = 'none';
     if(userArea) userArea.style.display = 'flex';
-    let { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
+    let { data: profile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
     if (!profile) {
-      // إذا كان المستخدم جديداً ولا يوجد ملف شخصي، نظهر نافذة اختيار اسم المستخدم
       if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) {
-        return; // في انتظار الاسم
+        // في انتظار الاسم
+        return;
       } else {
-        // إنشاء ملف شخصي تلقائياً (حالة نادرة)
         let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
         let finalUsername = userName;
         let counter = 1;
@@ -1085,14 +1393,24 @@ async function updateUIAfterAuth() {
           role: 'user',
           created_at: new Date().toISOString()
         });
-        const { data: newProfile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
+        const { data: newProfile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
         profile = newProfile;
       }
     }
     if (profile) {
-      document.getElementById('user-name').textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
-      const roleBadge = document.getElementById('user-role-badge');
-      if(roleBadge && profile?.role && profile.role !== 'user') { roleBadge.textContent = profile.role.toUpperCase(); roleBadge.style.display = 'inline-block'; }
+      userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
+      if (profile?.role && profile.role !== 'user') {
+        roleBadge.textContent = profile.role.toUpperCase();
+        roleBadge.style.display = 'inline-block';
+      } else {
+        roleBadge.style.display = 'none';
+      }
+      if (profile?.avatar_url) {
+        userAvatarImg.src = profile.avatar_url;
+        userAvatarImg.style.display = 'inline-block';
+      } else {
+        userAvatarImg.style.display = 'none';
+      }
       window.userRole = profile?.role || 'user';
     }
   } else {
@@ -1106,26 +1424,18 @@ async function checkAuth() {
   await updateUIAfterAuth();
 }
 
-// دالة الخروج المعدلة - تعمل بشكل مؤكد
 async function doLogout() {
   try {
-    // إغلاق أي نافذة منبثقة مفتوحة
     document.getElementById('usernameModal')?.classList.remove('active');
     pendingGoogleUser = null;
-    // تسجيل الخروج من Supabase
-    const { error } = await db.auth.signOut();
-    if (error) throw error;
-    // تحديث الواجهة
+    await db.auth.signOut();
     await updateUIAfterAuth();
-    // إعادة تحميل الصفحة لتنظيف الحالة بالكامل (اختياري ولكنه يضمن عدم وجود بقايا)
     window.location.reload();
   } catch (err) {
-    console.error('Logout error:', err);
     alert('حدث خطأ أثناء تسجيل الخروج، حاول مرة أخرى.');
   }
 }
 
-// مراقبة حالة المصادقة
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN') {
     const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
@@ -1146,7 +1456,6 @@ db.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// معالجة تأكيد اسم المستخدم
 document.getElementById('confirmUsernameBtn').onclick = async () => {
   const usernameInput = document.getElementById('newUsername');
   const username = usernameInput.value.trim();
@@ -1173,7 +1482,6 @@ document.getElementById('confirmUsernameBtn').onclick = async () => {
   });
   if (profileError) {
     errorSpan.innerText = 'حدث خطأ أثناء حفظ الاسم، حاول مرة أخرى';
-    console.error(profileError);
     return;
   }
   document.getElementById('usernameModal').classList.remove('active');
@@ -1187,7 +1495,7 @@ document.getElementById('cancelUsernameBtn').onclick = () => {
   db.auth.signOut().then(() => window.location.reload());
 };
 
-// Modal logic for login/signup
+// ========== Modal logic for login/signup ==========
 const modal = document.getElementById('authModal');
 const loginDiv = document.getElementById('modal-login');
 const signupDiv = document.getElementById('modal-signup');
@@ -1226,7 +1534,11 @@ document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); 
 document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
-// إضافة مستمع حدث مباشر لزر الخروج (لضمان عمله)
+// ربط أزرار الملف الشخصي
+document.getElementById('profileButton')?.addEventListener('click', openProfileModal);
+document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileChanges);
+document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
+document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
 document.getElementById('logoutButton')?.addEventListener('click', doLogout);
 
 // ربط الدوال العامة
@@ -1242,7 +1554,7 @@ window.handleImageUpload = handleImageUpload;
 window.uploadVideoToBucket = uploadVideoToBucket;
 window.clearMedia = clearMedia;
 window.loadDashboard = function() { console.log('Dashboard not available in index.html'); };
-window.doLogout = doLogout; // تصدير الدالة للنطاق العام
+window.doLogout = doLogout;
 
 checkAuth();
 loadTickerNews();
