@@ -6,6 +6,7 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* جميع الأنماط كما هي دون تغيير */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -22,7 +23,6 @@
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
     
-    /* شريط الأخبار - حركة دائرية لا نهائية */
     .vx-ticker {
       background: #000;
       padding: 5px 0;
@@ -91,7 +91,6 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
-    /* خلفية صفحة الهوم */
     .home-hero {
       position: relative;
       background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
@@ -192,7 +191,6 @@
     .missile { display: none; }
     .empty-home { display: none; }
     
-    /* فلتر وبطاقات */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -651,28 +649,24 @@ async function addYouTubeVideo(room, isLive = false) {
 
 // ==================== نموذج الإضافة لكل غرفة (معدل) ====================
 function getAddForm(room) {
-  // غرفة القنوات: رابط فقط
   if (room === 'yt-channels') {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب</h3>
       <div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div>
       <div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"></div>
       <button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
   }
-  // غرفة فيديوهات يوتيوب: رابط فيديو + اختيار تصنيف
   if (room === 'yt-videos') {
     return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3>
       <div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div>
       <div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو يوتيوب"><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select></div>
       <button class="btn-pub" onclick="addYouTubeVideo('${room}', false)">➕ إضافة</button></div>`;
   }
-  // غرفة البث المباشر: رابط بث + اختيار تصنيف
   if (room === 'live') {
     return `<div class="card"><h3>➕ إضافة بث مباشر (يوتيوب)</h3>
       <div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div>
       <div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث يوتيوب"><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select></div>
       <button class="btn-pub" onclick="addYouTubeVideo('${room}', true)">➕ إضافة</button></div>`;
   }
-  // باقي الغرف: نموذج كامل (رفع فيديو/صورة/مقال)
   if (room === 'highlights') {
     return `<div class="card"><h3>➕ إضافة مقطع مميز (فيديو/صورة)</h3>
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
@@ -752,7 +746,6 @@ function getAddForm(room) {
   if (room === 'projects') {
     return `<div class="card"><h3>🌐 مشاريع التعاون</h3><div class="empty-state">قيد التطوير.</div></div>`;
   }
-  // default
   return `<div class="card"><h3>➕ إضافة منشور</h3><div class="empty-state">نموذج غير متوفر لهذه الغرفة.</div></div>`;
 }
 
@@ -927,33 +920,71 @@ function startTickerAnimation() {
   animate();
 }
 
-// ========== AUTH ==========
+// ========== AUTH (تم التصحيح) ==========
+// دالة التحقق من صحة البريد الإلكتروني
+function isValidEmail(email) {
+  const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+  return re.test(email);
+}
+
 async function signInWithEmailOrUsername(identifier, password) {
   let email = identifier;
   const isEmail = identifier.includes('@') && identifier.includes('.');
   if (!isEmail) {
+    // البحث عن البريد الإلكتروني من خلال اسم المستخدم في جدول profiles
     const { data, error } = await db.from('profiles').select('email').eq('username', identifier).maybeSingle();
     if (error || !data) throw new Error('اسم المستخدم غير موجود');
     email = data.email;
   }
+  // محاولة تسجيل الدخول باستخدام البريد الإلكتروني
   const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
 }
 
 async function signUpWithDetails(username, email, password) {
+  // التحقق من صحة البريد الإلكتروني
+  if (!isValidEmail(email)) throw new Error('البريد الإلكتروني غير صالح');
+  if (password.length < 6) throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+  if (username.length < 3) throw new Error('اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
+  
+  // التحقق من عدم وجود اسم مستخدم مكرر
+  const { data: existingUser, error: checkError } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
+  if (existingUser) throw new Error('اسم المستخدم موجود بالفعل');
+  
+  // تسجيل المستخدم في Supabase Auth
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
   if (error) throw error;
   if (!data.user) throw new Error('فشل إنشاء الحساب');
-  const { error: profileError } = await db.from('profiles').insert({ id: data.user.id, username: username, email: email, role: 'user' });
-  if (profileError) console.error('Profile insert error:', profileError);
+  
+  // إنشاء الملف الشخصي في جدول profiles
+  const { error: profileError } = await db.from('profiles').insert({
+    id: data.user.id,
+    username: username,
+    email: email,
+    role: 'user',
+    created_at: new Date().toISOString()
+  });
+  if (profileError) {
+    console.error('خطأ في إنشاء الملف الشخصي:', profileError);
+    // محاولة حذف حساب auth إذا فشل إنشاء الملف (للمحافظة على التناسق)
+    await db.auth.admin.deleteUser(data.user.id).catch(()=>{});
+    throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
+  }
   return data;
 }
 
 async function signInWithGoogle() {
-  const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
-  if (error) alert('Google login error: ' + error.message);
+  const { error } = await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) {
+    console.error('Google login error:', error);
+    alert('فشل تسجيل الدخول عبر Google: ' + error.message + '\nتأكد من إعداد Google OAuth في Supabase');
+  }
 }
 
+// التحقق من الجلسة وإنشاء الملف الشخصي تلقائياً إذا لزم الأمر (لحالات Google)
 async function checkAuth() {
   const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
@@ -963,8 +994,24 @@ async function checkAuth() {
     if(userArea) userArea.style.display = 'flex';
     let { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
     if (!profile) {
+      // إنشاء ملف شخصي للمستخدمين الجدد (خاصة عبر Google)
       const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      await db.from('profiles').insert({ id: session.user.id, username: userName, email: session.user.email, role: 'user' });
+      // التأكد من عدم تكرار اسم المستخدم
+      let finalUsername = userName;
+      let counter = 1;
+      while (true) {
+        const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
+        if (!existing) break;
+        finalUsername = `${userName}${counter}`;
+        counter++;
+      }
+      await db.from('profiles').insert({
+        id: session.user.id,
+        username: finalUsername,
+        email: session.user.email,
+        role: 'user',
+        created_at: new Date().toISOString()
+      });
       const { data: newProfile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
       profile = newProfile;
     }
@@ -978,7 +1025,15 @@ async function checkAuth() {
     window.userRole = 'guest';
   }
 }
+
 async function doLogout() { await db.auth.signOut(); window.location.reload(); }
+
+// مراقبة تغييرات حالة المصادقة (مثل العودة من Google)
+db.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN') {
+    window.location.reload();
+  }
+});
 
 // Modal logic
 const modal = document.getElementById('authModal');
@@ -995,8 +1050,11 @@ document.getElementById('doLoginBtn').onclick = async () => {
   const password = document.getElementById('loginPassword').value;
   const errSpan = document.getElementById('loginError');
   if(!identifier || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
-  try { await signInWithEmailOrUsername(identifier, password); closeModal(); window.location.reload(); }
-  catch(e) { errSpan.innerText = e.message || 'فشل تسجيل الدخول'; }
+  try {
+    await signInWithEmailOrUsername(identifier, password);
+    closeModal();
+    window.location.reload();
+  } catch(e) { errSpan.innerText = e.message || 'فشل تسجيل الدخول'; }
 };
 document.getElementById('doSignupBtn').onclick = async () => {
   const username = document.getElementById('signupUsername').value.trim();
@@ -1004,9 +1062,15 @@ document.getElementById('doSignupBtn').onclick = async () => {
   const password = document.getElementById('signupPassword').value;
   const errSpan = document.getElementById('signupError');
   if(!username || !email || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
-  if(password.length < 6) { errSpan.innerText = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; return; }
-  try { await signUpWithDetails(username, email, password); alert('تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.'); document.getElementById('switchToLogin').click(); document.getElementById('loginIdentifier').value = username; document.getElementById('loginPassword').value = ''; }
-  catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
+  try {
+    await signUpWithDetails(username, email, password);
+    alert('تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.');
+    document.getElementById('switchToLogin').click();
+    document.getElementById('loginIdentifier').value = username;
+    document.getElementById('loginPassword').value = '';
+    // إعادة تحميل الصفحة لتحديث حالة المستخدم (اختياري)
+    // window.location.reload();
+  } catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
 };
 document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
@@ -1024,6 +1088,9 @@ window.deletePost = deletePost;
 window.handleImageUpload = handleImageUpload;
 window.uploadVideoToBucket = uploadVideoToBucket;
 window.clearMedia = clearMedia;
+
+// دالة dummy لـ loadDashboard (لأن admin.html يستدعيها ولكنها غير موجودة في index.html، نمنع الخطأ)
+window.loadDashboard = function() { console.log('Dashboard not available in index.html'); };
 
 checkAuth();
 loadTickerNews();
