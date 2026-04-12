@@ -70,7 +70,7 @@
       height: 32px;
       align-items: center;
       position: absolute;
-      left: 100%;
+      left: 0;
       top: 0;
       will-change: transform;
     }
@@ -789,15 +789,28 @@ let pendingGoogleUser = null;
 let currentProfileData = null;
 let currentEditPost = null;
 let currentEditRoom = null;
+let tickerAnimationId = null;
 
-// ==================== إنشاء Bucket ====================
+// ==================== إنشاء Bucket بشكل آمن (بدون أخطاء 400) ====================
 async function ensureBuckets() {
   try {
-    const { data: buckets } = await db.storage.listBuckets();
+    const { data: buckets, error: listError } = await db.storage.listBuckets();
+    if (listError) {
+      console.warn('Cannot list buckets (permission issue):', listError);
+      return;
+    }
     const avatarsExists = buckets?.some(b => b.name === 'avatars');
-    if (!avatarsExists) await db.storage.createBucket('avatars', { public: true }).catch(()=>{});
+    if (!avatarsExists) {
+      try {
+        await db.storage.createBucket('avatars', { public: true });
+      } catch(e) { console.warn('Could not create avatars bucket:', e); }
+    }
     const mediaExists = buckets?.some(b => b.name === 'posts-media');
-    if (!mediaExists) await db.storage.createBucket('posts-media', { public: true }).catch(()=>{});
+    if (!mediaExists) {
+      try {
+        await db.storage.createBucket('posts-media', { public: true });
+      } catch(e) { console.warn('Could not create posts-media bucket:', e); }
+    }
   } catch(e) { console.warn('Bucket check failed:', e); }
 }
 
@@ -877,7 +890,6 @@ async function loadPage(room) {
 function isVIPContent(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
 
 async function loadSubscribersWithVIP(el, posts) {
-  // Fetch VIP users from profiles
   let vipCards = '';
   try {
     const { data: vipUsers } = await db.from('profiles')
@@ -897,7 +909,6 @@ async function loadSubscribersWithVIP(el, posts) {
     }
   } catch(e) {}
 
-  // Youtuber posts
   const youtuberCards = posts.map(p => {
     const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
     const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
@@ -936,7 +947,6 @@ function renderCards(posts, gridId, room) {
     return;
   }
   if (room === 'subscribers') {
-    // Show posts (youtubers) + VIP users from profiles
     loadSubscribersWithVIP(el, posts);
     return;
   }
@@ -1030,7 +1040,6 @@ async function updateUserPost(postId, title, desc, url, tag, content, file, file
     updateData.url = mediaUrl;
   } else if (url) {
     updateData.url = url;
-    // إذا كان رابط يوتيوب، يمكننا تحديث الأيقونة أيضاً
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       updateData.icon = '📹';
     }
@@ -1078,9 +1087,9 @@ window.openUserPostModal = function(room) {
   document.getElementById('upm-form-body').innerHTML = formHtml;
   document.getElementById('upm-ok').style.display = 'none';
   document.getElementById('upm-err').style.display = 'none';
-  // إضافة مستمع لجلب المعلومات من يوتيوب تلقائياً
   const urlInput = document.getElementById('upm-url');
   if (urlInput) {
+    urlInput.removeEventListener('blur', null);
     urlInput.addEventListener('blur', async () => {
       const url = urlInput.value.trim();
       if ((room === 'yt-videos' || room === 'highlights') && (url.includes('youtube.com') || url.includes('youtu.be'))) {
@@ -1094,7 +1103,6 @@ window.openUserPostModal = function(room) {
           const descInput = document.getElementById('upm-desc');
           if (titleInput && !titleInput.value) titleInput.value = info.title;
           if (descInput && !descInput.value) descInput.value = info.channelTitle;
-          // يمكن عرض الصورة المصغرة كمعاينة
           const previewDiv = document.getElementById('upm-preview') || (() => { const div = document.createElement('div'); div.id = 'upm-preview'; urlInput.parentNode.appendChild(div); return div; })();
           if (previewDiv) previewDiv.innerHTML = `<img src="${info.thumbnail}" class="preview-img">`;
         }
@@ -1576,6 +1584,81 @@ if (logoutBtn) { logoutBtn.onclick = async function() { await db.auth.signOut();
 
 const _upmCloseBtn = document.getElementById('upm-close');
 if(_upmCloseBtn) _upmCloseBtn.onclick = () => document.getElementById('upm-modal').classList.remove('active');
+
+// ==================== شريط الأخبار (ticker) ====================
+let tickerItems = [];
+let tickerAnimationIdLocal = null;
+let tickerPosition = 0;
+const TICKER_SPEED = 1.2;
+let tickerContainerWidth = 0;
+
+async function loadTickerNews() {
+  try {
+    const { data, error } = await db.from('posts')
+      .select('title, url')
+      .eq('room', 'ticker')
+      .order('id', { ascending: false })
+      .limit(15);
+    if (error) throw error;
+    if (!data || data.length === 0) tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
+    else tickerItems = data.map(item => ({ text: item.title, url: item.url }));
+    buildTickerTrack();
+    startTickerAnimation();
+  } catch(e) {
+    console.error('خطأ في تحميل الأخبار:', e);
+    tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }];
+    buildTickerTrack();
+    startTickerAnimation();
+  }
+}
+
+function buildTickerTrack() {
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+  track.innerHTML = '';
+  // Duplicate items for seamless loop
+  [...tickerItems, ...tickerItems].forEach(item => {
+    const span = document.createElement('span');
+    span.className = 'ticker-item';
+    if (item.url) {
+      const a = document.createElement('a');
+      a.href = item.url;
+      a.target = '_blank';
+      a.textContent = `📢 ${item.text}`;
+      span.appendChild(a);
+    } else {
+      span.textContent = `📢 ${item.text}`;
+    }
+    track.appendChild(span);
+  });
+  const scrollDiv = document.getElementById('tickerScroll');
+  if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
+  const halfCount = tickerItems.length;
+  let originalWidth = 0;
+  const children = Array.from(track.children);
+  for (let i = 0; i < halfCount; i++) {
+    if (children[i]) originalWidth += children[i].offsetWidth + 60; // + padding approx
+  }
+  tickerPosition = tickerContainerWidth;
+  track.style.transform = `translateX(${tickerPosition}px)`;
+  window.tickerHalfWidth = originalWidth;
+}
+
+function startTickerAnimation() {
+  if (tickerAnimationIdLocal) cancelAnimationFrame(tickerAnimationIdLocal);
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+  function animate() {
+    tickerPosition -= TICKER_SPEED;
+    track.style.transform = `translateX(${tickerPosition}px)`;
+    if (tickerPosition <= -window.tickerHalfWidth) {
+      tickerPosition += window.tickerHalfWidth;
+      track.style.transform = `translateX(${tickerPosition}px)`;
+    }
+    tickerAnimationIdLocal = requestAnimationFrame(animate);
+  }
+  animate();
+}
 
 window.showPage = showPage;
 window.filterPosts = filterPosts;
