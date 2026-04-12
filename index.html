@@ -791,36 +791,30 @@ let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
 
-// ==================== إنشاء buckets تلقائياً (مع محاولة إنشائها) ====================
+// ==================== التحقق من وجود buckets (بدون محاولة إنشائها) ====================
 async function ensureBuckets() {
   try {
-    // محاولة إنشاء bucket 'avatars' إذا لم يكن موجوداً
-    const { data: buckets, error: listError } = await db.storage.listBuckets();
-    if (listError) {
-      console.warn('Cannot list buckets:', listError);
-      // لا نستطيع الاستمرار، لكننا نعرض رسالة للمستخدم
+    const { data: buckets, error } = await db.storage.listBuckets();
+    if (error) {
+      console.warn('Cannot list buckets:', error);
       return;
     }
     const avatarsExists = buckets?.some(b => b.name === 'avatars');
     const mediaExists = buckets?.some(b => b.name === 'posts-media');
     
-    if (!avatarsExists) {
-      const { error: createError } = await db.storage.createBucket('avatars', { public: true });
-      if (createError) {
-        console.error('Failed to create avatars bucket:', createError);
-        alert('⚠️ لم يتم إنشاء bucket الصور تلقائياً. يرجى إنشاء bucket "avatars" يدوياً في Supabase Storage وجعله عاماً.');
-      } else {
-        console.log('Bucket "avatars" created successfully');
-      }
+    if (!avatarsExists && !window._avatarBucketWarningShown) {
+      window._avatarBucketWarningShown = true;
+      console.warn('⚠️ Bucket "avatars" غير موجود. يرجى إنشاؤه يدوياً في Supabase Storage (Public bucket).');
+      setTimeout(() => {
+        alert('⚠️ لرفع الصور الشخصية، يرجى إنشاء bucket "avatars" في Supabase Storage (Public bucket).\n\nاذهب إلى Storage → Create bucket → الاسم: avatars → Public bucket');
+      }, 500);
     }
-    if (!mediaExists) {
-      const { error: createError } = await db.storage.createBucket('posts-media', { public: true });
-      if (createError) {
-        console.error('Failed to create posts-media bucket:', createError);
-        alert('⚠️ لم يتم إنشاء bucket الملفات تلقائياً. يرجى إنشاء bucket "posts-media" يدوياً في Supabase Storage وجعله عاماً.');
-      } else {
-        console.log('Bucket "posts-media" created successfully');
-      }
+    if (!mediaExists && !window._mediaBucketWarningShown) {
+      window._mediaBucketWarningShown = true;
+      console.warn('⚠️ Bucket "posts-media" غير موجود. يرجى إنشاؤه يدوياً في Supabase Storage (Public bucket).');
+      setTimeout(() => {
+        alert('⚠️ لرفع الملفات في المنشورات، يرجى إنشاء bucket "posts-media" في Supabase Storage (Public bucket).\n\nاذهب إلى Storage → Create bucket → الاسم: posts-media → Public bucket');
+      }, 500);
     }
   } catch(e) { console.warn('Bucket check failed:', e); }
 }
@@ -1008,16 +1002,16 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== دوال رفع الملفات ====================
+// ==================== دوال رفع الملفات (مع التحقق من وجود bucket) ====================
 async function uploadFileToBucket(file, bucket, pathPrefix) {
-  // التحقق من وجود bucket (محاولة الإنشاء إذا لم يكن موجوداً)
+  // التحقق من وجود bucket قبل الرفع
   try {
     const { data: buckets } = await db.storage.listBuckets();
     const bucketExists = buckets?.some(b => b.name === bucket);
     if (!bucketExists) {
-      await db.storage.createBucket(bucket, { public: true });
+      throw new Error(`Bucket "${bucket}" غير موجود. يرجى إنشاؤه يدوياً في Supabase Storage (Public bucket).`);
     }
-  } catch(e) { console.warn('Bucket check error:', e); }
+  } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
   
   const ext = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 8)}.${ext}`;
@@ -1314,6 +1308,15 @@ function showUPMError(msg) {
 
 // ==================== دوال رفع الصورة الرمزية والملف الشخصي ====================
 async function uploadAvatar(file, userId) {
+  // التحقق من وجود bucket 'avatars'
+  try {
+    const { data: buckets } = await db.storage.listBuckets();
+    const bucketExists = buckets?.some(b => b.name === 'avatars');
+    if (!bucketExists) {
+      throw new Error('Bucket "avatars" غير موجود. يرجى إنشاؤه يدوياً في Supabase Storage (Public bucket).');
+    }
+  } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
+  
   const ext = file.name.split('.').pop();
   const fileName = `${userId}-${Date.now()}.${ext}`;
   const filePath = `avatars/${fileName}`;
@@ -1458,7 +1461,6 @@ async function signUpWithDetails(username, email, password) {
     id: data.user.id, username: username, email: email, role: 'user', created_at: new Date().toISOString()
   });
   if (profileError) {
-    // profile insert failed - user can still login
     throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
   }
   return data;
