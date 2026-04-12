@@ -70,7 +70,7 @@
     .loading{text-align:center;color:#667;padding:20px;font-size:13px}
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,4,0.85);z-index:1000;align-items:center;justify-content:center}
     .modal-overlay.open{display:flex}
-    .modal-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto}
+    .modal-box{background:#050e30;border:1px solid #9fb000;border-radius:14px;width:90%;max-width:600px;max-height:90vh;overflow-y:auto}
     .modal-top{background:#000718;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e2d6b}
     .modal-top h2{font-size:16px;color:#d4e800}
     .modal-close{background:transparent;border:1px solid #556;color:#aaa;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:16px}
@@ -88,13 +88,17 @@
     @media (max-width:768px){.form-with-preview{grid-template-columns:1fr}}
     .role-search-input{width:100%;padding:10px;margin-bottom:10px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff}
     .role-search-results{max-height:200px;overflow-y:auto;margin-bottom:10px}
-    .role-search-result-item{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+    .role-search-result-item{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
     .role-buttons button{margin-left:5px;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer}
     .recent-member-item{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1e2d6b}
     .recent-avatar{width:36px;height:36px;border-radius:50%;background:#1a2d80;display:flex;align-items:center;justify-content:center;font-size:16px}
     .news-item{display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #1e2d6b}
     .news-text{flex:1;font-size:13px}
     .news-link{font-size:11px;color:#9fb000;text-decoration:none}
+    .avatar-img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#0f1e55}
+    .role-badge{display:inline-block;font-size:10px;border-radius:4px;padding:2px 8px;margin-right:5px;margin-top:3px}
+    .role-checkbox-group{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px}
+    .role-checkbox-group label{display:flex;align-items:center;gap:6px;font-size:13px;background:#0a1540;padding:6px 12px;border-radius:20px;border:1px solid #1e2d6b}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -134,7 +138,6 @@
       <div class="sb-sec">يوتيوب</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <!-- تم حذف زر "🔴 Lives" المكرر -->
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
     </div>
@@ -149,6 +152,13 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="editUserModal">
+  <div class="modal-box">
+    <div class="modal-top"><h2>👤 تعديل بيانات المستخدم</h2><button class="modal-close" onclick="closeEditUserModal()">✕</button></div>
+    <div class="modal-body" id="editUserModalBody"></div>
+  </div>
+</div>
+
 <script>
 // ==================== إعدادات Supabase ====================
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
@@ -158,6 +168,7 @@ const ADMIN_PASSWORD = 'virtux2025';
 
 let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentEditPost = null;
+let currentEditUser = null;
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -194,7 +205,6 @@ function logout() { window.location.reload(); }
 function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
-  // removed 'yt-lives' from rooms list
   let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact'];
   rooms.forEach(room => {
     let div = document.createElement('div');
@@ -229,7 +239,7 @@ function loadContact() {
   container.innerHTML = `<div class="card"><h3>معلومات الاتصال</h3><p>بريد: admin@virtux.gg</p><p>ديسكورد: virtux_official</p></div>`;
 }
 
-// ==================== Dashboard ====================
+// ==================== Dashboard مع الأدوار المتعددة والصورة الشخصية ====================
 async function loadDashboard() {
   let container = document.getElementById('content-dashboard');
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
@@ -237,11 +247,13 @@ async function loadDashboard() {
     let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     if (!users) users = [];
+    
+    // حساب الإحصائيات بناءً على الأدوار المتعددة (يمكن للمستخدم أن يظهر في أكثر من إحصائية)
     let total = users.length;
-    let vipCount = users.filter(u => u.role === 'vip').length;
-    let memberCount = users.filter(u => u.role === 'member').length;
-    let modCount = users.filter(u => u.role === 'moderator').length;
-    let userCount = users.filter(u => u.role === 'user' || (!u.role)).length;
+    let vipCount = users.filter(u => u.roles && u.roles.includes('vip')).length;
+    let memberCount = users.filter(u => u.roles && u.roles.includes('member')).length;
+    let modCount = users.filter(u => u.roles && u.roles.includes('moderator')).length;
+    let userCount = users.filter(u => !u.roles || u.roles.length === 0 || u.roles.includes('user')).length;
 
     let statsHtml = `<div class="stats-grid">
       <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">إجمالي المستخدمين</div></div>
@@ -256,15 +268,15 @@ async function loadDashboard() {
       let recent = users.slice(0, 5);
       recentMembersHtml += `<div class="posts-list">`;
       recent.forEach(u => {
-        let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
-        let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
+        let avatarHtml = u.avatar_url ? `<img class="avatar-img" src="${u.avatar_url}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%239fb000%22%3E%3Cpath d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/%3E%3C/svg%3E'">` : `<div class="recent-avatar">👤</div>`;
+        let rolesHtml = (u.roles || ['user']).map(r => `<span class="role-badge" style="background:#1a2d80;color:#9fb000;">${r.toUpperCase()}</span>`).join('');
         let date = new Date(u.created_at).toLocaleDateString('ar-EG');
         recentMembersHtml += `<div class="recent-member-item">
-          <div class="recent-avatar">👤</div>
+          ${avatarHtml}
           <div class="pi-info">
             <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
             <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
-            <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;">${u.role?.toUpperCase() || 'USER'}</span>
+            <div>${rolesHtml}</div>
           </div>
         </div>`;
       });
@@ -274,7 +286,7 @@ async function loadDashboard() {
     }
     recentMembersHtml += `</div>`;
 
-    let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
+    let roleManagementHtml = `<div class="card"><h3>🔧 البحث عن مستخدم</h3>
       <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
       <div id="roleSearchResults" class="role-search-results"></div>
       <div style="margin-top:10px;">
@@ -292,20 +304,17 @@ async function loadDashboard() {
     </div>`;
 
     let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
-      let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
-      let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
+      let avatarHtml = u.avatar_url ? `<img class="avatar-img" src="${u.avatar_url}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%239fb000%22%3E%3Cpath d=%22M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z%22/%3E%3C/svg%3E'">` : `<div class="pi-icon">👤</div>`;
+      let rolesHtml = (u.roles || ['user']).map(r => `<span class="role-badge" style="background:#1a2d80;color:#9fb000;">${r.toUpperCase()}</span>`).join('');
       return `<div class="pi" id="user-${u.id}">
-        <div class="pi-icon">👤</div>
+        ${avatarHtml}
         <div class="pi-info">
           <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
           <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
-          <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;margin-top:3px;">${u.role?.toUpperCase() || 'USER'}</span>
+          <div>${rolesHtml}</div>
         </div>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          ${u.role !== 'vip' ? `<button class="btn-edit" onclick="setRole('${u.id}','vip')">👑 VIP</button>` : ''}
-          ${u.role !== 'member' ? `<button class="btn-edit" onclick="setRole('${u.id}','member')">⭐ Member</button>` : ''}
-          ${u.role !== 'moderator' ? `<button class="btn-edit" onclick="setRole('${u.id}','moderator')">🛡️ Mod</button>` : ''}
-          ${u.role !== 'user' ? `<button class="btn-edit" onclick="setRole('${u.id}','user')">👤 User</button>` : ''}
+          <button class="btn-edit" onclick="openEditUserModal('${u.id}')">✏️ تعديل</button>
           <button class="btn-del" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
         </div>
       </div>`;
@@ -316,7 +325,7 @@ async function loadDashboard() {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
 
-// دوال إدارة الأخبار
+// دوال إدارة الأخبار (كما هي)
 async function loadNewsList() {
   let { data: news, error } = await supabaseClient.from('posts')
     .select('*')
@@ -362,18 +371,123 @@ async function searchUsersForRole(query) {
   if (!query || query.length < 2) { resultsDiv.innerHTML = ''; return; }
   try {
     let { data: users, error } = await supabaseClient.from('profiles')
-      .select('id,username,email,role')
+      .select('id,username,email,roles,avatar_url')
       .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
     if (error) throw error;
     if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
-    resultsDiv.innerHTML = users.map(u => `<div class="role-search-result-item"><div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)} • الرتبة: ${u.role||'user'}</small></div><div class="role-buttons">${u.role!=='vip'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'vip\')">VIP</button>':''}${u.role!=='member'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'member\')">Member</button>':''}${u.role!=='moderator'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'moderator\')">Mod</button>':''}${u.role!=='user'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'user\')">User</button>':''}<button class="btn-del" onclick="deleteUser(\''+u.id+'\')">حذف</button></div></div>`).join('');
+    resultsDiv.innerHTML = users.map(u => {
+      let avatar = u.avatar_url ? `<img class="avatar-img" src="${u.avatar_url}" style="width:30px;height:30px;">` : `<div style="width:30px;height:30px;background:#1a2d80;border-radius:50%;display:flex;align-items:center;justify-content:center;">👤</div>`;
+      let rolesList = (u.roles || ['user']).join(', ');
+      return `<div class="role-search-result-item">
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${avatar}
+          <div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)} • الأدوار: ${rolesList}</small></div>
+        </div>
+        <div class="role-buttons">
+          <button class="btn-edit" onclick="openEditUserModal('${u.id}')">تعديل</button>
+          <button class="btn-del" onclick="deleteUser('${u.id}')">حذف</button>
+        </div>
+      </div>`;
+    }).join('');
   } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
 }
 function refreshDashboard() { loadDashboard(); }
-async function setRole(userId, role) { await supabaseClient.from('profiles').update({ role }).eq('id', userId); loadDashboard(); }
-async function deleteUser(userId) { if(!confirm('حذف المستخدم نهائياً؟')) return; await supabaseClient.from('profiles').delete().eq('id', userId); loadDashboard(); }
 
-// ==================== تحميل صفحة المحتوى ====================
+// دوال إدارة المستخدمين (متعددة الأدوار + صورة)
+async function deleteUser(userId) {
+  if(!confirm('حذف المستخدم نهائياً؟ ستفقد جميع بياناته.')) return;
+  await supabaseClient.from('profiles').delete().eq('id', userId);
+  loadDashboard();
+}
+
+async function openEditUserModal(userId) {
+  let { data: user, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+  if (error) { alert('خطأ في جلب بيانات المستخدم'); return; }
+  currentEditUser = user;
+  let roles = user.roles || ['user'];
+  let modalBody = document.getElementById('editUserModalBody');
+  modalBody.innerHTML = `
+    <div class="fg"><input class="full" id="edit-username" placeholder="اسم المستخدم" value="${escapeHtml(user.username||'')}"></div>
+    <div class="fg"><input class="full" id="edit-email" placeholder="البريد الإلكتروني" value="${escapeHtml(user.email||'')}"></div>
+    <div class="fg"><div class="img-upload"><input type="file" id="edit-avatar-file" accept="image/*"><label for="edit-avatar-file">📁 رفع صورة بروفايل</label><img id="edit-avatar-preview" class="img-preview" src="${user.avatar_url||''}" style="display:${user.avatar_url?'block':'none'}; width:60px;height:60px;border-radius:50%;"></div></div>
+    <div class="role-checkbox-group">
+      <label><input type="checkbox" class="role-check" value="vip" ${roles.includes('vip')?'checked':''}> 👑 VIP</label>
+      <label><input type="checkbox" class="role-check" value="member" ${roles.includes('member')?'checked':''}> ⭐ Member</label>
+      <label><input type="checkbox" class="role-check" value="moderator" ${roles.includes('moderator')?'checked':''}> 🛡️ Moderator</label>
+      <label><input type="checkbox" class="role-check" value="user" ${roles.includes('user')?'checked':''}> 👤 User</label>
+    </div>
+    <button class="btn-pub" onclick="saveUserEdit()">💾 حفظ التغييرات</button>
+    <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deleteUser('${user.id}'); closeEditUserModal();">🗑️ حذف المستخدم</button>
+  `;
+  document.getElementById('editUserModal').classList.add('open');
+  
+  // معاينة الصورة عند الرفع
+  document.getElementById('edit-avatar-file').addEventListener('change', function(e) {
+    let file = e.target.files[0];
+    if (file) {
+      let reader = new FileReader();
+      reader.onload = ev => {
+        let preview = document.getElementById('edit-avatar-preview');
+        preview.src = ev.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
+async function saveUserEdit() {
+  if (!currentEditUser) return;
+  let newUsername = document.getElementById('edit-username').value.trim();
+  let newEmail = document.getElementById('edit-email').value.trim();
+  let selectedRoles = Array.from(document.querySelectorAll('.role-check:checked')).map(cb => cb.value);
+  if (selectedRoles.length === 0) selectedRoles = ['user'];
+  
+  let avatarFile = document.getElementById('edit-avatar-file').files[0];
+  let avatarUrl = currentEditUser.avatar_url;
+  
+  if (avatarFile) {
+    // رفع الصورة إلى bucket 'avatars'
+    let fileName = `${currentEditUser.id}_${Date.now()}.${avatarFile.name.split('.').pop()}`;
+    let filePath = `avatars/${fileName}`;
+    let uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${fileName}`;
+    try {
+      let res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        body: avatarFile
+      });
+      if (res.ok) {
+        avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
+      } else {
+        console.error('فشل رفع الصورة');
+      }
+    } catch(e) { console.error(e); }
+  }
+  
+  let updateData = {
+    username: newUsername,
+    email: newEmail,
+    roles: selectedRoles,
+    avatar_url: avatarUrl
+  };
+  try {
+    const { error } = await supabaseClient.from('profiles').update(updateData).eq('id', currentEditUser.id);
+    if (error) throw error;
+    closeEditUserModal();
+    loadDashboard();
+    alert('✅ تم تحديث بيانات المستخدم');
+  } catch(e) {
+    alert('❌ فشل التحديث: ' + e.message);
+  }
+}
+
+function closeEditUserModal() {
+  document.getElementById('editUserModal').classList.remove('open');
+  currentEditUser = null;
+}
+
+// ==================== تحميل صفحة المحتوى (بدون تغيير) ====================
 async function loadContentPage(room) {
   let container = document.getElementById(`content-${room}`);
   if (!container) return;
@@ -428,7 +542,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
+// ==================== نماذج الإضافة (نفسها كما كانت) ====================
 function getAddForm(room) {
   if (room === 'home') {
     return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
@@ -570,7 +684,7 @@ function getAddForm(room) {
   }
 }
 
-// ==================== دوال مساعدة للمعاينة والإضافة ====================
+// ==================== دوال مساعدة للمعاينة والإضافة (نفسها) ====================
 function clearMedia(room) {
   if (room !== 'highlights' && room !== 'home' && room !== 'projects' && room !== 'gaming-news' && room !== 'youtube-news' && room !== 'live' && room !== 'tournaments') return;
   const previewImg = document.getElementById(`preview-img-${room}`);
@@ -704,7 +818,7 @@ async function addPost(room) {
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
 async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
 
-// ==================== دوال التعديل المصححة ====================
+// ==================== دوال التعديل (نفسها) ====================
 function getTagOptionsForEdit(room, currentTag) {
   let opts = '';
   if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -720,7 +834,6 @@ function getTagOptionsForEdit(room, currentTag) {
   else opts = `<option value="default">عام</option>`;
   return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
 }
-
 async function openEditModal(id) {
   let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
   if (error) {
@@ -745,7 +858,6 @@ async function openEditModal(id) {
   `;
   document.getElementById('editModal').classList.add('open');
 }
-
 function previewEditImg() {
   let file = document.getElementById('edit-imgfile').files[0];
   if (!file) return;
@@ -759,7 +871,6 @@ function previewEditImg() {
   };
   reader.readAsDataURL(file);
 }
-
 async function uploadEditVideo() {
   let file = document.getElementById('edit-videofile').files[0];
   if (!file) return;
@@ -789,7 +900,6 @@ async function uploadEditVideo() {
     alert('خطأ: ' + e.message);
   }
 }
-
 async function saveEditPost() {
   if (!currentEditPost) {
     alert('لا يوجد منشور قيد التعديل');
@@ -817,10 +927,9 @@ async function saveEditPost() {
     alert('❌ فشل التعديل: ' + e.message);
   }
 }
-
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// ==================== دوال يوتيوب والمستخدمين ====================
+// ==================== دوال يوتيوب والمستخدمين (مع تحديث searchUsers) ====================
 async function fetchYouTubeChannelInfo(url) {
   try { let handle = url.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url }; return null; } catch(e) { return null; }
 }
@@ -838,28 +947,26 @@ async function addYouTubeChannel(room) {
 async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
 async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
 async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
-// تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
-
 async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
 function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
 async function addUserSubscriber() { let userId = document.getElementById('sub-user-id').value; let username = document.getElementById('sub-user-selected').value; let role = document.getElementById('sub-user-role').value; if (!userId || !username) { alert('اختر مستخدم أولاً'); return; } let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' }; await supabaseClient.from('posts').insert(body); loadContentPage('subscribers'); }
 
-// ربط الدوال
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+// ربط الدوال (أضفنا الجديد)
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList; window.openEditUserModal = openEditUserModal; window.closeEditUserModal = closeEditUserModal; window.saveUserEdit = saveUserEdit;
+// setRole قديمة لن تستخدم لكن نحتفظ بها كـ placeholder
+async function setRole(userId, role) { /* مستبدلة بواجهة التعديل */ alert('استخدم زر تعديل لإدارة الأدوار المتعددة'); }
 </script>
 
 <script>
-// ===== 3D SPACE TUNNEL + FLOATING CUBES BACKGROUND =====
+// ===== 3D SPACE TUNNEL + FLOATING CUBES BACKGROUND (نفسه) =====
 (function() {
   const canvas = document.getElementById('bgCanvas');
   if (!canvas) return;
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) {
-    // Fallback: 2D canvas 3D effect
     fallback2D(canvas);
     return;
   }
-
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -867,8 +974,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   }
   resize();
   window.addEventListener('resize', resize);
-
-  // Vertex shader
   const vsSource = `
     attribute vec3 aPos;
     attribute vec3 aColor;
@@ -891,25 +996,20 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
       gl_FragColor = vec4(vColor * fog, fog * 0.92);
     }
   `;
-
   function compileShader(type, src) {
     const s = gl.createShader(type);
     gl.shaderSource(s, src);
     gl.compileShader(s);
     return s;
   }
-
   const prog = gl.createProgram();
   gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSource));
   gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSource));
   gl.linkProgram(prog);
   gl.useProgram(prog);
-
   const aPos = gl.getAttribLocation(prog, 'aPos');
   const aColor = gl.getAttribLocation(prog, 'aColor');
   const uMVP = gl.getUniformLocation(prog, 'uMVP');
-
-  // Math helpers
   function mat4() { return new Float32Array(16); }
   function identity(m) {
     m[0]=1;m[1]=0;m[2]=0;m[3]=0;
@@ -951,36 +1051,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     r[12]=tx; r[13]=ty; r[14]=tz;
     return multiply(mat4(), m, r);
   }
-
-  // Cube geometry
-  function makeCubeEdges(cx, cy, cz, size, r, g, b) {
-    const s = size/2;
-    const verts = [
-      [cx-s,cy-s,cz-s],[cx+s,cy-s,cz-s],[cx+s,cy+s,cz-s],[cx-s,cy+s,cz-s],
-      [cx-s,cy-s,cz+s],[cx+s,cy-s,cz+s],[cx+s,cy+s,cz+s],[cx-s,cy+s,cz+s]
-    ];
-    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-    const pos = [], col = [];
-    edges.forEach(([a,b]) => {
-      pos.push(...verts[a], ...verts[b]);
-      col.push(r,g,b, r,g,b);
-    });
-    return {pos, col};
-  }
-
-  // Generate floating cubes
-  function randomColor() {
-    const palettes = [
-      [0.0, 0.8, 0.5],   // teal
-      [0.8, 0.7, 0.0],   // gold
-      [0.0, 0.4, 1.0],   // blue
-      [0.6, 0.0, 1.0],   // purple
-      [0.0, 1.0, 0.3],   // green
-      [1.0, 0.3, 0.0],   // orange
-    ];
-    return palettes[Math.floor(Math.random()*palettes.length)];
-  }
-
   const numCubes = 60;
   const cubes = Array.from({length: numCubes}, () => ({
     x: (Math.random()-0.5)*20,
@@ -994,28 +1064,21 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     dry: (Math.random()-0.5)*0.02,
     drz: (Math.random()-0.5)*0.012,
     speed: 0.04 + Math.random()*0.06,
-    color: randomColor()
+    color: (()=>{
+      const palettes = [[0,0.8,0.5],[0.8,0.7,0],[0,0.4,1],[0.6,0,1],[0,1,0.3],[1,0.3,0]];
+      return palettes[Math.floor(Math.random()*palettes.length)];
+    })()
   }));
-
-  // Star particles (3D)
   const stars3d = Array.from({length:300}, () => ({
     x: (Math.random()-0.5)*50,
     y: (Math.random()-0.5)*50,
     z: -Math.random()*60
   }));
-
-  // Grid tunnel rings
-  const tunnelRings = Array.from({length:20}, (_, i) => ({
-    z: -i*3.5,
-    angle: i*0.1
-  }));
-
+  const tunnelRings = Array.from({length:20}, (_, i) => ({ z: -i*3.5, angle: i*0.1 }));
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
   let t = 0;
-
   function buildAndDrawBuffer(positions, colors, mode) {
     if(positions.length === 0) return;
     const posBuf = gl.createBuffer();
@@ -1023,18 +1086,15 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aPos);
-
     const colBuf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aColor);
-
     gl.drawArrays(mode, 0, positions.length/3);
     gl.deleteBuffer(posBuf);
     gl.deleteBuffer(colBuf);
   }
-
   function drawCubeEdges(cube, proj, view) {
     const s = cube.size/2;
     const verts = [
@@ -1042,15 +1102,12 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
       [-s,-s,s],[s,-s,s],[s,s,s],[-s,s,s]
     ];
     const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-
     let model = identity(mat4());
     model = rotateX(model, cube.rx);
     model = rotateY(model, cube.ry);
     model[12] = cube.x; model[13] = cube.y; model[14] = cube.z;
-
     const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
     gl.uniformMatrix4fv(uMVP, false, mvp);
-
     const pos=[], col=[];
     const [r,g,b] = cube.color;
     edges.forEach(([a,bb]) => {
@@ -1059,7 +1116,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     });
     buildAndDrawBuffer(pos, col, gl.LINES);
   }
-
   function drawTunnelRing(ring, proj, view) {
     const segs = 16;
     const radius = 6 + Math.sin(t*0.5+ring.z*0.1)*1.5;
@@ -1078,7 +1134,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     gl.uniformMatrix4fv(uMVP, false, mvp);
     buildAndDrawBuffer(pos, col, gl.LINES);
   }
-
   function drawStars(proj, view) {
     const pos=[], col=[];
     stars3d.forEach(s => {
@@ -1089,7 +1144,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     let model = identity(mat4());
     const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
     gl.uniformMatrix4fv(uMVP, false, mvp);
-    gl.vertexAttribPointer;
     const posBuf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.DYNAMIC_DRAW);
@@ -1104,33 +1158,24 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     gl.deleteBuffer(posBuf);
     gl.deleteBuffer(colBuf);
   }
-
   function animate() {
     t += 0.016;
     const W = canvas.width, H = canvas.height;
     gl.clearColor(0.002, 0.004, 0.02, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
     const proj = perspective(mat4(), 0.9, W/H, 0.1, 80);
     const camZ = t * 0.4;
     const camX = Math.sin(t*0.15)*1.2;
     const camY = Math.cos(t*0.12)*0.8;
-
     let view = identity(mat4());
     view[12] = -camX; view[13] = -camY; view[14] = 2;
-
-    // Draw stars
     drawStars(proj, view);
-
-    // Draw tunnel rings
     tunnelRings.forEach(ring => {
       ring.z += 0.04;
       ring.angle += 0.004;
       if(ring.z > 4) ring.z -= 20*3.5/tunnelRings.length + 70;
       drawTunnelRing(ring, proj, view);
     });
-
-    // Draw cubes
     cubes.forEach(cube => {
       cube.z += cube.speed;
       cube.rx += cube.drx;
@@ -1140,12 +1185,11 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
         cube.z = -40 - Math.random()*20;
         cube.x = (Math.random()-0.5)*20;
         cube.y = (Math.random()-0.5)*20;
-        cube.color = randomColor();
+        const palettes = [[0,0.8,0.5],[0.8,0.7,0],[0,0.4,1],[0.6,0,1],[0,1,0.3],[1,0.3,0]];
+        cube.color = palettes[Math.floor(Math.random()*palettes.length)];
       }
       drawCubeEdges(cube, proj, view);
     });
-
-    // Draw connecting lines between nearby cubes
     const linPos=[], linCol=[];
     for(let i=0; i<cubes.length; i++) {
       for(let j=i+1; j<cubes.length; j++) {
@@ -1164,13 +1208,9 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
       gl.uniformMatrix4fv(uMVP, false, mvp);
       buildAndDrawBuffer(linPos, linCol, gl.LINES);
     }
-
     requestAnimationFrame(animate);
   }
-
   animate();
-
-  // 2D fallback
   function fallback2D(c) {
     const ctx = c.getContext('2d');
     function resz() { c.width=window.innerWidth; c.height=window.innerHeight; }
@@ -1205,3 +1245,4 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
 })();
 </script>
 </body>
+</html>
