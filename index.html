@@ -65,18 +65,14 @@
       height: 32px;
     }
     .ticker-track {
-      display: flex;
+      display: inline-flex;
       white-space: nowrap;
       height: 32px;
       align-items: center;
       position: absolute;
-      left: 0;
+      left: 100%;
       top: 0;
       will-change: transform;
-    }
-    @keyframes tickerSlide {
-      0%   { transform: translateX(100vw); }
-      100% { transform: translateX(-100%); }
     }
     .ticker-item {
       display: inline-flex;
@@ -785,7 +781,9 @@
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, storageKey: 'virtux-auth', autoRefreshToken: true, detectSessionInUrl: true }
+});
 let allPosts = {};
 let pendingGoogleUser = null;
 let currentProfileData = null;
@@ -878,18 +876,68 @@ async function loadPage(room) {
 
 function isVIPContent(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
 
+async function loadSubscribersWithVIP(el, posts) {
+  // Fetch VIP users from profiles
+  let vipCards = '';
+  try {
+    const { data: vipUsers } = await db.from('profiles')
+      .select('username, avatar_url, role')
+      .in('role', ['vip', 'member'])
+      .order('created_at', { ascending: false });
+    if (vipUsers && vipUsers.length) {
+      vipCards = vipUsers.map(u => {
+        const avatar = u.avatar_url
+          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+          : `<div class="channel-avatar">👤</div>`;
+        const badge = u.role === 'vip'
+          ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 8px;">👑 VIP</span>`
+          : `<span style="font-size:11px;background:#1a2a1a;color:#4caf90;border:1px solid #4caf90;border-radius:4px;padding:2px 8px;">⭐ MEMBER</span>`;
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username)}</div><div style="margin-top:4px;">${badge}</div></div></div>`;
+      }).join('');
+    }
+  } catch(e) {}
+
+  // Youtuber posts
+  const youtuberCards = posts.map(p => {
+    const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+    const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
+    const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+    let subText = p.description || '';
+    if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+    const badge = p.tag === 'Youtuber VIP'
+      ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
+    return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
+  }).join('');
+
+  if (!youtuberCards && !vipCards) {
+    el.innerHTML = '<div class="empty-state">لا توجد بيانات بعد 🎮</div>';
+    return;
+  }
+
+  let html = '<div class="channels-grid">';
+  if (vipCards) html += vipCards;
+  if (youtuberCards) html += youtuberCards;
+  html += '</div>';
+  el.innerHTML = html;
+}
+
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
-  if (room === 'subscribers' || room === 'yt-channels') {
+  if (room === 'yt-channels') {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
       const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
       let subText = p.description || '';
       if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
-      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div><div class="channel-sub" style="font-size:11px; color:#aab;">${escapeHtml(p.content || '')}</div></div>${link}</div>`;
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div></div>${link}</div>`;
     }).join('')}</div>`;
+    return;
+  }
+  if (room === 'subscribers') {
+    // Show posts (youtubers) + VIP users from profiles
+    loadSubscribersWithVIP(el, posts);
     return;
   }
   const userRole = window.userRole || 'guest';
@@ -1382,7 +1430,7 @@ async function signUpWithDetails(username, email, password) {
     id: data.user.id, username: username, email: email, role: 'user', created_at: new Date().toISOString()
   });
   if (profileError) {
-    await db.auth.admin.deleteUser(data.user.id).catch(()=>{});
+    // profile insert failed - user can still login
     throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
   }
   return data;
@@ -1449,10 +1497,11 @@ async function updateUIAfterAuth() {
 }
 
 async function checkAuth() { await updateUIAfterAuth(); }
-async function doLogout() { 
-  await db.auth.signOut(); 
-  // تأخير بسيط قبل إعادة التحميل لضمان تنظيف الجلسة
-  setTimeout(() => { window.location.reload(); }, 100);
+async function doLogout() {
+  try {
+    await db.auth.signOut();
+    window.location.reload();
+  } catch(e) { window.location.reload(); }
 }
 
 db.auth.onAuthStateChange(async (event, session) => {
@@ -1522,9 +1571,11 @@ document.getElementById('profileButton')?.addEventListener('click', openProfileM
 document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileChanges);
 document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
 document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
-document.getElementById('logoutButton')?.addEventListener('click', doLogout);
+const logoutBtn = document.getElementById('logoutButton');
+if (logoutBtn) { logoutBtn.onclick = async function() { await db.auth.signOut(); window.location.reload(); }; }
 
-document.getElementById('upm-close').onclick = () => document.getElementById('upm-modal').classList.remove('active');
+const _upmCloseBtn = document.getElementById('upm-close');
+if(_upmCloseBtn) _upmCloseBtn.onclick = () => document.getElementById('upm-modal').classList.remove('active');
 
 window.showPage = showPage;
 window.filterPosts = filterPosts;
