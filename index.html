@@ -6,6 +6,7 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* جميع الأنماط كما هي (محذوفة للاختصار ولكنها موجودة في الملف الأصلي) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -790,26 +791,38 @@ let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
 
-// ==================== التحقق من وجود Buckets بدون أخطاء 400 ====================
+// ==================== إنشاء buckets تلقائياً (مع محاولة إنشائها) ====================
 async function ensureBuckets() {
   try {
-    // فقط نحاول جلب قائمة buckets، لا نحاول إنشاءها لتجنب أخطاء 400
-    const { data: buckets, error } = await db.storage.listBuckets();
-    if (error) {
-      console.warn('Storage bucket check error:', error);
+    // محاولة إنشاء bucket 'avatars' إذا لم يكن موجوداً
+    const { data: buckets, error: listError } = await db.storage.listBuckets();
+    if (listError) {
+      console.warn('Cannot list buckets:', listError);
+      // لا نستطيع الاستمرار، لكننا نعرض رسالة للمستخدم
       return;
     }
     const avatarsExists = buckets?.some(b => b.name === 'avatars');
     const mediaExists = buckets?.some(b => b.name === 'posts-media');
+    
     if (!avatarsExists) {
-      console.warn('Bucket "avatars" does not exist. Please create it manually in Supabase Storage.');
+      const { error: createError } = await db.storage.createBucket('avatars', { public: true });
+      if (createError) {
+        console.error('Failed to create avatars bucket:', createError);
+        alert('⚠️ لم يتم إنشاء bucket الصور تلقائياً. يرجى إنشاء bucket "avatars" يدوياً في Supabase Storage وجعله عاماً.');
+      } else {
+        console.log('Bucket "avatars" created successfully');
+      }
     }
     if (!mediaExists) {
-      console.warn('Bucket "posts-media" does not exist. Please create it manually in Supabase Storage.');
+      const { error: createError } = await db.storage.createBucket('posts-media', { public: true });
+      if (createError) {
+        console.error('Failed to create posts-media bucket:', createError);
+        alert('⚠️ لم يتم إنشاء bucket الملفات تلقائياً. يرجى إنشاء bucket "posts-media" يدوياً في Supabase Storage وجعله عاماً.');
+      } else {
+        console.log('Bucket "posts-media" created successfully');
+      }
     }
-  } catch(e) {
-    console.warn('Bucket check failed:', e);
-  }
+  } catch(e) { console.warn('Bucket check failed:', e); }
 }
 
 // ==================== دوال جلب معلومات اليوتيوب ====================
@@ -997,6 +1010,15 @@ function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m =>
 
 // ==================== دوال رفع الملفات ====================
 async function uploadFileToBucket(file, bucket, pathPrefix) {
+  // التحقق من وجود bucket (محاولة الإنشاء إذا لم يكن موجوداً)
+  try {
+    const { data: buckets } = await db.storage.listBuckets();
+    const bucketExists = buckets?.some(b => b.name === bucket);
+    if (!bucketExists) {
+      await db.storage.createBucket(bucket, { public: true });
+    }
+  } catch(e) { console.warn('Bucket check error:', e); }
+  
   const ext = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 8)}.${ext}`;
   const filePath = `${pathPrefix}/${fileName}`;
@@ -1508,7 +1530,6 @@ async function checkAuth() { await updateUIAfterAuth(); }
 window.doLogout = async function() {
   try {
     await db.auth.signOut();
-    // إعادة تحميل الصفحة بعد الخروج
     window.location.reload();
   } catch(e) {
     console.error('Logout error:', e);
@@ -1587,8 +1608,13 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfile
 document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
 document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
 
-const _upmCloseBtn = document.getElementById('upm-close');
-if(_upmCloseBtn) _upmCloseBtn.onclick = () => document.getElementById('upm-modal').classList.remove('active');
+// ربط زر الإغلاق (X) في نافذة النشر
+const upmCloseBtn = document.getElementById('upm-close');
+if (upmCloseBtn) {
+  upmCloseBtn.onclick = function() {
+    document.getElementById('upm-modal').classList.remove('active');
+  };
+}
 
 // ==================== شريط الأخبار (ticker) ====================
 let tickerItems = [];
