@@ -6,7 +6,6 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* جميع الأنماط كما هي (تم الحفاظ عليها بالكامل) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -791,27 +790,26 @@ let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
 
-// ==================== إنشاء Bucket بشكل آمن (بدون أخطاء 400) ====================
+// ==================== التحقق من وجود Buckets بدون أخطاء 400 ====================
 async function ensureBuckets() {
   try {
-    const { data: buckets, error: listError } = await db.storage.listBuckets();
-    if (listError) {
-      console.warn('Cannot list buckets (permission issue):', listError);
+    // فقط نحاول جلب قائمة buckets، لا نحاول إنشاءها لتجنب أخطاء 400
+    const { data: buckets, error } = await db.storage.listBuckets();
+    if (error) {
+      console.warn('Storage bucket check error:', error);
       return;
     }
     const avatarsExists = buckets?.some(b => b.name === 'avatars');
-    if (!avatarsExists) {
-      try {
-        await db.storage.createBucket('avatars', { public: true });
-      } catch(e) { console.warn('Could not create avatars bucket:', e); }
-    }
     const mediaExists = buckets?.some(b => b.name === 'posts-media');
-    if (!mediaExists) {
-      try {
-        await db.storage.createBucket('posts-media', { public: true });
-      } catch(e) { console.warn('Could not create posts-media bucket:', e); }
+    if (!avatarsExists) {
+      console.warn('Bucket "avatars" does not exist. Please create it manually in Supabase Storage.');
     }
-  } catch(e) { console.warn('Bucket check failed:', e); }
+    if (!mediaExists) {
+      console.warn('Bucket "posts-media" does not exist. Please create it manually in Supabase Storage.');
+    }
+  } catch(e) {
+    console.warn('Bucket check failed:', e);
+  }
 }
 
 // ==================== دوال جلب معلومات اليوتيوب ====================
@@ -1505,12 +1503,21 @@ async function updateUIAfterAuth() {
 }
 
 async function checkAuth() { await updateUIAfterAuth(); }
-async function doLogout() {
+
+// دالة الخروج الموثوقة
+window.doLogout = async function() {
   try {
     await db.auth.signOut();
+    // إعادة تحميل الصفحة بعد الخروج
     window.location.reload();
-  } catch(e) { window.location.reload(); }
-}
+  } catch(e) {
+    console.error('Logout error:', e);
+    window.location.reload();
+  }
+};
+
+// ربط زر الخروج
+document.getElementById('logoutButton')?.addEventListener('click', window.doLogout);
 
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN') {
@@ -1579,8 +1586,6 @@ document.getElementById('profileButton')?.addEventListener('click', openProfileM
 document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileChanges);
 document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
 document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
-const logoutBtn = document.getElementById('logoutButton');
-if (logoutBtn) { logoutBtn.onclick = async function() { await db.auth.signOut(); window.location.reload(); }; }
 
 const _upmCloseBtn = document.getElementById('upm-close');
 if(_upmCloseBtn) _upmCloseBtn.onclick = () => document.getElementById('upm-modal').classList.remove('active');
@@ -1616,7 +1621,6 @@ function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  // Duplicate items for seamless loop
   [...tickerItems, ...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
@@ -1637,7 +1641,7 @@ function buildTickerTrack() {
   let originalWidth = 0;
   const children = Array.from(track.children);
   for (let i = 0; i < halfCount; i++) {
-    if (children[i]) originalWidth += children[i].offsetWidth + 60; // + padding approx
+    if (children[i]) originalWidth += children[i].offsetWidth + 60;
   }
   tickerPosition = tickerContainerWidth;
   track.style.transform = `translateX(${tickerPosition}px)`;
@@ -1665,7 +1669,6 @@ window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
 window.closeDD = closeDD;
 window.deletePost = deletePost;
-window.doLogout = doLogout;
 window.openUserPostModal = openUserPostModal;
 window.openYTVIPModal = openYTVIPModal;
 window.openEditPostModal = openEditPostModal;
