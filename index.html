@@ -6,7 +6,6 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* جميع الأنماط كما هي مع إضافة أنماط للأزرار الجديدة */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -22,81 +21,12 @@
     .dd-menu a{display:block;color:#ccc;padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #333;text-decoration:none}
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
-    
-    /* أزرار النشر */
-    .post-actions { display: flex; gap: 12px; align-items: center; margin-left: auto; }
-    .btn-user-post, .btn-ytvip-post {
-      background: #d4af37; color: #000; border: none; border-radius: 6px;
-      padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
-      font-family: 'Poppins', sans-serif; transition: 0.2s;
-    }
-    .btn-user-post:hover { background: #f0c040; }
-    .btn-ytvip-post { background: #2a1500; color: #d4af37; border: 1px solid #d4af37; }
-    .btn-ytvip-post:hover { background: #d4af37; color: #000; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-    
-    .vx-ticker {
-      background: #000;
-      padding: 0;
-      display: flex;
-      align-items: stretch;
-      overflow: hidden;
-      position: relative;
-      border-bottom: 1px solid #d4af37;
-      height: 32px;
-    }
-    .ticker-label {
-      font-size: 11px;
-      background: #d4af37;
-      color: #000;
-      padding: 0 14px;
-      font-weight: 700;
-      white-space: nowrap;
-      z-index: 5;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      letter-spacing: 2px;
-      order: -1;
-    }
-    .ticker-scroll {
-      flex: 1;
-      overflow: hidden;
-      position: relative;
-      height: 32px;
-    }
-    .ticker-track {
-      display: flex;
-      white-space: nowrap;
-      height: 32px;
-      align-items: center;
-      position: absolute;
-      left: 0;
-      top: 0;
-      will-change: transform;
-    }
-    @keyframes tickerSlide {
-      0%   { transform: translateX(100vw); }
-      100% { transform: translateX(-100%); }
-    }
-    .ticker-item {
-      display: inline-flex;
-      align-items: center;
-      padding: 0 30px;
-      font-size: 13px;
-      color: #99aabb;
-      white-space: nowrap;
-      height: 32px;
-    }
-    .ticker-item span { color: #d4af37; }
-    .ticker-item a {
-      color: #d4af37;
-      text-decoration: none;
-    }
-    .ticker-item a:hover {
-      text-decoration: underline;
-    }
-    
+    .vx-ticker{background:#000;padding:5px 16px;display:flex;align-items:center;gap:10px;overflow:hidden}
+    .ticker-label{font-size:11px;background:#d4af37;color:#000;padding:2px 8px;border-radius:3px;font-weight:700;white-space:nowrap}
+    .ticker-track{display:flex;gap:30px;animation:ticker 28s linear infinite;white-space:nowrap}
+    @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .ticker-item{font-size:12px;color:#99aabb}
+    .ticker-item span{color:#d4af37}
     .vx-body{display:flex;flex:1}
     .vx-sidebar{width:180px;background:linear-gradient(180deg,#1a1a1a,#2a2a2a);border-right:1px solid #d4af37;display:flex;flex-direction:column;gap:4px;padding:10px 6px}
     .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left}
@@ -107,6 +37,7 @@
     .vx-page{display:none}
     .vx-page.active{display:block}
     
+    /* خلفية صفحة الهوم */
     .home-hero {
       position: relative;
       background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
@@ -116,97 +47,84 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      text-align: center;
-      border-bottom: none;
-      padding: 40px 20px;
-    }
-    
-    .home-welcome {
-      font-size: 32px;
-      font-weight: 600;
-      color: #d4af37;
-      text-shadow: 0 0 8px #000;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(5px);
-      padding: 12px 35px;
-      border-radius: 50px;
-      border: 1px solid #d4af37;
-      display: inline-block;
-      margin: 20px auto 40px auto;
-      letter-spacing: 1px;
-    }
-    
-    .home-content-row {
-      display: flex;
-      flex-wrap: wrap;
       justify-content: center;
+      text-align: center;
+      overflow: hidden;
+      border-bottom: none;
+    }
+    .flags-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
       gap: 40px;
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-    }
-    .home-about, .home-rules {
-      flex: 1;
-      min-width: 280px;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(4px);
-      border-radius: 20px;
-      padding: 25px;
-      text-align: left;
-      border: 1px solid rgba(212,175,55,0.5);
-      transition: transform 0.2s;
-    }
-    .home-about:hover, .home-rules:hover {
-      transform: translateY(-5px);
-      border-color: #d4af37;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    }
-    .home-about h3, .home-rules h3 {
-      color: #d4af37;
-      font-size: 22px;
-      margin-bottom: 20px;
-      border-bottom: 1px solid #d4af37;
-      display: inline-block;
-      padding-bottom: 5px;
-    }
-    .about-text {
-      line-height: 1.7;
-      color: #ddd;
-      font-size: 15px;
-    }
-    .about-features {
-      margin-top: 15px;
-      list-style: none;
-    }
-    .about-features li {
-      margin: 8px 0;
-      color: #d4af37;
-      font-weight: 500;
-    }
-    .rules-list {
-      list-style: none;
-      padding: 0;
-    }
-    .rules-list li {
-      margin: 12px 0;
-      padding-left: 28px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
       position: relative;
-      color: #f0f0f0;
-      font-size: 14px;
-      line-height: 1.4;
+      z-index: 2;
     }
-    .rules-list li::before {
-      content: "⛔";
+    .flag {
+      width: 140px;
+      height: 90px;
+      background-size: cover;
+      background-position: center;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+    .flag-iran { background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/ca/Flag_of_Iran.svg'); }
+    .flag-palestine { background-image: url('https://upload.wikimedia.org/wikipedia/commons/0/00/Flag_of_Palestine.svg'); }
+    .victory-text {
+      font-size: 56px;
+      font-weight: bold;
+      color: #d4af37;
+      text-shadow: 0 0 20px #000, 2px 2px 4px #8b0000;
+      margin: 20px 0;
+      z-index: 2;
+      font-family: 'Poppins', sans-serif;
+    }
+    .home-title {
+      font-size: 48px;
+      font-weight: 800;
+      color: #d4af37;
+      text-shadow: 0 0 15px #000, 3px 3px 0 #5a3a1a;
+      margin-top: 20px;
+      z-index: 2;
+    }
+    .home-subtitle {
+      font-size: 18px;
+      color: #eee;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 20px;
+      border-radius: 40px;
+      margin-top: 15px;
+      z-index: 2;
+    }
+    .missile {
       position: absolute;
-      left: 0;
-      color: #ff5555;
-      font-size: 16px;
+      bottom: -80px;
+      width: 45px;
+      height: 90px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ff4444"><path d="M12,2 L14,8 L22,8 L16,12 L18,18 L12,14 L6,18 L8,12 L2,8 L10,8 L12,2Z"/></svg>') no-repeat center;
+      background-size: contain;
+      filter: drop-shadow(0 0 8px orange);
+      animation: launch 4s linear infinite;
+      z-index: 3;
     }
+    @keyframes launch {
+      0% { bottom: -100px; opacity: 1; transform: translateX(0) rotate(0deg);}
+      50% { opacity: 1; transform: translateX(25px) rotate(6deg);}
+      100% { bottom: 110%; opacity: 0; transform: translateX(-25px) rotate(-6deg);}
+    }
+    .missile:nth-child(1) { left: 5%; animation-duration: 3s; animation-delay: 0s; width: 40px; height: 80px;}
+    .missile:nth-child(2) { left: 20%; animation-duration: 4.2s; animation-delay: 0.7s; width: 50px; height: 100px;}
+    .missile:nth-child(3) { left: 35%; animation-duration: 3.6s; animation-delay: 1.2s; width: 45px; height: 90px;}
+    .missile:nth-child(4) { left: 50%; animation-duration: 4.5s; animation-delay: 0.3s; width: 55px; height: 110px;}
+    .missile:nth-child(5) { left: 65%; animation-duration: 3.8s; animation-delay: 1.8s; width: 40px; height: 80px;}
+    .missile:nth-child(6) { left: 80%; animation-duration: 4s; animation-delay: 0.9s; width: 48px; height: 95px;}
+    .missile:nth-child(7) { left: 92%; animation-duration: 3.4s; animation-delay: 2.1s; width: 42px; height: 85px;}
     
-    .missile { display: none; }
-    .empty-home { display: none; }
+    .empty-home { text-align: center; padding: 60px 20px; color: #aaa; background: #111; }
     
+    /* فلتر وبطاقات */
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
@@ -215,8 +133,8 @@
     .post-card:hover{border-color:#d4af37}
     .post-card-img{width:100%;height:160px;object-fit:cover}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-    .post-card-video{width:100%;height:200px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;object-fit:cover}
+    .post-card-video{width:100%;aspect-ratio:16/9;background:#000}
+    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none}
     .restricted-overlay{position:relative}
     .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#d4af37;pointer-events:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
@@ -251,6 +169,7 @@
     .page-header{padding:14px 20px 10px;border-bottom:1px solid #333;background:#0a0a0a}
     .page-header h2{font-size:17px;color:#d4af37;font-weight:600}
 
+    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
@@ -352,216 +271,6 @@
       gap: 8px;
       align-items: center;
     }
-
-    .username-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 2000;
-      justify-content: center;
-      align-items: center;
-    }
-    .username-modal.active { display: flex; }
-    .username-modal .modal-box {
-      background: #1a1a1a;
-      border: 1px solid #d4af37;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 400px;
-      padding: 28px;
-      text-align: center;
-    }
-    .username-modal .modal-box h3 {
-      color: #d4af37;
-      margin-bottom: 15px;
-    }
-    .username-modal .modal-box input {
-      width: 100%;
-      padding: 12px;
-      margin: 15px 0;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      border-radius: 6px;
-      color: white;
-      font-size: 16px;
-    }
-    .username-modal .modal-box button {
-      background: #d4af37;
-      color: #000;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      margin: 5px;
-    }
-    .username-modal .modal-box button.cancel {
-      background: #555;
-      color: white;
-    }
-
-    /* نافذة الملف الشخصي */
-    .profile-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.95);
-      z-index: 3000;
-      justify-content: center;
-      align-items: center;
-    }
-    .profile-modal.active { display: flex; }
-    .profile-modal .modal-box {
-      background: #1a1a1a;
-      border: 1px solid #d4af37;
-      border-radius: 16px;
-      width: 95%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 25px;
-    }
-    .profile-modal .modal-box h2 {
-      color: #d4af37;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .profile-avatar {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .profile-avatar img {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid #d4af37;
-      background: #2a2a2a;
-    }
-    .profile-avatar .avatar-placeholder {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: #2a2a3a;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      border: 2px solid #d4af37;
-    }
-    .profile-field {
-      margin-bottom: 15px;
-    }
-    .profile-field label {
-      display: block;
-      margin-bottom: 5px;
-      color: #d4af37;
-      font-weight: 500;
-    }
-    .profile-field input, .profile-field select {
-      width: 100%;
-      padding: 10px;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      border-radius: 6px;
-      color: white;
-    }
-    .profile-field input:focus {
-      outline: none;
-      border-color: #d4af37;
-    }
-    .profile-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    .profile-buttons button {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .btn-save {
-      background: #d4af37;
-      color: #000;
-    }
-    .btn-cancel {
-      background: #555;
-      color: white;
-    }
-    .change-password-section {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #444;
-    }
-    .change-password-section h3 {
-      color: #d4af37;
-      font-size: 18px;
-      margin-bottom: 15px;
-    }
-    .username-feedback {
-      font-size: 12px;
-      margin-top: 5px;
-      color: #ffaa66;
-    }
-    /* نافذة النشر للمستخدم */
-    #upm-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 600;
-      align-items: center;
-      justify-content: center;
-    }
-    #upm-modal.active { display: flex; }
-    .upm-box {
-      background: #111;
-      border: 1px solid #d4af37;
-      border-radius: 14px;
-      width: 90%;
-      max-width: 460px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    .upm-top {
-      background: #000;
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #333;
-    }
-    .upm-top h2 { font-size: 15px; color: #d4af37; }
-    .upm-close {
-      background: transparent;
-      border: 1px solid #555;
-      color: #aaa;
-      width: 28px;
-      height: 28px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    .upm-body { padding: 18px; }
-    #upm-ok { background: #0f3d2e; border: 1px solid #0f6e56; color: #4caf90; border-radius: 7px; padding: 9px; font-size: 13px; margin-bottom: 12px; display: none; }
-    #upm-err { background: #3d0f0f; border: 1px solid #6e0f0f; color: #f55; border-radius: 7px; padding: 9px; font-size: 13px; margin-bottom: 12px; display: none; }
-    #upm-submit {
-      width: 100%; padding: 10px; background: #d4af37; color: #000;
-      border: none; border-radius: 7px; font-size: 14px; font-weight: 700; cursor: pointer;
-      font-family: 'Poppins', sans-serif;
-    }
-    #upm-submit:hover { background: #f0c040; }
-    #upm-submit:disabled { background: #555; color: #999; cursor: not-allowed; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -571,7 +280,7 @@
     <div class="vx-logo">VIRT<span>UX</span></div>
     <div class="vx-topnav">
       <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">News ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 Gaming News</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ Youtube News</a></div></div>
-      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a></div></div>
+      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">Youtube ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 Channels</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 Videos</a><a onclick="window.showPage('yt-lives');window.closeDD()">🔴 Lives</a></div></div>
       <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">📢 Advertisements ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 Collaboration</a></div></div>
     </div>
     <div id="auth-btn-area" style="margin-left:8px;">
@@ -579,22 +288,16 @@
         <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
       </div>
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img id="user-avatar-img" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#2a2a3a; display:none;">
-          <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
-          <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
-        </div>
-        <button id="profileButton" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
-        <button id="logoutButton" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
+        <span id="user-name" style="font-size:13px;color:#d4af37;"></span>
+        <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
+        <button onclick="doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
       </div>
     </div>
   </div>
   
   <div class="vx-ticker">
     <div class="ticker-label">LIVE</div>
-    <div class="ticker-scroll" id="tickerScroll">
-      <div class="ticker-track" id="tickerTrack"></div>
-    </div>
+    <div class="ticker-track" id="ticker-track"><div class="loading-state">جاري تحميل الأخبار...</div></div>
   </div>
   
   <div class="vx-body">
@@ -611,33 +314,12 @@
     <div class="vx-main">
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
-          <div class="home-welcome">Welcome to Virtux</div>
-          <div class="home-content-row">
-            <div class="home-about">
-              <h3>🎮 About Virtux</h3>
-              <div class="about-text">
-                Virtux is an English‑speaking gaming community platform designed to deliver a professional and enjoyable experience for players.
-              </div>
-              <ul class="about-features">
-                <li>🔴 Live Streams</li>
-                <li>🏆 Tournaments</li>
-                <li>🎬 Highlights</li>
-                <li>👥 Subscribers System</li>
-              </ul>
-            </div>
-            <div class="home-rules">
-              <h3>🛑 Rules</h3>
-              <ul class="rules-list">
-                <li>🚫 No insulting or offensive behavior in any form</li>
-                <li>🚫 No incitement or problems between members</li>
-                <li>🚫 No inappropriate content</li>
-                <li>🚫 No posting female images</li>
-                <li>🚫 No music</li>
-                <li>✅ Respectful and elegant style required</li>
-              </ul>
-            </div>
-          </div>
+          <div class="flags-container"><div class="flag flag-iran"></div><div class="victory-text">النصر للاسلام</div><div class="flag flag-palestine"></div></div>
+          <div class="home-title">مرحباً بكم في VIRTUX</div>
+          <div class="home-subtitle">مجتمع الألعاب والنخبة</div>
+          <div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div><div class="missile"></div>
         </div>
+        <div class="empty-home"><p>✨ سيتم إضافة محتوى الصفحة الرئيسية قريباً.</p></div>
       </div>
     </div>
   </div>
@@ -684,120 +366,17 @@
   </div>
 </div>
 
-<!-- نافذة اختيار اسم المستخدم بعد Google -->
-<div id="usernameModal" class="username-modal">
-  <div class="modal-box">
-    <h3>✨ Choose a username</h3>
-    <p style="color:#ccc; font-size:14px;">Please choose a unique username to complete your registration</p>
-    <input type="text" id="newUsername" placeholder="Username" autocomplete="off">
-    <div style="margin-top:10px;">
-      <button id="confirmUsernameBtn">Confirm</button>
-      <button id="cancelUsernameBtn" class="cancel">Cancel</button>
-    </div>
-    <div id="usernameError" style="color:#f55; margin-top:10px; font-size:12px;"></div>
-  </div>
-</div>
-
-<!-- نافذة الملف الشخصي (Profile) -->
-<div id="profileModal" class="profile-modal">
-  <div class="modal-box">
-    <h2>👤 الملف الشخصي</h2>
-    <div class="profile-avatar">
-      <div id="profileAvatarContainer">
-        <img id="profileAvatarImg" src="" style="display:none; width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid #d4af37;">
-        <div id="profileAvatarPlaceholder" class="avatar-placeholder" style="display:flex;">👤</div>
-      </div>
-      <div style="margin-top:10px;">
-        <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml" style="display:none;">
-        <button id="changeAvatarBtn" class="btn-submit" style="width:auto; padding:5px 12px; font-size:12px;">📷 تغيير الصورة</button>
-      </div>
-    </div>
-    <div class="profile-field">
-      <label>اسم المستخدم</label>
-      <input type="text" id="profileUsername" placeholder="اسم المستخدم">
-      <div id="usernameFeedback" class="username-feedback"></div>
-    </div>
-    <div class="profile-field">
-      <label>📧 البريد الإلكتروني</label>
-      <input type="email" id="profileEmail" readonly disabled style="background:#3a3a4a;">
-    </div>
-    <div class="profile-field">
-      <label>🎂 تاريخ الميلاد</label>
-      <input type="date" id="profileBirthdate">
-    </div>
-    <div class="profile-field">
-      <label>📍 مكان الولادة</label>
-      <input type="text" id="profileBirthPlace" placeholder="المدينة، الدولة">
-    </div>
-    <div class="profile-field">
-      <label>🌍 البلد الحالي</label>
-      <input type="text" id="profileCountry" placeholder="الدولة">
-    </div>
-    <div class="profile-field">
-      <label>🎮 اللعبة المفضلة</label>
-      <input type="text" id="profileFavoriteGame" placeholder="مثال: Call of Duty, FIFA, etc.">
-    </div>
-    
-    <div class="change-password-section">
-      <h3>🔒 تغيير كلمة المرور</h3>
-      <div class="profile-field">
-        <label>كلمة المرور الحالية</label>
-        <input type="password" id="oldPassword" placeholder="********">
-      </div>
-      <div class="profile-field">
-        <label>كلمة المرور الجديدة</label>
-        <input type="password" id="newPassword" placeholder="********">
-      </div>
-      <div class="profile-field">
-        <label>تأكيد كلمة المرور الجديدة</label>
-        <input type="password" id="confirmNewPassword" placeholder="********">
-      </div>
-      <div id="passwordError" class="error-msg" style="margin-bottom:10px;"></div>
-      <button id="changePasswordBtn" class="btn-submit" style="width:100%;">تغيير كلمة المرور</button>
-    </div>
-    
-    <div class="profile-buttons">
-      <button id="saveProfileBtn" class="btn-save">💾 حفظ التغييرات</button>
-      <button id="closeProfileBtn" class="btn-cancel">إغلاق</button>
-    </div>
-  </div>
-</div>
-
 <script>
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
-const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
-let pendingGoogleUser = null;
-let currentProfileData = null;
 
-// ==================== إنشاء Bucket "avatars" تلقائياً ====================
-async function ensureAvatarBucket() {
-  try {
-    const { data: buckets, error: listError } = await db.storage.listBuckets();
-    if (listError) {
-      console.warn('Cannot list buckets:', listError);
-      return;
-    }
-    const exists = buckets?.some(b => b.name === 'avatars');
-    if (!exists) {
-      const { error: createError } = await db.storage.createBucket('avatars', { public: true });
-      if (createError) {
-        console.error('Error creating avatars bucket:', createError);
-      } else {
-        console.log('Bucket "avatars" created successfully');
-      }
-    }
-  } catch(e) { console.warn('Bucket check failed:', e); }
-}
-
-// ==================== دوال الغرف والمحتوى الأساسية ====================
-const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
+const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects'];
 const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
   'gaming-news': '📰 Gaming News', 'youtube-news': '▶️ Youtube News', 'yt-channels': '📺 Youtube Channels',
-  'yt-videos': '🎬 Youtube Videos', projects: '🌐 Collaboration'
+  'yt-videos': '🎬 Youtube Videos', 'yt-lives': '🔴 Youtube Lives', projects: '🌐 Collaboration'
 };
 
 const mainContainer = document.querySelector('.vx-main');
@@ -805,21 +384,12 @@ rooms.forEach(room => {
   const pageDiv = document.createElement('div');
   pageDiv.className = 'vx-page';
   pageDiv.id = `page-${room}`;
-  // أزرار النشر: تظهر فقط للمستخدمين المسجلين وسيتم التحكم فيها لاحقاً عبر JS
-  const postableRooms = ['live','tournaments','highlights','yt-videos'];
-  let buttonsHtml = '';
-  if (postableRooms.includes(room)) {
-    buttonsHtml = `<div class="post-actions">
-      <button class="btn-user-post" data-room="${room}" onclick="window.openUserPostModal('${room}')">➕ Post</button>
-      ${room === 'yt-videos' ? `<button class="btn-ytvip-post" id="btn-ytvip-${room}" onclick="window.openYTVIPModal()" style="display:none;">👑 Post VIP Video</button>` : ''}
-    </div>`;
-  }
   let filterBar = '';
   if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
   else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
   else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
   else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button><button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button></div>`;
-  pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${buttonsHtml}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
+  pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2></div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
   mainContainer.appendChild(pageDiv);
 });
 
@@ -869,13 +439,8 @@ function renderCards(posts, gridId, room) {
     } else {
       const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-      if (isLocalVideo) {
-        mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
-      }
-      else if (isYouTube) {
-        const videoId = extractYouTubeId(p.url);
-        mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
-      }
+      if (isLocalVideo) mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata" style="width:100%; height:100%; object-fit:cover;"></video></div>`;
+      else if (isYouTube) { const videoId = extractYouTubeId(p.url); mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`; }
       else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
       else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
@@ -899,403 +464,79 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== دوال جلب المعلومات من يوتيوب (للغرف الأخرى) ====================
-async function fetchYouTubeChannelInfo(url) {
-  try {
-    let handle = url.split('@')[1]?.split(/[\/?]/)[0];
-    if (!handle) return null;
-    let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
-    let res = await fetch(apiUrl);
-    let data = await res.json();
-    if (data.items && data.items[0]) {
-      return {
-        title: data.items[0].snippet.title,
-        subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0',
-        thumbnail: data.items[0].snippet.thumbnails?.high?.url
-      };
-    }
-    return null;
-  } catch(e) { return null; }
-}
-
-async function fetchYouTubeVideoInfo(url) {
-  let vid = extractYouTubeId(url);
-  if (!vid) return null;
-  let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`;
-  let res = await fetch(apiUrl);
-  let data = await res.json();
-  if (data.items && data.items[0]) {
-    return {
-      title: data.items[0].snippet.title,
-      channelTitle: data.items[0].snippet.channelTitle,
-      thumbnail: data.items[0].snippet.thumbnails?.high?.url,
-      videoUrl: url
-    };
-  }
-  return null;
-}
-
-async function addYouTubeChannel(room) {
-  let url = document.getElementById(`url-${room}`).value.trim();
-  if (!url) { alert('أدخل رابط القناة'); return; }
-  let info = await fetchYouTubeChannelInfo(url);
-  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
-  let body = {
-    title: info.title,
-    description: `${info.subscribers} مشترك`,
-    icon: info.thumbnail || '📺',
-    url: url,
-    tag: 'Channel',
-    room: room,
-    content: ''
-  };
-  try {
-    let { error } = await db.from('posts').insert(body);
-    if (error) throw error;
-    document.getElementById(`url-${room}`).value = '';
-    let okDiv = document.getElementById(`ok-${room}`);
-    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
-    loadContentPage(room);
-  } catch(e) { alert('خطأ: ' + e.message); }
-}
-
-async function addYouTubeVideo(room, isLive = false) {
-  let url = document.getElementById(`url-${room}`).value.trim();
-  if (!url) { alert('أدخل رابط الفيديو أو البث'); return; }
-  let info = await fetchYouTubeVideoInfo(url);
-  if (!info) { alert('تعذر جلب معلومات الفيديو'); return; }
-  let tag = document.getElementById(`tag-${room}`)?.value || (isLive ? 'Live Now' : 'Video');
-  let body = {
-    title: info.title,
-    description: info.channelTitle,
-    icon: info.thumbnail || (isLive ? '🔴' : '📹'),
-    url: info.videoUrl,
-    tag: tag,
-    room: room,
-    content: ''
-  };
-  try {
-    let { error } = await db.from('posts').insert(body);
-    if (error) throw error;
-    document.getElementById(`url-${room}`).value = '';
-    let okDiv = document.getElementById(`ok-${room}`);
-    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
-    loadContentPage(room);
-    if (room === 'live') loadContentPage('live');
-  } catch(e) { alert('خطأ: ' + e.message); }
-}
-
-// نموذج الإضافة لكل غرفة (للمشرفين) - مختصر للطول
-function getAddForm(room) {
-  if (room === 'yt-channels') {
-    return `<div class="card"><h3>➕ إضافة قناة يوتيوب</h3>
-      <div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div>
-      <div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"></div>
-      <button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
-  }
-  if (room === 'yt-videos') {
-    return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3>
-      <div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div>
-      <div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو يوتيوب"><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select></div>
-      <button class="btn-pub" onclick="addYouTubeVideo('${room}', false)">➕ إضافة</button></div>`;
-  }
-  if (room === 'live') {
-    return `<div class="card"><h3>➕ إضافة بث مباشر (يوتيوب)</h3>
-      <div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div>
-      <div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث يوتيوب"><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select></div>
-      <button class="btn-pub" onclick="addYouTubeVideo('${room}', true)">➕ إضافة</button></div>`;
-  }
-  return `<div class="card"><h3>➕ إضافة منشور</h3><div class="empty-state">نموذج غير متوفر لهذه الغرفة.</div></div>`;
-}
-
-async function handleImageUpload(room) { /* اختصار */ }
-async function uploadVideoToBucket(room) { /* اختصار */ }
-function clearMedia(room) { /* اختصار */ }
-async function addPost(room) { /* اختصار */ }
-function showError(room, msg) { alert(msg); }
-async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await db.from('posts').delete().eq('id', id); loadContentPage(room); }
-async function loadContentPage(room) { if (!room || room === 'home' || room === 'contact') return; await loadPage(room); }
-
-// ==================== شريط الأخبار ====================
-let tickerItems = [];
 async function loadTickerNews() {
+  const track = document.getElementById('ticker-track');
+  if(!track) return;
   try {
-    const { data, error } = await db.from('posts').select('title, url').eq('room', 'ticker').order('id', { ascending: false }).limit(15);
-    if (error) throw error;
-    if (!data || data.length === 0) tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
-    else tickerItems = data.map(item => ({ text: item.title, url: item.url }));
-  } catch(e) {
-    tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }];
-  }
-  buildTickerTrack();
-}
-function buildTickerTrack() {
-  const track = document.getElementById('tickerTrack');
-  if (!track) return;
-  track.innerHTML = '';
-  [...tickerItems, ...tickerItems].forEach(item => {
-    const span = document.createElement('span');
-    span.className = 'ticker-item';
-    if (item.url) { const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.textContent = '📢 ' + item.text; span.appendChild(a); }
-    else span.textContent = '📢 ' + item.text;
-    track.appendChild(span);
-  });
-  requestAnimationFrame(() => {
-    const totalWidth = track.scrollWidth;
-    const halfWidth = totalWidth / 2;
-    const speed = 80;
-    const duration = (halfWidth + window.innerWidth) / speed;
-    track.style.animation = `tickerSlide ${duration}s linear infinite`;
-  });
-}
-
-// ========== دوال الملف الشخصي ==========
-async function uploadAvatar(file, userId) {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${userId}-${Date.now()}.${fileExt}`;
-  const filePath = `avatars/${fileName}`;
-  const { error } = await db.storage.from('avatars').upload(filePath, file);
-  if (error) throw error;
-  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath);
-  return publicUrl;
-}
-
-async function openProfileModal() {
-  const { data: { session } } = await db.auth.getSession();
-  if (!session) return;
-  const userId = session.user.id;
-  const { data: profile, error } = await db.from('profiles').select('*').eq('id', userId).single();
-  if (error) { console.error(error); return; }
-  currentProfileData = profile;
-  document.getElementById('profileUsername').value = profile.username || '';
-  document.getElementById('profileEmail').value = session.user.email;
-  document.getElementById('profileBirthdate').value = profile.birthdate || '';
-  document.getElementById('profileBirthPlace').value = profile.birth_place || '';
-  document.getElementById('profileCountry').value = profile.country || '';
-  document.getElementById('profileFavoriteGame').value = profile.favorite_game || '';
-  document.getElementById('usernameFeedback').innerHTML = '';
-  const avatarImg = document.getElementById('profileAvatarImg');
-  const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
-  if (profile.avatar_url) {
-    avatarImg.src = profile.avatar_url;
-    avatarImg.style.display = 'block';
-    avatarPlaceholder.style.display = 'none';
-  } else {
-    avatarImg.style.display = 'none';
-    avatarPlaceholder.style.display = 'flex';
-  }
-  document.getElementById('profileModal').classList.add('active');
-}
-
-async function saveProfileChanges() {
-  const { data: { session } } = await db.auth.getSession();
-  if (!session) return;
-  const userId = session.user.id;
-  const newUsername = document.getElementById('profileUsername').value.trim();
-  const birthdate = document.getElementById('profileBirthdate').value || null;
-  const birthPlace = document.getElementById('profileBirthPlace').value || null;
-  const country = document.getElementById('profileCountry').value || null;
-  const favoriteGame = document.getElementById('profileFavoriteGame').value || null;
-  const feedback = document.getElementById('usernameFeedback');
-  if (!newUsername || newUsername.length < 3) {
-    feedback.innerHTML = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
-    feedback.style.color = '#ff5555';
-    return;
-  }
-  if (newUsername !== currentProfileData.username) {
-    const { data: existing } = await db.from('profiles').select('username').eq('username', newUsername).maybeSingle();
-    if (existing) {
-      feedback.innerHTML = 'اسم المستخدم موجود بالفعل، اختر اسماً آخر';
-      feedback.style.color = '#ff5555';
-      return;
-    }
-  }
-  feedback.innerHTML = '';
-  const updates = { username: newUsername, birthdate, birth_place: birthPlace, country, favorite_game: favoriteGame };
-  const { error } = await db.from('profiles').update(updates).eq('id', userId);
-  if (error) alert('خطأ في حفظ البيانات: ' + error.message);
-  else { alert('تم حفظ التغييرات بنجاح!'); closeProfileModal(); await updateUIAfterAuth(); }
-}
-
-async function changePassword() {
-  const oldPass = document.getElementById('oldPassword').value;
-  const newPass = document.getElementById('newPassword').value;
-  const confirmPass = document.getElementById('confirmNewPassword').value;
-  const errorSpan = document.getElementById('passwordError');
-  if (!oldPass || !newPass || !confirmPass) { errorSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
-  if (newPass !== confirmPass) { errorSpan.innerText = 'كلمة المرور الجديدة وتأكيدها غير متطابقين'; return; }
-  if (newPass.length < 6) { errorSpan.innerText = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'; return; }
-  const { error } = await db.auth.updateUser({ password: newPass });
-  if (error) errorSpan.innerText = 'فشل تغيير كلمة المرور: ' + error.message;
-  else {
-    errorSpan.innerText = '';
-    alert('تم تغيير كلمة المرور بنجاح! سيتم تسجيل خروجك، يرجى تسجيل الدخول مرة أخرى.');
-    await db.auth.signOut();
-    window.location.reload();
-  }
-}
-
-document.getElementById('changeAvatarBtn').onclick = () => document.getElementById('avatarUpload').click();
-document.getElementById('avatarUpload').onchange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) { alert('الرجاء اختيار ملف صورة صالح'); return; }
-  const { data: { session } } = await db.auth.getSession();
-  if (!session) return;
-  try {
-    await ensureAvatarBucket();
-    const avatarUrl = await uploadAvatar(file, session.user.id);
-    const { error } = await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', session.user.id);
-    if (error) throw error;
-    alert('تم تحديث الصورة بنجاح!');
-    await updateUIAfterAuth();
-    openProfileModal();
-  } catch (err) {
-    console.error(err);
-    alert('خطأ في رفع الصورة: ' + err.message + '\nتأكد من إنشاء Bucket "avatars" في Supabase Storage وجعله عاماً.');
-  }
-};
-
-function closeProfileModal() {
-  document.getElementById('profileModal').classList.remove('active');
-  document.getElementById('oldPassword').value = '';
-  document.getElementById('newPassword').value = '';
-  document.getElementById('confirmNewPassword').value = '';
-  document.getElementById('passwordError').innerText = '';
+    const { data, error } = await db.from('posts').select('title, url').eq('room','ticker').order('id',{ascending:false}).limit(10);
+    if(error) throw error;
+    if(!data || !data.length) { track.innerHTML = '<span class="ticker-item">📢 لا توجد أخبار حالياً</span>'; return; }
+    const items = [...data, ...data];
+    track.innerHTML = items.map(item => `<span class="ticker-item">${item.url ? `<a href="${item.url}" target="_blank" style="color:#d4af37; text-decoration:none;">📢 ${escapeHtml(item.title)}</a>` : `📢 ${escapeHtml(item.title)}`}</span>`).join('');
+    track.style.animation = 'none'; track.offsetHeight; track.style.animation = 'ticker 28s linear infinite';
+  } catch(e) { track.innerHTML = '<span class="ticker-item">⚠️ فشل تحميل الأخبار</span>'; }
 }
 
 // ========== AUTH ==========
-function isValidEmail(email) { const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/; return re.test(email); }
-
 async function signInWithEmailOrUsername(identifier, password) {
-  let email = identifier.trim();
-  if (!email || !password) throw new Error('يرجى ملء جميع الحقول');
-  const isEmail = email.includes('@');
+  let email = identifier;
+  const isEmail = identifier.includes('@') && identifier.includes('.');
   if (!isEmail) {
-    const { data, error } = await db.from('profiles').select('email').eq('username', email).maybeSingle();
+    const { data, error } = await db.from('profiles').select('email').eq('username', identifier).maybeSingle();
     if (error || !data) throw new Error('اسم المستخدم غير موجود');
     email = data.email;
   }
   const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+  if (error) throw error;
 }
 
 async function signUpWithDetails(username, email, password) {
-  if (!isValidEmail(email)) throw new Error('البريد الإلكتروني غير صالح');
-  if (password.length < 6) throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-  if (username.length < 3) throw new Error('اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
-  const { data: existingUser } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
-  if (existingUser) throw new Error('اسم المستخدم موجود بالفعل');
   const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
-  if (error) {
-    if (error.message.includes('User already registered')) throw new Error('البريد الإلكتروني مسجل بالفعل');
-    throw error;
-  }
+  if (error) throw error;
   if (!data.user) throw new Error('فشل إنشاء الحساب');
   const { error: profileError } = await db.from('profiles').insert({
-    id: data.user.id, username: username, email: email, role: 'user', created_at: new Date().toISOString()
+    id: data.user.id,
+    username: username,
+    email: email,
+    role: 'user'
   });
-  if (profileError) {
-    await db.auth.admin.deleteUser(data.user.id).catch(()=>{});
-    throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
-  }
+  if (profileError) console.error('Profile insert error:', profileError);
   return data;
 }
 
 async function signInWithGoogle() {
-  try {
-    const { error } = await db.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'https://rmo31.github.io/virtux/', scopes: 'email profile' }
-    });
-    if (error) throw error;
-  } catch (error) {
-    alert('فشل تسجيل الدخول عبر Google: تأكد من تفعيل Google Provider في Supabase.');
-  }
+  const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+  if (error) alert('Google login error: ' + error.message);
 }
 
-async function updateUIAfterAuth() {
+async function checkAuth() {
   const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
   const userArea = document.getElementById('btn-user-area');
-  const userNameSpan = document.getElementById('user-name');
-  const roleBadge = document.getElementById('user-role-badge');
-  const userAvatarImg = document.getElementById('user-avatar-img');
   if (session && session.user) {
-    loginLink.style.display = 'none';
-    userArea.style.display = 'flex';
-    let { data: profile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
+    if(loginLink) loginLink.style.display = 'none';
+    if(userArea) userArea.style.display = 'flex';
+    let { data: profile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
     if (!profile) {
-      if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) return;
-      let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      let finalUsername = userName;
-      let counter = 1;
-      while (true) {
-        const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
-        if (!existing) break;
-        finalUsername = `${userName}${counter++}`;
-      }
-      await db.from('profiles').insert({ id: session.user.id, username: finalUsername, email: session.user.email, role: 'user', created_at: new Date().toISOString() });
-      const { data: newProfile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
+      const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+      await db.from('profiles').insert({ id: session.user.id, username: userName, email: session.user.email, role: 'user' });
+      const { data: newProfile } = await db.from('profiles').select('username,role').eq('id', session.user.id).single();
       profile = newProfile;
     }
-    if (profile) {
-      userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
-      roleBadge.style.display = profile?.role && profile.role !== 'user' ? 'inline-block' : 'none';
-      if (profile?.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
-      if (profile?.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
-      else userAvatarImg.style.display = 'none';
-      window.userRole = profile?.role || 'user';
-      window.currentUserId = session.user.id;
-      window.currentUsername = profile?.username || '';
-      // إظهار أزرار النشر للمستخدمين المسجلين
-      document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'inline-flex');
-      // زر VIP للمستخدمين الذين لديهم صلاحية
-      if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
-      }
-    }
+    document.getElementById('user-name').textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
+    const roleBadge = document.getElementById('user-role-badge');
+    if(roleBadge && profile?.role && profile.role !== 'user') { roleBadge.textContent = profile.role.toUpperCase(); roleBadge.style.display = 'inline-block'; }
+    window.userRole = profile?.role || 'user';
   } else {
-    loginLink.style.display = 'inline-block';
-    userArea.style.display = 'none';
+    if(loginLink) loginLink.style.display = 'inline-block';
+    if(userArea) userArea.style.display = 'none';
     window.userRole = 'guest';
-    document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'none');
-    document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
   }
 }
 
-async function checkAuth() { await updateUIAfterAuth(); }
 async function doLogout() { await db.auth.signOut(); window.location.reload(); }
 
-db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN') {
-    const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
-    if (!profile) {
-      pendingGoogleUser = session.user;
-      const modal = document.getElementById('usernameModal');
-      const input = document.getElementById('newUsername');
-      input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      document.getElementById('usernameError').innerText = '';
-      modal.classList.add('active');
-    } else { await updateUIAfterAuth(); }
-  } else if (event === 'SIGNED_OUT') { await updateUIAfterAuth(); }
-});
-
-document.getElementById('confirmUsernameBtn').onclick = async () => {
-  const username = document.getElementById('newUsername').value.trim();
-  if (!username || username.length < 3) { document.getElementById('usernameError').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل'; return; }
-  if (!pendingGoogleUser) return;
-  const { data: existing } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
-  if (existing) { document.getElementById('usernameError').innerText = 'اسم المستخدم موجود بالفعل'; return; }
-  const { error } = await db.from('profiles').insert({ id: pendingGoogleUser.id, username: username, email: pendingGoogleUser.email, role: 'user', created_at: new Date().toISOString() });
-  if (error) { document.getElementById('usernameError').innerText = 'حدث خطأ أثناء حفظ الاسم'; return; }
-  document.getElementById('usernameModal').classList.remove('active');
-  pendingGoogleUser = null;
-  await updateUIAfterAuth();
-};
-document.getElementById('cancelUsernameBtn').onclick = () => { db.auth.signOut(); window.location.reload(); };
-
-// ========== Modal logic for login/signup ==========
+// Modal logic
 const modal = document.getElementById('authModal');
 const loginDiv = document.getElementById('modal-login');
 const signupDiv = document.getElementById('modal-signup');
@@ -1308,150 +549,40 @@ document.getElementById('switchToLogin').onclick = () => { signupDiv.style.displ
 document.getElementById('doLoginBtn').onclick = async () => {
   const identifier = document.getElementById('loginIdentifier').value.trim();
   const password = document.getElementById('loginPassword').value;
-  if(!identifier || !password) { document.getElementById('loginError').innerText = 'يرجى ملء جميع الحقول'; return; }
-  try { await signInWithEmailOrUsername(identifier, password); closeModal(); await updateUIAfterAuth(); }
-  catch(e) { document.getElementById('loginError').innerText = e.message; }
+  const errSpan = document.getElementById('loginError');
+  if(!identifier || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
+  try {
+    await signInWithEmailOrUsername(identifier, password);
+    closeModal();
+    window.location.reload();
+  } catch(e) { errSpan.innerText = e.message || 'فشل تسجيل الدخول'; }
 };
 document.getElementById('doSignupBtn').onclick = async () => {
   const username = document.getElementById('signupUsername').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
-  if(!username || !email || !password) { document.getElementById('signupError').innerText = 'يرجى ملء جميع الحقول'; return; }
+  const errSpan = document.getElementById('signupError');
+  if(!username || !email || !password) { errSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
+  if(password.length < 6) { errSpan.innerText = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'; return; }
   try {
     await signUpWithDetails(username, email, password);
     alert('تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.');
     document.getElementById('switchToLogin').click();
     document.getElementById('loginIdentifier').value = username;
     document.getElementById('loginPassword').value = '';
-  } catch(e) { document.getElementById('signupError').innerText = e.message; }
+  } catch(e) { errSpan.innerText = e.message || 'فشل إنشاء الحساب'; }
 };
+// أزرار Google
 document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
 document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
 
-// ربط أزرار الملف الشخصي
-document.getElementById('profileButton')?.addEventListener('click', openProfileModal);
-document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileChanges);
-document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
-document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
-document.getElementById('logoutButton')?.addEventListener('click', doLogout);
-
-// ===== USER POST MODAL =====
-const userPostForms = {
-  live: `<div><label style="color:#d4af37;">Title *</label><input id="upm-title" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:6px;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Game / Description</label><input id="upm-desc" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:6px;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Stream URL</label><input id="upm-url" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:6px;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Type</label><select id="upm-tag" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option></select></div>`,
-  tournaments: `<div><label style="color:#d4af37;">Tournament Name *</label><input id="upm-title" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Game / Teams</label><input id="upm-desc" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Registration URL</label><input id="upm-url" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Type</label><select id="upm-tag" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option value="Registration">📋 Registration</option><option value="Global">🌍 Global</option></select></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Description</label><textarea id="upm-content" rows="3" style="width:100%;padding:9px;background:#1a1a1a;border:1px solid #333;color:#fff;"></textarea></div>`,
-  highlights: `<div><label style="color:#d4af37;">Title</label><input id="upm-title" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Player / Game</label><input id="upm-desc" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Type</label><select id="upm-tag" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
-    <div id="upm-video-field" style="margin-top:12px;"><label style="color:#d4af37;">Video URL</label><input id="upm-url" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div id="upm-photo-field" style="display:none;margin-top:12px;"><label style="color:#d4af37;">Upload Photo</label><input type="file" id="upm-img" accept="image/*" style="margin-top:5px;" onchange="previewUPMImg()"><img id="upm-preview" style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:6px;"></div>`,
-  'yt-videos': `<div><label style="color:#d4af37;">YouTube Video URL *</label><input id="upm-url" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Title (optional)</label><input id="upm-title" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Description</label><input id="upm-desc" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>`
-};
-let upmRoom = '';
-let upmImgData = null;
-window.openUserPostModal = function(room) {
-  if (!window.currentUserId) { openModal(); return; }
-  upmRoom = room;
-  upmImgData = null;
-  document.getElementById('upm-room-title').innerText = room === 'live' ? '🔴 Live' : room === 'tournaments' ? '🏆 Tournaments' : room === 'highlights' ? '🎬 Highlights' : '🎬 YT Videos';
-  document.getElementById('upm-form-body').innerHTML = userPostForms[room] || '';
-  document.getElementById('upm-ok').style.display = 'none';
-  document.getElementById('upm-err').style.display = 'none';
-  document.getElementById('upm-modal').classList.add('active');
-  if (room === 'highlights') {
-    const tagSelect = document.getElementById('upm-tag');
-    if (tagSelect) tagSelect.onchange = function() {
-      const vf = document.getElementById('upm-video-field');
-      const pf = document.getElementById('upm-photo-field');
-      if (this.value === 'Photo') { vf.style.display = 'none'; pf.style.display = 'block'; }
-      else { vf.style.display = 'block'; pf.style.display = 'none'; }
-    };
-    tagSelect.onchange();
-  }
-};
-window.openYTVIPModal = function() {
-  if (!window.currentUserId) { openModal(); return; }
-  upmRoom = 'yt-videos';
-  upmImgData = null;
-  document.getElementById('upm-room-title').innerHTML = '👑 VIP Video';
-  document.getElementById('upm-form-body').innerHTML = `<div style="background:#2a1500;border:1px solid #d4af37;border-radius:7px;padding:10px;margin-bottom:14px;font-size:12px;color:#d4af37;">👑 This video will be visible to VIP & Member users only</div>
-    <div><label style="color:#d4af37;">YouTube Video URL *</label><input id="upm-url" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <div style="margin-top:12px;"><label style="color:#d4af37;">Title</label><input id="upm-title" style="width:100%;padding:9px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-    <input type="hidden" id="upm-tag" value="VIP">`;
-  document.getElementById('upm-ok').style.display = 'none';
-  document.getElementById('upm-err').style.display = 'none';
-  document.getElementById('upm-modal').classList.add('active');
-};
-window.previewUPMImg = function() {
-  const file = document.getElementById('upm-img')?.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => { upmImgData = e.target.result; const prev = document.getElementById('upm-preview'); if(prev) { prev.src = e.target.result; prev.style.display = 'block'; } };
-  reader.readAsDataURL(file);
-};
-document.getElementById('upm-submit').onclick = async () => {
-  const title = (document.getElementById('upm-title')?.value || '').trim();
-  const desc = (document.getElementById('upm-desc')?.value || '').trim();
-  const url = (document.getElementById('upm-url')?.value || '').trim();
-  const tag = document.getElementById('upm-tag')?.value || upmRoom;
-  const content = (document.getElementById('upm-content')?.value || '').trim() || null;
-  const errEl = document.getElementById('upm-err');
-  if (!title && !url) { errEl.textContent = '❌ Please enter a title or URL!'; errEl.style.display = 'block'; return; }
-  if (upmRoom === 'highlights' && tag === 'Photo' && !upmImgData) { errEl.textContent = '❌ Please upload a photo!'; errEl.style.display = 'block'; return; }
-  if (upmRoom === 'highlights' && (tag === 'Video' || tag === 'Pro') && !url) { errEl.textContent = '❌ Please enter a video URL!'; errEl.style.display = 'block'; return; }
-  if (upmRoom === 'yt-videos' && !url) { errEl.textContent = '❌ Please enter a YouTube URL!'; errEl.style.display = 'block'; return; }
-  const btn = document.getElementById('upm-submit');
-  btn.disabled = true; btn.textContent = 'Publishing...';
-  const body = { title: title || '🎬 Post', description: desc, icon: upmImgData || '📄', url, tag, room: upmRoom, content, posted_by: window.currentUserId };
-  try {
-    const { error } = await db.from('posts').insert(body);
-    if (error) throw error;
-    document.getElementById('upm-ok').style.display = 'block';
-    errEl.style.display = 'none';
-    loadPage(upmRoom);
-    setTimeout(() => document.getElementById('upm-modal').classList.remove('active'), 1800);
-  } catch(e) { errEl.textContent = '❌ ' + e.message; errEl.style.display = 'block'; }
-  finally { btn.disabled = false; btn.textContent = '➕ Publish'; }
-};
-document.getElementById('upm-close').onclick = () => document.getElementById('upm-modal').classList.remove('active');
-
+checkAuth();
+loadTickerNews();
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
 window.closeDD = closeDD;
-window.addYouTubeChannel = addYouTubeChannel;
-window.addYouTubeVideo = addYouTubeVideo;
-window.addPost = addPost;
-window.deletePost = deletePost;
-window.handleImageUpload = handleImageUpload;
-window.uploadVideoToBucket = uploadVideoToBucket;
-window.clearMedia = clearMedia;
-window.doLogout = doLogout;
-
-ensureAvatarBucket();
-checkAuth();
-loadTickerNews();
-showPage('home');
 </script>
-
-<div id="upm-modal">
-  <div class="upm-box">
-    <div class="upm-top"><h2>➕ Post in <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close">✕</button></div>
-    <div class="upm-body">
-      <div id="upm-ok"></div><div id="upm-err"></div>
-      <div id="upm-form-body"></div>
-      <button id="upm-submit" style="margin-top:15px;">➕ Publish</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
