@@ -134,7 +134,7 @@
       <div class="sb-sec">يوتيوب</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <!-- تم حذف زر "🔴 Lives" المكرر -->
+      <button class="sb-btn" id="sb-yt-lives" onclick="showPage('yt-lives')">🔴 Lives</button>
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
     </div>
@@ -194,8 +194,7 @@ function logout() { window.location.reload(); }
 function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
-  // removed 'yt-lives' from rooms list
-  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact'];
+  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'yt-lives', 'projects', 'contact'];
   rooms.forEach(room => {
     let div = document.createElement('div');
     div.className = 'ap';
@@ -208,7 +207,7 @@ function getRoomTitle(room) {
   let titles = {
     dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
-    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
+    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos', 'yt-lives':'🔴 Youtube Lives',
     projects:'🌐 Collaboration', contact:'📞 Contact'
   };
   return titles[room] || room;
@@ -428,7 +427,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
+// ==================== نموذج الإضافة لكل غرفة ====================
 function getAddForm(room) {
   if (room === 'home') {
     return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
@@ -559,6 +558,8 @@ function getAddForm(room) {
       <button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة</button></div>`;
   } else if (room === 'yt-videos') {
     return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
+  } else if (room === 'yt-lives') {
+    return `<div class="card"><h3>➕ إضافة بث مباشر يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط بث أو قناة"><select id="type-${room}"><option value="single">🔴 بث عادي</option><option value="channel">👑 قناة VIP (أحدث بث)</option></select><select id="tag-${room}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeLive()">➕ إضافة</button></div>`;
   } else {
     let tagOptions = '';
     if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -717,6 +718,7 @@ function getTagOptionsForEdit(room, currentTag) {
   else if (room === 'subscribers') opts = `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`;
   else if (room === 'yt-channels') opts = `<option value="Channel">📺 Channel</option>`;
   else if (room === 'yt-videos') opts = `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`;
+  else if (room === 'yt-lives') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
   else opts = `<option value="default">عام</option>`;
   return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
 }
@@ -838,370 +840,33 @@ async function addYouTubeChannel(room) {
 async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
 async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
 async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
-// تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
-
+async function fetchLiveFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let liveApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&maxResults=1&key=${YOUTUBE_API_KEY}`; let liveRes = await fetch(liveApi); let liveData = await liveRes.json(); let video = liveData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
+async function addYouTubeLive() { let url = document.getElementById(`url-yt-lives`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-yt-lives`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchLiveFromChannel(url); if (!info) { alert('تعذر جلب البث'); return; } let tag = document.getElementById(`tag-yt-lives`).value; let body = { title: info.title, description: info.description, icon: info.thumbnail || '🔴', url: info.videoUrl, tag: tag, room: 'yt-lives', content: document.getElementById(`content-yt-lives`).value.trim() }; let liveBody = { ...body, room: 'live' }; await supabaseClient.from('posts').insert(body); await supabaseClient.from('posts').insert(liveBody); loadContentPage('yt-lives'); loadContentPage('live'); }
 async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
 function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
 async function addUserSubscriber() { let userId = document.getElementById('sub-user-id').value; let username = document.getElementById('sub-user-selected').value; let role = document.getElementById('sub-user-role').value; if (!userId || !username) { alert('اختر مستخدم أولاً'); return; } let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' }; await supabaseClient.from('posts').insert(body); loadContentPage('subscribers'); }
 
 // ربط الدوال
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.addYouTubeLive = addYouTubeLive; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
 </script>
 
 <script>
-// ===== 3D SPACE TUNNEL + FLOATING CUBES BACKGROUND =====
+// ===== REALISTIC MISSILE ANIMATION (بحر وصواريخ) =====
 (function() {
   const canvas = document.getElementById('bgCanvas');
-  if (!canvas) return;
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-  if (!gl) {
-    // Fallback: 2D canvas 3D effect
-    fallback2D(canvas);
-    return;
-  }
-
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  // Vertex shader
-  const vsSource = `
-    attribute vec3 aPos;
-    attribute vec3 aColor;
-    uniform mat4 uMVP;
-    varying vec3 vColor;
-    varying float vDepth;
-    void main() {
-      vec4 pos = uMVP * vec4(aPos, 1.0);
-      gl_Position = pos;
-      vColor = aColor;
-      vDepth = pos.z;
-    }
-  `;
-  const fsSource = `
-    precision mediump float;
-    varying vec3 vColor;
-    varying float vDepth;
-    void main() {
-      float fog = clamp(1.0 - vDepth * 0.18, 0.0, 1.0);
-      gl_FragColor = vec4(vColor * fog, fog * 0.92);
-    }
-  `;
-
-  function compileShader(type, src) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    return s;
-  }
-
-  const prog = gl.createProgram();
-  gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSource));
-  gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSource));
-  gl.linkProgram(prog);
-  gl.useProgram(prog);
-
-  const aPos = gl.getAttribLocation(prog, 'aPos');
-  const aColor = gl.getAttribLocation(prog, 'aColor');
-  const uMVP = gl.getUniformLocation(prog, 'uMVP');
-
-  // Math helpers
-  function mat4() { return new Float32Array(16); }
-  function identity(m) {
-    m[0]=1;m[1]=0;m[2]=0;m[3]=0;
-    m[4]=0;m[5]=1;m[6]=0;m[7]=0;
-    m[8]=0;m[9]=0;m[10]=1;m[11]=0;
-    m[12]=0;m[13]=0;m[14]=0;m[15]=1;
-    return m;
-  }
-  function perspective(m, fov, aspect, near, far) {
-    const f = 1.0 / Math.tan(fov / 2);
-    const nf = 1 / (near - far);
-    m[0]=f/aspect; m[1]=0; m[2]=0; m[3]=0;
-    m[4]=0; m[5]=f; m[6]=0; m[7]=0;
-    m[8]=0; m[9]=0; m[10]=(far+near)*nf; m[11]=-1;
-    m[12]=0; m[13]=0; m[14]=2*far*near*nf; m[15]=0;
-    return m;
-  }
-  function multiply(out, a, b) {
-    for(let i=0;i<4;i++) for(let j=0;j<4;j++) {
-      out[j*4+i]=0;
-      for(let k=0;k<4;k++) out[j*4+i]+=a[k*4+i]*b[j*4+k];
-    }
-    return out;
-  }
-  function rotateY(m, angle) {
-    const c=Math.cos(angle), s=Math.sin(angle);
-    const r=identity(mat4());
-    r[0]=c; r[2]=s; r[8]=-s; r[10]=c;
-    return multiply(mat4(), m, r);
-  }
-  function rotateX(m, angle) {
-    const c=Math.cos(angle), s=Math.sin(angle);
-    const r=identity(mat4());
-    r[5]=c; r[6]=-s; r[9]=s; r[10]=c;
-    return multiply(mat4(), m, r);
-  }
-  function translate(m, tx, ty, tz) {
-    const r=identity(mat4());
-    r[12]=tx; r[13]=ty; r[14]=tz;
-    return multiply(mat4(), m, r);
-  }
-
-  // Cube geometry
-  function makeCubeEdges(cx, cy, cz, size, r, g, b) {
-    const s = size/2;
-    const verts = [
-      [cx-s,cy-s,cz-s],[cx+s,cy-s,cz-s],[cx+s,cy+s,cz-s],[cx-s,cy+s,cz-s],
-      [cx-s,cy-s,cz+s],[cx+s,cy-s,cz+s],[cx+s,cy+s,cz+s],[cx-s,cy+s,cz+s]
-    ];
-    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-    const pos = [], col = [];
-    edges.forEach(([a,b]) => {
-      pos.push(...verts[a], ...verts[b]);
-      col.push(r,g,b, r,g,b);
-    });
-    return {pos, col};
-  }
-
-  // Generate floating cubes
-  function randomColor() {
-    const palettes = [
-      [0.0, 0.8, 0.5],   // teal
-      [0.8, 0.7, 0.0],   // gold
-      [0.0, 0.4, 1.0],   // blue
-      [0.6, 0.0, 1.0],   // purple
-      [0.0, 1.0, 0.3],   // green
-      [1.0, 0.3, 0.0],   // orange
-    ];
-    return palettes[Math.floor(Math.random()*palettes.length)];
-  }
-
-  const numCubes = 60;
-  const cubes = Array.from({length: numCubes}, () => ({
-    x: (Math.random()-0.5)*20,
-    y: (Math.random()-0.5)*20,
-    z: -Math.random()*40,
-    size: 0.3 + Math.random()*1.2,
-    rx: Math.random()*Math.PI*2,
-    ry: Math.random()*Math.PI*2,
-    rz: Math.random()*Math.PI*2,
-    drx: (Math.random()-0.5)*0.015,
-    dry: (Math.random()-0.5)*0.02,
-    drz: (Math.random()-0.5)*0.012,
-    speed: 0.04 + Math.random()*0.06,
-    color: randomColor()
-  }));
-
-  // Star particles (3D)
-  const stars3d = Array.from({length:300}, () => ({
-    x: (Math.random()-0.5)*50,
-    y: (Math.random()-0.5)*50,
-    z: -Math.random()*60
-  }));
-
-  // Grid tunnel rings
-  const tunnelRings = Array.from({length:20}, (_, i) => ({
-    z: -i*3.5,
-    angle: i*0.1
-  }));
-
-  gl.enable(gl.DEPTH_TEST);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-  let t = 0;
-
-  function buildAndDrawBuffer(positions, colors, mode) {
-    if(positions.length === 0) return;
-    const posBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aPos);
-
-    const colBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aColor);
-
-    gl.drawArrays(mode, 0, positions.length/3);
-    gl.deleteBuffer(posBuf);
-    gl.deleteBuffer(colBuf);
-  }
-
-  function drawCubeEdges(cube, proj, view) {
-    const s = cube.size/2;
-    const verts = [
-      [-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],
-      [-s,-s,s],[s,-s,s],[s,s,s],[-s,s,s]
-    ];
-    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-
-    let model = identity(mat4());
-    model = rotateX(model, cube.rx);
-    model = rotateY(model, cube.ry);
-    model[12] = cube.x; model[13] = cube.y; model[14] = cube.z;
-
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-
-    const pos=[], col=[];
-    const [r,g,b] = cube.color;
-    edges.forEach(([a,bb]) => {
-      pos.push(...verts[a], ...verts[bb]);
-      col.push(r,g,b, r,g,b);
-    });
-    buildAndDrawBuffer(pos, col, gl.LINES);
-  }
-
-  function drawTunnelRing(ring, proj, view) {
-    const segs = 16;
-    const radius = 6 + Math.sin(t*0.5+ring.z*0.1)*1.5;
-    const pos=[], col=[];
-    for(let i=0; i<segs; i++) {
-      const a1 = (i/segs)*Math.PI*2 + ring.angle;
-      const a2 = ((i+1)/segs)*Math.PI*2 + ring.angle;
-      pos.push(Math.cos(a1)*radius, Math.sin(a1)*radius, ring.z);
-      pos.push(Math.cos(a2)*radius, Math.sin(a2)*radius, ring.z);
-      const glow = 0.3+0.5*Math.abs(Math.sin(t*0.8+i*0.4));
-      col.push(0, glow*0.6, glow);
-      col.push(0, glow*0.6, glow);
-    }
-    let model = identity(mat4());
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-    buildAndDrawBuffer(pos, col, gl.LINES);
-  }
-
-  function drawStars(proj, view) {
-    const pos=[], col=[];
-    stars3d.forEach(s => {
-      pos.push(s.x, s.y, s.z);
-      const br = 0.5+0.5*Math.sin(t*2+s.x+s.y);
-      col.push(br, br, br);
-    });
-    let model = identity(mat4());
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-    gl.vertexAttribPointer;
-    const posBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aPos);
-    const colBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(col), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aColor);
-    gl.drawArrays(gl.POINTS, 0, pos.length/3);
-    gl.deleteBuffer(posBuf);
-    gl.deleteBuffer(colBuf);
-  }
-
-  function animate() {
-    t += 0.016;
-    const W = canvas.width, H = canvas.height;
-    gl.clearColor(0.002, 0.004, 0.02, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    const proj = perspective(mat4(), 0.9, W/H, 0.1, 80);
-    const camZ = t * 0.4;
-    const camX = Math.sin(t*0.15)*1.2;
-    const camY = Math.cos(t*0.12)*0.8;
-
-    let view = identity(mat4());
-    view[12] = -camX; view[13] = -camY; view[14] = 2;
-
-    // Draw stars
-    drawStars(proj, view);
-
-    // Draw tunnel rings
-    tunnelRings.forEach(ring => {
-      ring.z += 0.04;
-      ring.angle += 0.004;
-      if(ring.z > 4) ring.z -= 20*3.5/tunnelRings.length + 70;
-      drawTunnelRing(ring, proj, view);
-    });
-
-    // Draw cubes
-    cubes.forEach(cube => {
-      cube.z += cube.speed;
-      cube.rx += cube.drx;
-      cube.ry += cube.dry;
-      cube.rz += cube.drz;
-      if(cube.z > 5) {
-        cube.z = -40 - Math.random()*20;
-        cube.x = (Math.random()-0.5)*20;
-        cube.y = (Math.random()-0.5)*20;
-        cube.color = randomColor();
-      }
-      drawCubeEdges(cube, proj, view);
-    });
-
-    // Draw connecting lines between nearby cubes
-    const linPos=[], linCol=[];
-    for(let i=0; i<cubes.length; i++) {
-      for(let j=i+1; j<cubes.length; j++) {
-        const dx=cubes[i].x-cubes[j].x, dy=cubes[i].y-cubes[j].y, dz=cubes[i].z-cubes[j].z;
-        const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
-        if(dist < 3.5) {
-          const alpha = (1-dist/3.5)*0.4;
-          linPos.push(cubes[i].x,cubes[i].y,cubes[i].z, cubes[j].x,cubes[j].y,cubes[j].z);
-          linCol.push(0,alpha*0.8,alpha, 0,alpha*0.8,alpha);
-        }
-      }
-    }
-    if(linPos.length > 0) {
-      let model = identity(mat4());
-      const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-      gl.uniformMatrix4fv(uMVP, false, mvp);
-      buildAndDrawBuffer(linPos, linCol, gl.LINES);
-    }
-
-    requestAnimationFrame(animate);
-  }
-
+  const ctx = canvas.getContext('2d');
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const stars = Array.from({length:250}, () => ({ x: Math.random(), y: Math.random(), r: Math.random()*1.4+0.2, twinkle: Math.random()*Math.PI*2, speed: 0.005+Math.random()*0.01 }));
+  const smokePool = [];
+  class SmokeParticle { constructor(x, y, color) { this.x=x; this.y=y; this.vx=(Math.random()-0.5)*0.8; this.vy=Math.random()*0.5; this.r=3+Math.random()*5; this.life=1; this.decay=0.015+Math.random()*0.02; this.color=color||'180,120,60'; this.grow=0.3+Math.random()*0.5; } update() { this.x+=this.vx; this.y+=this.vy; this.r+=this.grow; this.life-=this.decay; this.vx*=0.98; this.vy*=0.98; } draw() { ctx.save(); ctx.globalAlpha=this.life*0.4; ctx.fillStyle=`rgba(${this.color},${this.life*0.4})`; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+  class Missile { constructor() { this.reset(true); } reset(initial) { const W=canvas.width, H=canvas.height; this.launchX=W*(0.05+Math.random()*0.9); this.launchY=H*0.68+Math.random()*H*0.05; this.x=this.launchX; this.y=this.launchY; this.targetX=W*(0.05+Math.random()*0.9); this.targetY=H*(0.03+Math.random()*0.2); const dx=this.targetX-this.launchX, dy=this.targetY-this.launchY, dist=Math.sqrt(dx*dx+dy*dy); this.speed=3.5+Math.random()*2.5; this.angle=Math.atan2(dy,dx); this.vx=Math.cos(this.angle)*this.speed; this.vy=Math.sin(this.angle)*this.speed; this.trail=[]; this.maxTrail=22; this.alive=true; this.exploding=false; this.explodeX=0; this.explodeY=0; this.explodeParticles=[]; this.explodeTime=0; this.delay=initial?Math.random()*200:40+Math.random()*180; this.active=false; } update() { if(this.delay>0){ this.delay--; return; } this.active=true; if(this.exploding){ this.explodeTime++; this.explodeParticles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.vx*=0.97; p.life-=p.decay; p.r*=0.995; }); this.explodeParticles=this.explodeParticles.filter(p=>p.life>0); if(this.explodeTime>80) this.reset(false); return; } const dx=this.targetX-this.x, dy=this.targetY-this.y, dist=Math.sqrt(dx*dx+dy*dy); const targetAngle=Math.atan2(dy,dx); let da=targetAngle-this.angle; while(da>Math.PI) da-=Math.PI*2; while(da<-Math.PI) da+=Math.PI*2; this.angle+=da*0.04; this.vx=Math.cos(this.angle)*this.speed; this.vy=Math.sin(this.angle)*this.speed; this.x+=this.vx; this.y+=this.vy; this.trail.unshift({x:this.x,y:this.y}); if(this.trail.length>this.maxTrail) this.trail.pop(); const tail=this.trail[this.trail.length-1]||{x:this.x,y:this.y}; if(Math.random()<0.7) smokePool.push(new SmokeParticle(tail.x,tail.y,'160,100,40')); if(Math.random()<0.3) smokePool.push(new SmokeParticle(tail.x+(Math.random()-0.5)*4,tail.y+(Math.random()-0.5)*4,'80,80,80')); if(dist<this.speed*1.5){ this.exploding=true; this.explodeX=this.x; this.explodeY=this.y; for(let i=0;i<55;i++){ const ang=Math.random()*Math.PI*2, spd=1+Math.random()*6, colors=['#ff4400','#ff8800','#ffcc00','#fff','#ff2200','#ff6600']; this.explodeParticles.push({x:this.x,y:this.y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, r:2+Math.random()*4, life:1, decay:0.012+Math.random()*0.025, color:colors[Math.floor(Math.random()*colors.length)] }); } this.shockwave={r:0, maxR:60, life:1}; } } draw() { if(!this.active) return; if(this.exploding){ if(this.shockwave && this.shockwave.r<this.shockwave.maxR){ this.shockwave.r+=3.5; this.shockwave.life-=0.06; ctx.save(); ctx.globalAlpha=this.shockwave.life*0.5; ctx.strokeStyle='#ff8800'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(this.explodeX,this.explodeY,this.shockwave.r,0,Math.PI*2); ctx.stroke(); ctx.restore(); } if(this.explodeTime<15){ ctx.save(); ctx.globalAlpha=(1-this.explodeTime/15)*0.6; const grd=ctx.createRadialGradient(this.explodeX,this.explodeY,0,this.explodeX,this.explodeY,40+this.explodeTime*2); grd.addColorStop(0,'rgba(255,200,50,0.9)'); grd.addColorStop(0.4,'rgba(255,80,0,0.6)'); grd.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(this.explodeX,this.explodeY,40+this.explodeTime*2,0,Math.PI*2); ctx.fill(); ctx.restore(); } this.explodeParticles.forEach(p=>{ ctx.save(); ctx.globalAlpha=p.life; ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=6; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); ctx.restore(); }); return; } if(this.trail.length<2) return; for(let i=1;i<this.trail.length;i++){ const t=1-i/this.trail.length; ctx.save(); ctx.globalAlpha=t*0.85; ctx.strokeStyle=t>0.5?`rgba(255,${100+Math.floor(t*155)},0,1)`:`rgba(255,80,0,${t*1.5})`; ctx.lineWidth=t*4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(this.trail[i-1].x,this.trail[i-1].y); ctx.lineTo(this.trail[i].x,this.trail[i].y); ctx.stroke(); ctx.restore(); } const head=this.trail[0]; const bodyAngle=this.angle; ctx.save(); ctx.translate(head.x,head.y); ctx.rotate(bodyAngle); ctx.fillStyle='#c8c8d0'; ctx.shadowColor='#ff8800'; ctx.shadowBlur=12; ctx.beginPath(); ctx.ellipse(0,0,9,3,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#e8e8f0'; ctx.beginPath(); ctx.moveTo(9,0); ctx.lineTo(16,0); ctx.lineTo(9,-2.5); ctx.closePath(); ctx.fill(); ctx.fillStyle='#888'; ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-14,-7); ctx.lineTo(-8,-2); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(-8,0); ctx.lineTo(-14,7); ctx.lineTo(-8,2); ctx.closePath(); ctx.fill(); const flameLen=8+Math.random()*6; const flameGrd=ctx.createLinearGradient(-9,0,-9-flameLen,0); flameGrd.addColorStop(0,'rgba(255,200,50,1)'); flameGrd.addColorStop(0.4,'rgba(255,80,0,0.8)'); flameGrd.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=flameGrd; ctx.beginPath(); ctx.moveTo(-9,-2.5); ctx.lineTo(-9-flameLen,0); ctx.lineTo(-9,2.5); ctx.closePath(); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.4; const glow=ctx.createRadialGradient(head.x,head.y,0,head.x,head.y,18); glow.addColorStop(0,'rgba(255,150,0,0.8)'); glow.addColorStop(1,'rgba(255,50,0,0)'); ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(head.x,head.y,18,0,Math.PI*2); ctx.fill(); ctx.restore(); } }
+  function drawLaunchers(W,H){ const groundY=H*0.68; const count=4; for(let i=0;i<count;i++){ const lx=W*(0.1+i*0.25), ly=groundY; ctx.save(); ctx.fillStyle='#0f0e08'; ctx.strokeStyle='#2a2510'; ctx.lineWidth=1; ctx.beginPath(); ctx.rect(lx-20,ly-6,40,10); ctx.fill(); ctx.stroke(); for(let w=-1;w<=1;w+=2){ ctx.fillStyle='#1a1810'; ctx.beginPath(); ctx.arc(lx+w*14,ly+4,5,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#0a0908'; ctx.beginPath(); ctx.arc(lx+w*14,ly+4,2,0,Math.PI*2); ctx.fill(); } ctx.strokeStyle='#3a3820'; ctx.lineWidth=4; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(lx,ly-6); ctx.lineTo(lx-8,ly-36); ctx.stroke(); ctx.strokeStyle='#4a4830'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(lx-4,ly-6); ctx.lineTo(lx-12,ly-36); ctx.stroke(); ctx.translate(lx-8,ly-28); ctx.rotate(-Math.PI/5); ctx.fillStyle='#505058'; ctx.beginPath(); ctx.ellipse(0,0,12,3.5,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#888890'; ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(18,0); ctx.lineTo(12,-3); ctx.closePath(); ctx.fill(); ctx.restore(); } }
+  let waveT=0; const missiles=Array.from({length:5},()=>new Missile());
+  function drawScene(){ const W=canvas.width, H=canvas.height; const sky=ctx.createLinearGradient(0,0,0,H*0.68); sky.addColorStop(0,'#000408'); sky.addColorStop(0.6,'#000c18'); sky.addColorStop(1,'#001020'); ctx.fillStyle=sky; ctx.fillRect(0,0,W,H); stars.forEach(s=>{ s.twinkle+=s.speed; const alpha=0.3+0.7*Math.abs(Math.sin(s.twinkle)); ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle='#ffffff'; ctx.shadowColor='#aaccff'; ctx.shadowBlur=2; ctx.beginPath(); ctx.arc(s.x*W,s.y*H*0.65,s.r,0,Math.PI*2); ctx.fill(); ctx.restore(); }); ctx.save(); ctx.fillStyle='#f0e8c8'; ctx.shadowColor='#f0e8c8'; ctx.shadowBlur=25; ctx.beginPath(); ctx.arc(W*0.82,H*0.1,30,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#000c18'; ctx.shadowBlur=0; ctx.beginPath(); ctx.arc(W*0.82+14,H*0.1-6,26,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.08; const moonGlow=ctx.createRadialGradient(W*0.82,H*0.1,0,W*0.82,H*0.1,120); moonGlow.addColorStop(0,'#f0e8c8'); moonGlow.addColorStop(1,'transparent'); ctx.fillStyle=moonGlow; ctx.beginPath(); ctx.arc(W*0.82,H*0.1,120,0,Math.PI*2); ctx.fill(); ctx.restore(); ctx.save(); ctx.globalAlpha=0.12; const horizGlow=ctx.createLinearGradient(0,H*0.6,0,H*0.68); horizGlow.addColorStop(0,'rgba(255,150,50,0)'); horizGlow.addColorStop(1,'rgba(255,150,50,0.4)'); ctx.fillStyle=horizGlow; ctx.fillRect(0,H*0.6,W,H*0.08); ctx.restore(); const sea=ctx.createLinearGradient(0,H*0.68,0,H); sea.addColorStop(0,'#001828'); sea.addColorStop(0.5,'#000e1a'); sea.addColorStop(1,'#000608'); ctx.fillStyle=sea; ctx.fillRect(0,H*0.68,W,H*0.32); ctx.save(); ctx.globalAlpha=0.12; for(let ry=0;ry<8;ry++){ const rw=20-ry*1.5, rx=W*0.82-rw/2+Math.sin(waveT*0.8+ry)*8, ryy=H*0.69+ry*14; ctx.fillStyle='#f0e8c8'; ctx.fillRect(rx,ryy,rw,4); } ctx.restore(); waveT+=0.018; for(let w=0;w<4;w++){ ctx.save(); ctx.strokeStyle=`rgba(0,80,140,${0.1+w*0.04})`; ctx.lineWidth=1.2; ctx.beginPath(); for(let x=0;x<=W;x+=3){ const y=H*0.682+w*9+Math.sin(x*0.012+waveT+w*0.8)*5+Math.sin(x*0.025+waveT*1.4+w)*3; x===0?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.stroke(); ctx.restore(); } const shore=ctx.createLinearGradient(0,H*0.66,0,H*0.70); shore.addColorStop(0,'#1a1408'); shore.addColorStop(1,'#0d0a04'); ctx.fillStyle=shore; ctx.beginPath(); ctx.moveTo(0,H*0.70); for(let x=0;x<=W;x+=W/30){ const y=H*0.668+Math.sin(x*0.04)*3+(x/W)*6; ctx.lineTo(x,y); } ctx.lineTo(W,H*0.70); ctx.closePath(); ctx.fill(); ctx.fillStyle='#080604'; ctx.beginPath(); ctx.moveTo(0,H*0.73); for(let x=0;x<=W;x+=W/40){ ctx.lineTo(x,H*0.67+Math.sin(x*0.03+1)*5+x/W*8); } ctx.lineTo(W,H*0.73); ctx.closePath(); ctx.fill(); drawLaunchers(W,H); smokePool.forEach(s=>s.update()); smokePool.forEach(s=>s.draw()); for(let i=smokePool.length-1;i>=0;i--) if(smokePool[i].life<=0) smokePool.splice(i,1); if(smokePool.length>400) smokePool.splice(0,smokePool.length-400); }
+  function animate(){ ctx.clearRect(0,0,canvas.width,canvas.height); drawScene(); missiles.forEach(m=>{ m.update(); m.draw(); }); requestAnimationFrame(animate); }
   animate();
-
-  // 2D fallback
-  function fallback2D(c) {
-    const ctx = c.getContext('2d');
-    function resz() { c.width=window.innerWidth; c.height=window.innerHeight; }
-    resz(); window.addEventListener('resize', resz);
-    const pts = Array.from({length:120}, ()=>({
-      x:Math.random(), y:Math.random(),
-      vx:(Math.random()-0.5)*0.002, vy:(Math.random()-0.5)*0.002,
-      r:Math.random()*2+1,
-      c:`hsl(${180+Math.random()*60},100%,${50+Math.random()*30}%)`
-    }));
-    function frame() {
-      ctx.fillStyle='rgba(0,4,18,0.18)';
-      ctx.fillRect(0,0,c.width,c.height);
-      pts.forEach(p=>{
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.x<0||p.x>1) p.vx*=-1;
-        if(p.y<0||p.y>1) p.vy*=-1;
-        ctx.fillStyle=p.c;
-        ctx.beginPath();
-        ctx.arc(p.x*c.width,p.y*c.height,p.r,0,Math.PI*2);
-        ctx.fill();
-      });
-      pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{
-        const dx=(a.x-b.x)*c.width, dy=(a.y-b.y)*c.height;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<120){ctx.strokeStyle=`rgba(0,220,200,${(1-d/120)*0.3})`;ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(a.x*c.width,a.y*c.height);ctx.lineTo(b.x*c.width,b.y*c.height);ctx.stroke();}
-      }));
-      requestAnimationFrame(frame);
-    }
-    frame();
-  }
 })();
 </script>
 </body>
+</html>
