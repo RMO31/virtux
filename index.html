@@ -6,6 +6,7 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* جميع الأنماط كما هي (تم الحفاظ عليها بالكامل) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -578,6 +579,7 @@
     .file-input-group { margin-bottom: 12px; }
     .file-input-group label { display: block; margin-bottom: 5px; color: #d4af37; font-size: 12px; }
     .preview-img, .preview-video { max-width: 100%; max-height: 150px; margin-top: 8px; border-radius: 6px; }
+    .fetching-info { font-size: 11px; color: #aaa; margin-top: 4px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -787,9 +789,10 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allPosts = {};
 let pendingGoogleUser = null;
 let currentProfileData = null;
-let currentEditPost = null; // للتعديل
+let currentEditPost = null;
+let currentEditRoom = null;
 
-// ==================== إنشاء Bucket "avatars" و "posts-media" ====================
+// ==================== إنشاء Bucket ====================
 async function ensureBuckets() {
   try {
     const { data: buckets } = await db.storage.listBuckets();
@@ -798,6 +801,31 @@ async function ensureBuckets() {
     const mediaExists = buckets?.some(b => b.name === 'posts-media');
     if (!mediaExists) await db.storage.createBucket('posts-media', { public: true }).catch(()=>{});
   } catch(e) { console.warn('Bucket check failed:', e); }
+}
+
+// ==================== دوال جلب معلومات اليوتيوب ====================
+async function fetchYouTubeVideoInfo(url) {
+  const videoId = extractYouTubeId(url);
+  if (!videoId) return null;
+  const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+  try {
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    if (data.items && data.items[0]) {
+      return {
+        title: data.items[0].snippet.title,
+        channelTitle: data.items[0].snippet.channelTitle,
+        thumbnail: data.items[0].snippet.thumbnails?.high?.url,
+        videoUrl: url
+      };
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+function extractYouTubeId(url) {
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
+  return m ? m[1] : null;
 }
 
 // ==================== دوال الغرف والمحتوى ====================
@@ -896,7 +924,6 @@ function renderCards(posts, gridId, room) {
       if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/')) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
       else if (!p.url.includes('youtube.com') && !p.url.includes('youtu.be')) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
     }
-    // زر تعديل (لصاحب المنشور أو المشرف)
     let editBtn = '';
     if ((p.posted_by && p.posted_by === currentUserId) || isAdmin) {
       editBtn = `<button class="edit-post-btn" onclick="window.openEditPostModal(${p.id}, '${room}')">✏️ تعديل</button>`;
@@ -905,7 +932,6 @@ function renderCards(posts, gridId, room) {
   }).join('');
 }
 
-function extractYouTubeId(url) { const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/); return m ? m[1] : null; }
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
 function showPage(id) { document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active')); const page = document.getElementById(`page-${id}`); if(page) page.classList.add('active'); const btn = document.getElementById(`sb-${id}`); if(btn) btn.classList.add('active'); if(id !== 'home' && id !== 'contact') loadPage(id); }
 function toggleDD(id) { document.querySelectorAll('.dd').forEach(d=>{ if(d.id !== id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
@@ -956,6 +982,10 @@ async function updateUserPost(postId, title, desc, url, tag, content, file, file
     updateData.url = mediaUrl;
   } else if (url) {
     updateData.url = url;
+    // إذا كان رابط يوتيوب، يمكننا تحديث الأيقونة أيضاً
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      updateData.icon = '📹';
+    }
   }
   const { error } = await db.from('posts').update(updateData).eq('id', postId);
   if (error) throw error;
@@ -971,6 +1001,7 @@ async function deletePost(id, room) {
 window.openUserPostModal = function(room) {
   if (!window.currentUserId) { openModal(); return; }
   currentEditPost = null;
+  currentEditRoom = room;
   document.getElementById('upm-room-title').innerText = room === 'live' ? '🔴 Live' : room === 'tournaments' ? '🏆 Tournaments' : room === 'highlights' ? '🎬 Highlights' : '🎬 YT Videos';
   let formHtml = '';
   if (room === 'live') {
@@ -999,6 +1030,30 @@ window.openUserPostModal = function(room) {
   document.getElementById('upm-form-body').innerHTML = formHtml;
   document.getElementById('upm-ok').style.display = 'none';
   document.getElementById('upm-err').style.display = 'none';
+  // إضافة مستمع لجلب المعلومات من يوتيوب تلقائياً
+  const urlInput = document.getElementById('upm-url');
+  if (urlInput) {
+    urlInput.addEventListener('blur', async () => {
+      const url = urlInput.value.trim();
+      if ((room === 'yt-videos' || room === 'highlights') && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'fetching-info';
+        infoSpan.innerText = 'جلب معلومات الفيديو...';
+        urlInput.parentNode.appendChild(infoSpan);
+        const info = await fetchYouTubeVideoInfo(url);
+        if (info) {
+          const titleInput = document.getElementById('upm-title');
+          const descInput = document.getElementById('upm-desc');
+          if (titleInput && !titleInput.value) titleInput.value = info.title;
+          if (descInput && !descInput.value) descInput.value = info.channelTitle;
+          // يمكن عرض الصورة المصغرة كمعاينة
+          const previewDiv = document.getElementById('upm-preview') || (() => { const div = document.createElement('div'); div.id = 'upm-preview'; urlInput.parentNode.appendChild(div); return div; })();
+          if (previewDiv) previewDiv.innerHTML = `<img src="${info.thumbnail}" class="preview-img">`;
+        }
+        infoSpan.remove();
+      }
+    });
+  }
   document.getElementById('upm-submit').onclick = () => submitUserPost(room);
   document.getElementById('upm-modal').classList.add('active');
   if (room === 'highlights') {
@@ -1028,6 +1083,7 @@ window.openYTVIPModal = function() {
   const role = window.userRole;
   if (role !== 'youtuber-vip' && role !== 'admin') { alert('Only Youtuber VIP or Admin can post VIP videos.'); return; }
   currentEditPost = null;
+  currentEditRoom = 'yt-videos';
   document.getElementById('upm-room-title').innerHTML = '👑 VIP Video';
   document.getElementById('upm-form-body').innerHTML = `<div style="background:#2a1500;border:1px solid #d4af37;border-radius:7px;padding:10px;margin-bottom:14px;font-size:12px;color:#d4af37;">👑 This video will be visible to VIP & Member users only</div>
     <div><label>YouTube Video URL *</label><input id="upm-url" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
@@ -1035,8 +1091,103 @@ window.openYTVIPModal = function() {
     <input type="hidden" id="upm-tag" value="VIP">`;
   document.getElementById('upm-ok').style.display = 'none';
   document.getElementById('upm-err').style.display = 'none';
+  const urlInput = document.getElementById('upm-url');
+  if (urlInput) {
+    urlInput.addEventListener('blur', async () => {
+      const url = urlInput.value.trim();
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'fetching-info';
+        infoSpan.innerText = 'جلب معلومات الفيديو...';
+        urlInput.parentNode.appendChild(infoSpan);
+        const info = await fetchYouTubeVideoInfo(url);
+        if (info) {
+          const titleInput = document.getElementById('upm-title');
+          if (titleInput && !titleInput.value) titleInput.value = info.title;
+        }
+        infoSpan.remove();
+      }
+    });
+  }
   document.getElementById('upm-submit').onclick = () => submitUserPost('yt-videos');
   document.getElementById('upm-modal').classList.add('active');
+};
+
+window.openEditPostModal = async function(postId, room) {
+  const { data: post, error } = await db.from('posts').select('*').eq('id', postId).single();
+  if (error) { alert('Cannot load post'); return; }
+  currentEditPost = post;
+  currentEditRoom = room;
+  document.getElementById('upm-room-title').innerHTML = `✏️ Edit Post`;
+  let formHtml = '';
+  if (room === 'live') {
+    formHtml = `<div><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Stream URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option ${post.tag==='Live Now'?'selected':''}>Live Now</option><option ${post.tag==='Pre Lives'?'selected':''}>Pre Lives</option></select></div>`;
+  } else if (room === 'tournaments') {
+    formHtml = `<div><label>Tournament Name</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Game / Teams</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Registration URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option ${post.tag==='Registration'?'selected':''}>Registration</option><option ${post.tag==='Global'?'selected':''}>Global</option></select></div>
+      <div style="margin-top:12px;"><label>Description</label><textarea id="upm-content" rows="3" style="width:100%;padding:8px;background:#1a1a1a;border:1px solid #333;color:#fff;">${escapeHtml(post.content||'')}</textarea></div>`;
+  } else if (room === 'highlights') {
+    formHtml = `<div><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Player / Game</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option ${post.tag==='Video'?'selected':''}>Video</option><option ${post.tag==='Photo'?'selected':''}>Photo</option><option ${post.tag==='Pro'?'selected':''}>Pro</option></select></div>
+      <div id="upm-url-field" style="margin-top:12px;"><label>Video URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div id="upm-file-field" style="display:none;margin-top:12px;"><label>Upload New File</label><input type="file" id="upm-file" accept="image/*,video/*" style="margin-top:5px;"><div id="upm-preview"></div></div>`;
+  } else if (room === 'yt-videos') {
+    formHtml = `<div><label>YouTube Video URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+      <input type="hidden" id="upm-tag" value="${post.tag}">`;
+  }
+  document.getElementById('upm-form-body').innerHTML = formHtml;
+  document.getElementById('upm-ok').style.display = 'none';
+  document.getElementById('upm-err').style.display = 'none';
+  const urlInput = document.getElementById('upm-url');
+  if (urlInput && (room === 'yt-videos' || room === 'highlights')) {
+    urlInput.addEventListener('blur', async () => {
+      const url = urlInput.value.trim();
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'fetching-info';
+        infoSpan.innerText = 'جلب معلومات الفيديو...';
+        urlInput.parentNode.appendChild(infoSpan);
+        const info = await fetchYouTubeVideoInfo(url);
+        if (info) {
+          const titleInput = document.getElementById('upm-title');
+          const descInput = document.getElementById('upm-desc');
+          if (titleInput && !titleInput.value) titleInput.value = info.title;
+          if (descInput && !descInput.value) descInput.value = info.channelTitle;
+        }
+        infoSpan.remove();
+      }
+    });
+  }
+  document.getElementById('upm-submit').onclick = () => submitUserPost(room);
+  document.getElementById('upm-modal').classList.add('active');
+  if (room === 'highlights') {
+    const tagSelect = document.getElementById('upm-tag');
+    if (tagSelect) tagSelect.onchange = function() {
+      const urlField = document.getElementById('upm-url-field');
+      const fileField = document.getElementById('upm-file-field');
+      if (this.value === 'Photo') { urlField.style.display = 'none'; fileField.style.display = 'block'; }
+      else { urlField.style.display = 'block'; fileField.style.display = 'none'; }
+    };
+    tagSelect.onchange();
+    const fileInput = document.getElementById('upm-file');
+    if (fileInput) fileInput.onchange = function(e) {
+      const file = e.target.files[0];
+      const previewDiv = document.getElementById('upm-preview');
+      if (file) {
+        const url = URL.createObjectURL(file);
+        if (file.type.startsWith('image/')) previewDiv.innerHTML = `<img src="${url}" class="preview-img">`;
+        else if (file.type.startsWith('video/')) previewDiv.innerHTML = `<video src="${url}" controls class="preview-video"></video>`;
+      } else previewDiv.innerHTML = '';
+    };
+  }
 };
 
 async function submitUserPost(room) {
@@ -1079,69 +1230,13 @@ async function submitUserPost(room) {
   finally { btn.disabled = false; btn.textContent = '➕ Publish'; }
 }
 
-window.openEditPostModal = async function(postId, room) {
-  const { data: post, error } = await db.from('posts').select('*').eq('id', postId).single();
-  if (error) { alert('Cannot load post'); return; }
-  currentEditPost = post;
-  document.getElementById('upm-room-title').innerHTML = `✏️ Edit Post`;
-  let formHtml = '';
-  if (room === 'live') {
-    formHtml = `<div><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Stream URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option ${post.tag==='Live Now'?'selected':''}>Live Now</option><option ${post.tag==='Pre Lives'?'selected':''}>Pre Lives</option></select></div>`;
-  } else if (room === 'tournaments') {
-    formHtml = `<div><label>Tournament Name</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Game / Teams</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Registration URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option ${post.tag==='Registration'?'selected':''}>Registration</option><option ${post.tag==='Global'?'selected':''}>Global</option></select></div>
-      <div style="margin-top:12px;"><label>Description</label><textarea id="upm-content" rows="3" style="width:100%;padding:8px;background:#1a1a1a;border:1px solid #333;color:#fff;">${escapeHtml(post.content||'')}</textarea></div>`;
-  } else if (room === 'highlights') {
-    formHtml = `<div><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Player / Game</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"><option ${post.tag==='Video'?'selected':''}>Video</option><option ${post.tag==='Photo'?'selected':''}>Photo</option><option ${post.tag==='Pro'?'selected':''}>Pro</option></select></div>
-      <div id="upm-url-field" style="margin-top:12px;"><label>Video URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div id="upm-file-field" style="display:none;margin-top:12px;"><label>Upload New File</label><input type="file" id="upm-file" accept="image/*,video/*" style="margin-top:5px;"><div id="upm-preview"></div></div>`;
-  } else if (room === 'yt-videos') {
-    formHtml = `<div><label>YouTube Video URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
-      <input type="hidden" id="upm-tag" value="${post.tag}">`;
-  }
-  document.getElementById('upm-form-body').innerHTML = formHtml;
-  document.getElementById('upm-ok').style.display = 'none';
-  document.getElementById('upm-err').style.display = 'none';
-  document.getElementById('upm-submit').onclick = () => submitUserPost(room);
-  document.getElementById('upm-modal').classList.add('active');
-  if (room === 'highlights') {
-    const tagSelect = document.getElementById('upm-tag');
-    if (tagSelect) tagSelect.onchange = function() {
-      const urlField = document.getElementById('upm-url-field');
-      const fileField = document.getElementById('upm-file-field');
-      if (this.value === 'Photo') { urlField.style.display = 'none'; fileField.style.display = 'block'; }
-      else { urlField.style.display = 'block'; fileField.style.display = 'none'; }
-    };
-    tagSelect.onchange();
-    const fileInput = document.getElementById('upm-file');
-    if (fileInput) fileInput.onchange = function(e) {
-      const file = e.target.files[0];
-      const previewDiv = document.getElementById('upm-preview');
-      if (file) {
-        const url = URL.createObjectURL(file);
-        if (file.type.startsWith('image/')) previewDiv.innerHTML = `<img src="${url}" class="preview-img">`;
-        else if (file.type.startsWith('video/')) previewDiv.innerHTML = `<video src="${url}" controls class="preview-video"></video>`;
-      } else previewDiv.innerHTML = '';
-    };
-  }
-};
-
 function showUPMError(msg) {
   const errEl = document.getElementById('upm-err');
   errEl.textContent = '❌ ' + msg;
   errEl.style.display = 'block';
 }
 
-// ==================== دوال رفع الصورة الرمزية ====================
+// ==================== دوال رفع الصورة الرمزية والملف الشخصي ====================
 async function uploadAvatar(file, userId) {
   const ext = file.name.split('.').pop();
   const fileName = `${userId}-${Date.now()}.${ext}`;
@@ -1152,7 +1247,6 @@ async function uploadAvatar(file, userId) {
   return publicUrl;
 }
 
-// ==================== دوال الملف الشخصي ====================
 async function openProfileModal() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) return;
@@ -1355,7 +1449,11 @@ async function updateUIAfterAuth() {
 }
 
 async function checkAuth() { await updateUIAfterAuth(); }
-async function doLogout() { await db.auth.signOut(); window.location.reload(); }
+async function doLogout() { 
+  await db.auth.signOut(); 
+  // تأخير بسيط قبل إعادة التحميل لضمان تنظيف الجلسة
+  setTimeout(() => { window.location.reload(); }, 100);
+}
 
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN') {
