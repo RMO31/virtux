@@ -1039,18 +1039,17 @@ async function uploadMediaFile(file, userId) {
 
 async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
   const finalUrl = mediaUrl || url || null;
-  const isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
+  const isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
   const isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
   const isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
   const body = {
-    title: title || '📄 منشور',
-    description: desc,
-    icon: isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
-    url: finalUrl,
-    tag: tag,
-    room: room,
-    content: content || null,
-    posted_by: window.currentUserId
+    title:       title || '📄 منشور',
+    description: desc  || null,
+    icon:        isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
+    url:         finalUrl,
+    tag:         tag,
+    room:        room,
+    content:     content || null
   };
   const { error } = await db.from('posts').insert(body);
   if (error) throw error;
@@ -1134,21 +1133,66 @@ window.openUserPostModal = function(room) {
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
       const preview = document.getElementById('upm-file-preview');
-      if (!file || !preview) return;
+      if (!file) return;
+
+      // ملء المعلومات تلقائياً في Highlights
+      if (room === 'highlights') {
+        const titleInput = document.getElementById('upm-title');
+        const descInput  = document.getElementById('upm-desc');
+        const tagSelect  = document.getElementById('upm-tag');
+        const isVideo    = file.type.startsWith('video/');
+        const isImage    = file.type.startsWith('image/');
+        // اسم الملف بدون امتداد كعنوان افتراضي
+        const nameWithout = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+        if (titleInput && !titleInput.value) titleInput.value = nameWithout;
+        // حجم الملف + نوعه كوصف
+        const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+        if (descInput && !descInput.value) {
+          descInput.value = (isVideo ? '🎥 Video' : '🖼️ Image') + ' — ' + sizeMB + ' MB';
+        }
+        // تعيين النوع تلقائياً
+        if (tagSelect) {
+          if (isVideo) tagSelect.value = 'Video';
+          else if (isImage) tagSelect.value = 'Photo';
+        }
+      }
+
+      if (!preview) return;
       preview.innerHTML = '';
       if (file.type.startsWith('image/')) {
         const img = document.createElement('img');
         img.style.cssText = 'max-width:100%;max-height:150px;border-radius:6px;margin-top:4px;';
         img.src = URL.createObjectURL(file);
+        // عند تحميل الصورة نحاول استخراج أبعادها
+        img.onload = function() {
+          const sizeInfo = document.getElementById('upm-file-size-info');
+          if (sizeInfo) sizeInfo.textContent += ` | ${img.naturalWidth}×${img.naturalHeight}px`;
+        };
         preview.appendChild(img);
       } else if (file.type.startsWith('video/')) {
         const vid = document.createElement('video');
         vid.style.cssText = 'max-width:100%;max-height:150px;border-radius:6px;margin-top:4px;';
         vid.controls = true;
         vid.src = URL.createObjectURL(file);
+        // عند تحميل الفيديو نستخرج مدته
+        vid.onloadedmetadata = function() {
+          const duration = Math.round(vid.duration);
+          const mins = Math.floor(duration / 60);
+          const secs = duration % 60;
+          const sizeInfo = document.getElementById('upm-file-size-info');
+          if (sizeInfo) sizeInfo.textContent += ` | ${mins}:${String(secs).padStart(2,'0')} دقيقة`;
+          // تحديث الوصف بالمدة في Highlights
+          if (room === 'highlights') {
+            const descInput = document.getElementById('upm-desc');
+            if (descInput && descInput.value.includes('MB')) {
+              descInput.value = descInput.value + ` (${mins}:${String(secs).padStart(2,'0')})`;
+            }
+          }
+        };
         preview.appendChild(vid);
       }
       const info = document.createElement('div');
+      info.id = 'upm-file-size-info';
       info.style.cssText = 'font-size:11px;color:#aaa;margin-top:4px;';
       info.textContent = `📁 ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
       preview.appendChild(info);
@@ -1293,13 +1337,7 @@ window.openEditPostModal = async function(postId, room) {
 
 // ========== دالة النشر النهائية (تم إصلاح تجمد YouTube) ==========
 async function submitUserPost(room) {
-  console.log("submitUserPost called, room:", room);
-  
-  if (!window.currentUserId) { 
-    showUPMError('يجب تسجيل الدخول أولاً'); 
-    return;
-  }
-  console.log("Current user ID:", window.currentUserId);
+  if (!window.currentUserId) { showUPMError('يجب تسجيل الدخول أولاً'); return; }
 
   var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
   var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
@@ -1307,75 +1345,65 @@ async function submitUserPost(room) {
   var tagEl = document.getElementById('upm-tag');
   var tag   = tagEl ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
   var contentEl = document.getElementById('upm-content');
-  var content = contentEl ? contentEl.value.trim() : null;
+  var content = contentEl ? contentEl.value.trim() || null : null;
   var mediaFileInput = document.getElementById('upm-media-file');
   var mediaFile = (mediaFileInput && mediaFileInput.files && mediaFileInput.files[0]) ? mediaFileInput.files[0] : null;
 
-  console.log("Title:", title, "URL:", url, "Tag:", tag, "Has media file:", !!mediaFile);
+  if (room === 'yt-videos' && !url) { showUPMError('الرجاء إدخال رابط يوتيوب صالح'); return; }
+  if (room === 'live' && !title && !url) { showUPMError('أدخل عنوان أو رابط البث'); return; }
+  if (room === 'tournaments' && !title) { showUPMError('أدخل اسم البطولة'); return; }
+  if ((room === 'gaming-news' || room === 'youtube-news') && !title && !url && !mediaFile) { showUPMError('أدخل عنوان أو رابط أو ملف'); return; }
 
-  if (room === 'yt-videos' && !url) {
-    showUPMError('الرجاء إدخال رابط يوتيوب صالح');
-    return;
-  }
-  
-  if (room === 'yt-videos' && !title && url) {
-    title = '🎬 فيديو يوتيوب';
-  }
-
-  var btn = document.getElementById('upm-submit');
-  var okEl = document.getElementById('upm-ok');
+  var btn   = document.getElementById('upm-submit');
+  var okEl  = document.getElementById('upm-ok');
   var errEl = document.getElementById('upm-err');
 
-  function resetBtn() {
-    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
-  }
-
-  if (btn) { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
-  if (okEl) okEl.style.display = 'none';
+  if (btn)  { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
+  if (okEl)  okEl.style.display  = 'none';
   if (errEl) errEl.style.display = 'none';
 
   try {
+    // رفع ملف إن وجد
     var mediaUrl = null;
     if (mediaFile) {
       if (btn) btn.textContent = 'رفع الملف...';
       mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
     }
 
-    const finalUrl = mediaUrl || url || null;
-    const isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
-    const isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
-    const isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
-    
-    const postData = {
-      title: title || '📄 منشور',
-      description: desc || null,
-      icon: isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
-      url: finalUrl,
-      tag: tag,
-      room: room,
-      content: content || null,
-      posted_by: window.currentUserId
-    };
-    
-    console.log("Attempting to insert post with data:", JSON.stringify(postData, null, 2));
-    
-    const { data, error } = await db
-      .from('posts')
-      .insert(postData)
-      .select();
-      
-    if (error) {
-      console.error("Supabase insert error details:", error);
-      throw new Error(`فشل الإدراج: ${error.message}`);
-    }
-    
-    console.log("Insert successful, returned data:", data);
+    var finalUrl = mediaUrl || url || null;
+    var isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
+    var isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
+    var isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
 
-    if (okEl) { 
-      okEl.textContent = '✅ تم النشر بنجاح!'; 
-      okEl.style.display = 'block'; 
+    // إذا رُفع ملف وليس هناك عنوان، نملأ من اسم الملف
+    if (mediaFile && !title) {
+      title = mediaFile.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
     }
-    resetBtn();
+
+    var postData = {
+      title:       title || '📄 منشور',
+      description: desc  || null,
+      icon:        isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
+      url:         finalUrl,
+      tag:         tag,
+      room:        room,
+      content:     content
+    };
+
+    // نشر أو تعديل
+    var dbErr;
+    if (currentEditPost) {
+      var res = await db.from('posts').update(postData).eq('id', currentEditPost.id);
+      dbErr = res.error;
+    } else {
+      var res = await db.from('posts').insert(postData);
+      dbErr = res.error;
+    }
+
+    if (dbErr) throw new Error(dbErr.message || JSON.stringify(dbErr));
+
+    if (okEl)  { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
+    if (btn)   { btn.disabled = false; btn.textContent = '➕ Publish'; }
     loadPage(room);
     setTimeout(function() {
       var modal = document.getElementById('upm-modal');
@@ -1383,15 +1411,10 @@ async function submitUserPost(room) {
     }, 1400);
 
   } catch(e) {
-    console.error("Error in submitUserPost:", e);
-    resetBtn();
+    if (btn)   { btn.disabled = false; btn.textContent = '➕ Publish'; }
     var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
-    if (errEl) { 
-      errEl.textContent = '❌ ' + msg; 
-      errEl.style.display = 'block'; 
-    } else {
-      alert(msg);
-    }
+    if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
+    else alert('❌ ' + msg);
   }
 }
 
