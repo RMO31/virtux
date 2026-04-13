@@ -806,7 +806,6 @@ window.doLogout = async function() {
   var _ua = document.getElementById('btn-user-area');
   if (_ll) _ll.style.display = 'inline-block';
   if (_ua) _ua.style.display = 'none';
-  document.querySelectorAll('.btn-user-post').forEach(function(b){ b.style.display = 'none'; });
   document.querySelectorAll('.btn-ytvip-post').forEach(function(b){ b.style.display = 'none'; });
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
 };
@@ -938,7 +937,11 @@ function handleMediaFile(room, file) {
 }
 
 window.openUserPostModal = function(room) {
-  if (!window.currentUserId) { openModal(); return; }
+  // إذا لم يكن المستخدم مسجلاً، نفتح نافذة تسجيل الدخول أولاً
+  if (!window.currentUserId) {
+    openModal();
+    return;
+  }
   currentEditPost = null;
   currentEditRoom = room;
   currentRoomForPost = room;
@@ -1194,7 +1197,6 @@ function renderCards(posts, gridId, room) {
     return;
   }
   if (room === 'subscribers') {
-    // وظيفة loadSubscribersWithVIP موجودة لكن تم اختصارها للطول، سأعيد استخدامها كما هي في الكود الأصلي
     loadSubscribersWithVIP(el, posts);
     return;
   }
@@ -1288,10 +1290,7 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== دوال المصادقة والملف الشخصي (محذوفة للاختصار لكنها موجودة في الكود الأصلي) ====================
-// يتم الاحتفاظ بجميع دوال المصادقة الأصلية دون تغيير. نظراً للطول، سأضعها بشكل مختصر ولكنها تعمل.
-// هنا سأضع الدوال الأساسية المطلوبة فقط لتكتمل البيئة.
-
+// ==================== دوال المصادقة والملف الشخصي ====================
 async function updateUIAfterAuth() {
   if (_authUpdateInProgress) return;
   _authUpdateInProgress = true;
@@ -1327,9 +1326,11 @@ async function updateUIAfterAuth() {
         window.userRole = profile?.role || 'user';
         window.currentUserId = session.user.id;
         window.currentUsername = profile?.username || '';
-        document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'inline-flex');
+        // نعم، الأزرار العادية تظهر دائماً، ولكن VIP فقط للمصرح لهم
         if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
           document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
+        } else {
+          document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
         }
       }
     } else {
@@ -1338,8 +1339,8 @@ async function updateUIAfterAuth() {
       window.userRole = 'guest';
       window.currentUserId = null;
       window.currentUsername = null;
-      document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'none');
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
+      // الأزرار العادية تبقى ظاهرة للجميع (سيتم فتح نافذة تسجيل الدخول عند النقر)
     }
   } catch(err) { console.error(err); } finally { _authUpdateInProgress = false; }
 }
