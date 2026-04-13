@@ -769,7 +769,13 @@ const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, storageKey: 'virtux-auth', autoRefreshToken: true, detectSessionInUrl: true }
+  auth: {
+    persistSession: true,
+    storageKey: 'virtux-auth-v2',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
 });
 let allPosts = {};
 let pendingGoogleUser = null;
@@ -778,11 +784,14 @@ let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
 
-// دالة الخروج — معرّفة مبكراً لضمان عملها دائماً
+// دالة الخروج
 window.doLogout = async function() {
   try {
-    await db.auth.signOut();
-    window.location.reload();
+    await db.auth.signOut({ scope: 'local' });
+    window.currentUserId = null;
+    window.currentUsername = null;
+    window.userRole = 'guest';
+    await updateUIAfterAuth();
   } catch(e) {
     console.error('Logout error:', e);
     window.location.reload();
@@ -945,7 +954,7 @@ function renderCards(posts, gridId, room) {
       }
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
-        mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
+        mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
       else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
       else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
@@ -965,7 +974,18 @@ function renderCards(posts, gridId, room) {
 }
 
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
-function showPage(id) { document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active')); const page = document.getElementById(`page-${id}`); if(page) page.classList.add('active'); const btn = document.getElementById(`sb-${id}`); if(btn) btn.classList.add('active'); if(id !== 'home' && id !== 'contact') loadPage(id); }
+let _currentPage = 'home';
+function showPage(id) {
+  document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  const page = document.getElementById(`page-${id}`);
+  if(page) page.classList.add('active');
+  const btn = document.getElementById(`sb-${id}`);
+  if(btn) btn.classList.add('active');
+  if(id !== 'home' && id !== 'contact' && id !== _currentPage) loadPage(id);
+  else if(id !== 'home' && id !== 'contact' && !allPosts[id]) loadPage(id);
+  _currentPage = id;
+}
 function toggleDD(id) { document.querySelectorAll('.dd').forEach(d=>{ if(d.id !== id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
 function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open')); }
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
@@ -1451,71 +1471,83 @@ async function signInWithGoogle() {
   }
 }
 
+let _authUpdateInProgress = false;
 async function updateUIAfterAuth() {
-  const { data: { session } } = await db.auth.getSession();
-  const loginLink = document.getElementById('btn-login-link');
-  const userArea = document.getElementById('btn-user-area');
-  const userNameSpan = document.getElementById('user-name');
-  const roleBadge = document.getElementById('user-role-badge');
-  const userAvatarImg = document.getElementById('user-avatar-img');
-  if (session && session.user) {
-    loginLink.style.display = 'none';
-    userArea.style.display = 'flex';
-    let { data: profile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
-    if (!profile) {
-      if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) return;
-      let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      let finalUsername = userName;
-      let counter = 1;
-      while (true) {
-        const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
-        if (!existing) break;
-        finalUsername = `${userName}${counter++}`;
+  if (_authUpdateInProgress) return;
+  _authUpdateInProgress = true;
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const loginLink = document.getElementById('btn-login-link');
+    const userArea = document.getElementById('btn-user-area');
+    const userNameSpan = document.getElementById('user-name');
+    const roleBadge = document.getElementById('user-role-badge');
+    const userAvatarImg = document.getElementById('user-avatar-img');
+    if (session && session.user) {
+      loginLink.style.display = 'none';
+      userArea.style.display = 'flex';
+      let { data: profile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
+      if (!profile) {
+        if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) return;
+        let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+        // آمن: بدون while(true) — نجرب حتى 20 مرة فقط
+        let finalUsername = userName;
+        for (let i = 1; i <= 20; i++) {
+          const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
+          if (!existing) break;
+          finalUsername = `${userName}${i}`;
+        }
+        await db.from('profiles').insert({ id: session.user.id, username: finalUsername, email: session.user.email, role: 'user', created_at: new Date().toISOString() });
+        const { data: newProfile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
+        profile = newProfile;
       }
-      await db.from('profiles').insert({ id: session.user.id, username: finalUsername, email: session.user.email, role: 'user', created_at: new Date().toISOString() });
-      const { data: newProfile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
-      profile = newProfile;
-    }
-    if (profile) {
-      userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
-      roleBadge.style.display = profile?.role && profile.role !== 'user' ? 'inline-block' : 'none';
-      if (profile?.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
-      if (profile?.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
-      else userAvatarImg.style.display = 'none';
-      window.userRole = profile?.role || 'user';
-      window.currentUserId = session.user.id;
-      window.currentUsername = profile?.username || '';
-      document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'inline-flex');
-      if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
+      if (profile) {
+        userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
+        roleBadge.style.display = profile?.role && profile.role !== 'user' ? 'inline-block' : 'none';
+        if (profile?.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
+        if (profile?.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
+        else userAvatarImg.style.display = 'none';
+        window.userRole = profile?.role || 'user';
+        window.currentUserId = session.user.id;
+        window.currentUsername = profile?.username || '';
+        document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'inline-flex');
+        if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
+          document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
+        }
       }
+    } else {
+      loginLink.style.display = 'inline-block';
+      userArea.style.display = 'none';
+      window.userRole = 'guest';
+      window.currentUserId = null;
+      window.currentUsername = null;
+      document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'none');
+      document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
     }
-  } else {
-    loginLink.style.display = 'inline-block';
-    userArea.style.display = 'none';
-    window.userRole = 'guest';
-    document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'none');
-    document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
+  } catch(err) {
+    console.error('updateUIAfterAuth error:', err);
+  } finally {
+    _authUpdateInProgress = false;
   }
 }
 
-async function checkAuth() { await updateUIAfterAuth(); }
-
-
-
-
-db.auth.onAuthStateChange(async (event, session) => {
+async function checkAuth() { await updateUIAfterAuth(); }db.auth.onAuthStateChange(async (event, session) => {
+  // تجاهل TOKEN_REFRESHED لأنه يُطلق كثيراً ويسبب تجميداً
+  if (event === 'TOKEN_REFRESHED') return;
   if (event === 'SIGNED_IN') {
     const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
     if (!profile) {
       pendingGoogleUser = session.user;
-      const modal = document.getElementById('usernameModal');
+      const usernameModal = document.getElementById('usernameModal');
       const input = document.getElementById('newUsername');
       input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
       document.getElementById('usernameError').innerText = '';
-      modal.classList.add('active');
-    } else { await updateUIAfterAuth(); }
-  } else if (event === 'SIGNED_OUT') { await updateUIAfterAuth(); }
+      usernameModal.classList.add('active');
+    } else {
+      await updateUIAfterAuth();
+    }
+  } else if (event === 'SIGNED_OUT') {
+    await updateUIAfterAuth();
+  }
 });
 
 document.getElementById('confirmUsernameBtn').onclick = async () => {
