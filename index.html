@@ -558,6 +558,7 @@
     }
     #upm-submit:hover { background: #f0c040; }
     #upm-submit:disabled { background: #555; color: #999; cursor: not-allowed; }
+    #upm-modal { pointer-events: auto; }
     .file-input-group { margin-bottom: 12px; }
     .file-input-group label { display: block; margin-bottom: 5px; color: #d4af37; font-size: 12px; }
     .preview-img, .preview-video { max-width: 100%; max-height: 150px; margin-top: 8px; border-radius: 6px; }
@@ -585,7 +586,7 @@
           <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#d4af37;display:none;"></span>
         </div>
         <button id="profileButton" style="background:transparent;border:1px solid #d4af37;color:#d4af37;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
-        <button id="logoutButton" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
+        <button id="logoutButton" onclick="window.doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
       </div>
     </div>
   </div>
@@ -1405,13 +1406,8 @@ window.doLogout = async function() {
   }
 };
 
-// ربط زر الخروج
-const logoutBtn = document.getElementById('logoutButton');
-if (logoutBtn) {
-  // إزالة أي مستمعين سابقين لضمان عدم التكرار
-  logoutBtn.removeEventListener('click', window.doLogout);
-  logoutBtn.addEventListener('click', window.doLogout);
-}
+
+
 
 db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN') {
@@ -1448,7 +1444,7 @@ const signupDiv = document.getElementById('modal-signup');
 function openModal() { modal.classList.add('active'); }
 function closeModal() { modal.classList.remove('active'); loginDiv.style.display = 'block'; signupDiv.style.display = 'none'; document.getElementById('loginError').innerText = ''; document.getElementById('signupError').innerText = ''; }
 document.getElementById('closeModal').onclick = closeModal;
-window.onclick = (e) => { if(e.target === modal) closeModal(); };
+window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق نافذة النشر عند الضغط خارجها */ } };
 document.getElementById('switchToSignup').onclick = () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; };
 document.getElementById('switchToLogin').onclick = () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; };
 document.getElementById('doLoginBtn').onclick = async () => {
@@ -1481,13 +1477,8 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfile
 document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
 document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
 
-// ربط زر الإغلاق (X) في نافذة النشر
-const upmCloseBtn = document.getElementById('upm-close');
-if (upmCloseBtn) {
-  upmCloseBtn.onclick = function() {
-    document.getElementById('upm-modal').classList.remove('active');
-  };
-}
+// ربط زر الإغلاق (X) في نافذة النشر - يتم عبر onclick مباشرة في HTML
+
 
 // ==================== شريط الأخبار (ticker) ====================
 let tickerItems = [];
@@ -1579,7 +1570,7 @@ showPage('home');
 
 <div id="upm-modal">
   <div class="upm-box">
-    <div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close">✕</button></div>
+    <div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close" onclick="document.getElementById('upm-modal').classList.remove('active')">✕</button></div>
     <div class="upm-body">
       <div id="upm-ok"></div><div id="upm-err"></div>
       <div id="upm-form-body"></div>
