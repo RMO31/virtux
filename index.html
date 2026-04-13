@@ -836,8 +836,22 @@ async function fetchYouTubeVideoInfo(url) {
 }
 
 function extractYouTubeId(url) {
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|watch\?.*v=|embed\/|v\/|live\/|shorts\/))([^&\?\/]+)/);
   return m ? m[1] : null;
+}
+
+function isValidUrl(value) {
+  if (!value) return false;
+  try {
+    const parsed = new URL(value.startsWith('http') ? value : `https://${value}`);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch (e) {
+    return false;
+  }
+}
+
+function isValidYouTubeUrl(url) {
+  return extractYouTubeId(url) !== null;
 }
 
 // ==================== دوال الغرف والمحتوى ====================
@@ -1317,6 +1331,8 @@ async function submitUserPost(room) {
 
   if ((room === 'live' || room === 'tournaments') && !title && !url && !desc) { showUPMError('Please fill at least title or URL.'); return; }
   if (room === 'yt-videos' && !url) { showUPMError('Please enter a YouTube URL.'); return; }
+  if (room === 'yt-videos' && url && !isValidYouTubeUrl(url)) { showUPMError('Please enter a valid YouTube URL.'); return; }
+  if (room === 'live' && url && !isValidUrl(url)) { showUPMError('Please enter a valid stream URL.'); return; }
   if (room === 'highlights' && !url && !mediaFile) { showUPMError('Please enter a media URL or upload a file.'); return; }
   if ((room === 'gaming-news' || room === 'youtube-news') && !title && !url && !mediaFile) { showUPMError('Please fill title or add media.'); return; }
 
@@ -1336,11 +1352,7 @@ async function submitUserPost(room) {
     var mediaUrl = null;
     if (mediaFile) {
       if (btn) btn.textContent = 'Uploading...';
-      try {
-        mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
-      } catch(uploadErr) {
-        console.warn('Upload failed:', uploadErr.message);
-      }
+      mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
     }
 
     if (currentEditPost) {
