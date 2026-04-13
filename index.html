@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux — Gaming Community (نسخة مستقرة)</title>
+  <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -21,63 +21,545 @@
     .dd-menu a{display:block;color:#ccc;padding:9px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid #333;text-decoration:none}
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:#d4af37;color:#000}
-    .post-actions{display:flex;gap:12px;align-items:center;margin-left:auto;flex-wrap:wrap}
-    .btn-user-post,.btn-ytvip-post{background:#d4af37;color:#000;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer}
-    .btn-user-post:hover{background:#f0c040}
-    .btn-ytvip-post{background:#2a1500;color:#d4af37;border:1px solid #d4af37}
-    .page-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .vx-ticker{background:#000;padding:0;display:flex;align-items:stretch;overflow:hidden;position:relative;border-bottom:1px solid #d4af37;height:32px}
-    .ticker-label{font-size:11px;background:#d4af37;color:#000;padding:0 14px;font-weight:700;white-space:nowrap;z-index:5;flex-shrink:0;display:flex;align-items:center;letter-spacing:2px;order:-1}
-    .ticker-scroll{flex:1;overflow:hidden;position:relative;height:32px}
-    .ticker-track{display:inline-flex;white-space:nowrap;height:32px;align-items:center;position:absolute;left:0;top:0;will-change:transform}
-    .ticker-item{display:inline-flex;align-items:center;padding:0 30px;font-size:13px;color:#99aabb;white-space:nowrap;height:32px}
-    .ticker-item a{color:#d4af37;text-decoration:none}
+    
+    .post-actions { display: flex; gap: 12px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+    .btn-user-post, .btn-ytvip-post {
+      background: #d4af37; color: #000; border: none; border-radius: 6px;
+      padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+      font-family: 'Poppins', sans-serif; transition: 0.2s;
+    }
+    .btn-user-post:hover { background: #f0c040; }
+    .btn-ytvip-post { background: #2a1500; color: #d4af37; border: 1px solid #d4af37; }
+    .btn-ytvip-post:hover { background: #d4af37; color: #000; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    
+    .vx-ticker {
+      background: #000;
+      padding: 0;
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      position: relative;
+      border-bottom: 1px solid #d4af37;
+      height: 32px;
+    }
+    .ticker-label {
+      font-size: 11px;
+      background: #d4af37;
+      color: #000;
+      padding: 0 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      z-index: 5;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      letter-spacing: 2px;
+      order: -1;
+    }
+    .ticker-scroll {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 32px;
+    }
+    .ticker-track {
+      display: inline-flex;
+      white-space: nowrap;
+      height: 32px;
+      align-items: center;
+      position: absolute;
+      left: 0;
+      top: 0;
+      will-change: transform;
+    }
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 30px;
+      font-size: 13px;
+      color: #99aabb;
+      white-space: nowrap;
+      height: 32px;
+    }
+    .ticker-item span { color: #d4af37; }
+    .ticker-item a {
+      color: #d4af37;
+      text-decoration: none;
+    }
+    .ticker-item a:hover {
+      text-decoration: underline;
+    }
+    
     .vx-body{display:flex;flex:1}
     .vx-sidebar{width:180px;background:linear-gradient(180deg,#1a1a1a,#2a2a2a);border-right:1px solid #d4af37;display:flex;flex-direction:column;gap:4px;padding:10px 6px}
     .sb-btn{background:transparent;border:none;color:#aab;padding:9px 12px;border-radius:6px;font-size:13px;cursor:pointer;text-align:left}
     .sb-btn:hover,.sb-btn.active{background:#d4af37;color:#000}
+    .sb-btn.active{border-left:3px solid #d4af37}
     .sb-section{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px;padding:8px 12px 2px}
     .vx-main{flex:1;max-height:calc(100vh - 84px);overflow-y:auto}
     .vx-page{display:none}
     .vx-page.active{display:block}
-    .home-hero{position:relative;background:linear-gradient(135deg,#2b4d2b,#5a3a1a,#1a2a1a);min-height:calc(100vh - 84px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:40px 20px}
-    .home-welcome{font-size:32px;font-weight:600;color:#d4af37;text-shadow:0 0 8px #000;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);padding:12px 35px;border-radius:50px;border:1px solid #d4af37;display:inline-block;margin:20px auto 40px auto}
-    .home-content-row{display:flex;flex-wrap:wrap;justify-content:center;gap:40px;max-width:1200px;width:100%;margin:0 auto}
-    .home-about,.home-rules{flex:1;min-width:280px;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);border-radius:20px;padding:25px;text-align:left;border:1px solid rgba(212,175,55,0.5)}
-    .home-about h3,.home-rules h3{color:#d4af37;font-size:22px;margin-bottom:20px;border-bottom:1px solid #d4af37;display:inline-block;padding-bottom:5px}
-    .rules-list li::before{content:"⛔";position:absolute;left:0;color:#ff5555;font-size:16px}
-    .rules-list li{margin:12px 0;padding-left:28px;position:relative;color:#f0f0f0;font-size:14px}
+    
+    .home-hero {
+      position: relative;
+      background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
+      background-image: repeating-linear-gradient(45deg, rgba(100,80,40,0.2) 0px, rgba(100,80,40,0.2) 2px, transparent 2px, transparent 8px),
+                        repeating-linear-gradient(135deg, rgba(60,40,20,0.3) 0px, rgba(60,40,20,0.3) 1px, transparent 1px, transparent 6px);
+      min-height: calc(100vh - 84px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: center;
+      border-bottom: none;
+      padding: 40px 20px;
+    }
+    
+    .home-welcome {
+      font-size: 32px;
+      font-weight: 600;
+      color: #d4af37;
+      text-shadow: 0 0 8px #000;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+      padding: 12px 35px;
+      border-radius: 50px;
+      border: 1px solid #d4af37;
+      display: inline-block;
+      margin: 20px auto 40px auto;
+      letter-spacing: 1px;
+    }
+    
+    .home-content-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .home-about, .home-rules {
+      flex: 1;
+      min-width: 280px;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      border-radius: 20px;
+      padding: 25px;
+      text-align: left;
+      border: 1px solid rgba(212,175,55,0.5);
+      transition: transform 0.2s;
+    }
+    .home-about:hover, .home-rules:hover {
+      transform: translateY(-5px);
+      border-color: #d4af37;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    .home-about h3, .home-rules h3 {
+      color: #d4af37;
+      font-size: 22px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #d4af37;
+      display: inline-block;
+      padding-bottom: 5px;
+    }
+    .about-text {
+      line-height: 1.7;
+      color: #ddd;
+      font-size: 15px;
+    }
+    .about-features {
+      margin-top: 15px;
+      list-style: none;
+    }
+    .about-features li {
+      margin: 8px 0;
+      color: #d4af37;
+      font-weight: 500;
+    }
+    .rules-list {
+      list-style: none;
+      padding: 0;
+    }
+    .rules-list li {
+      margin: 12px 0;
+      padding-left: 28px;
+      position: relative;
+      color: #f0f0f0;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .rules-list li::before {
+      content: "⛔";
+      position: absolute;
+      left: 0;
+      color: #ff5555;
+      font-size: 16px;
+    }
+    
+    .missile { display: none; }
+    .empty-home { display: none; }
+    
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
-    .filter-btn.active,.filter-btn:hover{background:#d4af37;color:#000}
+    .filter-btn:hover,.filter-btn.active{background:#d4af37;color:#000;border-color:#d4af37}
     .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
-    .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column}
+    .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column;position:relative}
     .post-card:hover{border-color:#d4af37}
     .post-card-img{width:100%;height:160px;object-fit:cover}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
     .post-card-video{width:100%;height:200px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none}
-    .post-card-body{padding:12px 14px;flex:1}
+    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;object-fit:cover}
+    .restricted-overlay{position:relative}
+    .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#d4af37;pointer-events:none}
+    .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
+    .post-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column}
     .post-card-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
-    .post-card-summary{font-size:12px;color:#aaa;margin-bottom:12px}
-    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+    .post-card-summary{font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.5}
+    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:auto}
     .post-tag{font-size:11px;background:#2a2a3a;color:#d4af37;border-radius:4px;padding:2px 8px}
-    .post-link,.post-dl,.read-more{font-size:12px;border-radius:5px;padding:4px 10px;text-decoration:none}
-    .post-link{color:#d4af37;background:#2a2a3a;border:1px solid #444}
-    .post-dl,.read-more{background:#d4af37;color:#000;font-weight:600}
-    .modal,.username-modal,.profile-modal,#upm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;justify-content:center;align-items:center}
-    .modal.active,.username-modal.active,.profile-modal.active,#upm-modal.active{display:flex}
-    .modal-content,.modal-box,.upm-box{background:#1a1a1a;border:1px solid #d4af37;border-radius:12px;width:90%;max-width:420px;padding:28px 24px;position:relative}
-    .upm-box{max-width:500px;max-height:90vh;overflow-y:auto;padding:0}
-    .upm-top{background:#000;padding:14px 18px;display:flex;justify-content:space-between;border-bottom:1px solid #333}
-    .upm-body{padding:18px}
-    #upm-ok,#upm-err{padding:9px;border-radius:7px;margin-bottom:12px;display:none}
-    #upm-ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90}
-    #upm-err{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55}
-    .btn-submit{width:100%;background:#d4af37;color:#000;border:none;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer}
-    .google-btn-modal{background:#4285F4;color:white;display:flex;align-items:center;justify-content:center;gap:8px}
-    input,select,textarea{width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:4px}
-    label{color:#d4af37;font-size:12px}
+    .post-link{font-size:12px;color:#d4af37;text-decoration:none;background:#2a2a3a;border:1px solid #444;border-radius:5px;padding:4px 10px}
+    .post-link:hover{background:#d4af37;color:#000}
+    .post-dl{font-size:12px;color:#000;text-decoration:none;background:#d4af37;border-radius:5px;padding:4px 10px;font-weight:600}
+    .read-more{font-size:12px;background:#d4af37;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
+    .read-more:hover{background:#e6c300}
+    
+    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
+    .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
+    .channel-card:hover{border-color:#d4af37}
+    .channel-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px}
+    .channel-info{width:100%}
+    .channel-name{font-size:14px;font-weight:600;color:#d4af37;margin-bottom:4px}
+    .channel-sub{font-size:12px;color:#aaa;margin-bottom:8px}
+    .channel-link{font-size:12px;color:#d4af37;text-decoration:none;border:1px solid #d4af37;border-radius:5px;padding:5px 12px;display:inline-block;margin-top:6px}
+    .channel-link:hover{background:#d4af37;color:#000}
+    .empty-state{text-align:center;color:#555;padding:40px;font-size:14px}
+    .loading-state{text-align:center;color:#aaa;padding:30px;font-size:13px}
+    .contact-page{padding:20px}
+    .contact-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+    .contact-card{background:#1e1e2e;border:1px solid #333;border-radius:8px;padding:14px;text-align:center;cursor:pointer}
+    .contact-card:hover{border-color:#d4af37}
+    .cc-icon{font-size:28px;margin-bottom:6px}
+    .cc-name{font-size:13px;color:#d4af37;font-weight:600}
+    .cc-handle{font-size:11px;color:#aaa}
+    .page-header{padding:14px 20px 10px;border-bottom:1px solid #333;background:#0a0a0a}
+    .page-header h2{font-size:17px;color:#d4af37;font-weight:600}
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #1a1a1a;
+      border: 1px solid #d4af37;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 420px;
+      padding: 28px 24px;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 18px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #aaa;
+    }
+    .modal-close:hover { color: #d4af37; }
+    .modal h3 {
+      color: #d4af37;
+      margin-bottom: 20px;
+      font-size: 22px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #ccc;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+    }
+    .form-group input:focus { outline: none; border-color: #d4af37; }
+    .btn-submit {
+      width: 100%;
+      background: #d4af37;
+      color: #000;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    .btn-submit:hover { background: #e6c300; }
+    .auth-switch {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 13px;
+      color: #aaa;
+    }
+    .auth-switch a {
+      color: #d4af37;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .google-btn-modal {
+      background: #4285F4;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 15px;
+    }
+    .google-btn-modal:hover { background: #357ae8; }
+    .error-msg {
+      color: #ff6b6b;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .auth-buttons-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .username-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    .username-modal.active { display: flex; }
+    .username-modal .modal-box {
+      background: #1a1a1a;
+      border: 1px solid #d4af37;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      padding: 28px;
+      text-align: center;
+    }
+    .username-modal .modal-box h3 {
+      color: #d4af37;
+      margin-bottom: 15px;
+    }
+    .username-modal .modal-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+    }
+    .username-modal .modal-box button {
+      background: #d4af37;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .username-modal .modal-box button.cancel {
+      background: #555;
+      color: white;
+    }
+
+    .profile-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+    }
+    .profile-modal.active { display: flex; }
+    .profile-modal .modal-box {
+      background: #1a1a1a;
+      border: 1px solid #d4af37;
+      border-radius: 16px;
+      width: 95%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 25px;
+    }
+    .profile-modal .modal-box h2 {
+      color: #d4af37;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .profile-avatar {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .profile-avatar img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #d4af37;
+      background: #2a2a2a;
+    }
+    .profile-avatar .avatar-placeholder {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: #2a2a3a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      border: 2px solid #d4af37;
+    }
+    .profile-field {
+      margin-bottom: 15px;
+    }
+    .profile-field label {
+      display: block;
+      margin-bottom: 5px;
+      color: #d4af37;
+      font-weight: 500;
+    }
+    .profile-field input, .profile-field select {
+      width: 100%;
+      padding: 10px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: white;
+    }
+    .profile-field input:focus {
+      outline: none;
+      border-color: #d4af37;
+    }
+    .profile-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .profile-buttons button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-save {
+      background: #d4af37;
+      color: #000;
+    }
+    .btn-cancel {
+      background: #555;
+      color: white;
+    }
+    .change-password-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #444;
+    }
+    .change-password-section h3 {
+      color: #d4af37;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    .username-feedback {
+      font-size: 12px;
+      margin-top: 5px;
+      color: #ffaa66;
+    }
+    #upm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 600;
+      align-items: center;
+      justify-content: center;
+    }
+    #upm-modal.active { display: flex; }
+    .upm-box {
+      background: #111;
+      border: 1px solid #d4af37;
+      border-radius: 14px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .upm-top {
+      background: #000;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #333;
+    }
+    .upm-top h2 { font-size: 15px; color: #d4af37; }
+    .upm-close {
+      background: transparent;
+      border: 1px solid #555;
+      color: #aaa;
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .upm-body { padding: 18px; }
+    #upm-ok { background: #0f3d2e; border: 1px solid #0f6e56; color: #4caf90; border-radius: 7px; padding: 9px; font-size: 13px; margin-bottom: 12px; display: none; }
+    #upm-err { background: #3d0f0f; border: 1px solid #6e0f0f; color: #f55; border-radius: 7px; padding: 9px; font-size: 13px; margin-bottom: 12px; display: none; }
+    #upm-submit {
+      width: 100%; padding: 10px; background: #d4af37; color: #000;
+      border: none; border-radius: 7px; font-size: 14px; font-weight: 700; cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+    }
+    #upm-submit:hover { background: #f0c040; }
+    #upm-submit:disabled { background: #555; color: #999; cursor: not-allowed; }
+    #upm-modal { pointer-events: auto; }
+    .file-input-group { margin-bottom: 12px; }
+    .file-input-group label { display: block; margin-bottom: 5px; color: #d4af37; font-size: 12px; }
+    .preview-img, .preview-video { max-width: 100%; max-height: 150px; margin-top: 8px; border-radius: 6px; }
+    .fetching-info { font-size: 11px; color: #aaa; margin-top: 4px; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -105,7 +587,14 @@
       </div>
     </div>
   </div>
-  <div class="vx-ticker"><div class="ticker-label">LIVE</div><div class="ticker-scroll" id="tickerScroll"><div class="ticker-track" id="tickerTrack"></div></div></div>
+  
+  <div class="vx-ticker">
+    <div class="ticker-label">LIVE</div>
+    <div class="ticker-scroll" id="tickerScroll">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+  </div>
+  
   <div class="vx-body">
     <div class="vx-sidebar">
       <button class="sb-btn active" id="sb-home" onclick="window.showPage('home')">🏠 Home</button>
@@ -118,112 +607,411 @@
       <button class="sb-btn" id="sb-contact" onclick="window.showPage('contact')">📞 Contact</button>
     </div>
     <div class="vx-main">
-      <div class="vx-page active" id="page-home"><div class="home-hero"><div class="home-welcome">Welcome to Virtux</div><div class="home-content-row"><div class="home-about"><h3>🎮 About Virtux</h3><div class="about-text">Virtux is an English‑speaking gaming community platform.</div><ul class="about-features"><li>🔴 Live Streams</li><li>🏆 Tournaments</li><li>🎬 Highlights</li><li>👥 Subscribers System</li></ul></div><div class="home-rules"><h3>🛑 Rules</h3><ul class="rules-list"><li>🚫 No insulting or offensive behavior</li><li>🚫 No inappropriate content</li><li>🚫 No posting female images</li><li>🚫 No music</li><li>✅ Respectful style required</li></ul></div></div></div></div>
+      <div class="vx-page active" id="page-home">
+        <div class="home-hero">
+          <div class="home-welcome">Welcome to Virtux</div>
+          <div class="home-content-row">
+            <div class="home-about">
+              <h3>🎮 About Virtux</h3>
+              <div class="about-text">
+                Virtux is an English‑speaking gaming community platform designed to deliver a professional and enjoyable experience for players.
+              </div>
+              <ul class="about-features">
+                <li>🔴 Live Streams</li>
+                <li>🏆 Tournaments</li>
+                <li>🎬 Highlights</li>
+                <li>👥 Subscribers System</li>
+              </ul>
+            </div>
+            <div class="home-rules">
+              <h3>🛑 Rules</h3>
+              <ul class="rules-list">
+                <li>🚫 No insulting or offensive behavior in any form</li>
+                <li>🚫 No incitement or problems between members</li>
+                <li>🚫 No inappropriate content</li>
+                <li>🚫 No posting female images</li>
+                <li>🚫 No music</li>
+                <li>✅ Respectful and elegant style required</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- النوافذ المنبثقة -->
-<div id="authModal" class="modal"><div class="modal-content"><span class="modal-close" id="closeModal">&times;</span><div id="modal-login"><h3>🔐 تسجيل الدخول</h3><div class="form-group"><label>البريد الإلكتروني أو اسم المستخدم</label><input type="text" id="loginIdentifier"></div><div class="form-group"><label>كلمة المرور</label><input type="password" id="loginPassword"></div><div id="loginError" class="error-msg"></div><button class="btn-submit" id="doLoginBtn">دخول</button><button class="btn-submit google-btn-modal" id="googleLoginBtn">🔵 تسجيل دخول عن طريق غوغل</button><div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div></div><div id="modal-signup" style="display:none;"><h3>📝 إنشاء حساب جديد</h3><div class="form-group"><label>اسم المستخدم</label><input type="text" id="signupUsername"></div><div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="signupEmail"></div><div class="form-group"><label>كلمة المرور</label><input type="password" id="signupPassword"></div><div id="signupError" class="error-msg"></div><button class="btn-submit" id="doSignupBtn">تسجيل</button><button class="btn-submit google-btn-modal" id="googleSignupBtn">🔵 تسجيل عبر Google</button><div class="auth-switch">لديك حساب بالفعل؟ <a id="switchToLogin">تسجيل الدخول</a></div></div></div></div>
-<div id="usernameModal" class="username-modal"><div class="modal-box"><h3>✨ اختر اسم مستخدم</h3><p style="color:#ccc; font-size:14px;">يرجى اختيار اسم مستخدم فريد لإكمال التسجيل</p><input type="text" id="newUsername"><div><button id="confirmUsernameBtn">تأكيد</button><button id="cancelUsernameBtn" class="cancel">إلغاء</button></div><div id="usernameError" style="color:#f55; margin-top:10px;"></div></div></div>
-<div id="profileModal" class="profile-modal"><div class="modal-box"><h2>👤 الملف الشخصي</h2><div class="profile-avatar"><div id="profileAvatarContainer"><img id="profileAvatarImg" style="display:none; width:100px; height:100px; border-radius:50%;"><div id="profileAvatarPlaceholder" class="avatar-placeholder" style="display:flex; width:100px; height:100px; background:#2a2a3a; border-radius:50%; align-items:center; justify-content:center; font-size:48px;">👤</div></div><div><input type="file" id="avatarUpload" accept="image/*" style="display:none;"><button id="changeAvatarBtn" class="btn-submit" style="width:auto; padding:5px 12px;">📷 تغيير الصورة</button></div></div><div class="profile-field"><label>اسم المستخدم</label><input type="text" id="profileUsername"></div><div class="profile-field"><label>📧 البريد الإلكتروني</label><input type="email" id="profileEmail" readonly disabled></div><div class="profile-field"><label>🎂 تاريخ الميلاد</label><input type="date" id="profileBirthdate"></div><div class="profile-field"><label>📍 مكان الولادة</label><input type="text" id="profileBirthPlace"></div><div class="profile-field"><label>🌍 البلد الحالي</label><input type="text" id="profileCountry"></div><div class="profile-field"><label>🎮 اللعبة المفضلة</label><input type="text" id="profileFavoriteGame"></div><div class="change-password-section"><h3>🔒 تغيير كلمة المرور</h3><div class="profile-field"><label>كلمة المرور الحالية</label><input type="password" id="oldPassword"></div><div class="profile-field"><label>كلمة المرور الجديدة</label><input type="password" id="newPassword"></div><div class="profile-field"><label>تأكيد كلمة المرور الجديدة</label><input type="password" id="confirmNewPassword"></div><div id="passwordError" class="error-msg"></div><button id="changePasswordBtn" class="btn-submit">تغيير كلمة المرور</button></div><div class="profile-buttons"><button id="saveProfileBtn" class="btn-save">💾 حفظ التغييرات</button><button id="closeProfileBtn" class="btn-cancel">إغلاق</button></div></div></div>
-<div id="upm-modal"><div class="upm-box"><div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close" onclick="document.getElementById('upm-modal').classList.remove('active')">✕</button></div><div class="upm-body"><div id="upm-ok"></div><div id="upm-err"></div><div id="upm-form-body"></div><button id="upm-submit">➕ Publish</button></div></div></div>
+<!-- Modal تسجيل الدخول والتسجيل -->
+<div id="authModal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close" id="closeModal">&times;</span>
+    <div id="modal-login">
+      <h3>🔐 تسجيل الدخول</h3>
+      <div class="form-group">
+        <label>البريد الإلكتروني أو اسم المستخدم</label>
+        <input type="text" id="loginIdentifier" placeholder="example@domain.com أو username">
+      </div>
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input type="password" id="loginPassword" placeholder="********">
+      </div>
+      <div id="loginError" class="error-msg"></div>
+      <button class="btn-submit" id="doLoginBtn">دخول</button>
+      <button class="btn-submit google-btn-modal" id="googleLoginBtn">🔵 تسجيل دخول عن طريق غوغل</button>
+      <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
+    </div>
+    <div id="modal-signup" style="display:none;">
+      <h3>📝 إنشاء حساب جديد</h3>
+      <div class="form-group">
+        <label>اسم المستخدم</label>
+        <input type="text" id="signupUsername" placeholder="username">
+      </div>
+      <div class="form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="signupEmail" placeholder="example@domain.com">
+      </div>
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input type="password" id="signupPassword" placeholder="********">
+      </div>
+      <div id="signupError" class="error-msg"></div>
+      <button class="btn-submit" id="doSignupBtn">تسجيل</button>
+      <button class="btn-submit google-btn-modal" id="googleSignupBtn">🔵 تسجيل عبر Google</button>
+      <div class="auth-switch">لديك حساب بالفعل؟ <a id="switchToLogin">تسجيل الدخول</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة اختيار اسم المستخدم بعد Google -->
+<div id="usernameModal" class="username-modal">
+  <div class="modal-box">
+    <h3>✨ Choose a username</h3>
+    <p style="color:#ccc; font-size:14px;">Please choose a unique username to complete your registration</p>
+    <input type="text" id="newUsername" placeholder="Username" autocomplete="off">
+    <div style="margin-top:10px;">
+      <button id="confirmUsernameBtn">Confirm</button>
+      <button id="cancelUsernameBtn" class="cancel">Cancel</button>
+    </div>
+    <div id="usernameError" style="color:#f55; margin-top:10px; font-size:12px;"></div>
+  </div>
+</div>
+
+<!-- نافذة الملف الشخصي (Profile) -->
+<div id="profileModal" class="profile-modal">
+  <div class="modal-box">
+    <h2>👤 الملف الشخصي</h2>
+    <div class="profile-avatar">
+      <div id="profileAvatarContainer">
+        <img id="profileAvatarImg" src="" style="display:none; width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid #d4af37;">
+        <div id="profileAvatarPlaceholder" class="avatar-placeholder" style="display:flex;">👤</div>
+      </div>
+      <div style="margin-top:10px;">
+        <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml" style="display:none;">
+        <button id="changeAvatarBtn" class="btn-submit" style="width:auto; padding:5px 12px; font-size:12px;">📷 تغيير الصورة</button>
+      </div>
+    </div>
+    <div class="profile-field">
+      <label>اسم المستخدم</label>
+      <input type="text" id="profileUsername" placeholder="اسم المستخدم">
+      <div id="usernameFeedback" class="username-feedback"></div>
+    </div>
+    <div class="profile-field">
+      <label>📧 البريد الإلكتروني</label>
+      <input type="email" id="profileEmail" readonly disabled style="background:#3a3a4a;">
+    </div>
+    <div class="profile-field">
+      <label>🎂 تاريخ الميلاد</label>
+      <input type="date" id="profileBirthdate">
+    </div>
+    <div class="profile-field">
+      <label>📍 مكان الولادة</label>
+      <input type="text" id="profileBirthPlace" placeholder="المدينة، الدولة">
+    </div>
+    <div class="profile-field">
+      <label>🌍 البلد الحالي</label>
+      <input type="text" id="profileCountry" placeholder="الدولة">
+    </div>
+    <div class="profile-field">
+      <label>🎮 اللعبة المفضلة</label>
+      <input type="text" id="profileFavoriteGame" placeholder="مثال: Call of Duty, FIFA, etc.">
+    </div>
+    
+    <div class="change-password-section">
+      <h3>🔒 تغيير كلمة المرور</h3>
+      <div class="profile-field">
+        <label>كلمة المرور الحالية</label>
+        <input type="password" id="oldPassword" placeholder="********">
+      </div>
+      <div class="profile-field">
+        <label>كلمة المرور الجديدة</label>
+        <input type="password" id="newPassword" placeholder="********">
+      </div>
+      <div class="profile-field">
+        <label>تأكيد كلمة المرور الجديدة</label>
+        <input type="password" id="confirmNewPassword" placeholder="********">
+      </div>
+      <div id="passwordError" class="error-msg" style="margin-bottom:10px;"></div>
+      <button id="changePasswordBtn" class="btn-submit" style="width:100%;">تغيير كلمة المرور</button>
+    </div>
+    
+    <div class="profile-buttons">
+      <button id="saveProfileBtn" class="btn-save">💾 حفظ التغييرات</button>
+      <button id="closeProfileBtn" class="btn-cancel">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div id="upm-modal">
+  <div class="upm-box">
+    <div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close" onclick="document.getElementById('upm-modal').classList.remove('active')">✕</button></div>
+    <div class="upm-body">
+      <div id="upm-ok"></div><div id="upm-err"></div>
+      <div id="upm-form-body"></div>
+      <button id="upm-submit" style="margin-top:15px;">➕ Publish</button>
+    </div>
+  </div>
+</div>
 
 <script>
-// Supabase configuration
+
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, storageKey: 'virtux-auth-v2' } });
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'virtux-auth-v2',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage
+  }
+});
+let allPosts = {};
+let pendingGoogleUser = null;
+let currentProfileData = null;
+let currentEditPost = null;
+let currentEditRoom = null;
+let tickerAnimationId = null;
+let _authUpdateInProgress = false;
 
-let allPosts = {}, pendingGoogleUser = null, currentProfileData = null, currentEditPost = null, _authUpdateInProgress = false;
-
+// دالة الخروج
 window.doLogout = async function() {
-  window.currentUserId = null; window.currentUsername = null; window.userRole = 'guest';
-  document.getElementById('btn-login-link').style.display = 'inline-block';
-  document.getElementById('btn-user-area').style.display = 'none';
-  document.querySelectorAll('.btn-user-post').forEach(b=>b.style.display='none');
-  document.querySelectorAll('.btn-ytvip-post').forEach(b=>b.style.display='none');
-  await db.auth.signOut();
+  _authUpdateInProgress = false;
+  window.currentUserId = null;
+  window.currentUsername = null;
+  window.userRole = 'guest';
+  var _ll = document.getElementById('btn-login-link');
+  var _ua = document.getElementById('btn-user-area');
+  if (_ll) _ll.style.display = 'inline-block';
+  if (_ua) _ua.style.display = 'none';
+  document.querySelectorAll('.btn-user-post').forEach(function(b){ b.style.display = 'none'; });
+  document.querySelectorAll('.btn-ytvip-post').forEach(function(b){ b.style.display = 'none'; });
+  try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
 };
 
-function extractYouTubeId(url) { let m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/); return m ? m[1] : null; }
+// ==================== دوال جلب معلومات اليوتيوب ====================
 async function fetchYouTubeVideoInfo(url) {
-  let videoId = extractYouTubeId(url); if(!videoId) return null;
+  const videoId = extractYouTubeId(url);
+  if (!videoId) return null;
+  const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
   try {
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`);
-    if(!res.ok) return null;
-    let data = await res.json();
-    if(data.items && data.items[0]) return { title: data.items[0].snippet.title, channelTitle: data.items[0].snippet.channelTitle };
-  } catch(e) { console.warn(e); }
-  return null;
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    if (data.items && data.items[0]) {
+      return {
+        title: data.items[0].snippet.title,
+        channelTitle: data.items[0].snippet.channelTitle,
+        thumbnail: data.items[0].snippet.thumbnails?.high?.url,
+        videoUrl: url
+      };
+    }
+    return null;
+  } catch(e) { return null; }
 }
 
-// إنشاء الصفحات
-const rooms = ['live','tournaments','highlights','subscribers','gaming-news','youtube-news','yt-channels','yt-videos','projects'];
-const roomLabels = { live:'🔴 Live Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights', subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News', 'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration' };
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
+  return m ? m[1] : null;
+}
+
+function isValidYouTubeUrl(url) {
+  return extractYouTubeId(url) !== null;
+}
+
+// تنظيف الرابط من المسافات والأحرف الضارة
+function cleanUrl(url) {
+  if (!url) return null;
+  return url.trim().replace(/\s/g, '');
+}
+
+// ==================== دوال الغرف والمحتوى ====================
+const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
+const roomLabels = {
+  live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
+  'gaming-news': '📰 Gaming News', 'youtube-news': '▶️ Youtube News', 'yt-channels': '📺 Youtube Channels',
+  'yt-videos': '🎬 Youtube Videos', projects: '🌐 Collaboration'
+};
+
 const mainContainer = document.querySelector('.vx-main');
 rooms.forEach(room => {
-  let pageDiv = document.createElement('div'); pageDiv.className = 'vx-page'; pageDiv.id = `page-${room}`;
-  let postable = ['live','tournaments','highlights','yt-videos','gaming-news','youtube-news'].includes(room);
-  let btns = postable ? `<div class="post-actions"><button class="btn-user-post" onclick="window.openUserPostModal('${room}')">➕ Post</button>${room==='yt-videos'?'<button class="btn-ytvip-post" onclick="window.openYTVIPModal()" style="display:none;">👑 VIP</button>':''}${room==='tournaments'?'<button class="btn-ytvip-post" onclick="window.openTournamentsVIPModal()" style="display:none;">👑 VIP</button>':''}</div>` : '';
+  const pageDiv = document.createElement('div');
+  pageDiv.className = 'vx-page';
+  pageDiv.id = `page-${room}`;
+  const postableRooms = ['live','tournaments','highlights','yt-videos','gaming-news','youtube-news'];
+  let buttonsHtml = '';
+  if (postableRooms.includes(room)) {
+    buttonsHtml = `<div class="post-actions">
+      <button class="btn-user-post" onclick="window.openUserPostModal('${room}')">➕ Post</button>
+      ${room === 'yt-videos' ? `<button class="btn-ytvip-post" id="btn-ytvip-${room}" onclick="window.openYTVIPModal()" style="display:none;">👑 Post VIP Video</button>` : ''}
+      ${room === 'tournaments' ? `<button class="btn-ytvip-post" id="btn-vip-tournaments" onclick="window.openTournamentsVIPModal()" style="display:none;">👑 Post VIP Tournament</button>` : ''}
+    </div>`;
+  }
   let filterBar = '';
-  if(room==='live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button><button onclick="window.filterPosts('live','Live Now',this)">Live Now</button><button onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button></div>`;
-  else if(room==='tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button><button onclick="window.filterPosts('tournaments','Registration',this)">Registration</button><button onclick="window.filterPosts('tournaments','Global',this)">Global</button></div>`;
-  else if(room==='highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">All</button><button onclick="window.filterPosts('highlights','Video',this)">Video</button><button onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
-  else if(room==='subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">All</button><button onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button><button onclick="window.filterPosts('subscribers','Member',this)">Member</button><button onclick="window.filterPosts('subscribers','VIP',this)">VIP</button></div>`;
-  pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${btns}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
+  if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('live','Live Now',this)">Live Now</button><button class="filter-btn" onclick="window.filterPosts('live','Pre Lives',this)">Pre Lives</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
+  else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Registration',this)">Registration</button><button class="filter-btn" onclick="window.filterPosts('tournaments','Global',this)">Global</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
+  else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
+  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">All</button><button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button><button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button></div>`;
+  pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${buttonsHtml}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
   mainContainer.appendChild(pageDiv);
 });
-let contactPage = document.createElement('div'); contactPage.className = 'vx-page'; contactPage.id = 'page-contact';
-contactPage.innerHTML = `<div class="page-header"><h2>📞 Contact Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/virtux</div></div><div class="contact-card"><div class="cc-icon">📧</div><div class="cc-name">Email</div><div class="cc-handle">contact@virtux.gg</div></div><div class="contact-card"><div class="cc-icon">🐦</div><div class="cc-name">Twitter</div><div class="cc-handle">@VirtuxGG</div></div></div></div>`;
+
+const contactPage = document.createElement('div');
+contactPage.className = 'vx-page';
+contactPage.id = 'page-contact';
+contactPage.innerHTML = `<div class="page-header"><h2>📞 Contact Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/virtux</div></div><div class="contact-card"><div class="cc-icon">📧</div><div class="cc-name">Email</div><div class="cc-handle">contact@virtux.gg</div></div><div class="contact-card"><div class="cc-icon">🐦</div><div class="cc-name">Twitter / X</div><div class="cc-handle">@VirtuxGG</div></div><div class="contact-card"><div class="cc-icon">📸</div><div class="cc-name">Instagram</div><div class="cc-handle">@virtux.official</div></div><div class="contact-card"><div class="cc-icon">▶️</div><div class="cc-name">YouTube</div><div class="cc-handle">@VirtuxGaming</div></div></div></div>`;
 mainContainer.appendChild(contactPage);
 
 async function loadPage(room) {
-  let el = document.getElementById(`grid-${room}`); if(!el) return;
+  const el = document.getElementById(`grid-${room}`);
+  if (!el) return;
   el.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
-  let { data, error } = await db.from('posts').select('*').eq('room',room).order('id',{ascending:false});
-  if(error) { el.innerHTML = '<div class="empty-state">فشل التحميل</div>'; return; }
-  allPosts[room] = data||[];
-  renderCards(allPosts[room], `grid-${room}`, room);
+  try {
+    const { data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+    if (error) throw error;
+    allPosts[room] = data || [];
+    renderCards(allPosts[room], `grid-${room}`, room);
+  } catch(e) { el.innerHTML = '<div class="empty-state">فشل التحميل</div>'; }
 }
+
+function isVIPContent(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
+
+async function loadSubscribersWithVIP(el, posts) {
+  let vipCards = '';
+  try {
+    const { data: vipUsers } = await db.from('profiles')
+      .select('username, avatar_url, role')
+      .in('role', ['vip', 'member'])
+      .order('created_at', { ascending: false });
+    if (vipUsers && vipUsers.length) {
+      vipCards = vipUsers.map(u => {
+        const avatar = u.avatar_url
+          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+          : `<div class="channel-avatar">👤</div>`;
+        const badge = u.role === 'vip'
+          ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 8px;">👑 VIP</span>`
+          : `<span style="font-size:11px;background:#1a2a1a;color:#4caf90;border:1px solid #4caf90;border-radius:4px;padding:2px 8px;">⭐ MEMBER</span>`;
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username)}</div><div style="margin-top:4px;">${badge}</div></div></div>`;
+      }).join('');
+    }
+  } catch(e) {}
+
+  const youtuberCards = posts.map(p => {
+    const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+    const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
+    const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+    let subText = p.description || '';
+    if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+    const badge = p.tag === 'Youtuber VIP'
+      ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
+    return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
+  }).join('');
+
+  if (!youtuberCards && !vipCards) {
+    el.innerHTML = '<div class="empty-state">لا توجد بيانات بعد 🎮</div>';
+    return;
+  }
+
+  let html = '<div class="channels-grid">';
+  if (vipCards) html += vipCards;
+  if (youtuberCards) html += youtuberCards;
+  html += '</div>';
+  el.innerHTML = html;
+}
+
 function renderCards(posts, gridId, room) {
-  let el = document.getElementById(gridId);
-  if(!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
-  if(room==='yt-channels') {
-    el.innerHTML = `<div class="channels-grid">${posts.map(p=>`<div class="channel-card"><div class="channel-avatar">${p.icon||'📺'}</div><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${p.description||''}</div>${p.url?`<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>`:''}</div>`).join('')}</div>`;
+  const el = document.getElementById(gridId);
+  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
+  if (room === 'yt-channels') {
+    el.innerHTML = `<div class="channels-grid">${posts.map(p => {
+      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+      let subText = p.description || '';
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div></div>${link}</div>`;
+    }).join('')}</div>`;
     return;
   }
-  if(room==='subscribers') {
-    el.innerHTML = `<div class="channels-grid">${posts.map(p=>`<div class="channel-card"><div class="channel-avatar">${p.icon||'👤'}</div><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${p.description||''}</div></div>`).join('')}</div>`;
+  if (room === 'subscribers') {
+    loadSubscribersWithVIP(el, posts);
     return;
   }
-  let userRole = window.userRole || 'guest';
-  let canViewVIP = ['member','vip','admin'].includes(userRole);
-  el.innerHTML = posts.map(p=>{
-    let media = '';
-    if(p.url && (p.url.includes('youtube.com')||p.url.includes('youtu.be'))) {
-      let vid = extractYouTubeId(p.url);
-      media = vid ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen></iframe></div>` : `<div class="post-card-emoji">📹</div>`;
-    } else if(p.icon && (p.icon.startsWith('http')||p.icon.startsWith('data:'))) media = `<img class="post-card-img" src="${p.icon}">`;
-    else media = `<div class="post-card-emoji">${p.icon||'📄'}</div>`;
-    let summary = (p.content||p.description||'').substring(0,150);
-    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span>${p.url?`<a href="${p.url}" target="_blank" class="post-link">رابط</a>`:''}</div></div></div>`;
+  const userRole = window.userRole || 'guest';
+  const allowedRoles = ['member', 'vip', 'admin'];
+  const canViewVIP = allowedRoles.includes(userRole);
+  const currentUserId = window.currentUserId;
+  const isAdmin = userRole === 'admin';
+  el.innerHTML = posts.map(p => {
+    let mediaContent = '';
+    const isRestricted = isVIPContent(p) && !canViewVIP;
+    if (isRestricted) {
+      let thumb = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
+      mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">للأعضاء فقط</span></div></div>`;
+    } else {
+      const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
+      const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+      if (isLocalVideo) {
+        mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
+      }
+      else if (isYouTube) {
+        const videoId = extractYouTubeId(p.url);
+        mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
+      }
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
+      else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
+    }
+    let summary = (p.content || p.description || '').substring(0,150);
+    if ((p.content || '').length > 150) summary += '...';
+    const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
+    let actions = '';
+    if (!isRestricted && p.url) {
+      const isStorageFile = p.url.includes('/storage/v1/object/public/');
+      const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
+      const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
+      const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
+      if (isVideoFile || isImageFile) {
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
+      } else if (!isYouTubeUrl) {
+        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
+      }
+    }
+    let editBtn = '';
+    return `<div class="post-card">${editBtn}${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;">${actions}${readMoreLink}</div></div></div></div>`;
   }).join('');
 }
-function filterPosts(room, tag, btn) {
-  if(btn && btn.closest('.filter-bar')) btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  let filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]);
-  renderCards(filtered, `grid-${room}`, room);
-}
+
+function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
 let _currentPage = 'home';
 function showPage(id) {
   document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
-  let page = document.getElementById(`page-${id}`); if(page) page.classList.add('active');
-  let btn = document.getElementById(`sb-${id}`); if(btn) btn.classList.add('active');
-  if(id !== 'home' && id !== 'contact') loadPage(id);
+  const page = document.getElementById(`page-${id}`);
+  if(page) page.classList.add('active');
+  const btn = document.getElementById(`sb-${id}`);
+  if(btn) btn.classList.add('active');
+  if(id !== 'home' && id !== 'contact' && id !== _currentPage) loadPage(id);
+  else if(id !== 'home' && id !== 'contact' && !allPosts[id]) loadPage(id);
   _currentPage = id;
 }
 function toggleDD(id) { document.querySelectorAll('.dd').forEach(d=>{ if(d.id !== id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
@@ -231,248 +1019,681 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-async function uploadMediaFile(file, userId) {
-  let ext = file.name.split('.').pop().toLowerCase();
-  let fileName = `media-${userId}-${Date.now()}.${ext}`;
-  let { error } = await db.storage.from('posts-media').upload(fileName, file);
-  if(error) throw new Error('فشل رفع الملف: '+error.message);
-  let { data: { publicUrl } } = db.storage.from('posts-media').getPublicUrl(fileName);
+// ==================== دوال رفع الصورة الرمزية فقط ====================
+async function uploadAvatar(file, userId) {
+  try {
+    const { data: buckets } = await db.storage.listBuckets();
+    const bucketExists = buckets?.some(b => b.name === 'avatars');
+    if (!bucketExists) {
+      throw new Error('Bucket "avatars" غير موجود. يرجى إنشاؤه يدوياً في Supabase Storage (Public bucket).');
+    }
+  } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
+  
+  const ext = file.name.split('.').pop();
+  const fileName = `${userId}-${Date.now()}.${ext}`;
+  const filePath = `avatars/${fileName}`;
+  const { error } = await db.storage.from('avatars').upload(filePath, file);
+  if (error) throw error;
+  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath);
   return publicUrl;
 }
 
-// ========== نافذة النشر ==========
-window.openUserPostModal = function(room) {
-  if(!window.currentUserId) { alert('يجب تسجيل الدخول أولاً'); openModal(); return; }
-  currentEditPost = null;
-  document.getElementById('upm-room-title').innerText = roomLabels[room] || room;
-  let inputStyle = 'width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:4px;';
-  let html = '';
-  if(room === 'yt-videos') {
-    html = `<div><label>YouTube URL *</label><input id="upm-url" style="${inputStyle}"></div>
-            <div style="margin-top:12px;"><label>Title (optional)</label><input id="upm-title" style="${inputStyle}"></div>
-            <div><label>Description</label><input id="upm-desc" style="${inputStyle}"></div>
-            <input type="hidden" id="upm-tag" value="Video">`;
-  } else if(room === 'live') {
-    html = `<div><label>Title *</label><input id="upm-title" style="${inputStyle}"></div>
-            <div><label>Stream URL</label><input id="upm-url" style="${inputStyle}"></div>
-            <div><label>Type</label><select id="upm-tag" style="${inputStyle}"><option>Live Now</option><option>Pre Lives</option></select></div>`;
-  } else {
-    html = `<div><label>Title</label><input id="upm-title" style="${inputStyle}"></div>
-            <div><label>Description</label><input id="upm-desc" style="${inputStyle}"></div>
-            <div><label>URL (optional)</label><input id="upm-url" style="${inputStyle}"></div>
-            <div><label>Tag</label><input id="upm-tag" style="${inputStyle}" value="General"></div>`;
+// رفع ملفات الوسائط إلى Supabase Storage
+async function uploadMediaFile(file, userId) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const fileName = `media-${userId}-${Date.now()}.${ext}`;
+  const bucket = 'posts-media';
+  const { error } = await db.storage.from(bucket).upload(fileName, file, { upsert: false });
+  if (error) throw new Error('فشل رفع الملف: ' + error.message);
+  const { data: { publicUrl } } = db.storage.from(bucket).getPublicUrl(fileName);
+  return publicUrl;
+}
+
+// ==================== دوال النشر ====================
+async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
+  const finalUrl = mediaUrl || url || null;
+  const isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
+  const isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
+  const isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
+  const body = {
+    title: title || '📄 منشور',
+    description: desc,
+    icon: isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
+    url: finalUrl,
+    tag: tag,
+    room: room,
+    content: content || null,
+    posted_by: window.currentUserId
+  };
+  const { error } = await db.from('posts').insert(body);
+  if (error) throw error;
+}
+
+async function updateUserPost(postId, title, desc, url, tag, content, mediaUrl) {
+  const finalUrl = mediaUrl || url || null;
+  const updateData = { title, description: desc, tag, content: content || null };
+  if (finalUrl) {
+    updateData.url = finalUrl;
+    const isYT = finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be');
+    const isImg = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
+    updateData.icon = isYT ? '📹' : (isImg ? '🖼️' : '🎥');
   }
-  document.getElementById('upm-form-body').innerHTML = html;
+  const { error } = await db.from('posts').update(updateData).eq('id', postId);
+  if (error) throw error;
+}
+
+async function deletePost(id, room) {
+  if (!confirm('حذف المنشور نهائياً؟')) return;
+  await db.from('posts').delete().eq('id', id);
+  loadPage(room);
+}
+
+// ==================== نماذج النشر ====================
+window.openUserPostModal = function(room) {
+  if (!window.currentUserId) { openModal(); return; }
+  currentEditPost = null;
+  currentEditRoom = room;
+  const roomTitles = { live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights', 'yt-videos':'🎬 YT Videos', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ YouTube News' };
+  document.getElementById('upm-room-title').innerText = roomTitles[room] || room;
+  const inputStyle = 'width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:4px;';
+  const fileInputHtml = (accept, label) => `<div style="margin-top:12px;">
+    <label style="color:#d4af37;font-size:12px;">📁 ${label}</label>
+    <input type="file" id="upm-media-file" accept="${accept}" style="display:block;margin-top:6px;width:100%;color:#ccc;font-size:12px;background:#1a1a1a;border:1px solid #333;padding:6px;border-radius:4px;cursor:pointer;">
+    <div id="upm-file-preview" style="margin-top:8px;"></div>
+  </div>`;
+  let formHtml = '';
+  if (room === 'live') {
+    formHtml = `<div><label>Title *</label><input id="upm-title" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Game / Description</label><input id="upm-desc" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Stream URL</label><input id="upm-url" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="${inputStyle}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option></select></div>`;
+  } else if (room === 'tournaments') {
+    formHtml = `<div><label>Tournament Name *</label><input id="upm-title" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Game / Teams</label><input id="upm-desc" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Registration URL</label><input id="upm-url" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="${inputStyle}"><option value="Registration">📋 Registration</option><option value="Global">🌍 Global</option></select></div>
+      <div style="margin-top:12px;"><label>Description</label><textarea id="upm-content" rows="3" style="${inputStyle}"></textarea></div>`;
+  } else if (room === 'highlights') {
+    formHtml = `<div><label>Title</label><input id="upm-title" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Player / Game</label><input id="upm-desc" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
+      <div id="upm-url-field" style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="upm-url" style="${inputStyle}"></div>
+      ${fileInputHtml('image/*,video/*', 'أو ارفع ملف من الحاسوب (صورة أو فيديو)')}`;
+  } else if (room === 'yt-videos') {
+    formHtml = `<div><label>YouTube Video URL *</label><input id="upm-url" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Title (optional)</label><input id="upm-title" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" style="${inputStyle}"></div>
+      <input type="hidden" id="upm-tag" value="Video">`;
+  } else if (room === 'gaming-news') {
+    formHtml = `<div><label>News Title *</label><input id="upm-title" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Summary / Description</label><input id="upm-desc" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>News URL (optional)</label><input id="upm-url" style="${inputStyle}" placeholder="https://..."></div>
+      <div style="margin-top:12px;"><label>Category</label><select id="upm-tag" style="${inputStyle}"><option value="News">📰 News</option><option value="Update">🔄 Update</option><option value="Leak">🔥 Leak</option><option value="Review">⭐ Review</option></select></div>
+      <div style="margin-top:12px;"><label>Content</label><textarea id="upm-content" rows="3" style="${inputStyle}" placeholder="تفاصيل الخبر..."></textarea></div>
+      ${fileInputHtml('image/*,video/*', 'رفع صورة أو فيديو من الحاسوب')}`;
+  } else if (room === 'youtube-news') {
+    formHtml = `<div><label>News Title *</label><input id="upm-title" style="${inputStyle}"></div>
+      <div style="margin-top:12px;"><label>Channel / Source</label><input id="upm-desc" style="${inputStyle}" placeholder="اسم القناة أو المصدر"></div>
+      <div style="margin-top:12px;"><label>YouTube / Article URL</label><input id="upm-url" style="${inputStyle}" placeholder="https://..."></div>
+      <div style="margin-top:12px;"><label>Category</label><select id="upm-tag" style="${inputStyle}"><option value="YT News">▶️ YT News</option><option value="Channel">📺 Channel</option><option value="Video">🎬 Video</option><option value="Trending">🔥 Trending</option></select></div>
+      <div style="margin-top:12px;"><label>Content</label><textarea id="upm-content" rows="3" style="${inputStyle}" placeholder="تفاصيل..."></textarea></div>
+      ${fileInputHtml('image/*,video/*', 'رفع صورة أو فيديو من الحاسوب')}`;
+  }
+  document.getElementById('upm-form-body').innerHTML = formHtml;
   document.getElementById('upm-ok').style.display = 'none';
   document.getElementById('upm-err').style.display = 'none';
+
+  const fileInput = document.getElementById('upm-media-file');
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      const preview = document.getElementById('upm-file-preview');
+      if (!file || !preview) return;
+      preview.innerHTML = '';
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.style.cssText = 'max-width:100%;max-height:150px;border-radius:6px;margin-top:4px;';
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+      } else if (file.type.startsWith('video/')) {
+        const vid = document.createElement('video');
+        vid.style.cssText = 'max-width:100%;max-height:150px;border-radius:6px;margin-top:4px;';
+        vid.controls = true;
+        vid.src = URL.createObjectURL(file);
+        preview.appendChild(vid);
+      }
+      const info = document.createElement('div');
+      info.style.cssText = 'font-size:11px;color:#aaa;margin-top:4px;';
+      info.textContent = `📁 ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
+      preview.appendChild(info);
+    });
+  }
+
+  const urlInput = document.getElementById('upm-url');
+  if (urlInput) {
+    urlInput.addEventListener('blur', async () => {
+      const url = cleanUrl(urlInput.value);
+      if ((room === 'yt-videos' || room === 'highlights' || room === 'youtube-news') && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'fetching-info';
+        infoSpan.innerText = 'جلب معلومات الفيديو...';
+        urlInput.parentNode.appendChild(infoSpan);
+        const info = await fetchYouTubeVideoInfo(url);
+        if (info) {
+          const titleInput = document.getElementById('upm-title');
+          const descInput = document.getElementById('upm-desc');
+          if (titleInput && !titleInput.value) titleInput.value = info.title;
+          if (descInput && !descInput.value) descInput.value = info.channelTitle;
+        }
+        infoSpan.remove();
+      }
+    });
+  }
   document.getElementById('upm-submit').onclick = () => submitUserPost(room);
   document.getElementById('upm-modal').classList.add('active');
 };
 
-// ========== دالة النشر الأساسية مع تحسينات ==========
+window.openYTVIPModal = function() {
+  if (!window.currentUserId) { openModal(); return; }
+  const role = window.userRole;
+  if (role !== 'youtuber-vip' && role !== 'admin') { alert('Only Youtuber VIP or Admin can post VIP videos.'); return; }
+  currentEditPost = null;
+  currentEditRoom = 'yt-videos';
+  document.getElementById('upm-room-title').innerHTML = '👑 VIP Video';
+  document.getElementById('upm-form-body').innerHTML = `<div style="background:#2a1500;border:1px solid #d4af37;border-radius:7px;padding:10px;margin-bottom:14px;font-size:12px;color:#d4af37;">👑 This video will be visible to VIP & Member users only</div>
+    <div><label>YouTube Video URL *</label><input id="upm-url" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+    <div style="margin-top:12px;"><label>Title</label><input id="upm-title" style="width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;"></div>
+    <input type="hidden" id="upm-tag" value="VIP">`;
+  document.getElementById('upm-ok').style.display = 'none';
+  document.getElementById('upm-err').style.display = 'none';
+  const urlInput = document.getElementById('upm-url');
+  if (urlInput) {
+    urlInput.addEventListener('blur', async () => {
+      const url = cleanUrl(urlInput.value);
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const infoSpan = document.createElement('div');
+        infoSpan.className = 'fetching-info';
+        infoSpan.innerText = 'جلب معلومات الفيديو...';
+        urlInput.parentNode.appendChild(infoSpan);
+        const info = await fetchYouTubeVideoInfo(url);
+        if (info) {
+          const titleInput = document.getElementById('upm-title');
+          if (titleInput && !titleInput.value) titleInput.value = info.title;
+        }
+        infoSpan.remove();
+      }
+    });
+  }
+  document.getElementById('upm-submit').onclick = () => submitUserPost('yt-videos');
+  document.getElementById('upm-modal').classList.add('active');
+};
+
+window.openTournamentsVIPModal = function() {
+  if (!window.currentUserId) { openModal(); return; }
+  const role = window.userRole;
+  if (role !== 'vip' && role !== 'admin') { alert('Only VIP or Admin can post VIP Tournaments.'); return; }
+  currentEditPost = null;
+  currentEditRoom = 'tournaments';
+  const inputStyle = 'width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:4px;';
+  document.getElementById('upm-room-title').innerHTML = '👑 VIP Tournament';
+  document.getElementById('upm-form-body').innerHTML = `
+    <div style="background:#2a1500;border:1px solid #d4af37;border-radius:7px;padding:10px;margin-bottom:14px;font-size:12px;color:#d4af37;">👑 This tournament will be visible to VIP & Member users only</div>
+    <div><label>Tournament Name *</label><input id="upm-title" style="${inputStyle}"></div>
+    <div style="margin-top:12px;"><label>Game / Teams</label><input id="upm-desc" style="${inputStyle}"></div>
+    <div style="margin-top:12px;"><label>Registration URL</label><input id="upm-url" style="${inputStyle}"></div>
+    <div style="margin-top:12px;"><label>Description</label><textarea id="upm-content" rows="3" style="${inputStyle}"></textarea></div>
+    <input type="hidden" id="upm-tag" value="VIP">`;
+  document.getElementById('upm-ok').style.display = 'none';
+  document.getElementById('upm-err').style.display = 'none';
+  document.getElementById('upm-submit').onclick = () => submitUserPost('tournaments');
+  document.getElementById('upm-modal').classList.add('active');
+};
+
+// تحسين دالة submitUserPost لمعالجة أخطاء النشر بشكل أفضل
 async function submitUserPost(room) {
-  // 1. التأكد من وجود الجلسة وتحديث currentUserId
-  let { data: { session } } = await db.auth.getSession();
-  if(!session || !session.user) {
-    alert('يجب تسجيل الدخول أولاً');
-    openModal();
-    return;
+  var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
+  var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
+  var url   = (document.getElementById('upm-url')   ? cleanUrl(document.getElementById('upm-url').value) : '').trim();
+  var tagEl = document.getElementById('upm-tag');
+  var tag   = tagEl ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
+  var contentEl = document.getElementById('upm-content');
+  var content = contentEl ? contentEl.value.trim() : null;
+  if (!content) content = null;
+  var mediaFileInput = document.getElementById('upm-media-file');
+  var mediaFile = (mediaFileInput && mediaFileInput.files && mediaFileInput.files[0]) ? mediaFileInput.files[0] : null;
+
+  // التحقق من صحة البيانات حسب الغرفة
+  if (room === 'live') {
+    if (!title && !url && !desc) { showUPMError('يرجى إدخال عنوان أو رابط البث.'); return; }
+    if (tag === 'Live Now' && !url) { showUPMError('للبث المباشر (Live Now) يجب إدخال رابط البث.'); return; }
   }
-  window.currentUserId = session.user.id; // تحديث المتغير العام
-  console.log("Current user ID (من الجلسة):", window.currentUserId);
-  
-  let title = document.getElementById('upm-title')?.value.trim() || '';
-  let desc = document.getElementById('upm-desc')?.value.trim() || '';
-  let url = document.getElementById('upm-url')?.value.trim() || '';
-  let tag = document.getElementById('upm-tag')?.value || 'General';
-  
-  if(room === 'yt-videos' && !url) {
-    alert('الرجاء إدخال رابط يوتيوب صالح');
-    return;
+  else if (room === 'yt-videos') {
+    if (!url) { showUPMError('الرجاء إدخال رابط فيديو يوتيوب صالح.'); return; }
+    if (!isValidYouTubeUrl(url)) { showUPMError('الرابط لا يبدو صحيحاً. تأكد من أنه رابط يوتيوب صالح.'); return; }
   }
-  if(room === 'live' && !title && !url) {
-    alert('الرجاء إدخال عنوان أو رابط البث');
-    return;
+  else if (room === 'highlights' && !url && !mediaFile) { showUPMError('يرجى إدخال رابط وسائط أو رفع ملف.'); return; }
+  else if ((room === 'gaming-news' || room === 'youtube-news') && !title && !url && !mediaFile) { showUPMError('يرجى إدخال عنوان أو رابط أو رفع ملف.'); return; }
+
+  var btn   = document.getElementById('upm-submit');
+  var okEl  = document.getElementById('upm-ok');
+  var errEl = document.getElementById('upm-err');
+
+  function resetBtn() {
+    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
   }
-  
-  let btn = document.getElementById('upm-submit');
-  let okEl = document.getElementById('upm-ok');
-  let errEl = document.getElementById('upm-err');
-  btn.disabled = true;
-  btn.textContent = 'جاري النشر...';
-  if(okEl) okEl.style.display = 'none';
-  if(errEl) errEl.style.display = 'none';
-  
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
+  if (okEl)  okEl.style.display  = 'none';
+  if (errEl) errEl.style.display = 'none';
+
   try {
-    let finalUrl = url || null;
-    let isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
-    let isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(finalUrl);
-    let isVid = finalUrl && /\.(mp4|webm|mov)$/i.test(finalUrl);
-    
-    const postData = {
-      title: title || (room==='yt-videos' ? 'فيديو يوتيوب' : 'منشور'),
-      description: desc || null,
-      icon: isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
-      url: finalUrl,
-      tag: tag,
-      room: room,
-      content: null,
-      posted_by: window.currentUserId   // 🔑 الحقل الأساسي
-    };
-    
-    console.log("إرسال البيانات:", postData);
-    
-    // محاولة الإدراج مع timeout يدوي
-    const insertPromise = db.from('posts').insert(postData).select();
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('انتهى الوقت المستغرق للاتصال بقاعدة البيانات')), 15000));
-    const { data, error } = await Promise.race([insertPromise, timeoutPromise]);
-    
-    if(error) {
-      console.error("خطأ من Supabase:", error);
-      throw new Error(error.message);
+    var mediaUrl = null;
+    if (mediaFile) {
+      if (btn) btn.textContent = 'Uploading...';
+      try {
+        mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
+      } catch(uploadErr) {
+        console.warn('Upload failed:', uploadErr.message);
+        showUPMError('فشل رفع الملف: ' + uploadErr.message);
+        resetBtn();
+        return;
+      }
     }
-    
-    console.log("تم الإدراج بنجاح:", data);
-    if(okEl) {
-      okEl.textContent = '✅ تم النشر بنجاح!';
-      okEl.style.display = 'block';
-    }
-    loadPage(room);
-    setTimeout(() => {
-      document.getElementById('upm-modal').classList.remove('active');
-    }, 1500);
-  } catch(e) {
-    console.error("استثناء في النشر:", e);
-    let msg = e.message || 'حدث خطأ غير متوقع';
-    if(errEl) {
-      errEl.textContent = '❌ ' + msg;
-      errEl.style.display = 'block';
+
+    if (currentEditPost) {
+      await updateUserPost(currentEditPost.id, title, desc, url, tag, content, mediaUrl);
     } else {
-      alert('خطأ: '+msg);
+      await addUserPost(room, title, desc, url, tag, content, mediaUrl);
     }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '➕ Publish';
+
+    if (okEl)  { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
+    if (errEl) errEl.style.display = 'none';
+    resetBtn();
+    loadPage(room);
+    setTimeout(function() {
+      var modal = document.getElementById('upm-modal');
+      if (modal) modal.classList.remove('active');
+    }, 1400);
+
+  } catch(e) {
+    resetBtn();
+    var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
+    if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
+    else console.error('Post error:', msg);
   }
 }
 
-// دوال تسجيل الدخول والإدارة
+function showUPMError(msg) {
+  var errEl = document.getElementById('upm-err');
+  if (!errEl) { console.error('UPM Error:', msg); return; }
+  errEl.textContent = '❌ ' + msg;
+  errEl.style.display = 'block';
+  var btn = document.getElementById('upm-submit');
+  if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
+}
+
+// ==================== دوال الملف الشخصي ====================
+async function openProfileModal() {
+  try {
+    var sessionRes = await db.auth.getSession();
+    var session = sessionRes.data && sessionRes.data.session;
+    if (!session) { alert('يرجى تسجيل الدخول أولاً'); return; }
+    var userId = session.user.id;
+    var res = await db.from('profiles').select('*').eq('id', userId).single();
+    var profile = res.data;
+    if (!profile) { alert('تعذر تحميل الملف الشخصي'); return; }
+    currentProfileData = profile;
+    document.getElementById('profileUsername').value = profile.username || '';
+    document.getElementById('profileEmail').value = session.user.email;
+    document.getElementById('profileBirthdate').value = profile.birthdate || '';
+    document.getElementById('profileBirthPlace').value = profile.birth_place || '';
+    document.getElementById('profileCountry').value = profile.country || '';
+    document.getElementById('profileFavoriteGame').value = profile.favorite_game || '';
+    document.getElementById('usernameFeedback').innerHTML = '';
+    var avatarImg = document.getElementById('profileAvatarImg');
+    var avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
+    if (profile.avatar_url) {
+      avatarImg.src = profile.avatar_url;
+      avatarImg.style.display = 'block';
+      if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+    } else {
+      avatarImg.style.display = 'none';
+      if (avatarPlaceholder) avatarPlaceholder.style.display = 'flex';
+    }
+    document.getElementById('profileModal').classList.add('active');
+  } catch(err) {
+    console.error('openProfileModal error:', err);
+    alert('حدث خطأ في تحميل الملف الشخصي: ' + (err.message || err));
+  }
+}
+
+async function saveProfileChanges() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return;
+  const userId = session.user.id;
+  const newUsername = document.getElementById('profileUsername').value.trim();
+  const birthdate = document.getElementById('profileBirthdate').value || null;
+  const birthPlace = document.getElementById('profileBirthPlace').value || null;
+  const country = document.getElementById('profileCountry').value || null;
+  const favoriteGame = document.getElementById('profileFavoriteGame').value || null;
+  const feedback = document.getElementById('usernameFeedback');
+  if (!newUsername || newUsername.length < 3) {
+    feedback.innerHTML = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
+    feedback.style.color = '#ff5555';
+    return;
+  }
+  if (newUsername !== currentProfileData.username) {
+    const { data: existing } = await db.from('profiles').select('username').eq('username', newUsername).maybeSingle();
+    if (existing) {
+      feedback.innerHTML = 'اسم المستخدم موجود بالفعل، اختر اسماً آخر';
+      feedback.style.color = '#ff5555';
+      return;
+    }
+  }
+  feedback.innerHTML = '';
+  const updates = { username: newUsername, birthdate, birth_place: birthPlace, country, favorite_game: favoriteGame };
+  const { error } = await db.from('profiles').update(updates).eq('id', userId);
+  if (error) alert('خطأ في حفظ البيانات: ' + error.message);
+  else { alert('تم حفظ التغييرات بنجاح!'); closeProfileModal(); await updateUIAfterAuth(); }
+}
+
+async function changePassword() {
+  const oldPass = document.getElementById('oldPassword').value;
+  const newPass = document.getElementById('newPassword').value;
+  const confirmPass = document.getElementById('confirmNewPassword').value;
+  const errorSpan = document.getElementById('passwordError');
+  if (!oldPass || !newPass || !confirmPass) { errorSpan.innerText = 'يرجى ملء جميع الحقول'; return; }
+  if (newPass !== confirmPass) { errorSpan.innerText = 'كلمة المرور الجديدة وتأكيدها غير متطابقين'; return; }
+  if (newPass.length < 6) { errorSpan.innerText = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'; return; }
+  const { error } = await db.auth.updateUser({ password: newPass });
+  if (error) errorSpan.innerText = 'فشل تغيير كلمة المرور: ' + error.message;
+  else {
+    errorSpan.innerText = '';
+    alert('تم تغيير كلمة المرور بنجاح! سيتم تسجيل خروجك، يرجى تسجيل الدخول مرة أخرى.');
+    await db.auth.signOut();
+    window.location.reload();
+  }
+}
+
+var _cab=document.getElementById('changeAvatarBtn'); if(_cab) _cab.onclick = () => { var _au=document.getElementById('avatarUpload'); if(_au) _au.click(); };
+var _au=document.getElementById('avatarUpload'); if(_au) _au.onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { alert('الرجاء اختيار ملف صورة صالح'); return; }
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return;
+  try {
+    const avatarUrl = await uploadAvatar(file, session.user.id);
+    const { error } = await db.from('profiles').update({ avatar_url: avatarUrl }).eq('id', session.user.id);
+    if (error) throw error;
+    alert('تم تحديث الصورة بنجاح!');
+    await updateUIAfterAuth();
+    openProfileModal();
+  } catch (err) {
+    alert('خطأ في رفع الصورة: ' + err.message);
+  }
+};
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('active');
+  document.getElementById('oldPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmNewPassword').value = '';
+  document.getElementById('passwordError').innerText = '';
+}
+
+// ========== AUTH ==========
+function isValidEmail(email) { const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/; return re.test(email); }
+
+async function signInWithEmailOrUsername(identifier, password) {
+  let email = identifier.trim();
+  if (!email || !password) throw new Error('يرجى ملء جميع الحقول');
+  const isEmail = email.includes('@');
+  if (!isEmail) {
+    const { data, error } = await db.from('profiles').select('email').eq('username', email).maybeSingle();
+    if (error || !data) throw new Error('اسم المستخدم غير موجود');
+    email = data.email;
+  }
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+}
+
+async function signUpWithDetails(username, email, password) {
+  if (!isValidEmail(email)) throw new Error('البريد الإلكتروني غير صالح');
+  if (password.length < 6) throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+  if (username.length < 3) throw new Error('اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
+  const { data: existingUser } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
+  if (existingUser) throw new Error('اسم المستخدم موجود بالفعل');
+  const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
+  if (error) {
+    if (error.message.includes('User already registered')) throw new Error('البريد الإلكتروني مسجل بالفعل');
+    throw error;
+  }
+  if (!data.user) throw new Error('فشل إنشاء الحساب');
+  const { error: profileError } = await db.from('profiles').insert({
+    id: data.user.id, username: username, email: email, role: 'user', created_at: new Date().toISOString()
+  });
+  if (profileError) {
+    throw new Error('حدث خطأ أثناء إنشاء الحساب، حاول مرة أخرى');
+  }
+  return data;
+}
+
+async function signInWithGoogle() {
+  try {
+    const { error } = await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://rmo31.github.io/virtux/', scopes: 'email profile' }
+    });
+    if (error) throw error;
+  } catch (error) {
+    alert('فشل تسجيل الدخول عبر Google: تأكد من تفعيل Google Provider في Supabase.');
+  }
+}
+
 async function updateUIAfterAuth() {
-  if(_authUpdateInProgress) return;
+  if (_authUpdateInProgress) return;
   _authUpdateInProgress = true;
   try {
-    let { data: { session } } = await db.auth.getSession();
-    if(session && session.user) {
-      document.getElementById('btn-login-link').style.display = 'none';
-      document.getElementById('btn-user-area').style.display = 'flex';
+    const { data: { session } } = await db.auth.getSession();
+    const loginLink = document.getElementById('btn-login-link');
+    const userArea = document.getElementById('btn-user-area');
+    const userNameSpan = document.getElementById('user-name');
+    const roleBadge = document.getElementById('user-role-badge');
+    const userAvatarImg = document.getElementById('user-avatar-img');
+    if (session && session.user) {
+      loginLink.style.display = 'none';
+      userArea.style.display = 'flex';
       let { data: profile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
-      if(!profile) {
-        let userName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+      if (!profile) {
+        if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) return;
+        let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
         let finalUsername = userName;
-        for(let i=1; i<=20; i++) {
-          let { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
-          if(!existing) break;
+        for (let i = 1; i <= 20; i++) {
+          const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
+          if (!existing) break;
           finalUsername = `${userName}${i}`;
         }
-        await db.from('profiles').insert({ id: session.user.id, username: finalUsername, email: session.user.email, role: 'user' });
-        let { data: newProfile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
+        await db.from('profiles').insert({ id: session.user.id, username: finalUsername, email: session.user.email, role: 'user', created_at: new Date().toISOString() });
+        const { data: newProfile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
         profile = newProfile;
       }
-      if(profile) {
-        document.getElementById('user-name').textContent = '👋 ' + profile.username;
-        document.getElementById('user-role-badge').style.display = (profile.role !== 'user') ? 'inline-block' : 'none';
-        if(profile.role !== 'user') document.getElementById('user-role-badge').textContent = profile.role.toUpperCase();
-        window.userRole = profile.role;
+      if (profile) {
+        userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
+        roleBadge.style.display = profile?.role && profile.role !== 'user' ? 'inline-block' : 'none';
+        if (profile?.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
+        if (profile?.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
+        else userAvatarImg.style.display = 'none';
+        window.userRole = profile?.role || 'user';
         window.currentUserId = session.user.id;
-        window.currentUsername = profile.username;
-        document.querySelectorAll('.btn-user-post').forEach(b=>b.style.display='inline-flex');
-        if(['youtuber-vip','vip','admin'].includes(profile.role)) document.querySelectorAll('.btn-ytvip-post').forEach(b=>b.style.display='inline-flex');
+        window.currentUsername = profile?.username || '';
+        document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'inline-flex');
+        if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
+          document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
+        }
       }
     } else {
-      document.getElementById('btn-login-link').style.display = 'inline-block';
-      document.getElementById('btn-user-area').style.display = 'none';
+      loginLink.style.display = 'inline-block';
+      userArea.style.display = 'none';
       window.userRole = 'guest';
       window.currentUserId = null;
-      document.querySelectorAll('.btn-user-post,.btn-ytvip-post').forEach(b=>b.style.display='none');
+      window.currentUsername = null;
+      document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'none');
+      document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
     }
-  } catch(e) { console.error(e); }
-  finally { _authUpdateInProgress = false; }
+  } catch(err) {
+    console.error('updateUIAfterAuth error:', err);
+  } finally {
+    _authUpdateInProgress = false;
+  }
 }
+
+async function checkAuth() { await updateUIAfterAuth(); }
+
 db.auth.onAuthStateChange(async (event, session) => {
-  if(event === 'SIGNED_IN') {
-    let { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
-    if(!profile) {
+  if (event === 'TOKEN_REFRESHED') return;
+  if (event === 'SIGNED_IN') {
+    const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
+    if (!profile) {
       pendingGoogleUser = session.user;
-      document.getElementById('usernameModal').classList.add('active');
-      document.getElementById('newUsername').value = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
-    } else await updateUIAfterAuth();
-  } else if(event === 'SIGNED_OUT') await updateUIAfterAuth();
+      const usernameModal = document.getElementById('usernameModal');
+      const input = document.getElementById('newUsername');
+      input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+      document.getElementById('usernameError').innerText = '';
+      usernameModal.classList.add('active');
+    } else {
+      await updateUIAfterAuth();
+    }
+  } else if (event === 'SIGNED_OUT') {
+    await updateUIAfterAuth();
+  }
 });
-document.getElementById('confirmUsernameBtn')?.addEventListener('click', async () => {
-  let username = document.getElementById('newUsername').value.trim();
-  if(username.length<3) { document.getElementById('usernameError').innerText = '3 أحرف على الأقل'; return; }
-  if(!pendingGoogleUser) return;
-  let { data: existing } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
-  if(existing) { document.getElementById('usernameError').innerText = 'الاسم موجود'; return; }
-  await db.from('profiles').insert({ id: pendingGoogleUser.id, username, email: pendingGoogleUser.email, role: 'user' });
+
+var _cub=document.getElementById('confirmUsernameBtn'); if(_cub) _cub.onclick = async () => {
+  const username = document.getElementById('newUsername').value.trim();
+  if (!username || username.length < 3) { document.getElementById('usernameError').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل'; return; }
+  if (!pendingGoogleUser) return;
+  const { data: existing } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
+  if (existing) { document.getElementById('usernameError').innerText = 'اسم المستخدم موجود بالفعل'; return; }
+  const { error } = await db.from('profiles').insert({ id: pendingGoogleUser.id, username: username, email: pendingGoogleUser.email, role: 'user', created_at: new Date().toISOString() });
+  if (error) { document.getElementById('usernameError').innerText = 'حدث خطأ أثناء حفظ الاسم'; return; }
   document.getElementById('usernameModal').classList.remove('active');
   pendingGoogleUser = null;
   await updateUIAfterAuth();
-});
-document.getElementById('cancelUsernameBtn')?.addEventListener('click', () => { db.auth.signOut(); location.reload(); });
+};
+var _xub=document.getElementById('cancelUsernameBtn'); if(_xub) _xub.onclick = () => { db.auth.signOut(); window.location.reload(); };
 
-function openModal() { document.getElementById('authModal').classList.add('active'); }
-function closeModal() { document.getElementById('authModal').classList.remove('active'); }
-document.getElementById('closeModal')?.addEventListener('click', closeModal);
-document.getElementById('switchToSignup')?.addEventListener('click', ()=>{ document.getElementById('modal-login').style.display='none'; document.getElementById('modal-signup').style.display='block'; });
-document.getElementById('switchToLogin')?.addEventListener('click', ()=>{ document.getElementById('modal-signup').style.display='none'; document.getElementById('modal-login').style.display='block'; });
-document.getElementById('doLoginBtn')?.addEventListener('click', async ()=>{
-  let id = document.getElementById('loginIdentifier').value.trim();
-  let pass = document.getElementById('loginPassword').value;
-  if(!id || !pass) { document.getElementById('loginError').innerText = 'املأ الحقول'; return; }
+// ========== Modal logic for login/signup ==========
+const modal = document.getElementById('authModal');
+const loginDiv = document.getElementById('modal-login');
+const signupDiv = document.getElementById('modal-signup');
+function openModal() { modal.classList.add('active'); }
+function closeModal() { modal.classList.remove('active'); loginDiv.style.display = 'block'; signupDiv.style.display = 'none'; document.getElementById('loginError').innerText = ''; document.getElementById('signupError').innerText = ''; }
+var _cm=document.getElementById('closeModal'); if(_cm) _cm.onclick = closeModal;
+window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق نافذة النشر عند الضغط خارجها */ } };
+var _sts=document.getElementById('switchToSignup'); if(_sts) _sts.onclick = () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; };
+var _stl=document.getElementById('switchToLogin'); if(_stl) _stl.onclick = () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; };
+var _dlb=document.getElementById('doLoginBtn'); if(_dlb) _dlb.onclick = async () => {
+  const identifier = document.getElementById('loginIdentifier').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if(!identifier || !password) { document.getElementById('loginError').innerText = 'يرجى ملء جميع الحقول'; return; }
+  try { await signInWithEmailOrUsername(identifier, password); closeModal(); await updateUIAfterAuth(); }
+  catch(e) { document.getElementById('loginError').innerText = e.message; }
+};
+var _dsb=document.getElementById('doSignupBtn'); if(_dsb) _dsb.onclick = async () => {
+  const username = document.getElementById('signupUsername').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  if(!username || !email || !password) { document.getElementById('signupError').innerText = 'يرجى ملء جميع الحقول'; return; }
   try {
-    let email = id.includes('@') ? id : (await db.from('profiles').select('email').eq('username', id).single()).data?.email;
-    if(!email) throw new Error('اسم المستخدم غير موجود');
-    await db.auth.signInWithPassword({ email, password: pass });
-    closeModal();
-    await updateUIAfterAuth();
-  } catch(e) { document.getElementById('loginError').innerText = e.message; }
-});
-document.getElementById('doSignupBtn')?.addEventListener('click', async ()=>{
-  let user = document.getElementById('signupUsername').value.trim();
-  let email = document.getElementById('signupEmail').value.trim();
-  let pass = document.getElementById('signupPassword').value;
-  if(!user || !email || !pass) { document.getElementById('signupError').innerText = 'املأ الحقول'; return; }
-  if(pass.length<6) { document.getElementById('signupError').innerText = 'كلمة المرور 6 أحرف'; return; }
-  let { error } = await db.auth.signUp({ email, password: pass, options: { data: { username: user } } });
-  if(error) { document.getElementById('signupError').innerText = error.message; return; }
-  alert('تم التسجيل، يمكنك تسجيل الدخول الآن');
-  document.getElementById('switchToLogin').click();
-});
-document.getElementById('googleLoginBtn')?.addEventListener('click', ()=> db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } }));
-document.getElementById('googleSignupBtn')?.addEventListener('click', ()=> db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } }));
-document.getElementById('btn-login-link')?.addEventListener('click', (e)=>{ e.preventDefault(); openModal(); });
-document.getElementById('profileButton')?.addEventListener('click', ()=>{ alert('وظيفة الملف الشخصي قيد التطوير'); });
-document.getElementById('logoutButton')?.addEventListener('click', ()=> window.doLogout());
+    await signUpWithDetails(username, email, password);
+    alert('تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.');
+    document.getElementById('switchToLogin').click();
+    document.getElementById('loginIdentifier').value = username;
+    document.getElementById('loginPassword').value = '';
+  } catch(e) { document.getElementById('signupError').innerText = e.message; }
+};
+var _glb=document.getElementById('googleLoginBtn'); if(_glb) _glb.onclick = () => { signInWithGoogle(); };
+var _gsb=document.getElementById('googleSignupBtn'); if(_gsb) _gsb.onclick = () => { signInWithGoogle(); };
+var _bll=document.getElementById('btn-login-link'); if(_bll) _bll.onclick = (e) => { e.preventDefault(); openModal(); };
 
-// شريط الأخبار
+// ربط أزرار الملف الشخصي
+document.getElementById('profileButton')?.addEventListener('click', openProfileModal);
+document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileChanges);
+document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
+document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
+
+// ==================== شريط الأخبار (ticker) ====================
+let tickerItems = [];
+let tickerAnimationIdLocal = null;
+let tickerPosition = 0;
+const TICKER_SPEED = 1.2;
+let tickerContainerWidth = 0;
+
 async function loadTickerNews() {
-  let { data } = await db.from('posts').select('title,url').eq('room','ticker').limit(10);
-  let items = data?.map(i=>({ text: i.title, url: i.url })) || [{ text:'📢 لا توجد أخبار', url:null }];
-  let track = document.getElementById('tickerTrack');
-  if(!track) return;
+  try {
+    const { data, error } = await db.from('posts')
+      .select('title, url')
+      .eq('room', 'ticker')
+      .order('id', { ascending: false })
+      .limit(15);
+    if (error) throw error;
+    if (!data || data.length === 0) tickerItems = [{ text: '📢 لا توجد أخبار حالياً', url: null }];
+    else tickerItems = data.map(item => ({ text: item.title, url: item.url }));
+    buildTickerTrack();
+    startTickerAnimation();
+  } catch(e) {
+    console.error('خطأ في تحميل الأخبار:', e);
+    tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }];
+    buildTickerTrack();
+    startTickerAnimation();
+  }
+}
+
+function buildTickerTrack() {
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
   track.innerHTML = '';
-  [...items, ...items].forEach(item => {
-    let span = document.createElement('span'); span.className = 'ticker-item';
-    if(item.url) { let a = document.createElement('a'); a.href = item.url; a.target='_blank'; a.textContent = `📢 ${item.text}`; span.appendChild(a); }
-    else span.textContent = `📢 ${item.text}`;
+  [...tickerItems, ...tickerItems].forEach(item => {
+    const span = document.createElement('span');
+    span.className = 'ticker-item';
+    if (item.url) {
+      const a = document.createElement('a');
+      a.href = item.url;
+      a.target = '_blank';
+      a.textContent = `📢 ${item.text}`;
+      span.appendChild(a);
+    } else {
+      span.textContent = `📢 ${item.text}`;
+    }
     track.appendChild(span);
   });
-  let w = 0; for(let i=0; i<items.length; i++) w += track.children[i].offsetWidth + 60;
-  window.tickerHalfWidth = w;
-  let pos = document.getElementById('tickerScroll')?.clientWidth || 0;
-  track.style.transform = `translateX(${pos}px)`;
-  function animate() { pos -= 1.2; track.style.transform = `translateX(${pos}px)`; if(pos <= -window.tickerHalfWidth) pos += window.tickerHalfWidth; requestAnimationFrame(animate); }
+  const scrollDiv = document.getElementById('tickerScroll');
+  if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
+  const halfCount = tickerItems.length;
+  let originalWidth = 0;
+  const children = Array.from(track.children);
+  for (let i = 0; i < halfCount; i++) {
+    if (children[i]) originalWidth += children[i].offsetWidth + 60;
+  }
+  tickerPosition = tickerContainerWidth;
+  track.style.transform = `translateX(${tickerPosition}px)`;
+  window.tickerHalfWidth = originalWidth;
+}
+
+function startTickerAnimation() {
+  if (tickerAnimationIdLocal) cancelAnimationFrame(tickerAnimationIdLocal);
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+  function animate() {
+    tickerPosition -= TICKER_SPEED;
+    track.style.transform = `translateX(${tickerPosition}px)`;
+    if (tickerPosition <= -window.tickerHalfWidth) {
+      tickerPosition += window.tickerHalfWidth;
+      track.style.transform = `translateX(${tickerPosition}px)`;
+    }
+    tickerAnimationIdLocal = requestAnimationFrame(animate);
+  }
   animate();
 }
 
@@ -480,12 +1701,16 @@ window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
 window.closeDD = closeDD;
+window.deletePost = deletePost;
 window.openUserPostModal = openUserPostModal;
-window.openYTVIPModal = window.openTournamentsVIPModal = function(){ alert('خاصية VIP قيد التطوير'); };
+window.openYTVIPModal = openYTVIPModal;
+window.openEditPostModal = openEditPostModal;
+window.openTournamentsVIPModal = openTournamentsVIPModal;
 
 checkAuth();
 loadTickerNews();
 showPage('home');
+
 </script>
 </body>
 </html>
