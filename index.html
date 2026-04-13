@@ -797,19 +797,21 @@ let currentProfileData = null;
 let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
+let _authUpdateInProgress = false; // تعريف مبكر
 
 // دالة الخروج
 window.doLogout = async function() {
-  try {
-    await db.auth.signOut({ scope: 'local' });
-    window.currentUserId = null;
-    window.currentUsername = null;
-    window.userRole = 'guest';
-    await updateUIAfterAuth();
-  } catch(e) {
-    console.error('Logout error:', e);
-    window.location.reload();
-  }
+  try { await db.auth.signOut({ scope: 'local' }); } catch(e) { console.error('signOut error:', e); }
+  window.currentUserId = null;
+  window.currentUsername = null;
+  window.userRole = 'guest';
+  _authUpdateInProgress = false;
+  const _ll = document.getElementById('btn-login-link');
+  const _ua = document.getElementById('btn-user-area');
+  if (_ll) _ll.style.display = 'inline-block';
+  if (_ua) _ua.style.display = 'none';
+  document.querySelectorAll('.btn-user-post').forEach(b => b.style.display = 'none');
+  document.querySelectorAll('.btn-ytvip-post').forEach(b => b.style.display = 'none');
 };
 
 // ==================== دوال جلب معلومات اليوتيوب ====================
@@ -978,8 +980,15 @@ function renderCards(posts, gridId, room) {
     const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
     let actions = '';
     if (!isRestricted && p.url) {
-      if (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/')) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
-      else if (!p.url.includes('youtube.com') && !p.url.includes('youtu.be')) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
+      const isStorageFile = p.url.includes('/storage/v1/object/public/');
+      const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
+      const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
+      const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
+      if (isVideoFile || isImageFile) {
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
+      } else if (!isYouTubeUrl) {
+        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
+      }
     }
     // تم إزالة زر التعديل بشكل كامل
     let editBtn = ''; // لا يوجد تعديل
@@ -1308,24 +1317,42 @@ async function submitUserPost(room) {
   if ((room === 'gaming-news' || room === 'youtube-news') && !title && !url && !mediaFile) { showUPMError('Please fill title or add media.'); return; }
 
   const btn = document.getElementById('upm-submit');
-  btn.disabled = true; btn.textContent = 'Publishing...';
+  const okEl = document.getElementById('upm-ok');
+  const errEl = document.getElementById('upm-err');
+  if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
+  if (okEl) okEl.style.display = 'none';
+  if (errEl) errEl.style.display = 'none';
+
   try {
     let mediaUrl = null;
     if (mediaFile) {
-      btn.textContent = 'Uploading file...';
-      mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
+      if (btn) btn.textContent = 'Uploading... (may take a moment)';
+      try {
+        mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
+      } catch(uploadErr) {
+        // إذا فشل رفع الملف نكمل بدونه ونُظهر تحذير
+        console.warn('File upload failed, posting without media:', uploadErr.message);
+        showUPMError('⚠️ File upload failed. Post will be saved without media.');
+        mediaUrl = null;
+      }
     }
     if (currentEditPost) {
       await updateUserPost(currentEditPost.id, title, desc, url, tag, content, mediaUrl);
     } else {
       await addUserPost(room, title, desc, url, tag, content, mediaUrl);
     }
-    document.getElementById('upm-ok').style.display = 'block';
-    document.getElementById('upm-err').style.display = 'none';
+    if (okEl) { okEl.textContent = '✅ Published successfully!'; okEl.style.display = 'block'; }
+    if (errEl) errEl.style.display = 'none';
     loadPage(room);
-    setTimeout(() => document.getElementById('upm-modal').classList.remove('active'), 1500);
-  } catch(e) { showUPMError(e.message); }
-  finally { btn.disabled = false; btn.textContent = '➕ Publish'; }
+    setTimeout(() => {
+      const modal = document.getElementById('upm-modal');
+      if (modal) modal.classList.remove('active');
+    }, 1200);
+  } catch(e) {
+    showUPMError(e.message || 'An error occurred. Please try again.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
+  }
 }
 
 function showUPMError(msg) {
@@ -1486,7 +1513,6 @@ async function signInWithGoogle() {
   }
 }
 
-let _authUpdateInProgress = false;
 async function updateUIAfterAuth() {
   if (_authUpdateInProgress) return;
   _authUpdateInProgress = true;
