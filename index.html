@@ -874,15 +874,18 @@ contactPage.innerHTML = `<div class="page-header"><h2>📞 Contact Virtux</h2></
 mainContainer.appendChild(contactPage);
 
 async function loadPage(room) {
-  const el = document.getElementById(`grid-${room}`);
+  var el = document.getElementById('grid-' + room);
   if (!el) return;
   el.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
   try {
-    const { data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false });
-    if (error) throw error;
-    allPosts[room] = data || [];
-    renderCards(allPosts[room], `grid-${room}`, room);
-  } catch(e) { el.innerHTML = '<div class="empty-state">فشل التحميل</div>'; }
+    var res = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+    if (res.error) throw res.error;
+    allPosts[room] = res.data || [];
+    renderCards(allPosts[room], 'grid-' + room, room);
+  } catch(e) {
+    console.error('loadPage error:', room, e);
+    el.innerHTML = '<div class="empty-state">⚠️ فشل التحميل</div>';
+  }
 }
 
 function isVIPContent(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
@@ -919,7 +922,7 @@ async function loadSubscribersWithVIP(el, posts) {
   }).join('');
 
   if (!youtuberCards && !vipCards) {
-    el.innerHTML = '<div class="empty-state">لا توجد بيانات بعد 🎮</div>';
+    el.innerHTML = '<div class="empty-state">⚠️ فشل التحميل</div>';
     return;
   }
 
@@ -932,7 +935,7 @@ async function loadSubscribersWithVIP(el, posts) {
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
-  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
+  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">⚠️ فشل التحميل</div>'; return; }
   if (room === 'yt-channels') {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
@@ -1130,38 +1133,10 @@ window.openUserPostModal = function(room) {
 
   const fileInput = document.getElementById('upm-media-file');
   if (fileInput) {
-    fileInput.addEventListener('change', function() {
+    fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
-      if (!file) return;
-      // في Highlights نملأ الحقول تلقائياً
-      if (room === 'highlights') {
-        const titleInput = document.getElementById('upm-title');
-        const descInput  = document.getElementById('upm-desc');
-        const tagSelect  = document.getElementById('upm-tag');
-        const cleanName  = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-        if (titleInput && !titleInput.value) titleInput.value = cleanName;
-        if (tagSelect) tagSelect.value = file.type.startsWith('video/') ? 'Video' : 'Photo';
-        if (file.type.startsWith('video/')) {
-          const vid = document.createElement('video');
-          vid.src = URL.createObjectURL(file);
-          vid.onloadedmetadata = function() {
-            const mins = Math.floor(vid.duration/60);
-            const secs = String(Math.floor(vid.duration%60)).padStart(2,'0');
-            const sizeMB = (file.size/1024/1024).toFixed(1);
-            if (descInput && !descInput.value) descInput.value = '🎥 ' + cleanName + ' · ' + mins + ':' + secs + ' · ' + sizeMB + ' MB';
-          };
-        } else if (file.type.startsWith('image/')) {
-          const img = new Image();
-          img.src = URL.createObjectURL(file);
-          img.onload = function() {
-            const sizeMB = (file.size/1024/1024).toFixed(1);
-            if (descInput && !descInput.value) descInput.value = '🖼️ ' + img.naturalWidth + '×' + img.naturalHeight + ' · ' + sizeMB + ' MB';
-          };
-        }
-      }
-      // معاينة
       const preview = document.getElementById('upm-file-preview');
-      if (!preview) return;
+      if (!file || !preview) return;
       preview.innerHTML = '';
       if (file.type.startsWith('image/')) {
         const img = document.createElement('img');
@@ -1171,12 +1146,13 @@ window.openUserPostModal = function(room) {
       } else if (file.type.startsWith('video/')) {
         const vid = document.createElement('video');
         vid.style.cssText = 'max-width:100%;max-height:150px;border-radius:6px;margin-top:4px;';
-        vid.controls = true; vid.src = URL.createObjectURL(file);
+        vid.controls = true;
+        vid.src = URL.createObjectURL(file);
         preview.appendChild(vid);
       }
       const info = document.createElement('div');
       info.style.cssText = 'font-size:11px;color:#aaa;margin-top:4px;';
-      info.textContent = '📁 ' + file.name + ' (' + (file.size/1024/1024).toFixed(2) + ' MB)';
+      info.textContent = `📁 ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
       preview.appendChild(info);
     });
   }
@@ -1321,33 +1297,53 @@ window.openEditPostModal = async function(postId, room) {
 async function submitUserPost(room) {
   if (!window.currentUserId) { showUPMError('يجب تسجيل الدخول أولاً'); return; }
 
-  var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
-  var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
-  var url   = (document.getElementById('upm-url')   ? document.getElementById('upm-url').value   : '').trim();
-  var tagEl = document.getElementById('upm-tag');
-  var tag   = tagEl ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
+  var titleEl   = document.getElementById('upm-title');
+  var descEl    = document.getElementById('upm-desc');
+  var urlEl     = document.getElementById('upm-url');
+  var tagEl     = document.getElementById('upm-tag');
   var contentEl = document.getElementById('upm-content');
-  var content = contentEl ? (contentEl.value.trim() || null) : null;
-  var mediaFileInput = document.getElementById('upm-media-file');
-  var mediaFile = (mediaFileInput && mediaFileInput.files && mediaFileInput.files[0]) ? mediaFileInput.files[0] : null;
+  var fileEl    = document.getElementById('upm-media-file');
 
-  if (room === 'yt-videos'  && !url)               { showUPMError('أدخل رابط يوتيوب'); return; }
-  if (room === 'live'       && !title && !url)      { showUPMError('أدخل عنوان أو رابط البث'); return; }
-  if (room === 'tournaments'&& !title)              { showUPMError('أدخل اسم البطولة'); return; }
+  var title   = titleEl   ? titleEl.value.trim()   : '';
+  var desc    = descEl    ? descEl.value.trim()    : '';
+  var url     = urlEl     ? urlEl.value.trim()     : '';
+  var tag     = tagEl     ? tagEl.value            : room;
+  var content = contentEl ? contentEl.value.trim() : '';
+  var file    = fileEl && fileEl.files && fileEl.files[0] ? fileEl.files[0] : null;
 
-  var btn   = document.getElementById('upm-submit');
-  var okEl  = document.getElementById('upm-ok');
-  var errEl = document.getElementById('upm-err');
+  if (room === 'yt-videos' && !url)          { showUPMError('أدخل رابط يوتيوب'); return; }
+  if (room === 'live' && !title && !url)     { showUPMError('أدخل عنوان أو رابط البث'); return; }
+  if (room === 'tournaments' && !title)      { showUPMError('أدخل اسم البطولة'); return; }
 
-  if (btn)   { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
+  var btn  = document.getElementById('upm-submit');
+  var okEl = document.getElementById('upm-ok');
+  var errEl= document.getElementById('upm-err');
+
+  if (btn)  { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
   if (okEl)  okEl.style.display  = 'none';
   if (errEl) errEl.style.display = 'none';
 
+  function done(ok, msg) {
+    if (btn)  { btn.disabled = false; btn.textContent = '➕ Publish'; }
+    if (ok) {
+      if (okEl)  { okEl.textContent  = '✅ ' + (msg || 'تم النشر!'); okEl.style.display  = 'block'; }
+      loadPage(room);
+      setTimeout(function() {
+        var m = document.getElementById('upm-modal');
+        if (m) m.classList.remove('active');
+      }, 1400);
+    } else {
+      if (errEl) { errEl.textContent = '❌ ' + (msg || 'حدث خطأ'); errEl.style.display = 'block'; }
+      else alert('❌ ' + (msg || 'حدث خطأ'));
+    }
+  }
+
   try {
+    // رفع ملف إن وجد
     var mediaUrl = null;
-    if (mediaFile) {
+    if (file) {
       if (btn) btn.textContent = 'رفع الملف...';
-      mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
+      mediaUrl = await uploadMediaFile(file, window.currentUserId);
     }
 
     var finalUrl = mediaUrl || url || null;
@@ -1355,42 +1351,30 @@ async function submitUserPost(room) {
     var isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
     var isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
 
-    if (mediaFile && !title) {
-      title = mediaFile.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-    }
+    if (!title && file) title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
 
-    var postData = {
+    var row = {
       title:       title || 'منشور',
-      description: desc  || null,
+      description: desc    || null,
       icon:        isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
       url:         finalUrl,
       tag:         tag,
       room:        room,
-      content:     content
+      content:     content || null
     };
 
-    var dbRes;
+    var r;
     if (currentEditPost) {
-      dbRes = await db.from('posts').update(postData).eq('id', currentEditPost.id);
+      r = await db.from('posts').update(row).eq('id', currentEditPost.id);
     } else {
-      dbRes = await db.from('posts').insert(postData);
+      r = await db.from('posts').insert(row);
     }
 
-    if (dbRes.error) throw new Error(dbRes.error.message || 'خطأ في قاعدة البيانات');
+    if (r.error) { done(false, r.error.message); return; }
+    done(true, 'تم النشر بنجاح!');
 
-    if (okEl)  { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
-    if (btn)   { btn.disabled = false; btn.textContent = '➕ Publish'; }
-    loadPage(room);
-    setTimeout(function() {
-      var m = document.getElementById('upm-modal');
-      if (m) m.classList.remove('active');
-    }, 1400);
-
-  } catch(e) {
-    if (btn)   { btn.disabled = false; btn.textContent = '➕ Publish'; }
-    var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
-    if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
-    else        alert('❌ ' + msg);
+  } catch(ex) {
+    done(false, ex && ex.message ? ex.message : String(ex));
   }
 }
 
