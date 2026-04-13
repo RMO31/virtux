@@ -797,7 +797,7 @@ let currentProfileData = null;
 let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
-let _authUpdateInProgress = false; // تعريف مبكر
+let _authUpdateInProgress = false;
 
 // دالة الخروج
 window.doLogout = async function() {
@@ -805,7 +805,6 @@ window.doLogout = async function() {
   window.currentUserId = null;
   window.currentUsername = null;
   window.userRole = 'guest';
-  // تحديث UI فوراً قبل انتظار signOut
   var _ll = document.getElementById('btn-login-link');
   var _ua = document.getElementById('btn-user-area');
   if (_ll) _ll.style.display = 'inline-block';
@@ -1001,8 +1000,7 @@ function renderCards(posts, gridId, room) {
         actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
       }
     }
-    // تم إزالة زر التعديل بشكل كامل
-    let editBtn = ''; // لا يوجد تعديل
+    let editBtn = '';
     return `<div class="post-card">${editBtn}${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;">${actions}${readMoreLink}</div></div></div></div>`;
   }).join('');
 }
@@ -1025,7 +1023,7 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== دوال رفع الصورة الرمزية فقط (تم إزالة رفع الملفات من المنشورات) ====================
+// ==================== دوال رفع الصورة الرمزية ====================
 async function uploadAvatar(file, userId) {
   try {
     const { data: buckets } = await db.storage.listBuckets();
@@ -1044,7 +1042,7 @@ async function uploadAvatar(file, userId) {
   return publicUrl;
 }
 
-// ==================== رفع ملفات الوسائط إلى Supabase Storage ====================
+// ==================== رفع ملفات الوسائط ====================
 async function uploadMediaFile(file, userId) {
   const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `media-${userId}-${Date.now()}.${ext}`;
@@ -1313,7 +1311,11 @@ window.openEditPostModal = async function(postId, room) {
   document.getElementById('upm-modal').classList.add('active');
 };
 
+// ==================== دالة النشر الأساسية (تم إصلاح تجمد YouTube) ====================
 async function submitUserPost(room) {
+  // التأكد من تسجيل الدخول
+  if (!window.currentUserId) { showUPMError('يجب تسجيل الدخول أولاً'); return; }
+
   var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
   var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
   var url   = (document.getElementById('upm-url')   ? document.getElementById('upm-url').value   : '').trim();
@@ -1347,23 +1349,11 @@ async function submitUserPost(room) {
     var mediaUrl = null;
     if (mediaFile) {
       if (btn) btn.textContent = 'Uploading...';
-      try {
-        mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
-      } catch(uploadErr) {
-        console.warn('Upload failed:', uploadErr.message);
-        // لا نمنع النشر إذا فشل الرفع، فقط نظهر تحذير ونكمل بدون mediaUrl
-        // لكن الأفضل إظهار الخطأ للمستخدم
-        throw new Error('فشل رفع الملف: ' + uploadErr.message);
-      }
+      mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
     }
 
-    // في حال كانت الغرفة yt-videos وتم توفير رابط يوتيوب، نحاول جلب العنوان تلقائياً إذا كان العنوان فارغاً
-    if (room === 'yt-videos' && url && !title) {
-      try {
-        const ytInfo = await fetchYouTubeVideoInfo(url);
-        if (ytInfo && ytInfo.title) title = ytInfo.title;
-      } catch(e) { console.warn('Could not fetch YouTube title automatically'); }
-    }
+    // ✅ لا نقوم بجلب معلومات اليوتيوب تلقائياً هنا لتجنب التعليق
+    // نعتمد على جلب المعلومات في حدث blur الخاص بحقل الرابط
 
     if (currentEditPost) {
       await updateUserPost(currentEditPost.id, title, desc, url, tag, content, mediaUrl);
@@ -1385,7 +1375,7 @@ async function submitUserPost(room) {
     resetBtn();
     var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
     if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
-    else console.error('Post error:', msg);
+    else alert(msg);
   }
 }
 
@@ -1394,12 +1384,11 @@ function showUPMError(msg) {
   if (!errEl) { console.error('UPM Error:', msg); return; }
   errEl.textContent = '❌ ' + msg;
   errEl.style.display = 'block';
-  // إعادة تفعيل زر النشر دائماً عند الخطأ
   var btn = document.getElementById('upm-submit');
   if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
 }
 
-// ==================== دوال الملف الشخصي (تبقى كما هي مع رفع الصورة فقط) ====================
+// ==================== دوال الملف الشخصي ====================
 async function openProfileModal() {
   try {
     var sessionRes = await db.auth.getSession();
@@ -1575,7 +1564,6 @@ async function updateUIAfterAuth() {
       if (!profile) {
         if (pendingGoogleUser && pendingGoogleUser.id === session.user.id) return;
         let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-        // آمن: بدون while(true) — نجرب حتى 20 مرة فقط
         let finalUsername = userName;
         for (let i = 1; i <= 20; i++) {
           const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
@@ -1619,7 +1607,6 @@ async function updateUIAfterAuth() {
 async function checkAuth() { await updateUIAfterAuth(); }
 
 db.auth.onAuthStateChange(async (event, session) => {
-  // تجاهل TOKEN_REFRESHED لأنه يُطلق كثيراً ويسبب تجميداً
   if (event === 'TOKEN_REFRESHED') return;
   if (event === 'SIGNED_IN') {
     const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
@@ -1691,9 +1678,6 @@ document.getElementById('profileButton')?.addEventListener('click', openProfileM
 document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileChanges);
 document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
 document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
-
-// ربط زر الإغلاق (X) في نافذة النشر - يتم عبر onclick مباشرة في HTML
-
 
 // ==================== شريط الأخبار (ticker) ====================
 let tickerItems = [];
