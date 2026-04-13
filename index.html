@@ -1223,6 +1223,7 @@ window.openTournamentsVIPModal = function() {
 };
 
 
+window.openEditPostModal = async function(postId, room) {
   const { data: post, error } = await db.from('posts').select('*').eq('id', postId).single();
   if (error) { alert('Cannot load post'); return; }
   currentEditPost = post;
@@ -1530,7 +1531,9 @@ async function updateUIAfterAuth() {
   }
 }
 
-async function checkAuth() { await updateUIAfterAuth(); }db.auth.onAuthStateChange(async (event, session) => {
+async function checkAuth() { await updateUIAfterAuth(); }
+
+db.auth.onAuthStateChange(async (event, session) => {
   // تجاهل TOKEN_REFRESHED لأنه يُطلق كثيراً ويسبب تجميداً
   if (event === 'TOKEN_REFRESHED') return;
   if (event === 'SIGNED_IN') {
