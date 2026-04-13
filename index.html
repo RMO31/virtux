@@ -764,7 +764,21 @@
   </div>
 </div>
 
+
+
+<div id="upm-modal">
+  <div class="upm-box">
+    <div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close" onclick="document.getElementById('upm-modal').classList.remove('active')">✕</button></div>
+    <div class="upm-body">
+      <div id="upm-ok"></div><div id="upm-err"></div>
+      <div id="upm-form-body"></div>
+      <button id="upm-submit" style="margin-top:15px;">➕ Publish</button>
+    </div>
+  </div>
+</div>
+
 <script>
+
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
@@ -1396,8 +1410,8 @@ async function changePassword() {
   }
 }
 
-document.getElementById('changeAvatarBtn').onclick = () => document.getElementById('avatarUpload').click();
-document.getElementById('avatarUpload').onchange = async (e) => {
+var _cab=document.getElementById('changeAvatarBtn'); if(_cab) _cab.onclick = () => { var _au=document.getElementById('avatarUpload'); if(_au) _au.click(); };
+var _au=document.getElementById('avatarUpload'); if(_au) _au.onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) { alert('الرجاء اختيار ملف صورة صالح'); return; }
@@ -1553,7 +1567,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-document.getElementById('confirmUsernameBtn').onclick = async () => {
+var _cub=document.getElementById('confirmUsernameBtn'); if(_cub) _cub.onclick = async () => {
   const username = document.getElementById('newUsername').value.trim();
   if (!username || username.length < 3) { document.getElementById('usernameError').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل'; return; }
   if (!pendingGoogleUser) return;
@@ -1565,7 +1579,7 @@ document.getElementById('confirmUsernameBtn').onclick = async () => {
   pendingGoogleUser = null;
   await updateUIAfterAuth();
 };
-document.getElementById('cancelUsernameBtn').onclick = () => { db.auth.signOut(); window.location.reload(); };
+var _xub=document.getElementById('cancelUsernameBtn'); if(_xub) _xub.onclick = () => { db.auth.signOut(); window.location.reload(); };
 
 // ========== Modal logic for login/signup ==========
 const modal = document.getElementById('authModal');
@@ -1573,18 +1587,18 @@ const loginDiv = document.getElementById('modal-login');
 const signupDiv = document.getElementById('modal-signup');
 function openModal() { modal.classList.add('active'); }
 function closeModal() { modal.classList.remove('active'); loginDiv.style.display = 'block'; signupDiv.style.display = 'none'; document.getElementById('loginError').innerText = ''; document.getElementById('signupError').innerText = ''; }
-document.getElementById('closeModal').onclick = closeModal;
+var _cm=document.getElementById('closeModal'); if(_cm) _cm.onclick = closeModal;
 window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق نافذة النشر عند الضغط خارجها */ } };
-document.getElementById('switchToSignup').onclick = () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; };
-document.getElementById('switchToLogin').onclick = () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; };
-document.getElementById('doLoginBtn').onclick = async () => {
+var _sts=document.getElementById('switchToSignup'); if(_sts) _sts.onclick = () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; };
+var _stl=document.getElementById('switchToLogin'); if(_stl) _stl.onclick = () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; };
+var _dlb=document.getElementById('doLoginBtn'); if(_dlb) _dlb.onclick = async () => {
   const identifier = document.getElementById('loginIdentifier').value.trim();
   const password = document.getElementById('loginPassword').value;
   if(!identifier || !password) { document.getElementById('loginError').innerText = 'يرجى ملء جميع الحقول'; return; }
   try { await signInWithEmailOrUsername(identifier, password); closeModal(); await updateUIAfterAuth(); }
   catch(e) { document.getElementById('loginError').innerText = e.message; }
 };
-document.getElementById('doSignupBtn').onclick = async () => {
+var _dsb=document.getElementById('doSignupBtn'); if(_dsb) _dsb.onclick = async () => {
   const username = document.getElementById('signupUsername').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
@@ -1597,9 +1611,9 @@ document.getElementById('doSignupBtn').onclick = async () => {
     document.getElementById('loginPassword').value = '';
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 };
-document.getElementById('googleLoginBtn').onclick = () => { signInWithGoogle(); };
-document.getElementById('googleSignupBtn').onclick = () => { signInWithGoogle(); };
-document.getElementById('btn-login-link').onclick = (e) => { e.preventDefault(); openModal(); };
+var _glb=document.getElementById('googleLoginBtn'); if(_glb) _glb.onclick = () => { signInWithGoogle(); };
+var _gsb=document.getElementById('googleSignupBtn'); if(_gsb) _gsb.onclick = () => { signInWithGoogle(); };
+var _bll=document.getElementById('btn-login-link'); if(_bll) _bll.onclick = (e) => { e.preventDefault(); openModal(); };
 
 // ربط أزرار الملف الشخصي
 document.getElementById('profileButton')?.addEventListener('click', openProfileModal);
@@ -1697,17 +1711,7 @@ window.openTournamentsVIPModal = openTournamentsVIPModal;
 checkAuth();
 loadTickerNews();
 showPage('home');
-</script>
 
-<div id="upm-modal">
-  <div class="upm-box">
-    <div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close" onclick="document.getElementById('upm-modal').classList.remove('active')">✕</button></div>
-    <div class="upm-body">
-      <div id="upm-ok"></div><div id="upm-err"></div>
-      <div id="upm-form-body"></div>
-      <button id="upm-submit" style="margin-top:15px;">➕ Publish</button>
-    </div>
-  </div>
-</div>
+</script>
 </body>
 </html>
