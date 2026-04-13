@@ -839,7 +839,6 @@ function isValidYouTubeUrl(url) {
   return extractYouTubeId(url) !== null;
 }
 
-// تنظيف الرابط من المسافات والأحرف الضارة
 function cleanUrl(url) {
   if (!url) return null;
   return url.trim().replace(/\s/g, '');
@@ -997,8 +996,27 @@ function renderCards(posts, gridId, room) {
       }
     }
     let editBtn = '';
+    // إضافة زر تعديل للمشرفين أو مالك المنشور (اختياري) لكننا سنتركه فارغاً
+    if (isAdmin || (p.posted_by === currentUserId && p.posted_by)) {
+      editBtn = `<button class="edit-post-btn" data-id="${p.id}" data-room="${room}" style="position:absolute; top:8px; right:8px; background:#d4af37; color:#000; border:none; border-radius:4px; padding:4px 8px; font-size:10px; cursor:pointer;">✏️</button>`;
+    }
     return `<div class="post-card">${editBtn}${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;">${actions}${readMoreLink}</div></div></div></div>`;
   }).join('');
+  
+  // إضافة مستمعي أحداث لأزرار التعديل
+  document.querySelectorAll('.edit-post-btn').forEach(btn => {
+    btn.removeEventListener('click', handleEditClick);
+    btn.addEventListener('click', handleEditClick);
+  });
+}
+
+function handleEditClick(e) {
+  const btn = e.currentTarget;
+  const postId = btn.getAttribute('data-id');
+  const room = btn.getAttribute('data-room');
+  if (postId && room) {
+    window.openEditPostModal(postId, room);
+  }
 }
 
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
@@ -1038,7 +1056,6 @@ async function uploadAvatar(file, userId) {
   return publicUrl;
 }
 
-// رفع ملفات الوسائط إلى Supabase Storage
 async function uploadMediaFile(file, userId) {
   const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `media-${userId}-${Date.now()}.${ext}`;
@@ -1249,7 +1266,62 @@ window.openTournamentsVIPModal = function() {
   document.getElementById('upm-modal').classList.add('active');
 };
 
-// تحسين دالة submitUserPost لمعالجة أخطاء النشر بشكل أفضل
+// دالة تعديل المنشور
+window.openEditPostModal = async function(postId, room) {
+  try {
+    const { data: post, error } = await db.from('posts').select('*').eq('id', postId).single();
+    if (error) throw error;
+    if (!post) { alert('المنشور غير موجود'); return; }
+    // التحقق من صلاحية التعديل (المشرف أو مالك المنشور)
+    const isOwner = post.posted_by === window.currentUserId;
+    const isAdmin = window.userRole === 'admin';
+    if (!isOwner && !isAdmin) { alert('ليس لديك صلاحية تعديل هذا المنشور'); return; }
+    
+    currentEditPost = post;
+    currentEditRoom = room;
+    document.getElementById('upm-room-title').innerHTML = `✏️ Edit Post`;
+    const inputStyle = 'width:100%;padding:8px;margin-top:5px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:4px;';
+    let formHtml = '';
+    if (room === 'live') {
+      formHtml = `<div><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Stream URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="${inputStyle}"><option ${post.tag==='Live Now'?'selected':''}>Live Now</option><option ${post.tag==='Pre Lives'?'selected':''}>Pre Lives</option></select></div>`;
+    } else if (room === 'tournaments') {
+      formHtml = `<div><label>Tournament Name</label><input id="upm-title" value="${escapeHtml(post.title)}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Game / Teams</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Registration URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="${inputStyle}"><option ${post.tag==='Registration'?'selected':''}>Registration</option><option ${post.tag==='Global'?'selected':''}>Global</option></select></div>
+        <div style="margin-top:12px;"><label>Description</label><textarea id="upm-content" rows="3" style="${inputStyle}">${escapeHtml(post.content||'')}</textarea></div>`;
+    } else if (room === 'highlights') {
+      formHtml = `<div><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Player / Game</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Type</label><select id="upm-tag" style="${inputStyle}"><option ${post.tag==='Video'?'selected':''}>Video</option><option ${post.tag==='Photo'?'selected':''}>Photo</option><option ${post.tag==='Pro'?'selected':''}>Pro</option></select></div>
+        <div id="upm-url-field" style="margin-top:12px;"><label>Media URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="${inputStyle}"></div>`;
+    } else if (room === 'yt-videos') {
+      formHtml = `<div><label>YouTube Video URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="${inputStyle}"></div>
+        <input type="hidden" id="upm-tag" value="${post.tag}">`;
+    } else {
+      // حالات أخرى حسب الحاجة
+      formHtml = `<div><label>Title</label><input id="upm-title" value="${escapeHtml(post.title)}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Description</label><input id="upm-desc" value="${escapeHtml(post.description||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>URL</label><input id="upm-url" value="${escapeHtml(post.url||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Tag</label><input id="upm-tag" value="${escapeHtml(post.tag||'')}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Content</label><textarea id="upm-content" rows="3" style="${inputStyle}">${escapeHtml(post.content||'')}</textarea></div>`;
+    }
+    document.getElementById('upm-form-body').innerHTML = formHtml;
+    document.getElementById('upm-ok').style.display = 'none';
+    document.getElementById('upm-err').style.display = 'none';
+    document.getElementById('upm-submit').onclick = () => submitUserPost(room);
+    document.getElementById('upm-modal').classList.add('active');
+  } catch(err) {
+    console.error('Error loading post for edit:', err);
+    alert('حدث خطأ أثناء تحميل المنشور للتعديل');
+  }
+};
+
 async function submitUserPost(room) {
   var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
   var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
