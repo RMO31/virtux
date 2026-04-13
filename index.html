@@ -6,6 +6,7 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* جميع الأنماط كما هي (مختصرة للاختصار، لكنها موجودة كاملة في ملفك الأصلي) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -1040,6 +1041,7 @@ async function uploadMediaFile(file, userId) {
   return publicUrl;
 }
 
+// ========== دوال النشر مع إضافة posted_by ==========
 async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
   const finalUrl = mediaUrl || url || null;
   const isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
@@ -1053,6 +1055,7 @@ async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
     tag: tag,
     room: room,
     content: content || null,
+    posted_by: window.currentUserId   // 🔑 الحل الأساسي
   };
   const { error } = await db.from('posts').insert(body);
   if (error) throw error;
@@ -1067,6 +1070,7 @@ async function updateUserPost(postId, title, desc, url, tag, content, mediaUrl) 
     const isImg = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
     updateData.icon = isYT ? '📹' : (isImg ? '🖼️' : '🎥');
   }
+  // لا نغير posted_by أثناء التحديث
   const { error } = await db.from('posts').update(updateData).eq('id', postId);
   if (error) throw error;
 }
@@ -1293,7 +1297,7 @@ window.openEditPostModal = async function(postId, room) {
   document.getElementById('upm-modal').classList.add('active');
 };
 
-// ========== دالة النشر النهائية (تم إصلاح تجمد YouTube) ==========
+// ========== دالة النشر النهائية مع posted_by ==========
 async function submitUserPost(room) {
   if (!window.currentUserId) { showUPMError('يجب تسجيل الدخول اولاً'); return; }
   var T = function(id){ var e=document.getElementById(id); return e?e.value.trim():''; };
@@ -1349,7 +1353,8 @@ async function submitUserPost(room) {
       url:         finalUrl,
       tag:         tag,
       room:        room,
-      content:     content
+      content:     content,
+      posted_by:   window.currentUserId   // 🔑 الحل الأساسي
     };
     var dbr = currentEditPost
       ? await db.from('posts').update(row).eq('id',currentEditPost.id)
