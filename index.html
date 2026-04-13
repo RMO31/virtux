@@ -815,13 +815,19 @@ window.doLogout = async function() {
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
 };
 
-// ==================== دوال جلب معلومات اليوتيوب ====================
+// ==================== دوال جلب معلومات اليوتيوب (مع timeout) ====================
 async function fetchYouTubeVideoInfo(url) {
   const videoId = extractYouTubeId(url);
   if (!videoId) return null;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // مهلة 8 ثوانٍ
+  
   const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
   try {
-    const res = await fetch(apiUrl);
+    const res = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
     const data = await res.json();
     if (data.items && data.items[0]) {
       return {
@@ -832,7 +838,11 @@ async function fetchYouTubeVideoInfo(url) {
       };
     }
     return null;
-  } catch(e) { return null; }
+  } catch(e) {
+    clearTimeout(timeoutId);
+    console.warn('YouTube API fetch error:', e.message);
+    return null;
+  }
 }
 
 function extractYouTubeId(url) {
@@ -1045,7 +1055,7 @@ async function uploadMediaFile(file, userId) {
   return publicUrl;
 }
 
-// ==================== دوال النشر ====================
+// ==================== دوال النشر (تم إصلاح مشكلة YouTube) ====================
 async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
   const finalUrl = mediaUrl || url || null;
   const isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
@@ -1315,6 +1325,7 @@ async function submitUserPost(room) {
   var mediaFileInput = document.getElementById('upm-media-file');
   var mediaFile = (mediaFileInput && mediaFileInput.files && mediaFileInput.files[0]) ? mediaFileInput.files[0] : null;
 
+  // التحقق من صحة البيانات الأساسية
   if ((room === 'live' || room === 'tournaments') && !title && !url && !desc) { showUPMError('Please fill at least title or URL.'); return; }
   if (room === 'yt-videos' && !url) { showUPMError('Please enter a YouTube URL.'); return; }
   if (room === 'highlights' && !url && !mediaFile) { showUPMError('Please enter a media URL or upload a file.'); return; }
@@ -1340,7 +1351,18 @@ async function submitUserPost(room) {
         mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
       } catch(uploadErr) {
         console.warn('Upload failed:', uploadErr.message);
+        // لا نمنع النشر إذا فشل الرفع، فقط نظهر تحذير ونكمل بدون mediaUrl
+        // لكن الأفضل إظهار الخطأ للمستخدم
+        throw new Error('فشل رفع الملف: ' + uploadErr.message);
       }
+    }
+
+    // في حال كانت الغرفة yt-videos وتم توفير رابط يوتيوب، نحاول جلب العنوان تلقائياً إذا كان العنوان فارغاً
+    if (room === 'yt-videos' && url && !title) {
+      try {
+        const ytInfo = await fetchYouTubeVideoInfo(url);
+        if (ytInfo && ytInfo.title) title = ytInfo.title;
+      } catch(e) { console.warn('Could not fetch YouTube title automatically'); }
     }
 
     if (currentEditPost) {
@@ -1359,6 +1381,7 @@ async function submitUserPost(room) {
     }, 1400);
 
   } catch(e) {
+    console.error('Submit error:', e);
     resetBtn();
     var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
     if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
