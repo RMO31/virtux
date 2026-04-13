@@ -1291,7 +1291,7 @@ window.openEditPostModal = async function(postId, room) {
   document.getElementById('upm-modal').classList.add('active');
 };
 
-// ========== دالة النشر النهائية (تم إصلاح مشكلة تجمد YouTube) ==========
+// ========== دالة النشر النهائية (تم إصلاح تجمد YouTube) ==========
 async function submitUserPost(room) {
   console.log("submitUserPost called, room:", room);
   
@@ -1299,6 +1299,7 @@ async function submitUserPost(room) {
     showUPMError('يجب تسجيل الدخول أولاً'); 
     return;
   }
+  console.log("Current user ID:", window.currentUserId);
 
   var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
   var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
@@ -1321,8 +1322,8 @@ async function submitUserPost(room) {
     title = '🎬 فيديو يوتيوب';
   }
 
-  var btn   = document.getElementById('upm-submit');
-  var okEl  = document.getElementById('upm-ok');
+  var btn = document.getElementById('upm-submit');
+  var okEl = document.getElementById('upm-ok');
   var errEl = document.getElementById('upm-err');
 
   function resetBtn() {
@@ -1330,7 +1331,7 @@ async function submitUserPost(room) {
   }
 
   if (btn) { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
-  if (okEl)  okEl.style.display  = 'none';
+  if (okEl) okEl.style.display = 'none';
   if (errEl) errEl.style.display = 'none';
 
   try {
@@ -1338,7 +1339,6 @@ async function submitUserPost(room) {
     if (mediaFile) {
       if (btn) btn.textContent = 'رفع الملف...';
       mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
-      console.log("File uploaded:", mediaUrl);
     }
 
     const finalUrl = mediaUrl || url || null;
@@ -1357,13 +1357,24 @@ async function submitUserPost(room) {
       posted_by: window.currentUserId
     };
     
-    console.log("Inserting post:", postData);
-    const { data, error } = await db.from('posts').insert(postData);
-    if (error) throw error;
+    console.log("Attempting to insert post with data:", JSON.stringify(postData, null, 2));
     
-    console.log("Post inserted successfully");
+    const { data, error } = await db
+      .from('posts')
+      .insert(postData)
+      .select();
+      
+    if (error) {
+      console.error("Supabase insert error details:", error);
+      throw new Error(`فشل الإدراج: ${error.message}`);
+    }
+    
+    console.log("Insert successful, returned data:", data);
 
-    if (okEl)  { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
+    if (okEl) { 
+      okEl.textContent = '✅ تم النشر بنجاح!'; 
+      okEl.style.display = 'block'; 
+    }
     resetBtn();
     loadPage(room);
     setTimeout(function() {
@@ -1372,7 +1383,7 @@ async function submitUserPost(room) {
     }, 1400);
 
   } catch(e) {
-    console.error("خطأ في النشر:", e);
+    console.error("Error in submitUserPost:", e);
     resetBtn();
     var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
     if (errEl) { 
