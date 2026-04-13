@@ -6,7 +6,6 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* جميع الأنماط كما هي (محذوفة للاختصار ولكنها موجودة في الملف الأصلي) */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -400,7 +399,6 @@
       color: white;
     }
 
-    /* نافذة الملف الشخصي */
     .profile-modal {
       display: none;
       position: fixed;
@@ -509,7 +507,6 @@
       margin-top: 5px;
       color: #ffaa66;
     }
-    /* نافذة النشر للمستخدم */
     #upm-modal {
       display: none;
       position: fixed;
@@ -644,7 +641,6 @@
   </div>
 </div>
 
-<!-- Modal تسجيل الدخول والتسجيل -->
 <div id="authModal" class="modal">
   <div class="modal-content">
     <span class="modal-close" id="closeModal">&times;</span>
@@ -685,7 +681,6 @@
   </div>
 </div>
 
-<!-- نافذة اختيار اسم المستخدم بعد Google -->
 <div id="usernameModal" class="username-modal">
   <div class="modal-box">
     <h3>✨ Choose a username</h3>
@@ -699,7 +694,6 @@
   </div>
 </div>
 
-<!-- نافذة الملف الشخصي (Profile) -->
 <div id="profileModal" class="profile-modal">
   <div class="modal-box">
     <h2>👤 الملف الشخصي</h2>
@@ -764,8 +758,6 @@
   </div>
 </div>
 
-
-
 <div id="upm-modal">
   <div class="upm-box">
     <div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close" onclick="document.getElementById('upm-modal').classList.remove('active')">✕</button></div>
@@ -799,7 +791,6 @@ let currentEditRoom = null;
 let tickerAnimationId = null;
 let _authUpdateInProgress = false;
 
-// دالة الخروج
 window.doLogout = async function() {
   _authUpdateInProgress = false;
   window.currentUserId = null;
@@ -814,14 +805,11 @@ window.doLogout = async function() {
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
 };
 
-// ==================== دوال جلب معلومات اليوتيوب (مع timeout) ====================
 async function fetchYouTubeVideoInfo(url) {
   const videoId = extractYouTubeId(url);
   if (!videoId) return null;
-  
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // مهلة 8 ثوانٍ
-  
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
   const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
   try {
     const res = await fetch(apiUrl, { signal: controller.signal });
@@ -849,7 +837,6 @@ function extractYouTubeId(url) {
   return m ? m[1] : null;
 }
 
-// ==================== دوال الغرف والمحتوى ====================
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
 const roomLabels = {
   live: '🔴 Live Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
@@ -1023,7 +1010,6 @@ function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.rem
 document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); });
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
-// ==================== دوال رفع الصورة الرمزية ====================
 async function uploadAvatar(file, userId) {
   try {
     const { data: buckets } = await db.storage.listBuckets();
@@ -1032,7 +1018,6 @@ async function uploadAvatar(file, userId) {
       throw new Error('Bucket "avatars" غير موجود. يرجى إنشاؤه يدوياً في Supabase Storage (Public bucket).');
     }
   } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
-  
   const ext = file.name.split('.').pop();
   const fileName = `${userId}-${Date.now()}.${ext}`;
   const filePath = `avatars/${fileName}`;
@@ -1042,7 +1027,6 @@ async function uploadAvatar(file, userId) {
   return publicUrl;
 }
 
-// ==================== رفع ملفات الوسائط ====================
 async function uploadMediaFile(file, userId) {
   const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `media-${userId}-${Date.now()}.${ext}`;
@@ -1053,7 +1037,6 @@ async function uploadMediaFile(file, userId) {
   return publicUrl;
 }
 
-// ==================== دوال النشر (تم إصلاح مشكلة YouTube) ====================
 async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
   const finalUrl = mediaUrl || url || null;
   const isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
@@ -1092,7 +1075,6 @@ async function deletePost(id, room) {
   loadPage(room);
 }
 
-// ==================== نماذج النشر ====================
 window.openUserPostModal = function(room) {
   if (!window.currentUserId) { openModal(); return; }
   currentEditPost = null;
@@ -1147,7 +1129,6 @@ window.openUserPostModal = function(room) {
   document.getElementById('upm-ok').style.display = 'none';
   document.getElementById('upm-err').style.display = 'none';
 
-  // معاينة الملف عند اختياره
   const fileInput = document.getElementById('upm-media-file');
   if (fileInput) {
     fileInput.addEventListener('change', () => {
@@ -1254,7 +1235,6 @@ window.openTournamentsVIPModal = function() {
   document.getElementById('upm-modal').classList.add('active');
 };
 
-
 window.openEditPostModal = async function(postId, room) {
   const { data: post, error } = await db.from('posts').select('*').eq('id', postId).single();
   if (error) { alert('Cannot load post'); return; }
@@ -1311,10 +1291,14 @@ window.openEditPostModal = async function(postId, room) {
   document.getElementById('upm-modal').classList.add('active');
 };
 
-// ==================== دالة النشر الأساسية (تم إصلاح تجمد YouTube) ====================
+// ========== دالة النشر النهائية (تم إصلاح مشكلة تجمد YouTube) ==========
 async function submitUserPost(room) {
-  // التأكد من تسجيل الدخول
-  if (!window.currentUserId) { showUPMError('يجب تسجيل الدخول أولاً'); return; }
+  console.log("submitUserPost called, room:", room);
+  
+  if (!window.currentUserId) { 
+    showUPMError('يجب تسجيل الدخول أولاً'); 
+    return;
+  }
 
   var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
   var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
@@ -1323,15 +1307,19 @@ async function submitUserPost(room) {
   var tag   = tagEl ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
   var contentEl = document.getElementById('upm-content');
   var content = contentEl ? contentEl.value.trim() : null;
-  if (!content) content = null;
   var mediaFileInput = document.getElementById('upm-media-file');
   var mediaFile = (mediaFileInput && mediaFileInput.files && mediaFileInput.files[0]) ? mediaFileInput.files[0] : null;
 
-  // التحقق من صحة البيانات الأساسية
-  if ((room === 'live' || room === 'tournaments') && !title && !url && !desc) { showUPMError('Please fill at least title or URL.'); return; }
-  if (room === 'yt-videos' && !url) { showUPMError('Please enter a YouTube URL.'); return; }
-  if (room === 'highlights' && !url && !mediaFile) { showUPMError('Please enter a media URL or upload a file.'); return; }
-  if ((room === 'gaming-news' || room === 'youtube-news') && !title && !url && !mediaFile) { showUPMError('Please fill title or add media.'); return; }
+  console.log("Title:", title, "URL:", url, "Tag:", tag, "Has media file:", !!mediaFile);
+
+  if (room === 'yt-videos' && !url) {
+    showUPMError('الرجاء إدخال رابط يوتيوب صالح');
+    return;
+  }
+  
+  if (room === 'yt-videos' && !title && url) {
+    title = '🎬 فيديو يوتيوب';
+  }
 
   var btn   = document.getElementById('upm-submit');
   var okEl  = document.getElementById('upm-ok');
@@ -1341,28 +1329,41 @@ async function submitUserPost(room) {
     if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
   }
 
-  if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
   if (okEl)  okEl.style.display  = 'none';
   if (errEl) errEl.style.display = 'none';
 
   try {
     var mediaUrl = null;
     if (mediaFile) {
-      if (btn) btn.textContent = 'Uploading...';
+      if (btn) btn.textContent = 'رفع الملف...';
       mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
+      console.log("File uploaded:", mediaUrl);
     }
 
-    // ✅ لا نقوم بجلب معلومات اليوتيوب تلقائياً هنا لتجنب التعليق
-    // نعتمد على جلب المعلومات في حدث blur الخاص بحقل الرابط
-
-    if (currentEditPost) {
-      await updateUserPost(currentEditPost.id, title, desc, url, tag, content, mediaUrl);
-    } else {
-      await addUserPost(room, title, desc, url, tag, content, mediaUrl);
-    }
+    const finalUrl = mediaUrl || url || null;
+    const isYT = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
+    const isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
+    const isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
+    
+    const postData = {
+      title: title || '📄 منشور',
+      description: desc || null,
+      icon: isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
+      url: finalUrl,
+      tag: tag,
+      room: room,
+      content: content || null,
+      posted_by: window.currentUserId
+    };
+    
+    console.log("Inserting post:", postData);
+    const { data, error } = await db.from('posts').insert(postData);
+    if (error) throw error;
+    
+    console.log("Post inserted successfully");
 
     if (okEl)  { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
-    if (errEl) errEl.style.display = 'none';
     resetBtn();
     loadPage(room);
     setTimeout(function() {
@@ -1371,11 +1372,15 @@ async function submitUserPost(room) {
     }, 1400);
 
   } catch(e) {
-    console.error('Submit error:', e);
+    console.error("خطأ في النشر:", e);
     resetBtn();
     var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
-    if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
-    else alert(msg);
+    if (errEl) { 
+      errEl.textContent = '❌ ' + msg; 
+      errEl.style.display = 'block'; 
+    } else {
+      alert(msg);
+    }
   }
 }
 
@@ -1388,7 +1393,6 @@ function showUPMError(msg) {
   if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
 }
 
-// ==================== دوال الملف الشخصي ====================
 async function openProfileModal() {
   try {
     var sessionRes = await db.auth.getSession();
@@ -1498,7 +1502,6 @@ function closeProfileModal() {
   document.getElementById('passwordError').innerText = '';
 }
 
-// ========== AUTH ==========
 function isValidEmail(email) { const re = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/; return re.test(email); }
 
 async function signInWithEmailOrUsername(identifier, password) {
@@ -1639,14 +1642,13 @@ var _cub=document.getElementById('confirmUsernameBtn'); if(_cub) _cub.onclick = 
 };
 var _xub=document.getElementById('cancelUsernameBtn'); if(_xub) _xub.onclick = () => { db.auth.signOut(); window.location.reload(); };
 
-// ========== Modal logic for login/signup ==========
 const modal = document.getElementById('authModal');
 const loginDiv = document.getElementById('modal-login');
 const signupDiv = document.getElementById('modal-signup');
 function openModal() { modal.classList.add('active'); }
 function closeModal() { modal.classList.remove('active'); loginDiv.style.display = 'block'; signupDiv.style.display = 'none'; document.getElementById('loginError').innerText = ''; document.getElementById('signupError').innerText = ''; }
 var _cm=document.getElementById('closeModal'); if(_cm) _cm.onclick = closeModal;
-window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق نافذة النشر عند الضغط خارجها */ } };
+window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق */ } };
 var _sts=document.getElementById('switchToSignup'); if(_sts) _sts.onclick = () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; };
 var _stl=document.getElementById('switchToLogin'); if(_stl) _stl.onclick = () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; };
 var _dlb=document.getElementById('doLoginBtn'); if(_dlb) _dlb.onclick = async () => {
@@ -1673,13 +1675,11 @@ var _glb=document.getElementById('googleLoginBtn'); if(_glb) _glb.onclick = () =
 var _gsb=document.getElementById('googleSignupBtn'); if(_gsb) _gsb.onclick = () => { signInWithGoogle(); };
 var _bll=document.getElementById('btn-login-link'); if(_bll) _bll.onclick = (e) => { e.preventDefault(); openModal(); };
 
-// ربط أزرار الملف الشخصي
 document.getElementById('profileButton')?.addEventListener('click', openProfileModal);
 document.getElementById('saveProfileBtn')?.addEventListener('click', saveProfileChanges);
 document.getElementById('changePasswordBtn')?.addEventListener('click', changePassword);
 document.getElementById('closeProfileBtn')?.addEventListener('click', closeProfileModal);
 
-// ==================== شريط الأخبار (ticker) ====================
 let tickerItems = [];
 let tickerAnimationIdLocal = null;
 let tickerPosition = 0;
