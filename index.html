@@ -801,17 +801,18 @@ let _authUpdateInProgress = false; // تعريف مبكر
 
 // دالة الخروج
 window.doLogout = async function() {
-  try { await db.auth.signOut({ scope: 'local' }); } catch(e) { console.error('signOut error:', e); }
+  _authUpdateInProgress = false;
   window.currentUserId = null;
   window.currentUsername = null;
   window.userRole = 'guest';
-  _authUpdateInProgress = false;
-  const _ll = document.getElementById('btn-login-link');
-  const _ua = document.getElementById('btn-user-area');
+  // تحديث UI فوراً قبل انتظار signOut
+  var _ll = document.getElementById('btn-login-link');
+  var _ua = document.getElementById('btn-user-area');
   if (_ll) _ll.style.display = 'inline-block';
   if (_ua) _ua.style.display = 'none';
-  document.querySelectorAll('.btn-user-post').forEach(b => b.style.display = 'none');
-  document.querySelectorAll('.btn-ytvip-post').forEach(b => b.style.display = 'none');
+  document.querySelectorAll('.btn-user-post').forEach(function(b){ b.style.display = 'none'; });
+  document.querySelectorAll('.btn-ytvip-post').forEach(function(b){ b.style.display = 'none'; });
+  try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
 };
 
 // ==================== دوال جلب معلومات اليوتيوب ====================
@@ -1303,90 +1304,111 @@ window.openEditPostModal = async function(postId, room) {
 };
 
 async function submitUserPost(room) {
-  const title = (document.getElementById('upm-title')?.value || '').trim();
-  const desc = (document.getElementById('upm-desc')?.value || '').trim();
-  let url = (document.getElementById('upm-url')?.value || '').trim();
-  const tag = document.getElementById('upm-tag')?.value || (room === 'yt-videos' ? 'Video' : room);
-  const content = (document.getElementById('upm-content')?.value || '').trim() || null;
-  const mediaFileInput = document.getElementById('upm-media-file');
-  const mediaFile = mediaFileInput?.files?.[0] || null;
+  var title = (document.getElementById('upm-title') ? document.getElementById('upm-title').value : '').trim();
+  var desc  = (document.getElementById('upm-desc')  ? document.getElementById('upm-desc').value  : '').trim();
+  var url   = (document.getElementById('upm-url')   ? document.getElementById('upm-url').value   : '').trim();
+  var tagEl = document.getElementById('upm-tag');
+  var tag   = tagEl ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
+  var contentEl = document.getElementById('upm-content');
+  var content = contentEl ? contentEl.value.trim() : null;
+  if (!content) content = null;
+  var mediaFileInput = document.getElementById('upm-media-file');
+  var mediaFile = (mediaFileInput && mediaFileInput.files && mediaFileInput.files[0]) ? mediaFileInput.files[0] : null;
 
   if ((room === 'live' || room === 'tournaments') && !title && !url && !desc) { showUPMError('Please fill at least title or URL.'); return; }
   if (room === 'yt-videos' && !url) { showUPMError('Please enter a YouTube URL.'); return; }
   if (room === 'highlights' && !url && !mediaFile) { showUPMError('Please enter a media URL or upload a file.'); return; }
   if ((room === 'gaming-news' || room === 'youtube-news') && !title && !url && !mediaFile) { showUPMError('Please fill title or add media.'); return; }
 
-  const btn = document.getElementById('upm-submit');
-  const okEl = document.getElementById('upm-ok');
-  const errEl = document.getElementById('upm-err');
+  var btn   = document.getElementById('upm-submit');
+  var okEl  = document.getElementById('upm-ok');
+  var errEl = document.getElementById('upm-err');
+
+  function resetBtn() {
+    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
+  }
+
   if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
-  if (okEl) okEl.style.display = 'none';
+  if (okEl)  okEl.style.display  = 'none';
   if (errEl) errEl.style.display = 'none';
 
   try {
-    let mediaUrl = null;
+    var mediaUrl = null;
     if (mediaFile) {
-      if (btn) btn.textContent = 'Uploading... (may take a moment)';
+      if (btn) btn.textContent = 'Uploading...';
       try {
         mediaUrl = await uploadMediaFile(mediaFile, window.currentUserId);
       } catch(uploadErr) {
-        // إذا فشل رفع الملف نكمل بدونه ونُظهر تحذير
-        console.warn('File upload failed, posting without media:', uploadErr.message);
-        showUPMError('⚠️ File upload failed. Post will be saved without media.');
-        mediaUrl = null;
+        console.warn('Upload failed:', uploadErr.message);
       }
     }
+
     if (currentEditPost) {
       await updateUserPost(currentEditPost.id, title, desc, url, tag, content, mediaUrl);
     } else {
       await addUserPost(room, title, desc, url, tag, content, mediaUrl);
     }
-    if (okEl) { okEl.textContent = '✅ Published successfully!'; okEl.style.display = 'block'; }
+
+    if (okEl)  { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
     if (errEl) errEl.style.display = 'none';
+    resetBtn();
     loadPage(room);
-    setTimeout(() => {
-      const modal = document.getElementById('upm-modal');
+    setTimeout(function() {
+      var modal = document.getElementById('upm-modal');
       if (modal) modal.classList.remove('active');
-    }, 1200);
+    }, 1400);
+
   } catch(e) {
-    showUPMError(e.message || 'An error occurred. Please try again.');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
+    resetBtn();
+    var msg = (e && e.message) ? e.message : 'حدث خطأ، حاول مرة أخرى';
+    if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
+    else console.error('Post error:', msg);
   }
 }
 
 function showUPMError(msg) {
-  const errEl = document.getElementById('upm-err');
+  var errEl = document.getElementById('upm-err');
+  if (!errEl) { console.error('UPM Error:', msg); return; }
   errEl.textContent = '❌ ' + msg;
   errEl.style.display = 'block';
+  // إعادة تفعيل زر النشر دائماً عند الخطأ
+  var btn = document.getElementById('upm-submit');
+  if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
 }
 
 // ==================== دوال الملف الشخصي (تبقى كما هي مع رفع الصورة فقط) ====================
 async function openProfileModal() {
-  const { data: { session } } = await db.auth.getSession();
-  if (!session) return;
-  const userId = session.user.id;
-  const { data: profile, error } = await db.from('profiles').select('*').eq('id', userId).single();
-  if (error) { console.error(error); return; }
-  currentProfileData = profile;
-  document.getElementById('profileUsername').value = profile.username || '';
-  document.getElementById('profileEmail').value = session.user.email;
-  document.getElementById('profileBirthdate').value = profile.birthdate || '';
-  document.getElementById('profileBirthPlace').value = profile.birth_place || '';
-  document.getElementById('profileCountry').value = profile.country || '';
-  document.getElementById('profileFavoriteGame').value = profile.favorite_game || '';
-  document.getElementById('usernameFeedback').innerHTML = '';
-  const avatarImg = document.getElementById('profileAvatarImg');
-  const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
-  if (profile.avatar_url) {
-    avatarImg.src = profile.avatar_url;
-    avatarImg.style.display = 'block';
-    avatarPlaceholder.style.display = 'none';
-  } else {
-    avatarImg.style.display = 'none';
-    avatarPlaceholder.style.display = 'flex';
+  try {
+    var sessionRes = await db.auth.getSession();
+    var session = sessionRes.data && sessionRes.data.session;
+    if (!session) { alert('يرجى تسجيل الدخول أولاً'); return; }
+    var userId = session.user.id;
+    var res = await db.from('profiles').select('*').eq('id', userId).single();
+    var profile = res.data;
+    if (!profile) { alert('تعذر تحميل الملف الشخصي'); return; }
+    currentProfileData = profile;
+    document.getElementById('profileUsername').value = profile.username || '';
+    document.getElementById('profileEmail').value = session.user.email;
+    document.getElementById('profileBirthdate').value = profile.birthdate || '';
+    document.getElementById('profileBirthPlace').value = profile.birth_place || '';
+    document.getElementById('profileCountry').value = profile.country || '';
+    document.getElementById('profileFavoriteGame').value = profile.favorite_game || '';
+    document.getElementById('usernameFeedback').innerHTML = '';
+    var avatarImg = document.getElementById('profileAvatarImg');
+    var avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
+    if (profile.avatar_url) {
+      avatarImg.src = profile.avatar_url;
+      avatarImg.style.display = 'block';
+      if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+    } else {
+      avatarImg.style.display = 'none';
+      if (avatarPlaceholder) avatarPlaceholder.style.display = 'flex';
+    }
+    document.getElementById('profileModal').classList.add('active');
+  } catch(err) {
+    console.error('openProfileModal error:', err);
+    alert('حدث خطأ في تحميل الملف الشخصي: ' + (err.message || err));
   }
-  document.getElementById('profileModal').classList.add('active');
 }
 
 async function saveProfileChanges() {
