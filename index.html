@@ -789,48 +789,6 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     storage: window.localStorage
   }
 });
-// ================= FIX SESSION =================
-
-async function checkUserSession() {
-  const { data: { session } } = await db.auth.getSession();
-
-  if (session && session.user) {
-    const user = session.user;
-
-    window.currentUserId = user.id;
-
-    try {
-      const { data: profile } = await db
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      window.currentUsername = profile?.username || user.email;
-      window.userRole = profile?.role || 'user';
-    } catch (e) {
-      window.currentUsername = user.email;
-      window.userRole = 'user';
-    }
-
-    document.getElementById('btn-login-link').style.display = 'none';
-    document.getElementById('btn-user-area').style.display = 'flex';
-    document.getElementById('user-name').innerText = window.currentUsername;
-
-  } else {
-    window.currentUserId = null;
-    document.getElementById('btn-login-link').style.display = 'inline-block';
-    document.getElementById('btn-user-area').style.display = 'none';
-  }
-}
-
-window.addEventListener('load', checkUserSession);
-
-db.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN') checkUserSession();
-  if (event === 'SIGNED_OUT') window.location.reload();
-});
-
 let allPosts = {};
 let pendingGoogleUser = null;
 let currentProfileData = null;
@@ -956,40 +914,6 @@ function clearMediaForRoom(room) {
 function handleMediaFile(room, file) {
   if (!file) return;
   currentMediaFile = file;
-
-  // === استخراج العنوان والوصف من اسم الملف ===
-  const rawName = file.name.replace(/\.[^.]+$/, ''); // إزالة الامتداد
-  const cleanName = rawName
-    .replace(/[_\-]+/g, ' ')       // تحويل _ و - إلى مسافات
-    .replace(/\s+/g, ' ')           // إزالة المسافات المتكررة
-    .trim();
-
-  const titleInput = document.getElementById(`title-${room}`);
-  const descInput = document.getElementById(`desc-${room}`);
-
-  // ملء العنوان تلقائياً إذا كان فارغاً
-  if (titleInput && !titleInput.value.trim()) {
-    titleInput.value = cleanName;
-  }
-
-  // ملء الوصف تلقائياً: نوع الملف + الحجم + الأبعاد
-  const fileSize = (file.size / (1024 * 1024)).toFixed(2);
-  const fileType = file.type.startsWith('video/') ? 'فيديو' : 'صورة';
-  if (descInput && !descInput.value.trim()) {
-    descInput.value = `${fileType} - ${fileSize} MB`;
-  }
-
-  // تحديد النوع تلقائياً في القائمة المنسدلة
-  const tagSelect = document.getElementById(`tag-${room}`);
-  if (tagSelect) {
-    if (file.type.startsWith('video/')) {
-      tagSelect.value = 'Video';
-    } else if (file.type.startsWith('image/')) {
-      tagSelect.value = 'Photo';
-    }
-  }
-
-  // === عرض المعاينة ===
   const reader = new FileReader();
   reader.onload = e => {
     currentPreviewDataUrl = e.target.result;
@@ -1001,34 +925,11 @@ function handleMediaFile(room, file) {
       if (previewVideo) previewVideo.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
       document.getElementById(`icon-${room}`).value = '🖼️';
-
-      // استخراج أبعاد الصورة وإضافتها للوصف
-      const img = new Image();
-      img.onload = () => {
-        if (descInput) {
-          descInput.value = `${fileType} - ${img.width}x${img.height} - ${fileSize} MB`;
-        }
-      };
-      img.src = e.target.result;
-
     } else if (file.type.startsWith('video/')) {
       if (previewVideo) { previewVideo.src = e.target.result; previewVideo.style.display = 'block'; }
       if (previewImg) previewImg.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
       document.getElementById(`icon-${room}`).value = '🎥';
-
-      // استخراج مدة الفيديو وأبعاده وإضافتها للوصف
-      const vid = document.createElement('video');
-      vid.preload = 'metadata';
-      vid.onloadedmetadata = () => {
-        const mins = Math.floor(vid.duration / 60);
-        const secs = Math.floor(vid.duration % 60);
-        const duration = `${mins}:${secs.toString().padStart(2, '0')}`;
-        if (descInput) {
-          descInput.value = `${fileType} - ${duration} - ${vid.videoWidth}x${vid.videoHeight} - ${fileSize} MB`;
-        }
-      };
-      vid.src = e.target.result;
     }
   };
   reader.readAsDataURL(file);
@@ -1423,9 +1324,13 @@ function renderCards(posts, gridId, room) {
       let thumb = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
       mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">للأعضاء فقط</span></div></div>`;
     } else {
-      const isLocalVideo = p.url && (p.url.match(/\.(mp4|webm)$/i) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
+      const isImageUrl = p.url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(p.url);
+      const isLocalVideo = p.url && !isImageUrl && (p.url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-      if (isLocalVideo) {
+      if (isImageUrl) {
+        mediaContent = `<img class="post-card-img" src="${p.url}">`;
+      }
+      else if (isLocalVideo) {
         mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
       }
       else if (isYouTube) {
