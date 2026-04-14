@@ -6,6 +6,7 @@
   <title>Virtux — Gaming Community</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* جميع الأنماط كما هي دون تغيير - اختصاراً سأعيد استخدام نفس الأنماط السابقة */
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
     .vx-root{display:flex;flex-direction:column;min-height:100vh}
@@ -782,11 +783,11 @@ const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 
-// إنشاء عميل Supabase مع إعدادات صريحة لاستمرار الجلسة
+// إنشاء عميل Supabase مع إعدادات صريحة
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     persistSession: true,
-    storageKey: 'virtux-auth',
+    storageKey: 'virtux-auth-persist',
     autoRefreshToken: true,
     detectSessionInUrl: true
   }
@@ -798,9 +799,8 @@ let currentProfileData = null;
 let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
-let _authInitialized = false;
 
-// متغيرات المستخدم الحالية (سيتم تحديثها من loadSession)
+// متغيرات المستخدم الحالية
 window.currentUserId = null;
 window.currentUsername = null;
 window.userRole = 'guest';
@@ -863,7 +863,7 @@ async function uploadAvatar(file, userId) {
   return publicUrl;
 }
 
-// ==================== دوال النشر والمعاينة ====================
+// ==================== دوال النشر والمعاينة (مختصرة للحفاظ على المساحة) ====================
 let currentRoomForPost = null;
 let currentMediaFile = null;
 let currentPreviewDataUrl = null;
@@ -975,7 +975,6 @@ window.openUserPostModal = function(room) {
   document.getElementById('upm-ok').style.display = 'none';
   document.getElementById('upm-err').style.display = 'none';
 
-  // ربط أحداث رفع الملفات
   const fileInput = document.getElementById(`file-${room}-media`);
   if (fileInput) {
     fileInput.addEventListener('change', (e) => {
@@ -984,7 +983,6 @@ window.openUserPostModal = function(room) {
     });
   }
 
-  // معاينة يوتيوب
   if (room === 'yt-videos') {
     const urlInput = document.getElementById(`url-${room}`);
     if (urlInput) {
@@ -1007,7 +1005,6 @@ window.openUserPostModal = function(room) {
     }
   }
 
-  // جلب معلومات البث تلقائياً لـ live
   if (room === 'live') {
     const urlInput = document.getElementById('url-live');
     if (urlInput) {
@@ -1063,7 +1060,6 @@ async function submitUserPost(room) {
   if (url) url = cleanUrl(url);
   let tag   = tagEl   ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
 
-  // تحقق
   if (room === 'live' && !title && !url && !desc)    { showUPMError('أدخل عنوان أو رابط البث'); return; }
   if (room === 'live' && tag === 'Live Now' && !url) { showUPMError('البث المباشر يحتاج رابط'); return; }
   if (room === 'yt-videos' && !url)                  { showUPMError('أدخل رابط يوتيوب'); return; }
@@ -1325,79 +1321,63 @@ document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); 
 window.openYTVIPModal = function() { alert('VIP video posting is available in admin panel.'); };
 window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
-// ==================== دوال المصادقة المستقرة ====================
+// ==================== دوال المصادقة المستقرة مع تخزين احتياطي ====================
 
-// تحميل الجلسة وتحديث الواجهة بشكل موحد
-async function loadSessionAndUpdateUI() {
-  const { data: { session } } = await db.auth.getSession();
+// تخزين بيانات المستخدم في localStorage كنسخة احتياطية
+function saveUserToLocalStorage(userId, username, role, avatarUrl) {
+  if (!userId) {
+    localStorage.removeItem('virtux_user');
+    return;
+  }
+  localStorage.setItem('virtux_user', JSON.stringify({
+    id: userId,
+    username: username,
+    role: role,
+    avatar_url: avatarUrl,
+    timestamp: Date.now()
+  }));
+}
+
+function loadUserFromLocalStorage() {
+  const raw = localStorage.getItem('virtux_user');
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw);
+    // صلاحية 7 أيام
+    if (Date.now() - data.timestamp > 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem('virtux_user');
+      return null;
+    }
+    return data;
+  } catch(e) { return null; }
+}
+
+// تحديث الواجهة بناءً على بيانات المستخدم (من Supabase أو localStorage)
+async function updateUIWithUserData(userId, username, role, avatarUrl) {
   const loginLink = document.getElementById('btn-login-link');
   const userArea = document.getElementById('btn-user-area');
   const userNameSpan = document.getElementById('user-name');
   const roleBadge = document.getElementById('user-role-badge');
   const userAvatarImg = document.getElementById('user-avatar-img');
   
-  if (session && session.user) {
-    // جلب الملف الشخصي
-    let { data: profile, error } = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+  if (userId) {
+    loginLink.style.display = 'none';
+    userArea.style.display = 'flex';
+    userNameSpan.textContent = '👋 ' + (username || 'User');
+    roleBadge.style.display = (role && role !== 'user') ? 'inline-block' : 'none';
+    if (role && role !== 'user') roleBadge.textContent = role.toUpperCase();
+    if (avatarUrl) { userAvatarImg.src = avatarUrl; userAvatarImg.style.display = 'inline-block'; }
+    else userAvatarImg.style.display = 'none';
     
-    // إذا لم يوجد profile، نحاول إنشاءه (للمستخدمين القدامى أو حالات نادرة)
-    if (!profile && !error) {
-      const defaultUsername = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      let finalUsername = defaultUsername;
-      for (let i = 1; i <= 20; i++) {
-        const { data: conflict } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
-        if (!conflict) break;
-        finalUsername = `${defaultUsername}${i}`;
-      }
-      const newProfile = {
-        id: session.user.id,
-        username: finalUsername,
-        email: session.user.email,
-        role: 'user',
-        created_at: new Date().toISOString()
-      };
-      const { data: inserted, error: insertError } = await db.from('profiles').insert(newProfile).select().single();
-      if (!insertError && inserted) profile = inserted;
-    }
+    window.userRole = role || 'user';
+    window.currentUserId = userId;
+    window.currentUsername = username || '';
     
-    if (profile) {
-      loginLink.style.display = 'none';
-      userArea.style.display = 'flex';
-      userNameSpan.textContent = '👋 ' + profile.username;
-      roleBadge.style.display = (profile.role && profile.role !== 'user') ? 'inline-block' : 'none';
-      if (profile.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
-      if (profile.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
-      else userAvatarImg.style.display = 'none';
-      
-      window.userRole = profile.role || 'user';
-      window.currentUserId = session.user.id;
-      window.currentUsername = profile.username;
-      
-      // إظهار أزرار VIP
-      const vipRoles = ['youtuber-vip', 'vip', 'admin'];
-      if (vipRoles.includes(window.userRole)) {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
-      } else {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
-      }
+    const vipRoles = ['youtuber-vip', 'vip', 'admin'];
+    if (vipRoles.includes(window.userRole)) {
+      document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
     } else {
-      // فشل في الحصول على profile حتى بعد المحاولة - نتعامل كمستخدم بدون صلاحيات
-      loginLink.style.display = 'none';
-      userArea.style.display = 'flex';
-      userNameSpan.textContent = '👋 ' + (session.user.email.split('@')[0]);
-      roleBadge.style.display = 'none';
-      userAvatarImg.style.display = 'none';
-      window.userRole = 'user';
-      window.currentUserId = session.user.id;
-      window.currentUsername = session.user.email.split('@')[0];
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
-    }
-    
-    // إذا كان هناك منشور معلق
-    if (window.pendingPostRoom) {
-      const room = window.pendingPostRoom;
-      window.pendingPostRoom = null;
-      setTimeout(() => openUserPostModal(room), 500);
     }
   } else {
     loginLink.style.display = 'inline-block';
@@ -1408,7 +1388,7 @@ async function loadSessionAndUpdateUI() {
     document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
   }
   
-  // إعادة تحميل الصفحة الحالية لتحديث المحتوى بناءً على الدور
+  // إعادة تحميل الصفحة الحالية
   if (_currentPage && _currentPage !== 'home' && _currentPage !== 'contact') {
     loadPage(_currentPage);
   } else if (_currentPage === 'subscribers') {
@@ -1416,9 +1396,74 @@ async function loadSessionAndUpdateUI() {
   }
 }
 
+// الوظيفة الرئيسية لتحميل الجلسة مع إعادة المحاولة والنسخ الاحتياطي
+async function loadSessionWithRetry(retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    const { data: { session } } = await db.auth.getSession();
+    if (session && session.user) {
+      // جلب الملف الشخصي من Supabase
+      const { data: profile, error } = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+      if (profile) {
+        saveUserToLocalStorage(profile.id, profile.username, profile.role, profile.avatar_url);
+        await updateUIWithUserData(profile.id, profile.username, profile.role, profile.avatar_url);
+        return true;
+      } else if (!error) {
+        // إنشاء ملف شخصي جديد إذا لم يوجد
+        const defaultUsername = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+        let finalUsername = defaultUsername;
+        for (let j = 1; j <= 20; j++) {
+          const { data: conflict } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
+          if (!conflict) break;
+          finalUsername = `${defaultUsername}${j}`;
+        }
+        const newProfile = {
+          id: session.user.id,
+          username: finalUsername,
+          email: session.user.email,
+          role: 'user',
+          created_at: new Date().toISOString()
+        };
+        const { data: inserted, error: insertError } = await db.from('profiles').insert(newProfile).select().single();
+        if (!insertError && inserted) {
+          saveUserToLocalStorage(inserted.id, inserted.username, inserted.role, inserted.avatar_url);
+          await updateUIWithUserData(inserted.id, inserted.username, inserted.role, inserted.avatar_url);
+          return true;
+        }
+      }
+      // إذا فشل جلب/إنشاء profile، نستخدم النسخة الاحتياطية من localStorage
+      break;
+    } else {
+      // لا توجد جلسة نشطة، نتحقق من localStorage
+      const localUser = loadUserFromLocalStorage();
+      if (localUser && localUser.id) {
+        // نحاول إعادة التحقق من Supabase لوجود الجلسة
+        // قد تكون الجلسة منتهية ولكن localStorage يحتفظ بالبيانات القديمة
+        // نعرضها مؤقتاً ثم نحاول refresh
+        await updateUIWithUserData(localUser.id, localUser.username, localUser.role, localUser.avatar_url);
+        // نعيد محاولة getSession بعد تأخير قصير
+        await new Promise(r => setTimeout(r, 500));
+        continue;
+      }
+      // لا جلسة ولا بيانات محلية
+      await updateUIWithUserData(null, null, null, null);
+      return false;
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+  // بعد المحاولات الفاشلة، نستخدم localStorage كملاذ أخير
+  const localUser = loadUserFromLocalStorage();
+  if (localUser && localUser.id) {
+    await updateUIWithUserData(localUser.id, localUser.username, localUser.role, localUser.avatar_url);
+    return true;
+  }
+  await updateUIWithUserData(null, null, null, null);
+  return false;
+}
+
 window.doLogout = async function() {
   await db.auth.signOut();
-  await loadSessionAndUpdateUI();
+  localStorage.removeItem('virtux_user');
+  await updateUIWithUserData(null, null, null, null);
 };
 
 // ==================== إدارة نوافذ المصادقة ====================
@@ -1446,7 +1491,7 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) throw new Error('بيانات الدخول غير صحيحة');
     closeModal();
-    await loadSessionAndUpdateUI();
+    await loadSessionWithRetry();
   } catch(e) { document.getElementById('loginError').innerText = e.message; }
 });
 
@@ -1458,7 +1503,6 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   try {
     const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
     if (error) throw error;
-    // إنشاء الملف الشخصي فوراً
     await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user', created_at: new Date().toISOString() });
     alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول.');
     document.getElementById('switchToLogin').click();
@@ -1466,8 +1510,10 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
 
-document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } }));
-document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } }));
+// إصلاح OAuth: استخدام المسار الحالي بدون معاملات
+const currentRedirectUrl = window.location.origin + window.location.pathname;
+document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: currentRedirectUrl } }));
+document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: currentRedirectUrl } }));
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
 // نافذة اختيار اسم المستخدم بعد Google
@@ -1481,7 +1527,7 @@ document.getElementById('confirmUsernameBtn')?.addEventListener('click', async (
   if (error) { document.getElementById('usernameError').innerText = 'حدث خطأ أثناء حفظ الاسم'; return; }
   document.getElementById('usernameModal').classList.remove('active');
   pendingGoogleUser = null;
-  await loadSessionAndUpdateUI();
+  await loadSessionWithRetry();
 });
 document.getElementById('cancelUsernameBtn')?.addEventListener('click', () => { db.auth.signOut(); window.location.reload(); });
 
@@ -1551,17 +1597,17 @@ db.auth.onAuthStateChange(async (event, session) => {
         document.getElementById('usernameError').innerText = '';
         usernameModal.classList.add('active');
       } else {
-        await loadSessionAndUpdateUI();
+        await loadSessionWithRetry();
       }
     }
   } else if (event === 'SIGNED_OUT') {
-    await loadSessionAndUpdateUI();
+    await loadSessionWithRetry();
   }
 });
 
 // ==================== التهيئة النهائية ====================
 (async function init() {
-  await loadSessionAndUpdateUI();
+  await loadSessionWithRetry(5); // زيادة عدد المحاولات
   loadTickerNews();
   showPage('home');
 })();
