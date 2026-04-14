@@ -798,6 +798,7 @@ let tickerAnimationId = null;
 let _authUpdateInProgress = false;
 
 window.doLogout = async function() {
+  try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
   _authUpdateInProgress = false;
   window.currentUserId = null;
   window.currentUsername = null;
@@ -808,7 +809,6 @@ window.doLogout = async function() {
   if (_ua) _ua.style.display = 'none';
   document.querySelectorAll('.btn-user-post').forEach(function(b){ b.style.display = 'none'; });
   document.querySelectorAll('.btn-ytvip-post').forEach(function(b){ b.style.display = 'none'; });
-  try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
 };
 
 // ==================== دوال جلب معلومات اليوتيوب ====================
@@ -1470,7 +1470,10 @@ async function updateUIAfterAuth() {
 
 async function checkAuth() { await updateUIAfterAuth(); }
 db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'TOKEN_REFRESHED') return;
+  if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+    await updateUIAfterAuth();
+    return;
+  }
   if (event === 'SIGNED_IN') {
     const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
     if (!profile) {
