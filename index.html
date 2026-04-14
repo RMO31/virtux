@@ -914,6 +914,40 @@ function clearMediaForRoom(room) {
 function handleMediaFile(room, file) {
   if (!file) return;
   currentMediaFile = file;
+
+  // === استخراج العنوان والوصف من اسم الملف ===
+  const rawName = file.name.replace(/\.[^.]+$/, ''); // إزالة الامتداد
+  const cleanName = rawName
+    .replace(/[_\-]+/g, ' ')       // تحويل _ و - إلى مسافات
+    .replace(/\s+/g, ' ')           // إزالة المسافات المتكررة
+    .trim();
+
+  const titleInput = document.getElementById(`title-${room}`);
+  const descInput = document.getElementById(`desc-${room}`);
+
+  // ملء العنوان تلقائياً إذا كان فارغاً
+  if (titleInput && !titleInput.value.trim()) {
+    titleInput.value = cleanName;
+  }
+
+  // ملء الوصف تلقائياً: نوع الملف + الحجم + الأبعاد
+  const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+  const fileType = file.type.startsWith('video/') ? 'فيديو' : 'صورة';
+  if (descInput && !descInput.value.trim()) {
+    descInput.value = `${fileType} - ${fileSize} MB`;
+  }
+
+  // تحديد النوع تلقائياً في القائمة المنسدلة
+  const tagSelect = document.getElementById(`tag-${room}`);
+  if (tagSelect) {
+    if (file.type.startsWith('video/')) {
+      tagSelect.value = 'Video';
+    } else if (file.type.startsWith('image/')) {
+      tagSelect.value = 'Photo';
+    }
+  }
+
+  // === عرض المعاينة ===
   const reader = new FileReader();
   reader.onload = e => {
     currentPreviewDataUrl = e.target.result;
@@ -925,11 +959,34 @@ function handleMediaFile(room, file) {
       if (previewVideo) previewVideo.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
       document.getElementById(`icon-${room}`).value = '🖼️';
+
+      // استخراج أبعاد الصورة وإضافتها للوصف
+      const img = new Image();
+      img.onload = () => {
+        if (descInput) {
+          descInput.value = `${fileType} - ${img.width}x${img.height} - ${fileSize} MB`;
+        }
+      };
+      img.src = e.target.result;
+
     } else if (file.type.startsWith('video/')) {
       if (previewVideo) { previewVideo.src = e.target.result; previewVideo.style.display = 'block'; }
       if (previewImg) previewImg.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
       document.getElementById(`icon-${room}`).value = '🎥';
+
+      // استخراج مدة الفيديو وأبعاده وإضافتها للوصف
+      const vid = document.createElement('video');
+      vid.preload = 'metadata';
+      vid.onloadedmetadata = () => {
+        const mins = Math.floor(vid.duration / 60);
+        const secs = Math.floor(vid.duration % 60);
+        const duration = `${mins}:${secs.toString().padStart(2, '0')}`;
+        if (descInput) {
+          descInput.value = `${fileType} - ${duration} - ${vid.videoWidth}x${vid.videoHeight} - ${fileSize} MB`;
+        }
+      };
+      vid.src = e.target.result;
     }
   };
   reader.readAsDataURL(file);
@@ -1475,43 +1532,27 @@ async function _doUpdateUI() {
 
 async function checkAuth() { await updateUIAfterAuth(); }
 
-// === إصلاح مشكلة تسجيل الخروج عند إعادة التحميل ===
-// الخطوة 1: استعادة الجلسة من localStorage أولاً (بدون طلب شبكة)
-db.auth.getSession().then(({ data: { session } }) => {
-  if (session && session.user) {
-    // الجلسة موجودة — حدّث الواجهة فوراً
-    updateUIAfterAuth();
-  }
-});
-
-// الخطوة 2: الاستماع للتغييرات اللاحقة بدون await (fire and forget)
-db.auth.onAuthStateChange((event, session) => {
+db.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN') {
+    // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد)
     if (session?.user) {
-      // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد) — fire and forget
-      db.from('profiles').select('id').eq('id', session.user.id).single().then(({ data: profile }) => {
-        if (!profile) {
-          pendingGoogleUser = session.user;
-          const usernameModal = document.getElementById('usernameModal');
-          const input = document.getElementById('newUsername');
-          if (usernameModal && input) {
-            input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-            document.getElementById('usernameError').innerText = '';
-            usernameModal.classList.add('active');
-          }
-        } else {
-          updateUIAfterAuth();
-        }
-      }).catch(() => { updateUIAfterAuth(); });
-    } else {
-      updateUIAfterAuth();
+      const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
+      if (!profile) {
+        pendingGoogleUser = session.user;
+        const usernameModal = document.getElementById('usernameModal');
+        const input = document.getElementById('newUsername');
+        input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+        document.getElementById('usernameError').innerText = '';
+        usernameModal.classList.add('active');
+        return;
+      }
     }
+    await updateUIAfterAuth();
   } else if (event === 'SIGNED_OUT') {
-    updateUIAfterAuth();
-  } else if (event === 'TOKEN_REFRESHED') {
-    updateUIAfterAuth();
+    await updateUIAfterAuth();
+  } else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+    await updateUIAfterAuth();
   }
-  // ملاحظة: تم إزالة INITIAL_SESSION من هنا لأننا نعالجه في getSession أعلاه
 });
 
 document.getElementById('confirmUsernameBtn')?.addEventListener('click', async () => {
