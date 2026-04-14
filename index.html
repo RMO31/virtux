@@ -795,7 +795,6 @@ let currentProfileData = null;
 let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
-let _authUpdateInProgress = false;
 
 window.doLogout = async function() {
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
@@ -1414,10 +1413,14 @@ document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); 
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
 // ==================== دوال المصادقة والملف الشخصي ====================
+let _authUpdatePromise = null;
 async function updateUIAfterAuth() {
-  if (_authUpdateInProgress) return;
-  _authUpdateInProgress = true;
-  const _timeout = setTimeout(() => { _authUpdateInProgress = false; }, 8000); // safety unlock
+  // إذا في تحديث جاري، انتظره وبعدين ارجع (لا تشغّل نسخة ثانية)
+  if (_authUpdatePromise) { await _authUpdatePromise; return; }
+  _authUpdatePromise = _doUpdateUI();
+  try { await _authUpdatePromise; } finally { _authUpdatePromise = null; }
+}
+async function _doUpdateUI() {
   try {
     const { data: { session } } = await db.auth.getSession();
     const loginLink = document.getElementById('btn-login-link');
@@ -1450,7 +1453,6 @@ async function updateUIAfterAuth() {
         window.userRole = profile?.role || 'user';
         window.currentUserId = session.user.id;
         window.currentUsername = profile?.username || '';
-        // نعم، الأزرار العادية تظهر دائماً، ولكن VIP فقط للمصرح لهم
         if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
           document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
         } else {
@@ -1464,17 +1466,13 @@ async function updateUIAfterAuth() {
       window.currentUserId = null;
       window.currentUsername = null;
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
-      // الأزرار العادية تبقى ظاهرة للجميع (سيتم فتح نافذة تسجيل الدخول عند النقر)
     }
-  } catch(err) { console.error(err); } finally { clearTimeout(_timeout); _authUpdateInProgress = false; }
+  } catch(err) { console.error(err); }
 }
 
 async function checkAuth() { await updateUIAfterAuth(); }
 db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-    await updateUIAfterAuth();
-    return;
-  }
+  if (event === 'SIGNED_IN' && !session?.user) return;
   if (event === 'SIGNED_IN') {
     const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
     if (!profile) {
@@ -1484,8 +1482,11 @@ db.auth.onAuthStateChange(async (event, session) => {
       input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
       document.getElementById('usernameError').innerText = '';
       usernameModal.classList.add('active');
-    } else { await updateUIAfterAuth(); }
-  } else if (event === 'SIGNED_OUT') { await updateUIAfterAuth(); }
+      return;
+    }
+  }
+  // كل الأحداث الأخرى (INITIAL_SESSION, TOKEN_REFRESHED, SIGNED_OUT) تحدّث الـ UI
+  await updateUIAfterAuth();
 });
 
 document.getElementById('confirmUsernameBtn')?.addEventListener('click', async () => {
