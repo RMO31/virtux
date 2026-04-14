@@ -566,14 +566,6 @@
     @media (max-width: 700px) { .form-with-preview { grid-template-columns: 1fr; } }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// إلغاء Service Worker فوراً — يمنع خطأ preloadResponse
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(r) {
-    r.forEach(function(reg) { reg.unregister(); });
-  });
-}
-</script>
 </head>
 <body>
 <div class="vx-root">
@@ -894,12 +886,7 @@ async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
     room: room,
     content: content || null
   };
-  const res = await Promise.race([
-    db.from('posts').insert(body),
-    new Promise(function(_, rej) {
-      setTimeout(function() { rej(new Error('انتهت مهلة الاتصال')); }, 8000);
-    })
-  ]);
+  const res = await db.from('posts').insert(body);
   if (res.error) throw res.error;
 }
 
@@ -970,18 +957,16 @@ window.openUserPostModal = function(room) {
   if (room === 'live') {
     formHtml = `<div class="form-with-preview">
       <div>
-        <div><label>Title *</label><input id="title-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label>Game / Description</label><input id="desc-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label>Stream URL</label><input id="url-${room}" style="${inputStyle}"></div>
+        <div><label>🔗 Stream URL *</label><input id="url-${room}" style="${inputStyle}" placeholder="https://youtube.com/watch?v=... أو twitch.tv/..."></div>
+        <div id="live-status-${room}" style="font-size:11px;color:#aaa;margin-top:4px;min-height:16px;"></div>
+        <div style="margin-top:12px;"><label>📝 Title</label><input id="title-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط أو اكتب يدوياً"></div>
+        <div style="margin-top:12px;"><label>🎮 Game / Description</label><input id="desc-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط أو اكتب يدوياً"></div>
         <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option></select></div>
         <input type="hidden" id="icon-${room}">
       </div>
       <div class="preview-panel">
-        <h4 style="color:#d4af37;">معاينة</h4>
-        <img id="preview-img-${room}" class="preview-media" style="display:none;">
-        <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-        <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط</div>
-        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
+        <h4 style="color:#d4af37;">معاينة البث</h4>
+        <div id="live-thumb-${room}" style="color:#aaa;font-size:12px;">أدخل رابط البث لعرض المعاينة</div>
       </div>
     </div>`;
   } else if (room === 'yt-videos') {
@@ -1074,6 +1059,64 @@ window.openUserPostModal = function(room) {
     }
   }
 
+  // جلب معلومات البث تلقائياً عند إدخال URL في Live
+  if (room === 'live') {
+    var liveUrl$ = document.getElementById('url-live');
+    if (liveUrl$) {
+      liveUrl$.addEventListener('blur', async function() {
+        var liveUrl = this.value.trim();
+        if (!liveUrl) return;
+        var statusEl = document.getElementById('live-status-live');
+        var titleEl  = document.getElementById('title-live');
+        var descEl   = document.getElementById('desc-live');
+        var thumbEl  = document.getElementById('live-thumb-live');
+        if (statusEl) { statusEl.style.color = '#aaa'; statusEl.textContent = '⏳ جاري جلب المعلومات...'; }
+        try {
+          // YouTube
+          if (liveUrl.includes('youtube.com') || liveUrl.includes('youtu.be')) {
+            var info = await fetchYouTubeVideoInfo(liveUrl);
+            if (info) {
+              if (titleEl && !titleEl.value) titleEl.value = info.title;
+              if (descEl  && !descEl.value)  descEl.value  = info.channelTitle;
+              if (thumbEl) thumbEl.innerHTML = '<img src="'+(info.thumbnail||'')+'" style="max-width:100%;border-radius:8px;margin-bottom:6px;"><div style="font-size:12px;color:#d4af37;">'+(info.title||'')+'</div>';
+              if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ تم جلب المعلومات من يوتيوب'; }
+            } else {
+              if (statusEl) { statusEl.style.color = '#f55'; statusEl.textContent = '⚠️ لم يُعثر على معلومات'; }
+            }
+          }
+          // Twitch
+          else if (liveUrl.includes('twitch.tv')) {
+            var tm = liveUrl.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+            if (tm && tm[1]) {
+              if (titleEl && !titleEl.value) titleEl.value = tm[1] + ' — Live on Twitch';
+              if (descEl  && !descEl.value)  descEl.value  = 'twitch.tv/' + tm[1];
+              if (thumbEl) thumbEl.innerHTML = '<div style="color:#9147ff;font-size:20px;margin-bottom:4px;">🟣</div><div style="color:#d4af37;font-size:13px;">'+tm[1]+' on Twitch</div>';
+            }
+            if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ Twitch'; }
+          }
+          // Facebook
+          else if (liveUrl.includes('facebook.com') || liveUrl.includes('fb.watch')) {
+            if (titleEl && !titleEl.value) titleEl.value = 'Facebook Live';
+            if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ Facebook Live'; }
+          }
+          // TikTok
+          else if (liveUrl.includes('tiktok.com')) {
+            var tt = liveUrl.match(/tiktok\.com\/@([^/\?&]+)/);
+            if (tt && tt[1]) {
+              if (titleEl && !titleEl.value) titleEl.value = '@' + tt[1] + ' — TikTok Live';
+            }
+            if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ TikTok Live'; }
+          }
+          else {
+            if (statusEl) statusEl.textContent = '';
+          }
+        } catch(e) {
+          if (statusEl) { statusEl.style.color = '#f55'; statusEl.textContent = '⚠️ خطأ في جلب المعلومات'; }
+        }
+      });
+    }
+  }
+
   document.getElementById('upm-submit').onclick = () => submitUserPost(room);
   document.getElementById('upm-modal').classList.add('active');
 };
@@ -1139,15 +1182,9 @@ async function submitUserPost(room) {
       room:        room,
       content:     null
     };
-    // timeout 8 ثوان للحماية من الجمود
-    var dbr = await Promise.race([
-      currentEditPost
-        ? db.from('posts').update(row).eq('id', currentEditPost.id)
-        : db.from('posts').insert(row),
-      new Promise(function(_, rej) {
-        setTimeout(function() { rej(new Error('انتهت مهلة الاتصال — تحقق من اتصالك')); }, 8000);
-      })
-    ]);
+    var dbr = currentEditPost
+      ? await db.from('posts').update(row).eq('id', currentEditPost.id)
+      : await db.from('posts').insert(row);
     if (dbr.error) { done(false, dbr.error.message); return; }
     done(true);
   } catch(ex) {
