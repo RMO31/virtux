@@ -1324,8 +1324,10 @@ function renderCards(posts, gridId, room) {
       let thumb = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
       mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">للأعضاء فقط</span></div></div>`;
     } else {
-      const isImageUrl = p.url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(p.url);
-      const isLocalVideo = p.url && !isImageUrl && (p.url.match(/\.(mp4|webm|ogg|mov)(\?|$)/i) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
+      const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
+      const isVideoExt = p.url && /\.(mp4|webm|ogg|mov)/i.test(p.url);
+      const isStorageVideo = p.url && !isImageUrl && (p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
+      const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
       if (isImageUrl) {
         mediaContent = `<img class="post-card-img" src="${p.url}">`;
