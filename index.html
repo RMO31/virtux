@@ -914,22 +914,32 @@ function clearMediaForRoom(room) {
 function handleMediaFile(room, file) {
   if (!file) return;
   currentMediaFile = file;
+  const isImageFile = file.type.startsWith('image/');
+  const isVideoFile = file.type.startsWith('video/');
+  const tagEl = document.getElementById(`tag-${room}`);
+  const iconEl = document.getElementById(`icon-${room}`);
+
+  if (room === 'highlights' && tagEl && (tagEl.value === 'Video' || tagEl.value === 'Photo' || !tagEl.value)) {
+    if (isImageFile) tagEl.value = 'Photo';
+    else if (isVideoFile) tagEl.value = 'Video';
+  }
+
   const reader = new FileReader();
   reader.onload = e => {
     currentPreviewDataUrl = e.target.result;
     const previewImg = document.getElementById(`preview-img-${room}`);
     const previewVideo = document.getElementById(`preview-video-${room}`);
     const previewText = document.getElementById(`preview-text-${room}`);
-    if (file.type.startsWith('image/')) {
+    if (isImageFile) {
       if (previewImg) { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
       if (previewVideo) previewVideo.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
-      document.getElementById(`icon-${room}`).value = '🖼️';
-    } else if (file.type.startsWith('video/')) {
+      if (iconEl) iconEl.value = '🖼️';
+    } else if (isVideoFile) {
       if (previewVideo) { previewVideo.src = e.target.result; previewVideo.style.display = 'block'; }
       if (previewImg) previewImg.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
-      document.getElementById(`icon-${room}`).value = '🎥';
+      if (iconEl) iconEl.value = '🎥';
     }
   };
   reader.readAsDataURL(file);
@@ -1152,12 +1162,20 @@ async function submitUserPost(room) {
   var descEl  = document.getElementById('desc-'  + room);
   var urlEl   = document.getElementById('url-'   + room);
   var tagEl   = document.getElementById('tag-'   + room);
+  var iconEl  = document.getElementById('icon-'  + room);
 
   var title = titleEl ? titleEl.value.trim() : '';
   var desc  = descEl  ? descEl.value.trim()  : '';
   var url   = urlEl   ? urlEl.value.trim()   : '';
   if (url) url = cleanUrl(url);
   var tag   = tagEl   ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
+  var pickedIcon = iconEl ? iconEl.value : '';
+  var fileIsImage = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('image/'));
+  var fileIsVideo = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('video/'));
+  if (room === 'highlights' && currentMediaFile && (tag === 'Video' || tag === 'Photo' || !tag)) {
+    if (fileIsImage) tag = 'Photo';
+    else if (fileIsVideo) tag = 'Video';
+  }
 
   // تحقق
   if (room === 'live'      && !title && !url && !desc)    { showUPMError('أدخل عنوان أو رابط البث'); return; }
@@ -1197,8 +1215,8 @@ async function submitUserPost(room) {
     }
     var finalUrl = mediaUrl || url || null;
     var isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
-    var isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
-    var isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
+    var isImg = pickedIcon === '🖼️' || fileIsImage || (finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl));
+    var isVid = pickedIcon === '🎥' || fileIsVideo || (finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl));
     // إذا العنوان فارغ وكان youtube نأخذ العنوان من API قبل النشر
     if (!title && room === 'live' && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
       try {
