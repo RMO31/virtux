@@ -789,6 +789,48 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     storage: window.localStorage
   }
 });
+// ================= FIX SESSION =================
+
+async function checkUserSession() {
+  const { data: { session } } = await db.auth.getSession();
+
+  if (session && session.user) {
+    const user = session.user;
+
+    window.currentUserId = user.id;
+
+    try {
+      const { data: profile } = await db
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      window.currentUsername = profile?.username || user.email;
+      window.userRole = profile?.role || 'user';
+    } catch (e) {
+      window.currentUsername = user.email;
+      window.userRole = 'user';
+    }
+
+    document.getElementById('btn-login-link').style.display = 'none';
+    document.getElementById('btn-user-area').style.display = 'flex';
+    document.getElementById('user-name').innerText = window.currentUsername;
+
+  } else {
+    window.currentUserId = null;
+    document.getElementById('btn-login-link').style.display = 'inline-block';
+    document.getElementById('btn-user-area').style.display = 'none';
+  }
+}
+
+window.addEventListener('load', checkUserSession);
+
+db.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN') checkUserSession();
+  if (event === 'SIGNED_OUT') window.location.reload();
+});
+
 let allPosts = {};
 let pendingGoogleUser = null;
 let currentProfileData = null;
