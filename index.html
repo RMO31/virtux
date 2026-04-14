@@ -1475,27 +1475,43 @@ async function _doUpdateUI() {
 
 async function checkAuth() { await updateUIAfterAuth(); }
 
-db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN') {
-    // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد)
-    if (session?.user) {
-      const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
-      if (!profile) {
-        pendingGoogleUser = session.user;
-        const usernameModal = document.getElementById('usernameModal');
-        const input = document.getElementById('newUsername');
-        input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-        document.getElementById('usernameError').innerText = '';
-        usernameModal.classList.add('active');
-        return;
-      }
-    }
-    await updateUIAfterAuth();
-  } else if (event === 'SIGNED_OUT') {
-    await updateUIAfterAuth();
-  } else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-    await updateUIAfterAuth();
+// === إصلاح مشكلة تسجيل الخروج عند إعادة التحميل ===
+// الخطوة 1: استعادة الجلسة من localStorage أولاً (بدون طلب شبكة)
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session && session.user) {
+    // الجلسة موجودة — حدّث الواجهة فوراً
+    updateUIAfterAuth();
   }
+});
+
+// الخطوة 2: الاستماع للتغييرات اللاحقة بدون await (fire and forget)
+db.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN') {
+    if (session?.user) {
+      // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد) — fire and forget
+      db.from('profiles').select('id').eq('id', session.user.id).single().then(({ data: profile }) => {
+        if (!profile) {
+          pendingGoogleUser = session.user;
+          const usernameModal = document.getElementById('usernameModal');
+          const input = document.getElementById('newUsername');
+          if (usernameModal && input) {
+            input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+            document.getElementById('usernameError').innerText = '';
+            usernameModal.classList.add('active');
+          }
+        } else {
+          updateUIAfterAuth();
+        }
+      }).catch(() => { updateUIAfterAuth(); });
+    } else {
+      updateUIAfterAuth();
+    }
+  } else if (event === 'SIGNED_OUT') {
+    updateUIAfterAuth();
+  } else if (event === 'TOKEN_REFRESHED') {
+    updateUIAfterAuth();
+  }
+  // ملاحظة: تم إزالة INITIAL_SESSION من هنا لأننا نعالجه في getSession أعلاه
 });
 
 document.getElementById('confirmUsernameBtn')?.addEventListener('click', async () => {
