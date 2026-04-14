@@ -884,8 +884,7 @@ async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
     url: finalUrl,
     tag: tag,
     room: room,
-    content: content || null,
-    posted_by: window.currentUserId
+    content: content || null
   };
   const { error } = await db.from('posts').insert(body);
   if (error) throw error;
@@ -1108,8 +1107,7 @@ async function submitUserPost(room) {
     if (currentMediaFile) {
       mediaUrl = await uploadMediaFile(currentMediaFile, window.currentUserId);
     }
-    const finalTitle = title || (room === 'yt-videos' ? (await fetchYouTubeVideoInfo(url))?.title : '') || '';
-    await addUserPost(room, finalTitle || title, desc, url, tag, null, mediaUrl);
+    await addUserPost(room, title, desc, url, tag, null, mediaUrl);
     if (okEl) { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
     setTimeout(() => {
       document.getElementById('upm-modal').classList.remove('active');
