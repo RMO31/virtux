@@ -1417,6 +1417,7 @@ function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m =>
 async function updateUIAfterAuth() {
   if (_authUpdateInProgress) return;
   _authUpdateInProgress = true;
+  const _timeout = setTimeout(() => { _authUpdateInProgress = false; }, 8000); // safety unlock
   try {
     const { data: { session } } = await db.auth.getSession();
     const loginLink = document.getElementById('btn-login-link');
@@ -1465,7 +1466,7 @@ async function updateUIAfterAuth() {
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
       // الأزرار العادية تبقى ظاهرة للجميع (سيتم فتح نافذة تسجيل الدخول عند النقر)
     }
-  } catch(err) { console.error(err); } finally { _authUpdateInProgress = false; }
+  } catch(err) { console.error(err); } finally { clearTimeout(_timeout); _authUpdateInProgress = false; }
 }
 
 async function checkAuth() { await updateUIAfterAuth(); }
@@ -1603,7 +1604,6 @@ window.clearMediaForRoom = clearMediaForRoom;
 window.openYTVIPModal = function() { alert('VIP video posting is available in admin panel.'); };
 window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
-checkAuth();
 loadTickerNews();
 showPage('home');
 </script>
