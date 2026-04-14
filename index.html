@@ -781,7 +781,16 @@
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// إنشاء عميل Supabase مع إعدادات صريحة لاستمرار الجلسة
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'virtux-auth',
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 
 let allPosts = {};
 let pendingGoogleUser = null;
@@ -791,7 +800,7 @@ let currentEditRoom = null;
 let tickerAnimationId = null;
 let _authInitialized = false;
 
-// متغيرات المستخدم الحالية
+// متغيرات المستخدم الحالية (سيتم تحديثها من loadSession)
 window.currentUserId = null;
 window.currentUsername = null;
 window.userRole = 'guest';
@@ -868,10 +877,8 @@ function clearMediaForRoom(room) {
   if (previewImg) previewImg.style.display = 'none';
   if (previewVideo) previewVideo.style.display = 'none';
   if (previewText) previewText.style.display = 'block';
-  const fileInputImg = document.getElementById(`imgfile-${room}`);
-  const fileInputVideo = document.getElementById(`videofile-${room}`);
-  if (fileInputImg) fileInputImg.value = '';
-  if (fileInputVideo) fileInputVideo.value = '';
+  const fileInput = document.getElementById(`file-${room}-media`);
+  if (fileInput) fileInput.value = '';
   const urlInput = document.getElementById(`url-${room}`);
   if (urlInput) urlInput.value = '';
 }
@@ -900,7 +907,6 @@ function handleMediaFile(room, file) {
 
 window.openUserPostModal = function(room) {
   if (!window.currentUserId) {
-    // حفظ الغرفة المطلوبة لفتحها بعد تسجيل الدخول
     window.pendingPostRoom = room;
     openModal();
     return;
@@ -1098,7 +1104,6 @@ async function submitUserPost(room) {
     const isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
     const isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
     
-    // إذا العنوان فارغ وكان youtube نأخذ العنوان من API قبل النشر
     if (!title && room === 'live' && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
       try {
         const info = await fetchYouTubeVideoInfo(finalUrl);
@@ -1320,40 +1325,10 @@ document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); 
 window.openYTVIPModal = function() { alert('VIP video posting is available in admin panel.'); };
 window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
-// ==================== دوال المصادقة والملف الشخصي (المستقرة) ====================
-async function ensureProfileExists(user) {
-  if (!user) return null;
-  const { data: existing, error: fetchError } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  if (fetchError && fetchError.code !== 'PGRST116') {
-    console.error('Error checking profile:', fetchError);
-    return null;
-  }
-  if (existing) return existing;
-  
-  // إنشاء ملف شخصي جديد
-  const defaultUsername = user.user_metadata?.full_name || user.user_metadata?.name || user.email.split('@')[0];
-  let finalUsername = defaultUsername;
-  for (let i = 1; i <= 20; i++) {
-    const { data: conflict } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
-    if (!conflict) break;
-    finalUsername = `${defaultUsername}${i}`;
-  }
-  const newProfile = {
-    id: user.id,
-    username: finalUsername,
-    email: user.email,
-    role: 'user',
-    created_at: new Date().toISOString()
-  };
-  const { error: insertError } = await db.from('profiles').insert(newProfile);
-  if (insertError) {
-    console.error('Error creating profile:', insertError);
-    return null;
-  }
-  return newProfile;
-}
+// ==================== دوال المصادقة المستقرة ====================
 
-async function updateUIAfterAuth() {
+// تحميل الجلسة وتحديث الواجهة بشكل موحد
+async function loadSessionAndUpdateUI() {
   const { data: { session } } = await db.auth.getSession();
   const loginLink = document.getElementById('btn-login-link');
   const userArea = document.getElementById('btn-user-area');
@@ -1362,18 +1337,33 @@ async function updateUIAfterAuth() {
   const userAvatarImg = document.getElementById('user-avatar-img');
   
   if (session && session.user) {
-    loginLink.style.display = 'none';
-    userArea.style.display = 'flex';
+    // جلب الملف الشخصي
+    let { data: profile, error } = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
     
-    let profile = await ensureProfileExists(session.user);
-    if (!profile) {
-      // محاولة جلب مرة أخرى
-      const { data: retryProfile } = await db.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
-      profile = retryProfile;
+    // إذا لم يوجد profile، نحاول إنشاءه (للمستخدمين القدامى أو حالات نادرة)
+    if (!profile && !error) {
+      const defaultUsername = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+      let finalUsername = defaultUsername;
+      for (let i = 1; i <= 20; i++) {
+        const { data: conflict } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
+        if (!conflict) break;
+        finalUsername = `${defaultUsername}${i}`;
+      }
+      const newProfile = {
+        id: session.user.id,
+        username: finalUsername,
+        email: session.user.email,
+        role: 'user',
+        created_at: new Date().toISOString()
+      };
+      const { data: inserted, error: insertError } = await db.from('profiles').insert(newProfile).select().single();
+      if (!insertError && inserted) profile = inserted;
     }
     
     if (profile) {
-      userNameSpan.textContent = '👋 ' + (profile.username || session.user.email.split('@')[0]);
+      loginLink.style.display = 'none';
+      userArea.style.display = 'flex';
+      userNameSpan.textContent = '👋 ' + profile.username;
       roleBadge.style.display = (profile.role && profile.role !== 'user') ? 'inline-block' : 'none';
       if (profile.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
       if (profile.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
@@ -1381,9 +1371,9 @@ async function updateUIAfterAuth() {
       
       window.userRole = profile.role || 'user';
       window.currentUserId = session.user.id;
-      window.currentUsername = profile.username || '';
+      window.currentUsername = profile.username;
       
-      // إظهار أزرار VIP للمستخدمين المصرح لهم
+      // إظهار أزرار VIP
       const vipRoles = ['youtuber-vip', 'vip', 'admin'];
       if (vipRoles.includes(window.userRole)) {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
@@ -1391,16 +1381,19 @@ async function updateUIAfterAuth() {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
       }
     } else {
-      // فشل في الحصول على الملف الشخصي
-      userNameSpan.textContent = '👋 ' + session.user.email.split('@')[0];
+      // فشل في الحصول على profile حتى بعد المحاولة - نتعامل كمستخدم بدون صلاحيات
+      loginLink.style.display = 'none';
+      userArea.style.display = 'flex';
+      userNameSpan.textContent = '👋 ' + (session.user.email.split('@')[0]);
       roleBadge.style.display = 'none';
       userAvatarImg.style.display = 'none';
       window.userRole = 'user';
       window.currentUserId = session.user.id;
       window.currentUsername = session.user.email.split('@')[0];
+      document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
     }
     
-    // إذا كان هناك منشور معلق بعد تسجيل الدخول
+    // إذا كان هناك منشور معلق
     if (window.pendingPostRoom) {
       const room = window.pendingPostRoom;
       window.pendingPostRoom = null;
@@ -1415,7 +1408,7 @@ async function updateUIAfterAuth() {
     document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
   }
   
-  // إعادة تحميل الصفحة الحالية لتحديث المحتوى (VIP)
+  // إعادة تحميل الصفحة الحالية لتحديث المحتوى بناءً على الدور
   if (_currentPage && _currentPage !== 'home' && _currentPage !== 'contact') {
     loadPage(_currentPage);
   } else if (_currentPage === 'subscribers') {
@@ -1425,13 +1418,7 @@ async function updateUIAfterAuth() {
 
 window.doLogout = async function() {
   await db.auth.signOut();
-  await updateUIAfterAuth();
-  // إعادة تحميل الصفحة الحالية
-  if (_currentPage && _currentPage !== 'home' && _currentPage !== 'contact') {
-    loadPage(_currentPage);
-  } else if (_currentPage === 'subscribers') {
-    loadPage('subscribers');
-  }
+  await loadSessionAndUpdateUI();
 };
 
 // ==================== إدارة نوافذ المصادقة ====================
@@ -1459,7 +1446,7 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) throw new Error('بيانات الدخول غير صحيحة');
     closeModal();
-    await updateUIAfterAuth();
+    await loadSessionAndUpdateUI();
   } catch(e) { document.getElementById('loginError').innerText = e.message; }
 });
 
@@ -1471,7 +1458,7 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   try {
     const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
     if (error) throw error;
-    // إنشاء الملف الشخصي
+    // إنشاء الملف الشخصي فوراً
     await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user', created_at: new Date().toISOString() });
     alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول.');
     document.getElementById('switchToLogin').click();
@@ -1494,7 +1481,7 @@ document.getElementById('confirmUsernameBtn')?.addEventListener('click', async (
   if (error) { document.getElementById('usernameError').innerText = 'حدث خطأ أثناء حفظ الاسم'; return; }
   document.getElementById('usernameModal').classList.remove('active');
   pendingGoogleUser = null;
-  await updateUIAfterAuth();
+  await loadSessionAndUpdateUI();
 });
 document.getElementById('cancelUsernameBtn')?.addEventListener('click', () => { db.auth.signOut(); window.location.reload(); });
 
@@ -1564,17 +1551,17 @@ db.auth.onAuthStateChange(async (event, session) => {
         document.getElementById('usernameError').innerText = '';
         usernameModal.classList.add('active');
       } else {
-        await updateUIAfterAuth();
+        await loadSessionAndUpdateUI();
       }
     }
   } else if (event === 'SIGNED_OUT') {
-    await updateUIAfterAuth();
+    await loadSessionAndUpdateUI();
   }
 });
 
 // ==================== التهيئة النهائية ====================
 (async function init() {
-  await updateUIAfterAuth();
+  await loadSessionAndUpdateUI();
   loadTickerNews();
   showPage('home');
 })();
