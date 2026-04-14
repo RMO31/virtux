@@ -566,6 +566,14 @@
     @media (max-width: 700px) { .form-with-preview { grid-template-columns: 1fr; } }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// إلغاء أي Service Worker مسجّل - يمنع خطأ preloadResponse
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
+  });
+}
+</script>
 </head>
 <body>
 <div class="vx-root">
@@ -1066,97 +1074,59 @@ window.openUserPostModal = function(room) {
 };
 
 async function submitUserPost(room) {
-  const titleEl = document.getElementById('title-' + room);
-  const descEl  = document.getElementById('desc-'  + room);
-  const urlEl   = document.getElementById('url-'   + room);
-  const tagEl   = document.getElementById('tag-'   + room);
-  const conEl   = document.getElementById('content-'+ room);
-
-  const title = titleEl ? titleEl.value.trim() : '';
-  const desc  = descEl  ? descEl.value.trim()  : '';
-  let   url   = urlEl   ? urlEl.value.trim()   : '';
+  const title = (document.getElementById(`title-${room}`)?.value || '').trim();
+  const desc = (document.getElementById(`desc-${room}`)?.value || '').trim();
+  let url = (document.getElementById(`url-${room}`)?.value || '').trim();
   if (url) url = cleanUrl(url);
-  const tag   = tagEl   ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
-  const cont  = conEl   ? conEl.value.trim() || null : null;
+  const tagEl = document.getElementById(`tag-${room}`);
+  let tag = tagEl ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
+  const icon = (document.getElementById(`icon-${room}`)?.value || '').trim();
+  
+  // التحقق من صحة البيانات
+  if (room === 'live') {
+    if (!title && !url && !desc) { showUPMError('يرجى إدخال عنوان أو رابط البث.'); return; }
+    if (tag === 'Live Now' && !url) { showUPMError('للبث المباشر (Live Now) يجب إدخال رابط البث.'); return; }
+  }
+  else if (room === 'yt-videos') {
+    if (!url) { showUPMError('الرجاء إدخال رابط فيديو يوتيوب صالح.'); return; }
+    if (!isValidYouTubeUrl(url)) { showUPMError('الرابط لا يبدو صحيحاً. تأكد من أنه رابط يوتيوب صالح.'); return; }
+    // جلب العنوان تلقائياً إذا كان فارغاً
+    if (!title) {
+      const info = await fetchYouTubeVideoInfo(url);
+      if (info && info.title) {
+        // سيتم استخدامه في addUserPost
+        document.getElementById(`title-${room}`).value = info.title;
+      }
+    }
+  }
+  else if (room === 'highlights') {
+    if (!url && !currentMediaFile) { showUPMError('يرجى إدخال رابط وسائط أو رفع ملف.'); return; }
+  }
 
-  // تحقق
-  if (room === 'live' && !title && !url && !desc) {
-    showUPMError('يرجى إدخال عنوان أو رابط البث.'); return;
-  }
-  if (room === 'live' && tag === 'Live Now' && !url) {
-    showUPMError('للبث المباشر يجب إدخال رابط البث.'); return;
-  }
-  if (room === 'yt-videos' && !url) {
-    showUPMError('الرجاء إدخال رابط يوتيوب صالح.'); return;
-  }
-  if (room === 'yt-videos' && !isValidYouTubeUrl(url)) {
-    showUPMError('رابط يوتيوب غير صحيح.'); return;
-  }
-  if (room === 'highlights' && !url && !currentMediaFile) {
-    showUPMError('يرجى إدخال رابط أو رفع ملف.'); return;
-  }
-
-  const btn  = document.getElementById('upm-submit');
+  const btn = document.getElementById('upm-submit');
   const okEl = document.getElementById('upm-ok');
-  const errEl= document.getElementById('upm-err');
-  if (btn)  { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
-  if (okEl)  okEl.style.display = 'none';
+  const errEl = document.getElementById('upm-err');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
+  if (okEl) okEl.style.display = 'none';
   if (errEl) errEl.style.display = 'none';
 
-  function done(ok, msg) {
-    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
-    if (ok) {
-      if (okEl) { okEl.textContent = '✅ تم النشر!'; okEl.style.display = 'block'; }
-      currentEditPost = null;
-      loadPage(room);
-      setTimeout(function() {
-        var m = document.getElementById('upm-modal');
-        if (m) m.classList.remove('active');
-      }, 1300);
-    } else {
-      if (errEl) { errEl.textContent = '❌ ' + (msg || 'خطأ'); errEl.style.display = 'block'; }
-      else alert('❌ ' + (msg || 'خطأ'));
-    }
-  }
-
   try {
-    // رفع ملف إن وجد
-    var mediaUrl = null;
+    let mediaUrl = null;
     if (currentMediaFile) {
-      if (btn) btn.textContent = 'رفع الملف...';
       mediaUrl = await uploadMediaFile(currentMediaFile, window.currentUserId);
     }
-
-    // حساب finalUrl
-    var finalUrl = mediaUrl || url || null;
-    var isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
-    var isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
-    var isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
-
-    // عنوان افتراضي إذا فارغ
-    var finalTitle = title;
-    if (!finalTitle && titleEl) finalTitle = titleEl.value.trim();
-    if (!finalTitle) finalTitle = 'منشور';
-
-    var row = {
-      title:       finalTitle,
-      description: desc || null,
-      icon:        isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
-      url:         finalUrl,
-      tag:         tag,
-      room:        room,
-      content:     cont
-    };
-
-    var dbr = currentEditPost
-      ? await db.from('posts').update(row).eq('id', currentEditPost.id)
-      : await db.from('posts').insert(row);
-
-    if (dbr.error) { done(false, dbr.error.message); return; }
-    done(true);
-
-  } catch(ex) {
-    done(false, ex && ex.message ? ex.message : String(ex));
+    const finalTitle = title || (room === 'yt-videos' ? (await fetchYouTubeVideoInfo(url))?.title : '') || '';
+    await addUserPost(room, finalTitle || title, desc, url, tag, null, mediaUrl);
+    if (okEl) { okEl.textContent = '✅ تم النشر بنجاح!'; okEl.style.display = 'block'; }
+    setTimeout(() => {
+      document.getElementById('upm-modal').classList.remove('active');
+      loadPage(room);
+    }, 1500);
+  } catch(e) {
+    if (errEl) { errEl.textContent = '❌ ' + (e.message || 'حدث خطأ'); errEl.style.display = 'block'; }
+    console.error(e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
   }
 }
 
@@ -1363,7 +1333,9 @@ async function updateUIAfterAuth() {
         window.userRole = profile?.role || 'user';
         window.currentUserId = session.user.id;
         window.currentUsername = profile?.username || '';
-        // نعم، الأزرار العادية تظهر دائماً، ولكن VIP فقط للمصرح لهم
+        // إظهار زر Post لجميع المستخدمين المسجلين
+        document.querySelectorAll('.btn-user-post').forEach(btn => btn.style.display = 'inline-flex');
+        // VIP فقط للمصرح لهم
         if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
           document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
         } else {
