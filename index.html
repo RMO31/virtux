@@ -806,6 +806,7 @@ window.doLogout = async function() {
   var _ua = document.getElementById('btn-user-area');
   if (_ll) _ll.style.display = 'inline-block';
   if (_ua) _ua.style.display = 'none';
+  document.querySelectorAll('.btn-user-post').forEach(function(b){ b.style.display = 'none'; });
   document.querySelectorAll('.btn-ytvip-post').forEach(function(b){ b.style.display = 'none'; });
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
 };
@@ -884,7 +885,8 @@ async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
     url: finalUrl,
     tag: tag,
     room: room,
-    content: content || null
+    content: content || null,
+    user_id: window.currentUserId || null
   };
   const res = await db.from('posts').insert(body);
   if (res.error) throw res.error;
@@ -1287,6 +1289,15 @@ async function loadPage(room) {
 
 function isVIPContent(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
 
+async function deletePost(id, room) {
+  if (!confirm('حذف هذا المنشور نهائياً؟')) return;
+  try {
+    const { error } = await db.from('posts').delete().eq('id', id);
+    if (error) { alert('فشل الحذف: ' + error.message); return; }
+    loadPage(room);
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
@@ -1342,7 +1353,14 @@ function renderCards(posts, gridId, room) {
         actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
       }
     }
-    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;">${actions}${readMoreLink}</div></div></div></div>`;
+    // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
+    const currentUid = window.currentUserId;
+    const isOwner = currentUid && p.user_id && p.user_id === currentUid;
+    const isAdmin = window.userRole === 'admin';
+    const deleteBtn = (isOwner || isAdmin)
+      ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="حذف">🗑️</button>`
+      : '';
+    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${readMoreLink}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -1572,6 +1590,7 @@ function startTickerAnimation() {
   animate();
 }
 
+window.deletePost = deletePost;
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
