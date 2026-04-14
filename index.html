@@ -780,6 +780,15 @@
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
+
+// مسح الـ hash من الـ URL فوراً قبل ما Supabase يشتغل (يمنع بقاء access_token في الرابط)
+(function cleanUrlHash() {
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    const cleanUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState(null, '', cleanUrl);
+  }
+})();
+
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     persistSession: true,
@@ -998,9 +1007,9 @@ window.openUserPostModal = function(room) {
       <div>
         <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Player / Game</label><input id="desc-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
-        <div style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="url-${room}" style="${inputStyle}"></div>
-        ${fileInputHtml('image/*,video/*', 'أو ارفع ملف من الحاسوب (صورة أو فيديو)', 'media')}
+        <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}" onchange="window.onHighlightTagChange(this.value)"><option value="Video">🎬 Video</option><option value="Pro">🏅 Pro</option></select></div>
+        <div style="margin-top:12px;"><label>Media URL (Video URL only)</label><input id="url-${room}" style="${inputStyle}"></div>
+        ${fileInputHtml('video/*', 'أو ارفع فيديو من الحاسوب', 'media')}
         <input type="hidden" id="icon-${room}">
       </div>
       <div class="preview-panel">
@@ -1172,9 +1181,12 @@ async function submitUserPost(room) {
   var pickedIcon = iconEl ? iconEl.value : '';
   var fileIsImage = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('image/'));
   var fileIsVideo = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('video/'));
-  if (room === 'highlights' && currentMediaFile && (tag === 'Video' || tag === 'Photo' || !tag)) {
-    if (fileIsImage) tag = 'Photo';
-    else if (fileIsVideo) tag = 'Video';
+  if (room === 'highlights' && currentMediaFile && fileIsImage) {
+    showUPMError('الصور غير مسموحة في Highlights، ارفع فيديو فقط');
+    return;
+  }
+  if (room === 'highlights' && currentMediaFile && (tag === 'Video' || tag === 'Pro' || !tag)) {
+    if (fileIsVideo) tag = 'Video';
   }
 
   // تحقق
@@ -1182,7 +1194,8 @@ async function submitUserPost(room) {
   if (room === 'live'      && tag === 'Live Now' && !url) { showUPMError('البث المباشر يحتاج رابط'); return; }
   if (room === 'yt-videos' && !url)                       { showUPMError('أدخل رابط يوتيوب'); return; }
   if (room === 'yt-videos' && !isValidYouTubeUrl(url))    { showUPMError('رابط يوتيوب غير صحيح'); return; }
-  if (room === 'highlights'&& !url && !currentMediaFile)  { showUPMError('أدخل رابط أو ارفع ملف'); return; }
+  if (room === 'highlights'&& !url && !currentMediaFile)  { showUPMError('أدخل رابط فيديو أو ارفع فيديو'); return; }
+  if (room === 'highlights' && url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url)) { showUPMError('الصور غير مسموحة في Highlights، أدخل رابط فيديو فقط'); return; }
 
   var btn  = document.getElementById('upm-submit');
   var okEl = document.getElementById('upm-ok');
@@ -1288,7 +1301,7 @@ rooms.forEach(room => {
 const contactPage = document.createElement('div');
 contactPage.className = 'vx-page';
 contactPage.id = 'page-contact';
-contactPage.innerHTML = `<div class="page-header"><h2>📞 Contact Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/virtux</div></div><div class="contact-card"><div class="cc-icon">📧</div><div class="cc-name">Email</div><div class="cc-handle">contact@virtux.gg</div></div><div class="contact-card"><div class="cc-icon">🐦</div><div class="cc-name">Twitter / X</div><div class="cc-handle">@VirtuxGG</div></div><div class="contact-card"><div class="cc-icon">📸</div><div class="cc-name">Instagram</div><div class="cc-handle">@virtux.official</div></div><div class="contact-card"><div class="cc-icon">▶️</div><div class="cc-name">YouTube</div><div class="cc-handle">@VirtuxGaming</div></div></div></div>`;
+contactPage.innerHTML = `<div class="page-header"><h2>📞 Contact Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card" onclick="window.open('https://discord.gg/45fJNmww6D','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/45fJNmww6D</div></div><div class="contact-card" onclick="window.open('mailto:menouer.rayane310201@gmail.com','_blank')"><div class="cc-icon">📧</div><div class="cc-name">Email</div><div class="cc-handle">menouer.rayane310201@gmail.com</div></div><div class="contact-card"><div class="cc-icon">🐦</div><div class="cc-name">Twitter / X</div><div class="cc-handle">@VirtuxGG</div></div><div class="contact-card"><div class="cc-icon">📸</div><div class="cc-name">Instagram</div><div class="cc-handle">@virtux.official</div></div><div class="contact-card"><div class="cc-icon">▶️</div><div class="cc-name">YouTube</div><div class="cc-handle">@VirtuxGaming</div></div></div></div>`;
 mainContainer.appendChild(contactPage);
 
 async function loadPage(room) {
@@ -1576,8 +1589,8 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     document.getElementById('loginIdentifier').value = username;
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
-document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href, scopes: 'email profile' } }));
-document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href, scopes: 'email profile' } }));
+document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname, scopes: 'email profile' } }));
+document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname, scopes: 'email profile' } }));
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
 // ==================== شريط الأخبار ====================
@@ -1635,6 +1648,7 @@ window.toggleDD = toggleDD;
 window.closeDD = closeDD;
 window.openUserPostModal = openUserPostModal;
 window.clearMediaForRoom = clearMediaForRoom;
+window.onHighlightTagChange = function(val) { /* Videos only, no action needed */ };
 window.openYTVIPModal = function() { alert('VIP video posting is available in admin panel.'); };
 window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
