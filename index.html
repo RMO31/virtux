@@ -798,7 +798,6 @@ let tickerAnimationId = null;
 
 window.doLogout = async function() {
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
-  _authUpdateInProgress = false;
   window.currentUserId = null;
   window.currentUsername = null;
   window.userRole = 'guest';
@@ -1415,22 +1414,25 @@ function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m =>
 // ==================== دوال المصادقة والملف الشخصي ====================
 let _authUpdatePromise = null;
 async function updateUIAfterAuth() {
-  // إذا في تحديث جاري، انتظره وبعدين ارجع (لا تشغّل نسخة ثانية)
   if (_authUpdatePromise) { await _authUpdatePromise; return; }
   _authUpdatePromise = _doUpdateUI();
   try { await _authUpdatePromise; } finally { _authUpdatePromise = null; }
 }
 async function _doUpdateUI() {
   try {
+    // نجلب الـ session مباشرة من localStorage بدون network call
     const { data: { session } } = await db.auth.getSession();
     const loginLink = document.getElementById('btn-login-link');
     const userArea = document.getElementById('btn-user-area');
     const userNameSpan = document.getElementById('user-name');
     const roleBadge = document.getElementById('user-role-badge');
     const userAvatarImg = document.getElementById('user-avatar-img');
+    if (!loginLink || !userArea) return; // DOM not ready
+
     if (session && session.user) {
       loginLink.style.display = 'none';
       userArea.style.display = 'flex';
+
       let { data: profile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
       if (!profile) {
         let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
@@ -1445,21 +1447,22 @@ async function _doUpdateUI() {
         profile = newProfile;
       }
       if (profile) {
-        userNameSpan.textContent = '👋 ' + (profile?.username || session.user.email.split('@')[0]);
-        roleBadge.style.display = profile?.role && profile.role !== 'user' ? 'inline-block' : 'none';
-        if (profile?.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
-        if (profile?.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
+        userNameSpan.textContent = '👋 ' + (profile.username || session.user.email.split('@')[0]);
+        roleBadge.style.display = profile.role && profile.role !== 'user' ? 'inline-block' : 'none';
+        if (profile.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
+        if (profile.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
         else userAvatarImg.style.display = 'none';
-        window.userRole = profile?.role || 'user';
+        window.userRole = profile.role || 'user';
         window.currentUserId = session.user.id;
-        window.currentUsername = profile?.username || '';
-        if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
+        window.currentUsername = profile.username || '';
+        if (profile.role === 'youtuber-vip' || profile.role === 'vip' || profile.role === 'admin') {
           document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
         } else {
           document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
         }
       }
     } else {
+      // لا يوجد session — أظهر زر تسجيل الدخول
       loginLink.style.display = 'inline-block';
       userArea.style.display = 'none';
       window.userRole = 'guest';
@@ -1467,26 +1470,32 @@ async function _doUpdateUI() {
       window.currentUsername = null;
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
     }
-  } catch(err) { console.error(err); }
+  } catch(err) { console.error('updateUI error:', err); }
 }
 
 async function checkAuth() { await updateUIAfterAuth(); }
+
 db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && !session?.user) return;
   if (event === 'SIGNED_IN') {
-    const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
-    if (!profile) {
-      pendingGoogleUser = session.user;
-      const usernameModal = document.getElementById('usernameModal');
-      const input = document.getElementById('newUsername');
-      input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-      document.getElementById('usernameError').innerText = '';
-      usernameModal.classList.add('active');
-      return;
+    // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد)
+    if (session?.user) {
+      const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
+      if (!profile) {
+        pendingGoogleUser = session.user;
+        const usernameModal = document.getElementById('usernameModal');
+        const input = document.getElementById('newUsername');
+        input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+        document.getElementById('usernameError').innerText = '';
+        usernameModal.classList.add('active');
+        return;
+      }
     }
+    await updateUIAfterAuth();
+  } else if (event === 'SIGNED_OUT') {
+    await updateUIAfterAuth();
+  } else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+    await updateUIAfterAuth();
   }
-  // كل الأحداث الأخرى (INITIAL_SESSION, TOKEN_REFRESHED, SIGNED_OUT) تحدّث الـ UI
-  await updateUIAfterAuth();
 });
 
 document.getElementById('confirmUsernameBtn')?.addEventListener('click', async () => {
