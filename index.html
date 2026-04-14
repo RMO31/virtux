@@ -958,15 +958,15 @@ window.openUserPostModal = function(room) {
     formHtml = `<div class="form-with-preview">
       <div>
         <div><label>🔗 Stream URL *</label><input id="url-${room}" style="${inputStyle}" placeholder="https://youtube.com/watch?v=... أو twitch.tv/..."></div>
-        <div id="live-status-${room}" style="font-size:11px;color:#aaa;margin-top:4px;min-height:16px;"></div>
-        <div style="margin-top:12px;"><label>📝 Title</label><input id="title-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط أو اكتب يدوياً"></div>
-        <div style="margin-top:12px;"><label>🎮 Game / Description</label><input id="desc-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط أو اكتب يدوياً"></div>
-        <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option></select></div>
+        <div id="live-status" style="font-size:11px;color:#aaa;margin-top:3px;min-height:15px;"></div>
+        <div style="margin-top:10px;"><label>📝 Title</label><input id="title-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط"></div>
+        <div style="margin-top:10px;"><label>🎮 Game / Description</label><input id="desc-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط"></div>
+        <div style="margin-top:10px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option></select></div>
         <input type="hidden" id="icon-${room}">
       </div>
       <div class="preview-panel">
         <h4 style="color:#d4af37;">معاينة البث</h4>
-        <div id="live-thumb-${room}" style="color:#aaa;font-size:12px;">أدخل رابط البث لعرض المعاينة</div>
+        <div id="live-thumb" style="color:#aaa;font-size:12px;">أدخل رابط البث</div>
       </div>
     </div>`;
   } else if (room === 'yt-videos') {
@@ -1059,60 +1059,86 @@ window.openUserPostModal = function(room) {
     }
   }
 
-  // جلب معلومات البث تلقائياً عند إدخال URL في Live
+  // جلب معلومات البث تلقائياً — live
   if (room === 'live') {
-    var liveUrl$ = document.getElementById('url-live');
-    if (liveUrl$) {
-      liveUrl$.addEventListener('blur', async function() {
-        var liveUrl = this.value.trim();
-        if (!liveUrl) return;
-        var statusEl = document.getElementById('live-status-live');
-        var titleEl  = document.getElementById('title-live');
-        var descEl   = document.getElementById('desc-live');
-        var thumbEl  = document.getElementById('live-thumb-live');
-        if (statusEl) { statusEl.style.color = '#aaa'; statusEl.textContent = '⏳ جاري جلب المعلومات...'; }
+    var _lu = document.getElementById('url-live');
+    if (_lu) {
+      _lu.addEventListener('blur', async function() {
+        var lv = this.value.trim();
+        if (!lv) return;
+        var st = document.getElementById('live-status');
+        var ti = document.getElementById('title-live');
+        var de = document.getElementById('desc-live');
+        var th = document.getElementById('live-thumb');
+        if (st) { st.style.color='#aaa'; st.textContent='⏳ جاري جلب المعلومات...'; }
         try {
-          // YouTube
-          if (liveUrl.includes('youtube.com') || liveUrl.includes('youtu.be')) {
-            var info = await fetchYouTubeVideoInfo(liveUrl);
+          if (lv.includes('youtube.com') || lv.includes('youtu.be')) {
+            var info = await fetchYouTubeVideoInfo(lv);
             if (info) {
-              if (titleEl && !titleEl.value) titleEl.value = info.title;
-              if (descEl  && !descEl.value)  descEl.value  = info.channelTitle;
-              if (thumbEl) thumbEl.innerHTML = '<img src="'+(info.thumbnail||'')+'" style="max-width:100%;border-radius:8px;margin-bottom:6px;"><div style="font-size:12px;color:#d4af37;">'+(info.title||'')+'</div>';
-              if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ تم جلب المعلومات من يوتيوب'; }
+              if (ti && !ti.value) ti.value = info.title || '';
+              if (de && !de.value) de.value = info.channelTitle || '';
+              if (th) th.innerHTML = (info.thumbnail ? '<img src="'+info.thumbnail+'" style="max-width:100%;border-radius:7px;margin-bottom:5px;">' : '') + '<div style="font-size:12px;color:#d4af37;">'+(info.title||'')+'</div>';
+              if (st) { st.style.color='#4caf90'; st.textContent='✅ تم جلب المعلومات'; }
             } else {
-              if (statusEl) { statusEl.style.color = '#f55'; statusEl.textContent = '⚠️ لم يُعثر على معلومات'; }
+              if (st) { st.style.color='#f55'; st.textContent='⚠️ لم يُعثر على معلومات الفيديو'; }
             }
-          }
-          // Twitch
-          else if (liveUrl.includes('twitch.tv')) {
-            var tm = liveUrl.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-            if (tm && tm[1]) {
-              if (titleEl && !titleEl.value) titleEl.value = tm[1] + ' — Live on Twitch';
-              if (descEl  && !descEl.value)  descEl.value  = 'twitch.tv/' + tm[1];
-              if (thumbEl) thumbEl.innerHTML = '<div style="color:#9147ff;font-size:20px;margin-bottom:4px;">🟣</div><div style="color:#d4af37;font-size:13px;">'+tm[1]+' on Twitch</div>';
-            }
-            if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ Twitch'; }
-          }
-          // Facebook
-          else if (liveUrl.includes('facebook.com') || liveUrl.includes('fb.watch')) {
-            if (titleEl && !titleEl.value) titleEl.value = 'Facebook Live';
-            if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ Facebook Live'; }
-          }
-          // TikTok
-          else if (liveUrl.includes('tiktok.com')) {
-            var tt = liveUrl.match(/tiktok\.com\/@([^/\?&]+)/);
-            if (tt && tt[1]) {
-              if (titleEl && !titleEl.value) titleEl.value = '@' + tt[1] + ' — TikTok Live';
-            }
-            if (statusEl) { statusEl.style.color = '#4caf90'; statusEl.textContent = '✅ TikTok Live'; }
-          }
-          else {
-            if (statusEl) statusEl.textContent = '';
+          } else if (lv.includes('twitch.tv')) {
+            var m = lv.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+            if (m) { if (ti&&!ti.value) ti.value=m[1]+' — Live on Twitch'; if (de&&!de.value) de.value='twitch.tv/'+m[1]; }
+            if (st) { st.style.color='#4caf90'; st.textContent='✅ Twitch'; }
+          } else if (lv.includes('facebook.com')||lv.includes('fb.watch')) {
+            if (ti&&!ti.value) ti.value='Facebook Live';
+            if (st) { st.style.color='#4caf90'; st.textContent='✅ Facebook Live'; }
+          } else if (lv.includes('tiktok.com')) {
+            var tt=lv.match(/tiktok\.com\/@([^/?&]+)/);
+            if (tt&&ti&&!ti.value) ti.value='@'+tt[1]+' — TikTok Live';
+            if (st) { st.style.color='#4caf90'; st.textContent='✅ TikTok Live'; }
+          } else {
+            if (st) st.textContent='';
           }
         } catch(e) {
-          if (statusEl) { statusEl.style.color = '#f55'; statusEl.textContent = '⚠️ خطأ في جلب المعلومات'; }
+          if (st) { st.style.color='#f55'; st.textContent='⚠️ خطأ في جلب المعلومات'; }
         }
+      });
+    }
+  }
+
+  // جلب معلومات البث تلقائياً — live
+  if (room === 'live') {
+    var _lu = document.getElementById('url-live');
+    if (_lu) {
+      _lu.addEventListener('blur', async function() {
+        var lv = this.value.trim();
+        if (!lv) return;
+        var st = document.getElementById('live-status');
+        var ti = document.getElementById('title-live');
+        var de = document.getElementById('desc-live');
+        var th = document.getElementById('live-thumb');
+        if (st) { st.style.color='#aaa'; st.textContent='⏳ جاري جلب المعلومات...'; }
+        try {
+          if (lv.includes('youtube.com') || lv.includes('youtu.be')) {
+            var info = await fetchYouTubeVideoInfo(lv);
+            if (info) {
+              if (ti && !ti.value) ti.value = info.title || '';
+              if (de && !de.value) de.value = info.channelTitle || '';
+              if (th) th.innerHTML = (info.thumbnail?'<img src="'+info.thumbnail+'" style="max-width:100%;border-radius:7px;margin-bottom:5px;">':'')+'<div style="font-size:12px;color:#d4af37;">'+(info.title||'')+'</div>';
+              if (st) { st.style.color='#4caf90'; st.textContent='✅ تم جلب المعلومات'; }
+            } else {
+              if (st) { st.style.color='#f55'; st.textContent='⚠️ لم يُعثر على معلومات'; }
+            }
+          } else if (lv.includes('twitch.tv')) {
+            var m=lv.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+            if (m) { if(ti&&!ti.value)ti.value=m[1]+' — Live on Twitch'; if(de&&!de.value)de.value='twitch.tv/'+m[1]; }
+            if (st) { st.style.color='#4caf90'; st.textContent='✅ Twitch'; }
+          } else if (lv.includes('facebook.com')||lv.includes('fb.watch')) {
+            if (ti&&!ti.value) ti.value='Facebook Live';
+            if (st) { st.style.color='#4caf90'; st.textContent='✅ Facebook Live'; }
+          } else if (lv.includes('tiktok.com')) {
+            var tt=lv.match(/tiktok\.com\/@([^/?&]+)/);
+            if(tt&&ti&&!ti.value)ti.value='@'+tt[1]+' — TikTok Live';
+            if(st){st.style.color='#4caf90';st.textContent='✅ TikTok Live';}
+          } else { if(st)st.textContent=''; }
+        } catch(e) { if(st){st.style.color='#f55';st.textContent='⚠️ خطأ';} }
       });
     }
   }
@@ -1173,8 +1199,18 @@ async function submitUserPost(room) {
     var isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
     var isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
     var isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
+    // إذا العنوان فارغ وكان youtube نأخذ العنوان من API قبل النشر
+    if (!title && room === 'live' && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
+      try {
+        var _inf = await fetchYouTubeVideoInfo(finalUrl);
+        if (_inf && _inf.title) {
+          title = _inf.title;
+          if (!desc && _inf.channelTitle) desc = _inf.channelTitle;
+        }
+      } catch(e) {}
+    }
     var row = {
-      title:       title || 'منشور',
+      title:       title || url || 'منشور',
       description: desc  || null,
       icon:        isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
       url:         finalUrl,
