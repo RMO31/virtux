@@ -878,16 +878,16 @@ async function addUserPost(room, title, desc, url, tag, content, mediaUrl) {
   const isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
   const isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
   const body = {
-    title: title || '📄 منشور',
-    description: desc,
+    title: title || 'منشور',
+    description: desc || null,
     icon: isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
     url: finalUrl,
     tag: tag,
     room: room,
     content: content || null
   };
-  const { error } = await db.from('posts').insert(body);
-  if (error) throw error;
+  const res = await db.from('posts').insert(body);
+  if (res.error) throw res.error;
 }
 
 // ==================== نماذج النشر مع معاينة ورفع ====================
@@ -1038,47 +1038,6 @@ window.openUserPostModal = function(room) {
     }
   }
 
-  // جلب معلومات البث تلقائياً عند إدخال الرابط
-  if (room === 'live') {
-    var liveUrlInput = document.getElementById('url-live');
-    if (liveUrlInput) {
-      liveUrlInput.addEventListener('blur', async function() {
-        var liveUrl = liveUrlInput.value.trim();
-        if (!liveUrl) return;
-        var titleInp = document.getElementById('title-live');
-        var descInp  = document.getElementById('desc-live');
-        // YouTube Live
-        if (liveUrl.includes('youtube.com') || liveUrl.includes('youtu.be')) {
-          var ytInfo = await fetchYouTubeVideoInfo(liveUrl);
-          if (ytInfo) {
-            if (titleInp && !titleInp.value) titleInp.value = ytInfo.title || '';
-            if (descInp  && !descInp.value)  descInp.value  = ytInfo.channelTitle || '';
-          }
-        }
-        // Twitch - استخراج اسم القناة من الرابط
-        else if (liveUrl.includes('twitch.tv')) {
-          var twitchMatch = liveUrl.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-          if (twitchMatch && twitchMatch[1]) {
-            var channelName = twitchMatch[1];
-            if (titleInp && !titleInp.value) titleInp.value = channelName + ' — Live on Twitch';
-            if (descInp  && !descInp.value)  descInp.value  = 'twitch.tv/' + channelName;
-          }
-        }
-        // Facebook Live
-        else if (liveUrl.includes('facebook.com') || liveUrl.includes('fb.com')) {
-          if (titleInp && !titleInp.value) titleInp.value = 'Facebook Live';
-        }
-        // TikTok Live
-        else if (liveUrl.includes('tiktok.com')) {
-          var ttMatch = liveUrl.match(/tiktok\.com\/@([^\/\?]+)/);
-          if (ttMatch) {
-            if (titleInp && !titleInp.value) titleInp.value = '@' + ttMatch[1] + ' — TikTok Live';
-          }
-        }
-      });
-    }
-  }
-
   // معاينة يوتيوب
   if (room === 'yt-videos') {
     const urlInput = document.getElementById(`url-${room}`);
@@ -1107,62 +1066,73 @@ window.openUserPostModal = function(room) {
 };
 
 async function submitUserPost(room) {
-  var title = (document.getElementById('title-'+room) ? document.getElementById('title-'+room).value.trim() : '');
-  var desc  = (document.getElementById('desc-' +room) ? document.getElementById('desc-' +room).value.trim() : '');
-  var url   = (document.getElementById('url-'  +room) ? document.getElementById('url-'  +room).value.trim() : '');
-  if (url) url = cleanUrl(url);
-  var tagEl = document.getElementById('tag-'+room);
-  var tag   = tagEl ? tagEl.value : (room==='yt-videos'?'Video':room);
+  var titleEl = document.getElementById('title-' + room);
+  var descEl  = document.getElementById('desc-'  + room);
+  var urlEl   = document.getElementById('url-'   + room);
+  var tagEl   = document.getElementById('tag-'   + room);
 
-  if (room==='live' && !title && !url && !desc)    { showUPMError('أدخل عنوان أو رابط البث'); return; }
-  if (room==='live' && tag==='Live Now' && !url)   { showUPMError('البث المباشر يحتاج رابط'); return; }
-  if (room==='yt-videos' && !url)                  { showUPMError('أدخل رابط يوتيوب'); return; }
-  if (room==='yt-videos' && !isValidYouTubeUrl(url)){ showUPMError('رابط يوتيوب غير صحيح'); return; }
-  if (room==='highlights' && !url && !currentMediaFile){ showUPMError('أدخل رابط أو ارفع ملف'); return; }
+  var title = titleEl ? titleEl.value.trim() : '';
+  var desc  = descEl  ? descEl.value.trim()  : '';
+  var url   = urlEl   ? urlEl.value.trim()   : '';
+  if (url) url = cleanUrl(url);
+  var tag   = tagEl   ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
+
+  // تحقق
+  if (room === 'live'      && !title && !url && !desc)    { showUPMError('أدخل عنوان أو رابط البث'); return; }
+  if (room === 'live'      && tag === 'Live Now' && !url) { showUPMError('البث المباشر يحتاج رابط'); return; }
+  if (room === 'yt-videos' && !url)                       { showUPMError('أدخل رابط يوتيوب'); return; }
+  if (room === 'yt-videos' && !isValidYouTubeUrl(url))    { showUPMError('رابط يوتيوب غير صحيح'); return; }
+  if (room === 'highlights'&& !url && !currentMediaFile)  { showUPMError('أدخل رابط أو ارفع ملف'); return; }
 
   var btn  = document.getElementById('upm-submit');
   var okEl = document.getElementById('upm-ok');
-  var errEl= document.getElementById('upm-err');
-  if (btn)  { btn.disabled=true; btn.textContent='جاري النشر...'; }
-  if (okEl)  okEl.style.display='none';
-  if (errEl) errEl.style.display='none';
+  var errEl = document.getElementById('upm-err');
+  if (btn)  { btn.disabled = true; btn.textContent = 'جاري النشر...'; }
+  if (okEl)  okEl.style.display = 'none';
+  if (errEl) errEl.style.display = 'none';
 
   function done(ok, msg) {
-    if (btn) { btn.disabled=false; btn.textContent='➕ Publish'; }
+    if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
     if (ok) {
-      if (okEl) { okEl.textContent='✅ تم النشر!'; okEl.style.display='block'; }
-      currentEditPost=null;
+      if (okEl) { okEl.textContent = '✅ تم النشر!'; okEl.style.display = 'block'; }
+      currentEditPost = null;
       loadPage(room);
-      setTimeout(function(){ var m=document.getElementById('upm-modal'); if(m)m.classList.remove('active'); }, 1300);
+      setTimeout(function() {
+        var m = document.getElementById('upm-modal');
+        if (m) m.classList.remove('active');
+      }, 1300);
     } else {
-      if (errEl) { errEl.textContent='❌ '+(msg||'خطأ'); errEl.style.display='block'; }
-      else alert('❌ '+(msg||'خطأ'));
+      if (errEl) { errEl.textContent = '❌ ' + (msg || 'خطأ'); errEl.style.display = 'block'; }
+      else alert('❌ ' + (msg || 'خطأ'));
     }
   }
 
   try {
     var mediaUrl = null;
     if (currentMediaFile) {
-      if (btn) btn.textContent='رفع الملف...';
+      if (btn) btn.textContent = 'رفع الملف...';
       mediaUrl = await uploadMediaFile(currentMediaFile, window.currentUserId);
     }
-    var finalUrl = mediaUrl||url||null;
-    var isYT  = finalUrl&&(finalUrl.includes('youtube.com')||finalUrl.includes('youtu.be'));
-    var isImg = finalUrl&&/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
-    var isVid = finalUrl&&/\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
-    var finalTitle = title || 'منشور';
+    var finalUrl = mediaUrl || url || null;
+    var isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
+    var isImg = finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl);
+    var isVid = finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl);
     var row = {
-      title: finalTitle, description: desc||null,
-      icon: isYT?'📹':(isImg?'🖼️':(isVid?'🎥':(finalUrl?'🔗':'📄'))),
-      url: finalUrl, tag: tag, room: room, content: null
+      title:       title || 'منشور',
+      description: desc  || null,
+      icon:        isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
+      url:         finalUrl,
+      tag:         tag,
+      room:        room,
+      content:     null
     };
     var dbr = currentEditPost
-      ? await db.from('posts').update(row).eq('id',currentEditPost.id)
+      ? await db.from('posts').update(row).eq('id', currentEditPost.id)
       : await db.from('posts').insert(row);
     if (dbr.error) { done(false, dbr.error.message); return; }
     done(true);
   } catch(ex) {
-    done(false, ex&&ex.message?ex.message:String(ex));
+    done(false, ex && ex.message ? ex.message : String(ex));
   }
 }
 
