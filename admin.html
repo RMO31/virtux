@@ -333,8 +333,8 @@ async function loadDashboard() {
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
         return has
-          ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">+ ${r}</button>`;
+          ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">✕ ${r}</button>`
+          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">+ ${r}</button>`;
       }).join('');
       return `<div class="pi" id="user-${u.id}">
         <div class="pi-icon">👤</div>
@@ -412,8 +412,8 @@ async function searchUsersForRole(query) {
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
         return has
-          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">+ ${r}</button>`;
+          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">✕ ${r}</button>`
+          : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">+ ${r}</button>`;
       }).join('');
       return `<div class="role-search-result-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
         <div><strong>${escapeHtml(u.username||u.email)}</strong> <small style="color:#667;">${escapeHtml(u.email)}</small></div>
@@ -425,9 +425,9 @@ async function searchUsersForRole(query) {
 }
 function refreshDashboard() { loadDashboard(); }
 
-async function addRoleToUser(userId, roleToAdd, rolesJson) {
+async function addRoleToUser(userId, roleToAdd, rolesB64) {
   try {
-    let roles = JSON.parse(rolesJson.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
+    let roles = JSON.parse(atob(rolesB64));
     if (!roles.includes(roleToAdd)) roles.push(roleToAdd);
     roles = roles.filter(r => r !== 'user' || roles.length === 1); // إزالة 'user' إذا كان هناك role آخر
     if (roles.length === 0) roles = ['user'];
@@ -436,9 +436,9 @@ async function addRoleToUser(userId, roleToAdd, rolesJson) {
   } catch(e) { alert('خطأ: ' + e.message); }
 }
 
-async function removeRoleFromUser(userId, roleToRemove, rolesJson) {
+async function removeRoleFromUser(userId, roleToRemove, rolesB64) {
   try {
-    let roles = JSON.parse(rolesJson.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
+    let roles = JSON.parse(atob(rolesB64));
     roles = roles.filter(r => r !== roleToRemove);
     if (roles.length === 0) roles = ['user'];
     await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
