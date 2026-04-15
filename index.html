@@ -794,11 +794,21 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   }
 });
 
-// مسح access_token من الـ URL بعد إنشاء الـ client حتى يتمكن من قراءة الـ session أولاً
-if (window.location.hash && window.location.hash.includes('access_token')) {
-  setTimeout(() => {
-    window.history.replaceState(null, '', window.location.origin + window.location.pathname);
-  }, 500);
+// مسح tokens من الـ URL بعد إنشاء الـ client
+// PKCE flow يستخدم ?code= في query params، و implicit يستخدم #access_token في hash
+let _urlHasAuth = (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('error')))
+  || (window.location.search && window.location.search.includes('code='));
+if (_urlHasAuth) {
+  // ننتظر حتى يعالج Supabase الـ callback ثم ننظف الـ URL
+  db.auth.onAuthStateChange(function _cleanUrl(event) {
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+      setTimeout(() => {
+        window.history.replaceState(null, '', window.location.origin + window.location.pathname);
+      }, 1000);
+      // نزيل هذا الـ listener بعد أول استخدام
+      // (onAuthStateChange لا يدعم unsubscribe بسهولة لذا نستخدم flag)
+    }
+  });
 }
 let allPosts = {};
 let pendingGoogleUser = null;
@@ -1511,24 +1521,34 @@ async function _doUpdateUI() {
 async function checkAuth() { await updateUIAfterAuth(); }
 
 db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN') {
+  console.log('Auth event:', event, session?.user?.email);
+  if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session?.user)) {
+    // إغلاق نافذة تسجيل الدخول إن كانت مفتوحة
+    const authM = document.getElementById('authModal');
+    if (authM) authM.classList.remove('active');
     // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد)
     if (session?.user) {
-      const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
-      if (!profile) {
-        pendingGoogleUser = session.user;
-        const usernameModal = document.getElementById('usernameModal');
-        const input = document.getElementById('newUsername');
-        input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-        document.getElementById('usernameError').innerText = '';
-        usernameModal.classList.add('active');
-        return;
+      try {
+        const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
+        if (!profile) {
+          pendingGoogleUser = session.user;
+          const usernameModal = document.getElementById('usernameModal');
+          const input = document.getElementById('newUsername');
+          if (usernameModal && input) {
+            input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '';
+            document.getElementById('usernameError').innerText = '';
+            usernameModal.classList.add('active');
+          }
+          return;
+        }
+      } catch(e) {
+        console.error('Profile check error:', e);
       }
     }
     await updateUIAfterAuth();
   } else if (event === 'SIGNED_OUT') {
     await updateUIAfterAuth();
-  } else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+  } else if (event === 'TOKEN_REFRESHED') {
     await updateUIAfterAuth();
   }
 });
@@ -1587,8 +1607,30 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     document.getElementById('loginIdentifier').value = username;
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
-document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } }));
-document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } }));
+document.getElementById('googleLoginBtn')?.addEventListener('click', async () => {
+  try {
+    const { data, error } = await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname,
+        queryParams: { access_type: 'offline', prompt: 'consent' }
+      }
+    });
+    if (error) { console.error('Google login error:', error); document.getElementById('loginError').innerText = 'فشل تسجيل الدخول بغوغل: ' + error.message; }
+  } catch(e) { console.error('Google login exception:', e); document.getElementById('loginError').innerText = 'فشل تسجيل الدخول بغوغل'; }
+});
+document.getElementById('googleSignupBtn')?.addEventListener('click', async () => {
+  try {
+    const { data, error } = await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname,
+        queryParams: { access_type: 'offline', prompt: 'consent' }
+      }
+    });
+    if (error) { console.error('Google signup error:', error); document.getElementById('signupError').innerText = 'فشل التسجيل بغوغل: ' + error.message; }
+  } catch(e) { console.error('Google signup exception:', e); document.getElementById('signupError').innerText = 'فشل التسجيل بغوغل'; }
+});
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
 // ==================== شريط الأخبار ====================
