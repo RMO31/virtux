@@ -334,7 +334,43 @@ async function loadDashboard() {
         let has = roles.includes(r);
         return has
           ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">+ ${r}</button>`;
+          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="async function addRoleToUser(userId, roleToAdd, rolesB64) {
+  try {
+    let roles = JSON.parse(atob(rolesB64));
+
+    // تأكد أنها مصفوفة
+    if (!Array.isArray(roles)) roles = [];
+
+    // إضافة الرول إذا غير موجود
+    if (!roles.includes(roleToAdd)) {
+      roles.push(roleToAdd);
+    }
+
+    // حذف user إذا فيه رولات ثانية
+    if (roles.length > 1) {
+      roles = roles.filter(r => r !== 'user');
+    }
+
+    // ضمان وجود رول واحد على الأقل
+    if (roles.length === 0) {
+      roles = ['user'];
+    }
+
+    console.log("NEW ROLES:", roles); // للتأكد
+
+    let { error } = await supabaseClient
+      .from('profiles')
+      .update({ roles: roles, role: roles[0] })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    loadDashboard();
+
+  } catch (e) {
+    alert('خطأ: ' + e.message);
+  }
+}('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">+ ${r}</button>`;
       }).join('');
       return `<div class="pi" id="user-${u.id}">
         <div class="pi-icon">👤</div>
@@ -412,7 +448,29 @@ async function searchUsersForRole(query) {
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
         return has
-          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">✕ ${r}</button>`
+          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="async function removeRoleFromUser(userId, roleToRemove, rolesB64) {
+  try {
+    let roles = JSON.parse(atob(rolesB64));
+
+    roles = roles.filter(r => r !== roleToRemove);
+
+    if (roles.length === 0) {
+      roles = ['user'];
+    }
+
+    let { error } = await supabaseClient
+      .from('profiles')
+      .update({ roles: roles, role: roles[0] })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    loadDashboard();
+
+  } catch (e) {
+    alert('خطأ: ' + e.message);
+  }
+}FromUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">✕ ${r}</button>`
           : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${r}','${btoa(JSON.stringify(roles))}')">+ ${r}</button>`;
       }).join('');
       return `<div class="role-search-result-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
