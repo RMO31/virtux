@@ -781,11 +781,6 @@ const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 
-// مسح access_token من الـ URL فوراً بعد redirect من Google
-if (window.location.hash && window.location.hash.includes('access_token')) {
-  window.history.replaceState(null, '', window.location.origin + window.location.pathname);
-}
-
 const SITE_URL = window.location.origin + window.location.pathname;
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -794,10 +789,17 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     storageKey: 'virtux-auth-v2',
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'implicit',
+    flowType: 'pkce',
     storage: window.localStorage
   }
 });
+
+// مسح access_token من الـ URL بعد إنشاء الـ client حتى يتمكن من قراءة الـ session أولاً
+if (window.location.hash && window.location.hash.includes('access_token')) {
+  setTimeout(() => {
+    window.history.replaceState(null, '', window.location.origin + window.location.pathname);
+  }, 500);
+}
 let allPosts = {};
 let pendingGoogleUser = null;
 let currentProfileData = null;
@@ -1585,8 +1587,8 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     document.getElementById('loginIdentifier').value = username;
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
-document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: SITE_URL, scopes: 'email profile' } }));
-document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: SITE_URL, scopes: 'email profile' } }));
+document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } }));
+document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } }));
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
 // ==================== شريط الأخبار ====================
