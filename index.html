@@ -778,8 +778,9 @@
 
 <script>
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
+
 
 const SITE_URL = window.location.origin + window.location.pathname;
 
@@ -793,13 +794,6 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     storage: window.localStorage
   }
 });
-
-// مسح access_token من الـ URL بعد إنشاء الـ client حتى يتمكن من قراءة الـ session أولاً
-if (window.location.hash && window.location.hash.includes('access_token')) {
-  setTimeout(() => {
-    window.history.replaceState(null, '', window.location.origin + window.location.pathname);
-  }, 2000);
-}
 let allPosts = {};
 let pendingGoogleUser = null;
 let currentProfileData = null;
@@ -1447,8 +1441,11 @@ document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); 
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
 // ==================== دوال المصادقة والملف الشخصي ====================
+let _authUpdatePromise = null;
 async function updateUIAfterAuth() {
-  await _doUpdateUI();
+  if (_authUpdatePromise) { await _authUpdatePromise; return; }
+  _authUpdatePromise = _doUpdateUI();
+  try { await _authUpdatePromise; } finally { _authUpdatePromise = null; }
 }
 async function _doUpdateUI() {
   try {
@@ -1507,28 +1504,26 @@ async function _doUpdateUI() {
 
 async function checkAuth() { await updateUIAfterAuth(); }
 
-db.auth.onAuthStateChange((event, session) => {
-  console.log('Auth event:', event, session?.user?.email);
-  if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-    if (event === 'SIGNED_IN' && session?.user) {
-      // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد) - fire and forget
-      db.from('profiles').select('id').eq('id', session.user.id).single().then(({ data: profile }) => {
-        if (!profile) {
-          pendingGoogleUser = session.user;
-          const usernameModal = document.getElementById('usernameModal');
-          const input = document.getElementById('newUsername');
-          input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-          document.getElementById('usernameError').innerText = '';
-          usernameModal.classList.add('active');
-        } else {
-          updateUIAfterAuth();
-        }
-      });
-    } else {
-      updateUIAfterAuth();
+db.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN') {
+    // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد)
+    if (session?.user) {
+      const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
+      if (!profile) {
+        pendingGoogleUser = session.user;
+        const usernameModal = document.getElementById('usernameModal');
+        const input = document.getElementById('newUsername');
+        input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+        document.getElementById('usernameError').innerText = '';
+        usernameModal.classList.add('active');
+        return;
+      }
     }
+    await updateUIAfterAuth();
   } else if (event === 'SIGNED_OUT') {
-    updateUIAfterAuth();
+    await updateUIAfterAuth();
+  } else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+    await updateUIAfterAuth();
   }
 });
 
@@ -1586,8 +1581,8 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     document.getElementById('loginIdentifier').value = username;
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
-document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } }));
-document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } }));
+document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: SITE_URL, scopes: 'email profile' } }));
+document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: SITE_URL, scopes: 'email profile' } }));
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
 // ==================== شريط الأخبار ====================
