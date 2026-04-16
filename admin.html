@@ -238,17 +238,29 @@ async function loadDashboard() {
     if (error) throw error;
     if (!users) users = [];
     let total = users.length;
-    let vipCount = users.filter(u => u.role === 'vip').length;
-    let memberCount = users.filter(u => u.role === 'member').length;
-    let modCount = users.filter(u => u.role === 'moderator').length;
-    let userCount = users.filter(u => u.role === 'user' || (!u.role)).length;
+    // Helper: get roles array from user (supports both roles[] array and single role string)
+    function getRoles(u) {
+      if (Array.isArray(u.roles) && u.roles.length) return u.roles;
+      if (u.role) return [u.role];
+      return ['user'];
+    }
+    function hasRole(u, r) { return getRoles(u).includes(r); }
+
+    let vipCount       = users.filter(u => hasRole(u,'vip')).length;
+    let memberCount    = users.filter(u => hasRole(u,'member')).length;
+    let modCount       = users.filter(u => hasRole(u,'moderator')).length;
+    let youtuberCount  = users.filter(u => hasRole(u,'youtuber')).length;
+    let ytVipCount     = users.filter(u => hasRole(u,'youtuber_vip')).length;
+    let userCount      = users.filter(u => { let r=getRoles(u); return r.length===0||(r.length===1&&r[0]==='user'); }).length;
 
     let statsHtml = `<div class="stats-grid">
-      <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">إجمالي المستخدمين</div></div>
-      <div class="stat-card"><div class="stat-number">${vipCount}</div><div class="stat-label">VIP</div></div>
-      <div class="stat-card"><div class="stat-number">${memberCount}</div><div class="stat-label">Member</div></div>
-      <div class="stat-card"><div class="stat-number">${modCount}</div><div class="stat-label">Moderator</div></div>
-      <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">عادي</div></div>
+      <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">👥 إجمالي</div></div>
+      <div class="stat-card"><div class="stat-number" style="color:#d4e800">${vipCount}</div><div class="stat-label">👑 VIP</div></div>
+      <div class="stat-card"><div class="stat-number" style="color:#4caf90">${memberCount}</div><div class="stat-label">⭐ Member</div></div>
+      <div class="stat-card"><div class="stat-number" style="color:#ff9800">${modCount}</div><div class="stat-label">🛡️ Mod</div></div>
+      <div class="stat-card"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
+      <div class="stat-card"><div class="stat-number" style="color:#ff6b35">${ytVipCount}</div><div class="stat-label">🔥 Youtuber VIP</div></div>
+      <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">👤 عادي</div></div>
     </div>`;
 
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
@@ -291,22 +303,40 @@ async function loadDashboard() {
       <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
     </div>`;
 
+    const ROLE_META = {
+      vip:          { label:'👑 VIP',          color:'#d4e800', bg:'#2a2000' },
+      member:       { label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e' },
+      moderator:    { label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f' },
+      youtuber:     { label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f' },
+      youtuber_vip: { label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f' },
+      user:         { label:'👤 User',           color:'#aabbcc', bg:'#0f1e55' },
+    };
+    window._ROLE_META = ROLE_META;
+
     let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
-      let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
-      let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
-      return `<div class="pi" id="user-${u.id}">
+      const uid = u.id;
+      const userRoles = getRoles(u);
+      const badgesHtml = userRoles.map(r => {
+        const m = ROLE_META[r] || ROLE_META.user;
+        return `<span style="display:inline-block;font-size:10px;background:${m.bg};color:${m.color};border-radius:4px;padding:2px 7px;margin:2px;">${m.label}</span>`;
+      }).join('');
+      const toggleBtns = Object.keys(ROLE_META).map(r => {
+        const has = userRoles.includes(r);
+        const m = ROLE_META[r];
+        return has
+          ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,false)">✕ ${m.label}</button>`
+          : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,true)">${m.label}</button>`;
+      }).join('');
+      return `<div class="pi" id="user-${uid}">
         <div class="pi-icon">👤</div>
-        <div class="pi-info">
+        <div class="pi-info" style="flex:1;">
           <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
           <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
-          <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;margin-top:3px;">${u.role?.toUpperCase() || 'USER'}</span>
+          <div style="margin-top:4px;">${badgesHtml}</div>
         </div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          ${u.role !== 'vip' ? `<button class="btn-edit" onclick="setRole('${u.id}','vip')">👑 VIP</button>` : ''}
-          ${u.role !== 'member' ? `<button class="btn-edit" onclick="setRole('${u.id}','member')">⭐ Member</button>` : ''}
-          ${u.role !== 'moderator' ? `<button class="btn-edit" onclick="setRole('${u.id}','moderator')">🛡️ Mod</button>` : ''}
-          ${u.role !== 'user' ? `<button class="btn-edit" onclick="setRole('${u.id}','user')">👤 User</button>` : ''}
-          <button class="btn-del" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:260px;">
+          ${toggleBtns}
+          <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser(&quot;${uid}&quot;)">🗑️ حذف</button>
         </div>
       </div>`;
     }).join('') + `</div></div>`;
@@ -362,27 +392,57 @@ async function searchUsersForRole(query) {
   if (!query || query.length < 2) { resultsDiv.innerHTML = ''; return; }
   try {
     let { data: users, error } = await supabaseClient.from('profiles')
-      .select('id,username,email,role')
+      .select('id,username,email,role,roles')
       .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
     if (error) throw error;
     if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
+    const RM = window._ROLE_META || { vip:{label:'👑 VIP',color:'#d4e800',bg:'#2a2000'}, member:{label:'⭐ Member',color:'#4caf90',bg:'#0f3d2e'}, moderator:{label:'🛡️ Mod',color:'#ff9800',bg:'#3d2e0f'}, youtuber:{label:'🎬 Youtuber',color:'#ff4444',bg:'#3d0f0f'}, youtuber_vip:{label:'🔥 Youtuber VIP',color:'#ff6b35',bg:'#3d1a0f'}, user:{label:'👤 User',color:'#aabbcc',bg:'#0f1e55'} };
     resultsDiv.innerHTML = users.map(u => {
       const id = u.id;
-      const rBtns = [
-        u.role!=='vip'     ? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;vip&quot;)">VIP</button>`       : '',
-        u.role!=='member'  ? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;member&quot;)">Member</button>` : '',
-        u.role!=='moderator'? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;moderator&quot;)">Mod</button>`  : '',
-        u.role!=='user'    ? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;user&quot;)">User</button>`     : '',
-        `<button class="btn-del" onclick="deleteUser(&quot;${id}&quot;)">حذف</button>`
-      ].join('');
-      return `<div class="role-search-result-item"><div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)} • الرتبة: ${u.role||'user'}</small></div><div class="role-buttons">${rBtns}</div></div>`;
+      const uRoles = Array.isArray(u.roles) && u.roles.length ? u.roles : (u.role ? [u.role] : ['user']);
+      const badges = uRoles.map(r => { const m=RM[r]||RM.user; return `<span style="font-size:10px;background:${m.bg};color:${m.color};border-radius:4px;padding:2px 6px;margin:2px;display:inline-block;">${m.label}</span>`; }).join('');
+      const toggleBtns = Object.keys(RM).map(r => {
+        const has = uRoles.includes(r); const m = RM[r];
+        return has
+          ? `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,false)">✕ ${m.label}</button>`
+          : `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,true)">${m.label}</button>`;
+      }).join('');
+      return `<div class="role-search-result-item">
+        <div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)}</small><br><div style="margin-top:4px;">${badges}</div></div>
+        <div class="role-buttons" style="flex-wrap:wrap;gap:4px;">${toggleBtns}<button class="btn-del" style="font-size:10px;padding:2px 7px;" onclick="deleteUser(&quot;${id}&quot;)">🗑️ حذف</button></div>
+      </div>`;
     }).join('');
   } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
 }
 function refreshDashboard() { loadDashboard(); }
 async function setRole(userId, role) {
+  // Legacy: just call toggleRole add
+  await toggleRole(userId, role, true);
+}
+async function toggleRole(userId, role, add) {
   try {
-    const { error } = await supabaseClient.from('profiles').update({ role: role }).eq('id', userId);
+    // Fetch current roles
+    const { data: prof, error: fetchErr } = await supabaseClient
+      .from('profiles').select('role,roles').eq('id', userId).single();
+    if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم: ' + fetchErr.message); return; }
+
+    let currentRoles = Array.isArray(prof.roles) && prof.roles.length
+      ? [...prof.roles]
+      : (prof.role ? [prof.role] : ['user']);
+
+    if (add) {
+      if (!currentRoles.includes(role)) currentRoles.push(role);
+      // Remove plain 'user' if adding a real role
+      if (currentRoles.length > 1) currentRoles = currentRoles.filter(r => r !== 'user');
+    } else {
+      currentRoles = currentRoles.filter(r => r !== role);
+      if (currentRoles.length === 0) currentRoles = ['user'];
+    }
+
+    const primaryRole = currentRoles[0];
+    const { error } = await supabaseClient.from('profiles')
+      .update({ roles: currentRoles, role: primaryRole })
+      .eq('id', userId);
     if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error(error); return; }
     await loadDashboard();
   } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
@@ -869,7 +929,7 @@ function selectUser(id, username) { document.getElementById('sub-user-id').value
 async function addUserSubscriber() { let userId = document.getElementById('sub-user-id').value; let username = document.getElementById('sub-user-selected').value; let role = document.getElementById('sub-user-role').value; if (!userId || !username) { alert('اختر مستخدم أولاً'); return; } let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' }; await supabaseClient.from('posts').insert(body); loadContentPage('subscribers'); }
 
 // ربط الدوال
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
 </script>
 
 <script>
