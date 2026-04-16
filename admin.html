@@ -442,7 +442,8 @@ document.addEventListener('click', async function(e) {
     let roles = getRolesArray(userData);
     if (action === 'add') {
       if (!roles.includes(role)) roles.push(role);
-      roles = roles.filter(r => r !== 'user' || roles.length === 1);
+      // إزالة 'user' إذا أُضيف دور آخر
+      if (roles.length > 1) roles = roles.filter(r => r !== 'user');
     } else {
       roles = roles.filter(r => r !== role);
     }
@@ -461,7 +462,7 @@ async function addRoleToUser(userId, roleToAdd) {
   const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
   let roles = getRolesArray(userData || {});
   if (!roles.includes(roleToAdd)) roles.push(roleToAdd);
-  roles = roles.filter(r => r !== 'user' || roles.length === 1);
+  if (roles.length > 1) roles = roles.filter(r => r !== 'user');
   if (roles.length === 0) roles = ['user'];
   await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
   loadDashboard();
