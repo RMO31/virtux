@@ -66,6 +66,7 @@
     .btn-del{background:transparent;border:1px solid #f55;color:#f55;border-radius:5px;padding:5px 12px;font-size:11px;cursor:pointer}
     .btn-edit:hover{background:#9fb000;color:#000}
     .btn-del:hover{background:#f55;color:#fff}
+    .btn-del:disabled,.btn-edit:disabled{opacity:0.4;cursor:not-allowed}
     .empty{text-align:center;color:#445;padding:30px;font-size:13px}
     .loading{text-align:center;color:#667;padding:20px;font-size:13px}
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,4,0.85);z-index:1000;align-items:center;justify-content:center}
@@ -89,17 +90,25 @@
     .role-search-input{width:100%;padding:10px;margin-bottom:10px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff}
     .role-search-results{max-height:200px;overflow-y:auto;margin-bottom:10px}
     .role-search-result-item{background:#0a1540;border:1px solid #1e2d6b;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
-    .role-buttons button{margin-left:5px;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer}
+    .role-buttons{display:flex;flex-wrap:wrap;gap:4px}
+    .role-buttons button{padding:3px 7px;font-size:10px;border-radius:4px;cursor:pointer}
     .recent-member-item{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1e2d6b}
     .recent-avatar{width:36px;height:36px;border-radius:50%;background:#1a2d80;display:flex;align-items:center;justify-content:center;font-size:16px}
     .news-item{display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #1e2d6b}
     .news-text{flex:1;font-size:13px}
     .news-link{font-size:11px;color:#9fb000;text-decoration:none}
+    .toast{position:fixed;bottom:20px;right:20px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;color:#fff;opacity:0;transition:opacity 0.3s;pointer-events:none}
+    .toast.show{opacity:1}
+    .toast.ok{background:#0f3d2e;border:1px solid #0f6e56}
+    .toast.err{background:#3d0f0f;border:1px solid #6e0f0f}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <canvas id="bgCanvas"></canvas>
+
+<!-- Toast إشعار -->
+<div class="toast" id="toast"></div>
 
 <div id="loginPage">
   <div class="login-box">
@@ -134,7 +143,6 @@
       <div class="sb-sec">يوتيوب</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <!-- تم حذف زر "🔴 Lives" المكرر -->
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
     </div>
@@ -161,7 +169,16 @@ let currentEditPost = null;
 
 function escapeHtml(str) {
   if (!str) return '';
-  return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m] || m);
+  return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m] || m);
+}
+
+// ==================== Toast إشعار ====================
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 // ==================== تسجيل الدخول ====================
@@ -171,7 +188,7 @@ async function checkConn() {
     let el = document.getElementById('connStatus');
     if (res.ok) { el.textContent = '✅ متصل'; el.className = 'conn'; }
     else { el.textContent = '❌ خطأ'; el.className = 'conn fail'; }
-  } catch(e) { 
+  } catch(e) {
     document.getElementById('connStatus').textContent = '❌ لا إنترنت';
     document.getElementById('connStatus').className = 'conn fail';
   }
@@ -194,7 +211,6 @@ function logout() { window.location.reload(); }
 function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
-  // removed 'yt-lives' from rooms list
   let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact'];
   rooms.forEach(room => {
     let div = document.createElement('div');
@@ -229,7 +245,7 @@ function loadContact() {
   container.innerHTML = `<div class="card"><h3>معلومات الاتصال</h3><p>بريد: admin@virtux.gg</p><p>ديسكورد: virtux_official</p></div>`;
 }
 
-// ==================== Dashboard ====================
+// ==================== أدوات الرولات ====================
 function hasRole(user, roleName) {
   if (Array.isArray(user.roles)) return user.roles.includes(roleName);
   return user.role === roleName;
@@ -252,6 +268,124 @@ function getRoleEmoji(role) {
   return emojis[role] || '👤';
 }
 
+// ==================== بناء أزرار الرولات بأمان (بدون inline onclick) ====================
+const ALL_ROLES = ['vip','member','moderator','youtuber','youtuber vip','user'];
+
+function buildRoleButtonsHTML(userId, roles) {
+  return ALL_ROLES.map(r => {
+    let has = roles.includes(r);
+    if (has) {
+      return `<button class="btn-del" style="font-size:10px;padding:3px 7px;"
+        data-action="remove-role" data-userid="${escapeHtml(userId)}" data-role="${escapeHtml(r)}"
+        >✕ ${escapeHtml(r)}</button>`;
+    } else {
+      return `<button class="btn-edit" style="font-size:10px;padding:3px 7px;"
+        data-action="add-role" data-userid="${escapeHtml(userId)}" data-role="${escapeHtml(r)}"
+        >+ ${escapeHtml(r)}</button>`;
+    }
+  }).join('');
+}
+
+function buildRolesBadgesHTML(roles) {
+  return roles.map(r =>
+    `<span style="display:inline-block;font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:2px 6px;margin-right:3px;">${getRoleEmoji(r)} ${escapeHtml(r).toUpperCase()}</span>`
+  ).join('');
+}
+
+// ==================== Event Delegation المركزي لجميع أزرار الرولات والحذف ====================
+document.addEventListener('click', async function(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+
+  const action = btn.dataset.action;
+  const userId = btn.dataset.userid;
+  const role = btn.dataset.role;
+
+  if (!action || !userId) return;
+
+  // تعطيل الزر أثناء التنفيذ لمنع النقر المتكرر
+  btn.disabled = true;
+
+  try {
+    if (action === 'add-role') {
+      await addRoleToUser(userId, role);
+      showToast(`✅ تم إضافة الرول: ${role}`, 'ok');
+    } else if (action === 'remove-role') {
+      await removeRoleFromUser(userId, role);
+      showToast(`✅ تم إزالة الرول: ${role}`, 'ok');
+    } else if (action === 'delete-user') {
+      await deleteUser(userId);
+    }
+  } catch(err) {
+    console.error('خطأ في العملية:', err);
+    showToast('❌ خطأ: ' + err.message, 'err');
+    btn.disabled = false;
+  }
+});
+
+// ==================== دوال الرولات (مُحدثة مع معالجة أخطاء) ====================
+async function addRoleToUser(userId, roleToAdd) {
+  const { data: userData, error: fetchError } = await supabaseClient
+    .from('profiles').select('role,roles').eq('id', userId).single();
+  if (fetchError) throw new Error('فشل جلب بيانات المستخدم: ' + fetchError.message);
+
+  let roles = getRolesArray(userData || {});
+  if (!roles.includes(roleToAdd)) {
+    roles.push(roleToAdd);
+  }
+  // إزالة "user" إذا لديه رول آخر
+  if (roles.length > 1) roles = roles.filter(r => r !== 'user');
+
+  const { error: updateError } = await supabaseClient
+    .from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+  if (updateError) throw new Error('فشل تحديث الرول: ' + updateError.message);
+
+  loadDashboard();
+}
+
+async function removeRoleFromUser(userId, roleToRemove) {
+  const { data: userData, error: fetchError } = await supabaseClient
+    .from('profiles').select('role,roles').eq('id', userId).single();
+  if (fetchError) throw new Error('فشل جلب بيانات المستخدم: ' + fetchError.message);
+
+  let roles = getRolesArray(userData || {}).filter(r => r !== roleToRemove);
+  if (roles.length === 0) roles = ['user'];
+
+  const { error: updateError } = await supabaseClient
+    .from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+  if (updateError) throw new Error('فشل تحديث الرول: ' + updateError.message);
+
+  loadDashboard();
+}
+
+// ==================== حذف المستخدم (مُحسّن مع تأكيد مزدوج ومعالجة أخطاء) ====================
+async function deleteUser(userId) {
+  // تأكيد أول
+  if (!confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً؟')) return;
+  // تأكيد ثانٍ
+  if (!confirm('🔴 تأكيد أخير: سيتم حذف الحساب نهائياً ولا يمكن التراجع!')) return;
+
+  const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
+  if (error) {
+    throw new Error('فشل حذف المستخدم: ' + error.message);
+  }
+
+  showToast('✅ تم حذف المستخدم بنجاح', 'ok');
+
+  // إزالة عنصر المستخدم من DOM فوراً قبل إعادة التحميل
+  const userEl = document.getElementById('user-' + userId);
+  if (userEl) {
+    userEl.style.transition = 'opacity 0.3s, transform 0.3s';
+    userEl.style.opacity = '0';
+    userEl.style.transform = 'translateX(30px)';
+    setTimeout(() => userEl.remove(), 300);
+  }
+
+  // إعادة تحميل الداشبورد بعد لحظة
+  setTimeout(() => loadDashboard(), 400);
+}
+
+// ==================== Dashboard ====================
 async function loadDashboard() {
   let container = document.getElementById('content-dashboard');
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
@@ -261,7 +395,6 @@ async function loadDashboard() {
     if (!users) users = [];
 
     let total = users.length;
-    // نستخدم إجمالي المستخدمين المسجلين كعدد الداخلين
     let loginCount = total;
     let vipCount = users.filter(u => hasRole(u,'vip')).length;
     let memberCount = users.filter(u => hasRole(u,'member')).length;
@@ -281,6 +414,7 @@ async function loadDashboard() {
       <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">👤 عادي</div></div>
     </div>`;
 
+    // آخر الأعضاء
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
     if (users.length) {
       let recent = users.slice(0, 5);
@@ -288,13 +422,12 @@ async function loadDashboard() {
       recent.forEach(u => {
         let roles = getRolesArray(u);
         let date = new Date(u.created_at).toLocaleDateString('ar-EG');
-        let rolesHtml = roles.map(r => `<span style="display:inline-block;font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:2px 6px;margin-right:3px;">${getRoleEmoji(r)} ${r.toUpperCase()}</span>`).join('');
         recentMembersHtml += `<div class="recent-member-item">
           <div class="recent-avatar">👤</div>
           <div class="pi-info">
             <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
             <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
-            <div style="margin-top:3px;">${rolesHtml}</div>
+            <div style="margin-top:3px;">${buildRolesBadgesHTML(roles)}</div>
           </div>
         </div>`;
       });
@@ -304,6 +437,7 @@ async function loadDashboard() {
     }
     recentMembersHtml += `</div>`;
 
+    // إدارة الصلاحيات بالبحث
     let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
       <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
       <div id="roleSearchResults" class="role-search-results"></div>
@@ -312,6 +446,7 @@ async function loadDashboard() {
       </div>
     </div>`;
 
+    // الأخبار
     let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
       <div class="fg">
         <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
@@ -321,42 +456,69 @@ async function loadDashboard() {
       <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
     </div>`;
 
-    let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
-      let roles = getRolesArray(u);
-      let rolesHtml = roles.map(r => `<span style="display:inline-block;font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:2px 6px;margin-right:3px;">${getRoleEmoji(r)} ${r.toUpperCase()}</span>`).join('');
-      const allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
-      let roleButtons = allRoles.map(r => {
-        let has = roles.includes(r);
-        const rEsc = r.replace(/'/g, "\'");
-        return has
-          ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
-      }).join('');
-      return `<div class="pi" id="user-${u.id}">
-        <div class="pi-icon">👤</div>
-        <div class="pi-info">
-          <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
-          <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
-          <div style="margin-top:3px;">${rolesHtml}</div>
-        </div>
-        <div style="display:flex; gap:4px; flex-wrap:wrap; max-width:280px;">
-          ${roleButtons}
-          <button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
-        </div>
-      </div>`;
-    }).join('') + `</div></div>`;
+    // جميع المستخدمين مع أزرار الرولات المُصلحة
+    let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` +
+      users.map(u => {
+        let roles = getRolesArray(u);
+        let roleButtons = buildRoleButtonsHTML(u.id, roles);
+        let deleteBtn = `<button class="btn-del" style="font-size:10px;padding:3px 7px;" data-action="delete-user" data-userid="${escapeHtml(u.id)}">🗑️ حذف</button>`;
+        return `<div class="pi" id="user-${u.id}">
+          <div class="pi-icon">👤</div>
+          <div class="pi-info">
+            <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
+            <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
+            <div style="margin-top:3px;">${buildRolesBadgesHTML(roles)}</div>
+          </div>
+          <div class="role-buttons" style="max-width:280px;">
+            ${roleButtons}
+            ${deleteBtn}
+          </div>
+        </div>`;
+      }).join('') + `</div></div>`;
 
     container.innerHTML = statsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
     loadNewsList();
-  } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
+  } catch(e) {
+    container.innerHTML = '<div class="empty">خطأ في تحميل البيانات: ' + escapeHtml(e.message) + '</div>';
+    console.error(e);
+  }
 }
 
-// دوال إدارة الأخبار
+// ==================== البحث عن مستخدمين لإدارة الرولات ====================
+async function searchUsersForRole(query) {
+  let resultsDiv = document.getElementById('roleSearchResults');
+  if (!resultsDiv) return;
+  if (!query || query.length < 2) { resultsDiv.innerHTML = ''; return; }
+  try {
+    let { data: users, error } = await supabaseClient.from('profiles')
+      .select('id,username,email,role,roles')
+      .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
+    if (error) throw error;
+    if (!users || !users.length) {
+      resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>';
+      return;
+    }
+    resultsDiv.innerHTML = users.map(u => {
+      let roles = getRolesArray(u);
+      let roleButtons = buildRoleButtonsHTML(u.id, roles);
+      return `<div class="role-search-result-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <div><strong>${escapeHtml(u.username||u.email)}</strong> <small style="color:#667;">${escapeHtml(u.email)}</small></div>
+        <div>${buildRolesBadgesHTML(roles)}</div>
+        <div class="role-buttons">${roleButtons}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error(e);
+    resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>';
+  }
+}
+
+function refreshDashboard() { loadDashboard(); }
+
+// ==================== دوال إدارة الأخبار ====================
 async function loadNewsList() {
   let { data: news, error } = await supabaseClient.from('posts')
-    .select('*')
-    .eq('room', 'ticker')
-    .order('id', { ascending: false });
+    .select('*').eq('room', 'ticker').order('id', { ascending: false });
   if (error) return;
   let container = document.getElementById('newsList');
   if (!container) return;
@@ -367,22 +529,31 @@ async function loadNewsList() {
   container.innerHTML = news.map(item => `
     <div class="news-item" id="news-${item.id}">
       <div class="news-text">${escapeHtml(item.title)}</div>
-      ${item.url ? `<a href="${item.url}" target="_blank" class="news-link">رابط</a>` : ''}
+      ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" class="news-link">رابط</a>` : ''}
       <button class="btn-edit" onclick="editNews(${item.id})">✏️</button>
       <button class="btn-del" onclick="deleteNews(${item.id})">🗑️</button>
     </div>
   `).join('');
 }
+
 async function addNews() {
   let title = document.getElementById('newsTitle').value.trim();
   let url = document.getElementById('newsUrl').value.trim();
-  if (!title) { alert('يرجى إدخال نص الخبر'); return; }
+  if (!title) { showToast('❌ يرجى إدخال نص الخبر', 'err'); return; }
   let { error } = await supabaseClient.from('posts').insert({ title, url: url||null, room:'ticker', tag:'news', icon:'📢', content:null });
-  if (error) { alert('فشل إضافة الخبر: '+error.message); return; }
-  document.getElementById('newsTitle').value = ''; document.getElementById('newsUrl').value = '';
+  if (error) { showToast('❌ فشل إضافة الخبر: '+error.message, 'err'); return; }
+  document.getElementById('newsTitle').value = '';
+  document.getElementById('newsUrl').value = '';
+  showToast('✅ تم إضافة الخبر', 'ok');
   loadNewsList();
 }
-async function deleteNews(id) { if(!confirm('حذف الخبر؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadNewsList(); }
+
+async function deleteNews(id) {
+  if (!confirm('حذف الخبر؟')) return;
+  await supabaseClient.from('posts').delete().eq('id', id);
+  loadNewsList();
+}
+
 async function editNews(id) {
   let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
   if (error) return;
@@ -392,91 +563,6 @@ async function editNews(id) {
   await supabaseClient.from('posts').update({ title: newTitle, url: newUrl||null }).eq('id', id);
   loadNewsList();
 }
-async function searchUsersForRole(query) {
-  let resultsDiv = document.getElementById('roleSearchResults');
-  if (!query || query.length < 2) { resultsDiv.innerHTML = ''; return; }
-  try {
-    let { data: users, error } = await supabaseClient.from('profiles')
-      .select('id,username,email,role,roles')
-      .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
-    if (error) throw error;
-    if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
-    const allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
-    resultsDiv.innerHTML = users.map(u => {
-      let roles = getRolesArray(u);
-      let rolesHtml = roles.map(r => `<span style="font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:1px 5px;margin-right:2px;">${r}</span>`).join('');
-      let roleButtons = allRoles.map(r => {
-        let has = roles.includes(r);
-        const rEsc = r.replace(/'/g, "\'");
-        return has
-          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
-      }).join('');
-      return `<div class="role-search-result-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
-        <div><strong>${escapeHtml(u.username||u.email)}</strong> <small style="color:#667;">${escapeHtml(u.email)}</small></div>
-        <div>${rolesHtml}</div>
-        <div class="role-buttons" style="display:flex;flex-wrap:wrap;gap:4px;">${roleButtons}</div>
-      </div>`;
-    }).join('');
-  } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
-}
-function refreshDashboard() { loadDashboard(); }
-
-// Event delegation for role buttons — avoids JSON-in-onclick issues
-document.addEventListener('click', async function(e) {
-  const btn = e.target.closest('.role-btn');
-  if (!btn) return;
-  const userId = btn.dataset.userid;
-  const role = btn.dataset.role;
-  const action = btn.dataset.action;
-  if (!userId || !role || !action) return;
-  btn.disabled = true;
-  try {
-    // Fetch current roles fresh from DB to avoid stale data
-    const { data: userData, error } = await supabaseClient
-      .from('profiles').select('role,roles').eq('id', userId).single();
-    if (error) throw error;
-    let roles = getRolesArray(userData);
-    if (action === 'add') {
-      if (!roles.includes(role)) roles.push(role);
-      if (roles.length > 1) roles = roles.filter(r => r !== 'user');
-    } else {
-      roles = roles.filter(r => r !== role);
-    }
-    if (roles.length === 0) roles = ['user'];
-    const { error: updateError } = await supabaseClient
-      .from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
-    if (updateError) throw updateError;
-    loadDashboard();
-  } catch(e) {
-    alert('خطأ: ' + e.message);
-    btn.disabled = false;
-  }
-});
-
-async function addRoleToUser(userId, roleToAdd) {
-  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
-  let roles = getRolesArray(userData || {});
-  if (!roles.includes(roleToAdd)) roles.push(roleToAdd);
-  if (roles.length > 1) roles = roles.filter(r => r !== 'user');
-  if (roles.length === 0) roles = ['user'];
-  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
-  loadDashboard();
-}
-
-async function removeRoleFromUser(userId, roleToRemove) {
-  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
-  let roles = getRolesArray(userData || {}).filter(r => r !== roleToRemove);
-  if (roles.length === 0) roles = ['user'];
-  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
-  loadDashboard();
-}
-
-async function setRole(userId, role) { 
-  await supabaseClient.from('profiles').update({ role: role, roles: [role] }).eq('id', userId); 
-  loadDashboard(); 
-}
-async function deleteUser(userId) { if(!confirm('حذف المستخدم نهائياً؟')) return; await supabaseClient.from('profiles').delete().eq('id', userId); loadDashboard(); }
 
 // ==================== تحميل صفحة المحتوى ====================
 async function loadContentPage(room) {
@@ -491,13 +577,13 @@ async function loadContentPage(room) {
     if (posts && posts.length) {
       if (room === 'yt-channels') {
         postsHtml = `<div class="card"><h3>📋 القنوات</h3><div class="posts-list">` + posts.map(p => {
-          let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
+          let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${escapeHtml(p.icon)}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
           return `<div class="channel-card-admin">
             ${avatar}
             <div class="channel-info-admin">
               <div class="channel-name-admin">${escapeHtml(p.title)}</div>
               <div class="channel-sub-admin">${escapeHtml(p.description || '')}</div>
-              <a href="${p.url}" target="_blank" class="channel-link-admin">زيارة القناة</a>
+              <a href="${escapeHtml(p.url)}" target="_blank" class="channel-link-admin">زيارة القناة</a>
             </div>
             <div style="display:flex; gap:6px;">
               <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
@@ -510,15 +596,15 @@ async function loadContentPage(room) {
           let media = '';
           const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
           const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-          if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
+          if (isVideo) media = `<video src="${escapeHtml(p.url)}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
           else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
-          else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
+          else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${escapeHtml(p.icon)}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
           else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
           return `<div class="pi" id="pi-${p.id}">
             <div style="width:80px; flex-shrink:0;">${media}</div>
             <div class="pi-info">
               <div class="pi-title">${escapeHtml(p.title)}</div>
-              <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
+              <div class="pi-meta">${escapeHtml(p.description||'')} • ${escapeHtml(p.tag||'')}</div>
               <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
             </div>
             <div style="display:flex; gap:6px;">
@@ -533,125 +619,55 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
+// ==================== نماذج الإضافة ====================
+function makeFormWithPreview(room, titleText, tagOptionsHtml, extraFields) {
+  return `<div class="card"><h3>${titleText}</h3>
+    <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+    <div class="form-with-preview">
+      <div>
+        <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+        ${extraFields || ''}
+        <div class="fg">
+          <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+          <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+        </div>
+        <div class="fg"><select id="tag-${room}">${tagOptionsHtml}</select></div>
+        <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
+        <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+      </div>
+      <div class="preview-panel">
+        <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+        <img id="preview-img-${room}" class="preview-media" style="display:none;">
+        <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+        <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+        <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function getAddForm(room) {
   if (room === 'home') {
-    return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}"><option value="Article">📄 مقال (نص)</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option></select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="المقال الكامل (نص طويل)" rows="8"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
+    return makeFormWithPreview(room, '➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية',
+      `<option value="Article">📄 مقال (نص)</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`, '');
   } else if (room === 'highlights') {
-    return `<div class="card"><h3>➕ إضافة مقطع مميز (فيديو/صورة)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان (اختياري)"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}"><option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option></select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
+    return makeFormWithPreview(room, '➕ إضافة مقطع مميز (فيديو/صورة)',
+      `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`, '');
   } else if (room === 'projects') {
-    return `<div class="card"><h3>➕ إضافة مشروع (فيديو/صورة/نص)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="اسم المشروع *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}"><option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option></select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط المشروع (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="تفاصيل المشروع" rows="4"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
-  } else if (room === 'gaming-news' || room === 'youtube-news') {
-    let tagOptions = room === 'gaming-news' ? `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>` : `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-    return `<div class="card"><h3>➕ إضافة خبر (مع دعم الفيديو)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="عنوان الخبر *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى الخبر الطويل" rows="6"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
-  } else if (room === 'live' || room === 'tournaments') {
-    let tagOptions = room === 'live' ? `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>` : `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-    return `<div class="card"><h3>➕ إضافة منشور (مع دعم الفيديو)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
+    return makeFormWithPreview(room, '➕ إضافة مشروع (فيديو/صورة/نص)',
+      `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`, '');
+  } else if (room === 'gaming-news') {
+    return makeFormWithPreview(room, '➕ إضافة خبر (مع دعم الفيديو)',
+      `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>`, '');
+  } else if (room === 'youtube-news') {
+    return makeFormWithPreview(room, '➕ إضافة خبر (مع دعم الفيديو)',
+      `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`, '');
+  } else if (room === 'live') {
+    return makeFormWithPreview(room, '➕ إضافة منشور (مع دعم الفيديو)',
+      `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`, '');
+  } else if (room === 'tournaments') {
+    return makeFormWithPreview(room, '➕ إضافة منشور (مع دعم الفيديو)',
+      `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`, '');
   } else if (room === 'yt-channels') {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"><textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
   } else if (room === 'subscribers') {
@@ -665,31 +681,28 @@ function getAddForm(room) {
   } else if (room === 'yt-videos') {
     return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
   } else {
-    let tagOptions = '';
-    if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'tournaments') tagOptions = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'gaming-news') tagOptions = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'youtube-news') tagOptions = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
-    else tagOptions = `<option value="default">عام</option>`;
-    return `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}">${tagOptions}</select><input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+    return makeFormWithPreview(room, '➕ إضافة منشور', `<option value="default">عام</option>`, '');
   }
 }
 
-// ==================== دوال مساعدة للمعاينة والإضافة ====================
+// ==================== دوال المعاينة والإضافة ====================
 function clearMedia(room) {
-  if (room !== 'highlights' && room !== 'home' && room !== 'projects' && room !== 'gaming-news' && room !== 'youtube-news' && room !== 'live' && room !== 'tournaments') return;
   const previewImg = document.getElementById(`preview-img-${room}`);
   const previewVideo = document.getElementById(`preview-video-${room}`);
   const previewText = document.getElementById(`preview-text-${room}`);
   if (previewImg) previewImg.style.display = 'none';
   if (previewVideo) previewVideo.style.display = 'none';
   if (previewText) previewText.style.display = 'block';
-  document.getElementById(`url-${room}`).value = '';
-  document.getElementById(`icon-${room}`).value = '';
-  document.getElementById(`imgfile-${room}`).value = '';
-  document.getElementById(`videofile-${room}`).value = '';
-  delete document.getElementById(`icon-${room}`)._imgData;
+  const urlEl = document.getElementById(`url-${room}`);
+  const iconEl = document.getElementById(`icon-${room}`);
+  const imgfileEl = document.getElementById(`imgfile-${room}`);
+  const videofileEl = document.getElementById(`videofile-${room}`);
+  if (urlEl) urlEl.value = '';
+  if (iconEl) { iconEl.value = ''; delete iconEl._imgData; }
+  if (imgfileEl) imgfileEl.value = '';
+  if (videofileEl) videofileEl.value = '';
 }
+
 function handleImageUpload(room) {
   const fileInput = document.getElementById(`imgfile-${room}`);
   const file = fileInput?.files[0];
@@ -703,19 +716,19 @@ function handleImageUpload(room) {
     if (previewVideo) previewVideo.style.display = 'none';
     if (previewText) previewText.style.display = 'none';
     const iconField = document.getElementById(`icon-${room}`);
-    iconField.value = '🖼️';
-    iconField._imgData = e.target.result;
-    document.getElementById(`url-${room}`).value = '';
+    if (iconField) { iconField.value = '🖼️'; iconField._imgData = e.target.result; }
+    const urlField = document.getElementById(`url-${room}`);
+    if (urlField) urlField.value = '';
   };
   reader.readAsDataURL(file);
 }
+
 async function uploadVideoToBucket(room) {
   let fileInput = document.getElementById(`videofile-${room}`);
   let file = fileInput?.files[0];
-  if (!file) { alert('لم تختر ملفاً'); return; }
-  if (!file.type.startsWith('video/')) { alert('الملف المختار ليس فيديو'); return; }
-  let fileName = Date.now() + '_' + file.name;
-  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  if (!file) { showToast('❌ لم تختر ملفاً', 'err'); return; }
+  if (!file.type.startsWith('video/')) { showToast('❌ الملف المختار ليس فيديو', 'err'); return; }
+  let fileName = Date.now() + '_' + file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
   let filePath = `highlights/${fileName}`;
   let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
   let btn = document.querySelector(`#ap-${room} .btn-pub`);
@@ -733,13 +746,17 @@ async function uploadVideoToBucket(room) {
       if (previewImg) previewImg.style.display = 'none';
       if (previewVideo) { previewVideo.src = publicUrl; previewVideo.style.display = 'block'; }
       if (previewText) previewText.style.display = 'none';
-      document.getElementById(`icon-${room}`).value = '';
-      delete document.getElementById(`icon-${room}`)._imgData;
-      alert('✅ تم رفع الفيديو! الرابط جاهز.');
-    } else { let errText = await res.text(); alert('❌ فشل الرفع: ' + errText); }
-  } catch(e) { alert('خطأ: ' + e.message); }
+      const iconField = document.getElementById(`icon-${room}`);
+      if (iconField) { iconField.value = ''; delete iconField._imgData; }
+      showToast('✅ تم رفع الفيديو!', 'ok');
+    } else {
+      let errText = await res.text();
+      showToast('❌ فشل الرفع: ' + errText, 'err');
+    }
+  } catch(e) { showToast('❌ خطأ: ' + e.message, 'err'); }
   finally { if (btn) btn.disabled = false; }
 }
+
 async function addPost(room) {
   const titleEl = document.getElementById(`title-${room}`);
   const urlEl = document.getElementById(`url-${room}`);
@@ -747,37 +764,18 @@ async function addPost(room) {
   const contentEl = document.getElementById(`content-${room}`);
   const iconEl = document.getElementById(`icon-${room}`);
   const tagEl = document.getElementById(`tag-${room}`);
-  function getSafeValue(el) { if (!el) return ''; if (el.value === undefined) return ''; return (el.value || '').trim(); }
-  let title = getSafeValue(titleEl);
-  let url = getSafeValue(urlEl);
-  let desc = getSafeValue(descEl);
-  let content = getSafeValue(contentEl);
-  let icon = getSafeValue(iconEl);
+  function gv(el) { return el ? (el.value || '').trim() : ''; }
+  let title = gv(titleEl), url = gv(urlEl), desc = gv(descEl), content = gv(contentEl), icon = gv(iconEl);
   let tag = tagEl ? tagEl.value : room;
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
   const hasImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
   const hasVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-  if (room === 'highlights') {
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ عند اختيار "فيديو"، يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
-    else { if (!hasImage && !hasVideo) { showError(room, '❌ في Pro / Tournament، يجب رفع صورة أو فيديو.'); return; } }
-  } else if (room === 'home') {
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
-    else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المقال فارغ. أدخل عنواناً أو محتوى.'); return; } }
-  } else if (room === 'projects') {
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
-    else { if (!title && !url && !icon && !content) { showError(room, '❌ المشروع فارغ. أدخل عنواناً أو وسائط.'); return; } }
-  } else if (room === 'gaming-news' || room === 'youtube-news' || room === 'live' || room === 'tournaments') {
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
-    else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو محتوى.'); return; } }
-  } else {
-    if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
-  }
-  if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : (room === 'home' ? '📄 مقال' : (room === 'projects' ? '🌐 مشروع' : (room === 'gaming-news' ? '📰 خبر' : (room === 'youtube-news' ? '▶️ خبر' : (room === 'live' ? '🔴 بث' : (room === 'tournaments' ? '🏆 بطولة' : '📄 منشور'))))));
+  // فحوصات
+  if (tag === 'Photo' && !hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; }
+  if (tag === 'Video' && !hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; }
+  if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو محتوى.'); return; }
+  if (!title) title = '📄 منشور';
   const body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
   const btn = document.querySelector(`#ap-${room} .btn-pub`);
   if (btn) btn.disabled = true;
@@ -789,7 +787,7 @@ async function addPost(room) {
     if (titleEl) titleEl.value = '';
     if (descEl) descEl.value = '';
     if (urlEl) urlEl.value = '';
-    if (iconEl) iconEl.value = '';
+    if (iconEl) { iconEl.value = ''; delete iconEl._imgData; }
     if (contentEl) contentEl.value = '';
     const fileInput = document.getElementById(`imgfile-${room}`);
     if (fileInput) fileInput.value = '';
@@ -806,37 +804,44 @@ async function addPost(room) {
   } catch (e) { showError(room, e.message); }
   finally { if (btn) btn.disabled = false; }
 }
-function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
-async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
 
-// ==================== دوال التعديل المصححة ====================
+function showError(room, msg) {
+  let er = document.getElementById(`er-${room}`);
+  if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); }
+  else showToast(msg, 'err');
+}
+
+async function deletePost(id, room) {
+  if (!confirm('حذف المنشور نهائياً؟')) return;
+  await supabaseClient.from('posts').delete().eq('id', id);
+  loadContentPage(room);
+  loadDashboard();
+}
+
+// ==================== التعديل ====================
 function getTagOptionsForEdit(room, currentTag) {
-  let opts = '';
-  if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
-  else if (room === 'home') opts = `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`;
-  else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-  else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-  else if (room === 'subscribers') opts = `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`;
-  else if (room === 'yt-channels') opts = `<option value="Channel">📺 Channel</option>`;
-  else if (room === 'yt-videos') opts = `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`;
-  else opts = `<option value="default">عام</option>`;
-  return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
+  const map = {
+    'live': `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`,
+    'tournaments': `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`,
+    'highlights': `<option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option><option value="Video">📹 فيديو</option><option value="Photo">📷 صورة</option>`,
+    'home': `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`,
+    'projects': `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`,
+    'gaming-news': `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>`,
+    'youtube-news': `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`,
+    'subscribers': `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`,
+    'yt-channels': `<option value="Channel">📺 Channel</option>`,
+    'yt-videos': `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`,
+  };
+  let opts = map[room] || `<option value="default">عام</option>`;
+  return opts.replace(`value="${escapeHtml(currentTag)}"`, `value="${escapeHtml(currentTag)}" selected`);
 }
 
 async function openEditModal(id) {
   let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
-  if (error) {
-    console.error('خطأ في جلب المنشور:', error);
-    alert('فشل تحميل بيانات المنشور');
-    return;
-  }
+  if (error) { console.error(error); showToast('❌ فشل تحميل بيانات المنشور', 'err'); return; }
   currentEditPost = data;
-  let modalBody = document.getElementById('editModalBody');
   let tagOptions = getTagOptionsForEdit(data.room, data.tag);
-  modalBody.innerHTML = `
+  document.getElementById('editModalBody').innerHTML = `
     <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
     <div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
     <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div>
@@ -859,8 +864,9 @@ function previewEditImg() {
     let preview = document.getElementById('edit-imgpreview');
     preview.src = e.target.result;
     preview.style.display = 'block';
-    document.getElementById('edit-icon').value = '🖼️';
-    document.getElementById('edit-icon')._imgData = e.target.result;
+    let iconField = document.getElementById('edit-icon');
+    iconField.value = '🖼️';
+    iconField._imgData = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -868,12 +874,8 @@ function previewEditImg() {
 async function uploadEditVideo() {
   let file = document.getElementById('edit-videofile').files[0];
   if (!file) return;
-  if (!file.type.startsWith('video/')) {
-    alert('الملف المختار ليس فيديو');
-    return;
-  }
-  let fileName = Date.now() + '_' + file.name;
-  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  if (!file.type.startsWith('video/')) { showToast('❌ الملف ليس فيديو', 'err'); return; }
+  let fileName = Date.now() + '_' + file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
   let filePath = `highlights/${fileName}`;
   let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
   try {
@@ -882,24 +884,16 @@ async function uploadEditVideo() {
       let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
       document.getElementById('edit-url').value = publicUrl;
       let titleField = document.getElementById('edit-title');
-      if (titleField && !titleField.value.trim()) {
-        titleField.value = file.name.replace(/\.[^/.]+$/, '');
-      }
-      alert('✅ تم رفع الفيديو الجديد! الرابط جاهز.');
+      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
+      showToast('✅ تم رفع الفيديو الجديد!', 'ok');
     } else {
-      let errText = await res.text();
-      alert('❌ فشل الرفع: ' + errText);
+      showToast('❌ فشل الرفع: ' + await res.text(), 'err');
     }
-  } catch(e) {
-    alert('خطأ: ' + e.message);
-  }
+  } catch(e) { showToast('❌ خطأ: ' + e.message, 'err'); }
 }
 
 async function saveEditPost() {
-  if (!currentEditPost) {
-    alert('لا يوجد منشور قيد التعديل');
-    return;
-  }
+  if (!currentEditPost) { showToast('❌ لا يوجد منشور قيد التعديل', 'err'); return; }
   let updated = {
     title: document.getElementById('edit-title').value,
     description: document.getElementById('edit-desc').value,
@@ -916,41 +910,137 @@ async function saveEditPost() {
     closeEditModal();
     loadContentPage(currentEditPost.room);
     loadDashboard();
-    alert('✅ تم التعديل بنجاح');
+    showToast('✅ تم التعديل بنجاح', 'ok');
   } catch (e) {
     console.error(e);
-    alert('❌ فشل التعديل: ' + e.message);
+    showToast('❌ فشل التعديل: ' + e.message, 'err');
   }
 }
 
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
-// ==================== دوال يوتيوب والمستخدمين ====================
+// ==================== يوتيوب والمستخدمين ====================
 async function fetchYouTubeChannelInfo(url) {
-  try { let handle = url.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url }; return null; } catch(e) { return null; }
+  try {
+    let handle = url.split('@')[1]?.split(/[\/?]/)[0];
+    if (!handle) return null;
+    let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+    let res = await fetch(apiUrl);
+    let data = await res.json();
+    if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url };
+    return null;
+  } catch(e) { return null; }
 }
+
 async function addYouTubeChannel(room) {
   let url = document.getElementById(`url-${room}`).value.trim();
-  if (!url) { alert('أدخل رابط القناة'); return; }
+  if (!url) { showToast('❌ أدخل رابط القناة', 'err'); return; }
   let info = await fetchYouTubeChannelInfo(url);
-  if (!info) { alert('تعذر جلب معلومات القناة'); return; }
+  if (!info) { showToast('❌ تعذر جلب معلومات القناة', 'err'); return; }
   let extraContent = document.getElementById(`content-${room}`)?.value.trim() || '';
   let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'), room: room, content: extraContent };
   let btn = document.querySelector(`#ap-${room} .btn-pub`);
   if (btn) btn.disabled = true;
-  try { let { error } = await supabaseClient.from('posts').insert(body); if (error) throw error; document.getElementById(`url-${room}`).value = ''; if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = ''; let okDiv = document.getElementById(`ok-${room}`); if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); } loadContentPage(room); loadDashboard(); } catch(e) { alert('خطأ: ' + e.message); } finally { if (btn) btn.disabled = false; }
+  try {
+    let { error } = await supabaseClient.from('posts').insert(body);
+    if (error) throw error;
+    document.getElementById(`url-${room}`).value = '';
+    if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = '';
+    let okDiv = document.getElementById(`ok-${room}`);
+    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
+    loadContentPage(room);
+    loadDashboard();
+  } catch(e) { showToast('❌ خطأ: ' + e.message, 'err'); }
+  finally { if (btn) btn.disabled = false; }
 }
-async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
-async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
-async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
-// تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
 
-async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
-function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
-async function addUserSubscriber() { let userId = document.getElementById('sub-user-id').value; let username = document.getElementById('sub-user-selected').value; let role = document.getElementById('sub-user-role').value; if (!userId || !username) { alert('اختر مستخدم أولاً'); return; } let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' }; await supabaseClient.from('posts').insert(body); loadContentPage('subscribers'); }
+async function fetchYouTubeVideoInfo(url) {
+  let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+  if (!vid) return null;
+  let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`;
+  let res = await fetch(apiUrl);
+  let data = await res.json();
+  if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url };
+  return null;
+}
 
-// ربط الدوال
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+async function fetchVideoFromChannel(channelUrl) {
+  let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0];
+  if (!handle) return null;
+  let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`;
+  let res = await fetch(apiUrl);
+  let data = await res.json();
+  let channelId = data.items?.[0]?.id;
+  if (!channelId) return null;
+  let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`;
+  let videosRes = await fetch(videosApi);
+  let videosData = await videosRes.json();
+  let video = videosData.items?.[0];
+  if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` };
+  return null;
+}
+
+async function addYouTubeVideo(room) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { showToast('❌ أدخل رابط', 'err'); return; }
+  let type = document.getElementById(`type-${room}`).value;
+  let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url);
+  if (!info) { showToast('❌ تعذر جلب الفيديو', 'err'); return; }
+  let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() };
+  await supabaseClient.from('posts').insert(body);
+  loadContentPage(room);
+}
+
+async function searchUsers(query) {
+  let resultsDiv = document.getElementById('user-search-results');
+  if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; }
+  let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`);
+  if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; }
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${escapeHtml(u.id)}','${escapeHtml(u.username)}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${escapeHtml(u.email)})</div>`).join('');
+}
+
+function selectUser(id, username) {
+  document.getElementById('sub-user-id').value = id;
+  document.getElementById('sub-user-selected').value = username;
+  document.getElementById('user-search-results').style.display = 'none';
+}
+
+async function addUserSubscriber() {
+  let userId = document.getElementById('sub-user-id').value;
+  let username = document.getElementById('sub-user-selected').value;
+  let role = document.getElementById('sub-user-role').value;
+  if (!userId || !username) { showToast('❌ اختر مستخدم أولاً', 'err'); return; }
+  let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' };
+  await supabaseClient.from('posts').insert(body);
+  loadContentPage('subscribers');
+}
+
+// ربط الدوال بالنافذة
+window.login = login;
+window.logout = logout;
+window.showPage = showPage;
+window.addPost = addPost;
+window.deletePost = deletePost;
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.saveEditPost = saveEditPost;
+window.handleImageUpload = handleImageUpload;
+window.uploadVideoToBucket = uploadVideoToBucket;
+window.addYouTubeChannel = addYouTubeChannel;
+window.addYouTubeVideo = addYouTubeVideo;
+window.searchUsers = searchUsers;
+window.selectUser = selectUser;
+window.addUserSubscriber = addUserSubscriber;
+window.clearMedia = clearMedia;
+window.refreshDashboard = refreshDashboard;
+window.searchUsersForRole = searchUsersForRole;
+window.addNews = addNews;
+window.deleteNews = deleteNews;
+window.editNews = editNews;
+window.loadNewsList = loadNewsList;
+window.previewEditImg = previewEditImg;
+window.uploadEditVideo = uploadEditVideo;
 </script>
 
 <script>
@@ -959,21 +1049,12 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   const canvas = document.getElementById('bgCanvas');
   if (!canvas) return;
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-  if (!gl) {
-    // Fallback: 2D canvas 3D effect
-    fallback2D(canvas);
-    return;
-  }
+  if (!gl) { fallback2D(canvas); return; }
 
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  }
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; gl.viewport(0, 0, canvas.width, canvas.height); }
   resize();
   window.addEventListener('resize', resize);
 
-  // Vertex shader
   const vsSource = `
     attribute vec3 aPos;
     attribute vec3 aColor;
@@ -1014,106 +1095,47 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   const aColor = gl.getAttribLocation(prog, 'aColor');
   const uMVP = gl.getUniformLocation(prog, 'uMVP');
 
-  // Math helpers
   function mat4() { return new Float32Array(16); }
-  function identity(m) {
-    m[0]=1;m[1]=0;m[2]=0;m[3]=0;
-    m[4]=0;m[5]=1;m[6]=0;m[7]=0;
-    m[8]=0;m[9]=0;m[10]=1;m[11]=0;
-    m[12]=0;m[13]=0;m[14]=0;m[15]=1;
-    return m;
-  }
+  function identity(m) { m[0]=1;m[1]=0;m[2]=0;m[3]=0;m[4]=0;m[5]=1;m[6]=0;m[7]=0;m[8]=0;m[9]=0;m[10]=1;m[11]=0;m[12]=0;m[13]=0;m[14]=0;m[15]=1; return m; }
   function perspective(m, fov, aspect, near, far) {
-    const f = 1.0 / Math.tan(fov / 2);
-    const nf = 1 / (near - far);
-    m[0]=f/aspect; m[1]=0; m[2]=0; m[3]=0;
-    m[4]=0; m[5]=f; m[6]=0; m[7]=0;
-    m[8]=0; m[9]=0; m[10]=(far+near)*nf; m[11]=-1;
-    m[12]=0; m[13]=0; m[14]=2*far*near*nf; m[15]=0;
+    const f = 1.0 / Math.tan(fov / 2), nf = 1 / (near - far);
+    m[0]=f/aspect; m[1]=0; m[2]=0; m[3]=0; m[4]=0; m[5]=f; m[6]=0; m[7]=0;
+    m[8]=0; m[9]=0; m[10]=(far+near)*nf; m[11]=-1; m[12]=0; m[13]=0; m[14]=2*far*near*nf; m[15]=0;
     return m;
   }
   function multiply(out, a, b) {
-    for(let i=0;i<4;i++) for(let j=0;j<4;j++) {
-      out[j*4+i]=0;
-      for(let k=0;k<4;k++) out[j*4+i]+=a[k*4+i]*b[j*4+k];
-    }
+    for(let i=0;i<4;i++) for(let j=0;j<4;j++) { out[j*4+i]=0; for(let k=0;k<4;k++) out[j*4+i]+=a[k*4+i]*b[j*4+k]; }
     return out;
   }
   function rotateY(m, angle) {
-    const c=Math.cos(angle), s=Math.sin(angle);
-    const r=identity(mat4());
+    const c=Math.cos(angle), s=Math.sin(angle), r=identity(mat4());
     r[0]=c; r[2]=s; r[8]=-s; r[10]=c;
     return multiply(mat4(), m, r);
   }
   function rotateX(m, angle) {
-    const c=Math.cos(angle), s=Math.sin(angle);
-    const r=identity(mat4());
+    const c=Math.cos(angle), s=Math.sin(angle), r=identity(mat4());
     r[5]=c; r[6]=-s; r[9]=s; r[10]=c;
     return multiply(mat4(), m, r);
   }
-  function translate(m, tx, ty, tz) {
-    const r=identity(mat4());
-    r[12]=tx; r[13]=ty; r[14]=tz;
-    return multiply(mat4(), m, r);
-  }
 
-  // Cube geometry
-  function makeCubeEdges(cx, cy, cz, size, r, g, b) {
-    const s = size/2;
-    const verts = [
-      [cx-s,cy-s,cz-s],[cx+s,cy-s,cz-s],[cx+s,cy+s,cz-s],[cx-s,cy+s,cz-s],
-      [cx-s,cy-s,cz+s],[cx+s,cy-s,cz+s],[cx+s,cy+s,cz+s],[cx-s,cy+s,cz+s]
-    ];
-    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-    const pos = [], col = [];
-    edges.forEach(([a,b]) => {
-      pos.push(...verts[a], ...verts[b]);
-      col.push(r,g,b, r,g,b);
-    });
-    return {pos, col};
-  }
-
-  // Generate floating cubes
   function randomColor() {
-    const palettes = [
-      [0.0, 0.8, 0.5],   // teal
-      [0.8, 0.7, 0.0],   // gold
-      [0.0, 0.4, 1.0],   // blue
-      [0.6, 0.0, 1.0],   // purple
-      [0.0, 1.0, 0.3],   // green
-      [1.0, 0.3, 0.0],   // orange
-    ];
-    return palettes[Math.floor(Math.random()*palettes.length)];
+    const p = [[0,0.8,0.5],[0.8,0.7,0],[0,0.4,1],[0.6,0,1],[0,1,0.3],[1,0.3,0]];
+    return p[Math.floor(Math.random()*p.length)];
   }
 
   const numCubes = 60;
   const cubes = Array.from({length: numCubes}, () => ({
-    x: (Math.random()-0.5)*20,
-    y: (Math.random()-0.5)*20,
-    z: -Math.random()*40,
-    size: 0.3 + Math.random()*1.2,
-    rx: Math.random()*Math.PI*2,
-    ry: Math.random()*Math.PI*2,
-    rz: Math.random()*Math.PI*2,
-    drx: (Math.random()-0.5)*0.015,
-    dry: (Math.random()-0.5)*0.02,
-    drz: (Math.random()-0.5)*0.012,
-    speed: 0.04 + Math.random()*0.06,
-    color: randomColor()
+    x:(Math.random()-0.5)*20, y:(Math.random()-0.5)*20, z:-Math.random()*40,
+    size:0.3+Math.random()*1.2, rx:Math.random()*6.28, ry:Math.random()*6.28,
+    drx:(Math.random()-0.5)*0.015, dry:(Math.random()-0.5)*0.02,
+    speed:0.04+Math.random()*0.06, color:randomColor()
   }));
 
-  // Star particles (3D)
   const stars3d = Array.from({length:300}, () => ({
-    x: (Math.random()-0.5)*50,
-    y: (Math.random()-0.5)*50,
-    z: -Math.random()*60
+    x:(Math.random()-0.5)*50, y:(Math.random()-0.5)*50, z:-Math.random()*60
   }));
 
-  // Grid tunnel rings
-  const tunnelRings = Array.from({length:20}, (_, i) => ({
-    z: -i*3.5,
-    angle: i*0.1
-  }));
+  const tunnelRings = Array.from({length:20}, (_, i) => ({ z:-i*3.5, angle:i*0.1 }));
 
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
@@ -1121,188 +1143,98 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
 
   let t = 0;
 
-  function buildAndDrawBuffer(positions, colors, mode) {
-    if(positions.length === 0) return;
-    const posBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  function buildAndDraw(positions, colors, mode) {
+    if(!positions.length) return;
+    const pb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pb);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aPos);
-
-    const colBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
+    const cb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cb);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.DYNAMIC_DRAW);
     gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aColor);
-
     gl.drawArrays(mode, 0, positions.length/3);
-    gl.deleteBuffer(posBuf);
-    gl.deleteBuffer(colBuf);
+    gl.deleteBuffer(pb);
+    gl.deleteBuffer(cb);
   }
 
-  function drawCubeEdges(cube, proj, view) {
-    const s = cube.size/2;
-    const verts = [
-      [-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],
-      [-s,-s,s],[s,-s,s],[s,s,s],[-s,s,s]
-    ];
-    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-
+  function drawCube(cube, proj, view) {
+    const s=cube.size/2;
+    const v=[[-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],[-s,-s,s],[s,-s,s],[s,s,s],[-s,s,s]];
+    const e=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
     let model = identity(mat4());
     model = rotateX(model, cube.rx);
     model = rotateY(model, cube.ry);
-    model[12] = cube.x; model[13] = cube.y; model[14] = cube.z;
-
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-
+    model[12]=cube.x; model[13]=cube.y; model[14]=cube.z;
+    gl.uniformMatrix4fv(uMVP, false, multiply(mat4(), proj, multiply(mat4(), view, model)));
     const pos=[], col=[];
     const [r,g,b] = cube.color;
-    edges.forEach(([a,bb]) => {
-      pos.push(...verts[a], ...verts[bb]);
-      col.push(r,g,b, r,g,b);
-    });
-    buildAndDrawBuffer(pos, col, gl.LINES);
+    e.forEach(([a,bb])=>{ pos.push(...v[a],...v[bb]); col.push(r,g,b,r,g,b); });
+    buildAndDraw(pos, col, gl.LINES);
   }
 
-  function drawTunnelRing(ring, proj, view) {
-    const segs = 16;
-    const radius = 6 + Math.sin(t*0.5+ring.z*0.1)*1.5;
+  function drawRing(ring, proj, view) {
+    const segs=16, radius=6+Math.sin(t*0.5+ring.z*0.1)*1.5;
     const pos=[], col=[];
-    for(let i=0; i<segs; i++) {
-      const a1 = (i/segs)*Math.PI*2 + ring.angle;
-      const a2 = ((i+1)/segs)*Math.PI*2 + ring.angle;
-      pos.push(Math.cos(a1)*radius, Math.sin(a1)*radius, ring.z);
-      pos.push(Math.cos(a2)*radius, Math.sin(a2)*radius, ring.z);
-      const glow = 0.3+0.5*Math.abs(Math.sin(t*0.8+i*0.4));
-      col.push(0, glow*0.6, glow);
-      col.push(0, glow*0.6, glow);
+    for(let i=0;i<segs;i++){
+      const a1=(i/segs)*6.28+ring.angle, a2=((i+1)/segs)*6.28+ring.angle;
+      pos.push(Math.cos(a1)*radius,Math.sin(a1)*radius,ring.z, Math.cos(a2)*radius,Math.sin(a2)*radius,ring.z);
+      const glow=0.3+0.5*Math.abs(Math.sin(t*0.8+i*0.4));
+      col.push(0,glow*0.6,glow, 0,glow*0.6,glow);
     }
-    let model = identity(mat4());
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-    buildAndDrawBuffer(pos, col, gl.LINES);
-  }
-
-  function drawStars(proj, view) {
-    const pos=[], col=[];
-    stars3d.forEach(s => {
-      pos.push(s.x, s.y, s.z);
-      const br = 0.5+0.5*Math.sin(t*2+s.x+s.y);
-      col.push(br, br, br);
-    });
-    let model = identity(mat4());
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-    gl.vertexAttribPointer;
-    const posBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aPos);
-    const colBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(col), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aColor);
-    gl.drawArrays(gl.POINTS, 0, pos.length/3);
-    gl.deleteBuffer(posBuf);
-    gl.deleteBuffer(colBuf);
+    gl.uniformMatrix4fv(uMVP, false, multiply(mat4(), proj, view));
+    buildAndDraw(pos, col, gl.LINES);
   }
 
   function animate() {
     t += 0.016;
-    const W = canvas.width, H = canvas.height;
+    const W=canvas.width, H=canvas.height;
     gl.clearColor(0.002, 0.004, 0.02, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
     const proj = perspective(mat4(), 0.9, W/H, 0.1, 80);
-    const camZ = t * 0.4;
-    const camX = Math.sin(t*0.15)*1.2;
-    const camY = Math.cos(t*0.12)*0.8;
-
     let view = identity(mat4());
-    view[12] = -camX; view[13] = -camY; view[14] = 2;
+    view[12]=-Math.sin(t*0.15)*1.2; view[13]=-Math.cos(t*0.12)*0.8; view[14]=2;
 
-    // Draw stars
-    drawStars(proj, view);
+    // نجوم
+    const sp=[], sc=[];
+    stars3d.forEach(s=>{ sp.push(s.x,s.y,s.z); const br=0.5+0.5*Math.sin(t*2+s.x+s.y); sc.push(br,br,br); });
+    gl.uniformMatrix4fv(uMVP, false, multiply(mat4(), proj, view));
+    buildAndDraw(sp, sc, gl.POINTS);
 
-    // Draw tunnel rings
-    tunnelRings.forEach(ring => {
-      ring.z += 0.04;
-      ring.angle += 0.004;
-      if(ring.z > 4) ring.z -= 20*3.5/tunnelRings.length + 70;
-      drawTunnelRing(ring, proj, view);
+    // حلقات النفق
+    tunnelRings.forEach(ring=>{ ring.z+=0.04; ring.angle+=0.004; if(ring.z>4) ring.z-=70; drawRing(ring,proj,view); });
+
+    // مكعبات
+    cubes.forEach(cube=>{
+      cube.z+=cube.speed; cube.rx+=cube.drx; cube.ry+=cube.dry;
+      if(cube.z>5){ cube.z=-40-Math.random()*20; cube.x=(Math.random()-0.5)*20; cube.y=(Math.random()-0.5)*20; cube.color=randomColor(); }
+      drawCube(cube,proj,view);
     });
 
-    // Draw cubes
-    cubes.forEach(cube => {
-      cube.z += cube.speed;
-      cube.rx += cube.drx;
-      cube.ry += cube.dry;
-      cube.rz += cube.drz;
-      if(cube.z > 5) {
-        cube.z = -40 - Math.random()*20;
-        cube.x = (Math.random()-0.5)*20;
-        cube.y = (Math.random()-0.5)*20;
-        cube.color = randomColor();
-      }
-      drawCubeEdges(cube, proj, view);
-    });
-
-    // Draw connecting lines between nearby cubes
-    const linPos=[], linCol=[];
-    for(let i=0; i<cubes.length; i++) {
-      for(let j=i+1; j<cubes.length; j++) {
-        const dx=cubes[i].x-cubes[j].x, dy=cubes[i].y-cubes[j].y, dz=cubes[i].z-cubes[j].z;
-        const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
-        if(dist < 3.5) {
-          const alpha = (1-dist/3.5)*0.4;
-          linPos.push(cubes[i].x,cubes[i].y,cubes[i].z, cubes[j].x,cubes[j].y,cubes[j].z);
-          linCol.push(0,alpha*0.8,alpha, 0,alpha*0.8,alpha);
-        }
-      }
+    // خطوط ربط
+    const lp=[], lc=[];
+    for(let i=0;i<cubes.length;i++) for(let j=i+1;j<cubes.length;j++){
+      const dx=cubes[i].x-cubes[j].x, dy=cubes[i].y-cubes[j].y, dz=cubes[i].z-cubes[j].z;
+      const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
+      if(dist<3.5){ const a=(1-dist/3.5)*0.4; lp.push(cubes[i].x,cubes[i].y,cubes[i].z,cubes[j].x,cubes[j].y,cubes[j].z); lc.push(0,a*0.8,a,0,a*0.8,a); }
     }
-    if(linPos.length > 0) {
-      let model = identity(mat4());
-      const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-      gl.uniformMatrix4fv(uMVP, false, mvp);
-      buildAndDrawBuffer(linPos, linCol, gl.LINES);
-    }
+    if(lp.length){ gl.uniformMatrix4fv(uMVP, false, multiply(mat4(), proj, view)); buildAndDraw(lp, lc, gl.LINES); }
 
     requestAnimationFrame(animate);
   }
-
   animate();
 
-  // 2D fallback
   function fallback2D(c) {
-    const ctx = c.getContext('2d');
-    function resz() { c.width=window.innerWidth; c.height=window.innerHeight; }
-    resz(); window.addEventListener('resize', resz);
-    const pts = Array.from({length:120}, ()=>({
-      x:Math.random(), y:Math.random(),
-      vx:(Math.random()-0.5)*0.002, vy:(Math.random()-0.5)*0.002,
-      r:Math.random()*2+1,
-      c:`hsl(${180+Math.random()*60},100%,${50+Math.random()*30}%)`
-    }));
-    function frame() {
-      ctx.fillStyle='rgba(0,4,18,0.18)';
-      ctx.fillRect(0,0,c.width,c.height);
-      pts.forEach(p=>{
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.x<0||p.x>1) p.vx*=-1;
-        if(p.y<0||p.y>1) p.vy*=-1;
-        ctx.fillStyle=p.c;
-        ctx.beginPath();
-        ctx.arc(p.x*c.width,p.y*c.height,p.r,0,Math.PI*2);
-        ctx.fill();
-      });
-      pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{
-        const dx=(a.x-b.x)*c.width, dy=(a.y-b.y)*c.height;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<120){ctx.strokeStyle=`rgba(0,220,200,${(1-d/120)*0.3})`;ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(a.x*c.width,a.y*c.height);ctx.lineTo(b.x*c.width,b.y*c.height);ctx.stroke();}
-      }));
+    const ctx=c.getContext('2d');
+    function resz(){c.width=window.innerWidth;c.height=window.innerHeight;}
+    resz(); window.addEventListener('resize',resz);
+    const pts=Array.from({length:120},()=>({x:Math.random(),y:Math.random(),vx:(Math.random()-0.5)*0.002,vy:(Math.random()-0.5)*0.002,r:Math.random()*2+1,c:`hsl(${180+Math.random()*60},100%,${50+Math.random()*30}%)`}));
+    function frame(){
+      ctx.fillStyle='rgba(0,4,18,0.18)'; ctx.fillRect(0,0,c.width,c.height);
+      pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>1)p.vx*=-1; if(p.y<0||p.y>1)p.vy*=-1; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x*c.width,p.y*c.height,p.r,0,6.28); ctx.fill(); });
+      pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{ const dx=(a.x-b.x)*c.width, dy=(a.y-b.y)*c.height, d=Math.sqrt(dx*dx+dy*dy); if(d<120){ctx.strokeStyle=`rgba(0,220,200,${(1-d/120)*0.3})`;ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(a.x*c.width,a.y*c.height);ctx.lineTo(b.x*c.width,b.y*c.height);ctx.stroke();} }));
       requestAnimationFrame(frame);
     }
     frame();
@@ -1310,3 +1242,4 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
 })();
 </script>
 </body>
+</html>
