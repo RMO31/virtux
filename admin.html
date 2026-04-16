@@ -134,6 +134,7 @@
       <div class="sb-sec">يوتيوب</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
+      <!-- تم حذف زر "🔴 Lives" المكرر -->
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
     </div>
@@ -193,6 +194,7 @@ function logout() { window.location.reload(); }
 function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
+  // removed 'yt-lives' from rooms list
   let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact'];
   rooms.forEach(room => {
     let div = document.createElement('div');
@@ -227,124 +229,46 @@ function loadContact() {
   container.innerHTML = `<div class="card"><h3>معلومات الاتصال</h3><p>بريد: admin@virtux.gg</p><p>ديسكورد: virtux_official</p></div>`;
 }
 
-// ==================== دوال مساعدة للأدوار ====================
+// ==================== Dashboard ====================
+function hasRole(user, roleName) {
+  if (Array.isArray(user.roles)) return user.roles.includes(roleName);
+  return user.role === roleName;
+}
 function getRolesArray(user) {
-  if (!user) return ['user'];
   if (Array.isArray(user.roles) && user.roles.length > 0) return user.roles;
-  if (user.role && typeof user.role === 'string') return [user.role];
+  if (user.role) return [user.role];
   return ['user'];
 }
-
-async function updateUserRoles(userId, newRoles) {
-  if (!userId) throw new Error('معرف المستخدم مطلوب');
-  const { error } = await supabaseClient
-    .from('profiles')
-    .update({ roles: newRoles, role: newRoles[0] || 'user' })
-    .eq('id', userId);
-  if (error) throw new Error(error.message);
+function getRoleColor(role) {
+  const colors = { vip:'#d4e800', member:'#4caf90', moderator:'#ff9800', youtuber:'#ff4444', 'youtuber vip':'#ff6b35', user:'#aab' };
+  return colors[role] || '#aab';
+}
+function getRoleBg(role) {
+  const bgs = { vip:'#2a2000', member:'#0f3d2e', moderator:'#3d2e0f', youtuber:'#3d0a0a', 'youtuber vip':'#3d1a0a', user:'#0f1e55' };
+  return bgs[role] || '#0f1e55';
+}
+function getRoleEmoji(role) {
+  const emojis = { vip:'👑', member:'⭐', moderator:'🛡️', youtuber:'🎬', 'youtuber vip':'🔥', user:'👤' };
+  return emojis[role] || '👤';
 }
 
-// عرض رسائل داخل لوحة التحكم
-function showDashboardMessage(msg, type) {
-  let container = document.getElementById('content-dashboard');
-  if (!container) return;
-  let msgDiv = document.createElement('div');
-  msgDiv.className = type === 'ok' ? 'ok' : 'er';
-  msgDiv.textContent = msg;
-  msgDiv.style.display = 'block';
-  container.prepend(msgDiv);
-  setTimeout(() => msgDiv.remove(), 3000);
-}
-
-// ==================== دوال الصلاحيات وحذف المستخدم (المعدلة) ====================
-window.addRoleToUser = async function(userId, roleToAdd) {
-  try {
-    const { data: userData, error: fetchError } = await supabaseClient
-      .from('profiles')
-      .select('roles, role')
-      .eq('id', userId)
-      .single();
-    if (fetchError) throw fetchError;
-    
-    let roles = getRolesArray(userData);
-    if (!roles.includes(roleToAdd)) {
-      roles.push(roleToAdd);
-    }
-    // إزالة 'user' إذا كان هناك أدوار أخرى
-    if (roles.length > 1 && roles.includes('user')) {
-      roles = roles.filter(r => r !== 'user');
-    }
-    if (roles.length === 0) roles = ['user'];
-    
-    await updateUserRoles(userId, roles);
-    loadDashboard();
-    showDashboardMessage('✅ تمت إضافة الدور بنجاح', 'ok');
-  } catch (err) {
-    console.error(err);
-    showDashboardMessage(`❌ فشل إضافة الدور: ${err.message}`, 'er');
-  }
-};
-
-window.removeRoleFromUser = async function(userId, roleToRemove) {
-  try {
-    const { data: userData, error: fetchError } = await supabaseClient
-      .from('profiles')
-      .select('roles, role')
-      .eq('id', userId)
-      .single();
-    if (fetchError) throw fetchError;
-    
-    let roles = getRolesArray(userData).filter(r => r !== roleToRemove);
-    if (roles.length === 0) roles = ['user'];
-    
-    await updateUserRoles(userId, roles);
-    loadDashboard();
-    showDashboardMessage('✅ تمت إزالة الدور بنجاح', 'ok');
-  } catch (err) {
-    console.error(err);
-    showDashboardMessage(`❌ فشل إزالة الدور: ${err.message}`, 'er');
-  }
-};
-
-window.deleteUser = async function(userId) {
-  if (!confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً؟')) return;
-  try {
-    const { error } = await supabaseClient
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
-    if (error) throw error;
-    loadDashboard();
-    showDashboardMessage('✅ تم حذف المستخدم بنجاح', 'ok');
-  } catch (err) {
-    console.error(err);
-    showDashboardMessage(`❌ فشل حذف المستخدم: ${err.message}`, 'er');
-  }
-};
-
-// ==================== Dashboard المعدل ====================
 async function loadDashboard() {
   let container = document.getElementById('content-dashboard');
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    let { data: users, error } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     if (!users) users = [];
 
     let total = users.length;
+    // نستخدم إجمالي المستخدمين المسجلين كعدد الداخلين
     let loginCount = total;
-    let vipCount = users.filter(u => getRolesArray(u).includes('vip')).length;
-    let memberCount = users.filter(u => getRolesArray(u).includes('member')).length;
-    let modCount = users.filter(u => getRolesArray(u).includes('moderator')).length;
-    let youtuberCount = users.filter(u => getRolesArray(u).includes('youtuber')).length;
-    let youtuberVipCount = users.filter(u => getRolesArray(u).includes('youtuber vip')).length;
-    let userCount = users.filter(u => {
-      let r = getRolesArray(u);
-      return r.length === 1 && r[0] === 'user';
-    }).length;
+    let vipCount = users.filter(u => hasRole(u,'vip')).length;
+    let memberCount = users.filter(u => hasRole(u,'member')).length;
+    let modCount = users.filter(u => hasRole(u,'moderator')).length;
+    let youtuberCount = users.filter(u => hasRole(u,'youtuber')).length;
+    let youtuberVipCount = users.filter(u => hasRole(u,'youtuber vip')).length;
+    let userCount = users.filter(u => { let r = getRolesArray(u); return r.length === 0 || (r.length === 1 && r[0] === 'user'); }).length;
 
     let statsHtml = `<div class="stats-grid">
       <div class="stat-card" style="border-color:#00c8ff;"><div class="stat-number" style="color:#00c8ff;">${loginCount}</div><div class="stat-label">✅ دخلوا الموقع</div></div>
@@ -357,7 +281,6 @@ async function loadDashboard() {
       <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">👤 عادي</div></div>
     </div>`;
 
-    // آخر الأعضاء
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
     if (users.length) {
       let recent = users.slice(0, 5);
@@ -365,7 +288,7 @@ async function loadDashboard() {
       recent.forEach(u => {
         let roles = getRolesArray(u);
         let date = new Date(u.created_at).toLocaleDateString('ar-EG');
-        let rolesHtml = roles.map(r => `<span style="display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:4px;padding:2px 6px;margin-right:3px;">${r.toUpperCase()}</span>`).join('');
+        let rolesHtml = roles.map(r => `<span style="display:inline-block;font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:2px 6px;margin-right:3px;">${getRoleEmoji(r)} ${r.toUpperCase()}</span>`).join('');
         recentMembersHtml += `<div class="recent-member-item">
           <div class="recent-avatar">👤</div>
           <div class="pi-info">
@@ -381,7 +304,6 @@ async function loadDashboard() {
     }
     recentMembersHtml += `</div>`;
 
-    // حقل البحث عن الأدوار
     let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
       <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
       <div id="roleSearchResults" class="role-search-results"></div>
@@ -390,7 +312,6 @@ async function loadDashboard() {
       </div>
     </div>`;
 
-    // إدارة الأخبار (ticker)
     let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
       <div class="fg">
         <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
@@ -400,79 +321,37 @@ async function loadDashboard() {
       <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
     </div>`;
 
-    // قائمة جميع المستخدمين مع أزرار الأدوار والحذف (باستخدام data-attributes)
-    let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list" id="usersListContainer">`;
-    for (const u of users) {
+    let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
       let roles = getRolesArray(u);
-      let allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
-      let buttonsHtml = '';
-      for (let role of allRoles) {
-        let has = roles.includes(role);
-        if (has) {
-          buttonsHtml += `<button class="role-remove-btn btn-del" data-userid="${u.id}" data-role="${role}" style="font-size:10px;padding:3px 7px;">✕ ${role}</button>`;
-        } else {
-          buttonsHtml += `<button class="role-add-btn btn-edit" data-userid="${u.id}" data-role="${role}" style="font-size:10px;padding:3px 7px;">+ ${role}</button>`;
-        }
-      }
-      buttonsHtml += `<button class="delete-user-btn btn-del" data-userid="${u.id}" style="font-size:10px;padding:3px 7px;">🗑️ حذف</button>`;
-      
-      fullUsersHtml += `<div class="pi" id="user-${u.id}">
+      let rolesHtml = roles.map(r => `<span style="display:inline-block;font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:2px 6px;margin-right:3px;">${getRoleEmoji(r)} ${r.toUpperCase()}</span>`).join('');
+      const allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
+      let roleButtons = allRoles.map(r => {
+        let has = roles.includes(r);
+        const rEsc = r.replace(/'/g, "\'");
+        return has
+          ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
+          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
+      }).join('');
+      return `<div class="pi" id="user-${u.id}">
         <div class="pi-icon">👤</div>
         <div class="pi-info">
           <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
           <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
-          <div style="margin-top:3px;">${roles.map(r => `<span style="display:inline-block;font-size:10px;background:#0f1e55;color:#9fb000;border-radius:4px;padding:2px 6px;margin-right:3px;">${r.toUpperCase()}</span>`).join('')}</div>
+          <div style="margin-top:3px;">${rolesHtml}</div>
         </div>
         <div style="display:flex; gap:4px; flex-wrap:wrap; max-width:280px;">
-          ${buttonsHtml}
+          ${roleButtons}
+          <button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
         </div>
       </div>`;
-    }
-    fullUsersHtml += `</div></div>`;
+    }).join('') + `</div></div>`;
 
     container.innerHTML = statsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
     loadNewsList();
-  } catch(e) {
-    container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>';
-    console.error(e);
-  }
+  } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
 
-// ==================== Event Delegation لأزرار الأدوار وحذف المستخدم ====================
-document.getElementById('mainContainer').addEventListener('click', async (e) => {
-  const target = e.target;
-  // إضافة دور
-  if (target.classList.contains('role-add-btn')) {
-    const userId = target.getAttribute('data-userid');
-    const role = target.getAttribute('data-role');
-    if (userId && role) {
-      target.disabled = true;
-      await window.addRoleToUser(userId, role);
-      target.disabled = false;
-    }
-  }
-  // إزالة دور
-  else if (target.classList.contains('role-remove-btn')) {
-    const userId = target.getAttribute('data-userid');
-    const role = target.getAttribute('data-role');
-    if (userId && role) {
-      target.disabled = true;
-      await window.removeRoleFromUser(userId, role);
-      target.disabled = false;
-    }
-  }
-  // حذف مستخدم
-  else if (target.classList.contains('delete-user-btn')) {
-    const userId = target.getAttribute('data-userid');
-    if (userId) {
-      target.disabled = true;
-      await window.deleteUser(userId);
-      target.disabled = false;
-    }
-  }
-});
-
-// ==================== دوال الأخبار ====================
+// دوال إدارة الأخبار
 async function loadNewsList() {
   let { data: news, error } = await supabaseClient.from('posts')
     .select('*')
@@ -525,14 +404,13 @@ async function searchUsersForRole(query) {
     const allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
     resultsDiv.innerHTML = users.map(u => {
       let roles = getRolesArray(u);
-      let rolesHtml = roles.map(r => `<span style="font-size:10px;background:#0f1e55;color:#9fb000;border-radius:4px;padding:1px 5px;margin-right:2px;">${r}</span>`).join('');
+      let rolesHtml = roles.map(r => `<span style="font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:1px 5px;margin-right:2px;">${r}</span>`).join('');
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
-        if (has) {
-          return `<button class="role-remove-btn" data-userid="${u.id}" data-role="${r}" style="font-size:10px;padding:2px 6px;">✕ ${r}</button>`;
-        } else {
-          return `<button class="role-add-btn" data-userid="${u.id}" data-role="${r}" style="font-size:10px;padding:2px 6px;">+ ${r}</button>`;
-        }
+        const rEsc = r.replace(/'/g, "\'");
+        return has
+          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
+          : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
       }).join('');
       return `<div class="role-search-result-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
         <div><strong>${escapeHtml(u.username||u.email)}</strong> <small style="color:#667;">${escapeHtml(u.email)}</small></div>
@@ -544,7 +422,63 @@ async function searchUsersForRole(query) {
 }
 function refreshDashboard() { loadDashboard(); }
 
-// ==================== بقية دوال الصفحات (لم تتغير) ====================
+// Event delegation for role buttons — avoids JSON-in-onclick issues
+document.addEventListener('click', async function(e) {
+  const btn = e.target.closest('.role-btn');
+  if (!btn) return;
+  const userId = btn.dataset.userid;
+  const role = btn.dataset.role;
+  const action = btn.dataset.action;
+  if (!userId || !role || !action) return;
+  btn.disabled = true;
+  try {
+    // Fetch current roles fresh from DB to avoid stale data
+    const { data: userData, error } = await supabaseClient
+      .from('profiles').select('role,roles').eq('id', userId).single();
+    if (error) throw error;
+    let roles = getRolesArray(userData);
+    if (action === 'add') {
+      if (!roles.includes(role)) roles.push(role);
+      if (roles.length > 1) roles = roles.filter(r => r !== 'user');
+    } else {
+      roles = roles.filter(r => r !== role);
+    }
+    if (roles.length === 0) roles = ['user'];
+    const { error: updateError } = await supabaseClient
+      .from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+    if (updateError) throw updateError;
+    loadDashboard();
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+    btn.disabled = false;
+  }
+});
+
+async function addRoleToUser(userId, roleToAdd) {
+  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
+  let roles = getRolesArray(userData || {});
+  if (!roles.includes(roleToAdd)) roles.push(roleToAdd);
+  if (roles.length > 1) roles = roles.filter(r => r !== 'user');
+  if (roles.length === 0) roles = ['user'];
+  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+  loadDashboard();
+}
+
+async function removeRoleFromUser(userId, roleToRemove) {
+  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
+  let roles = getRolesArray(userData || {}).filter(r => r !== roleToRemove);
+  if (roles.length === 0) roles = ['user'];
+  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+  loadDashboard();
+}
+
+async function setRole(userId, role) { 
+  await supabaseClient.from('profiles').update({ role: role, roles: [role] }).eq('id', userId); 
+  loadDashboard(); 
+}
+async function deleteUser(userId) { if(!confirm('حذف المستخدم نهائياً؟')) return; await supabaseClient.from('profiles').delete().eq('id', userId); loadDashboard(); }
+
+// ==================== تحميل صفحة المحتوى ====================
 async function loadContentPage(room) {
   let container = document.getElementById(`content-${room}`);
   if (!container) return;
@@ -599,6 +533,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
+// ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
 function getAddForm(room) {
   if (room === 'home') {
     return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
@@ -740,6 +675,7 @@ function getAddForm(room) {
   }
 }
 
+// ==================== دوال مساعدة للمعاينة والإضافة ====================
 function clearMedia(room) {
   if (room !== 'highlights' && room !== 'home' && room !== 'projects' && room !== 'gaming-news' && room !== 'youtube-news' && room !== 'live' && room !== 'tournaments') return;
   const previewImg = document.getElementById(`preview-img-${room}`);
@@ -873,7 +809,7 @@ async function addPost(room) {
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
 async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
 
-// ==================== دوال التعديل ====================
+// ==================== دوال التعديل المصححة ====================
 function getTagOptionsForEdit(room, currentTag) {
   let opts = '';
   if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -1007,6 +943,7 @@ async function addYouTubeChannel(room) {
 async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
 async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
 async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
+// تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
 
 async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
 function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
@@ -1023,6 +960,7 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   if (!canvas) return;
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) {
+    // Fallback: 2D canvas 3D effect
     fallback2D(canvas);
     return;
   }
@@ -1372,4 +1310,3 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
 })();
 </script>
 </body>
-</html>
