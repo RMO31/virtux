@@ -800,6 +800,8 @@ let currentProfileData = null;
 let currentEditPost = null;
 let currentEditRoom = null;
 let tickerAnimationId = null;
+let authReady = false;
+let ytAutofillTimers = {};
 
 window.doLogout = async function() {
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
@@ -818,16 +820,19 @@ window.doLogout = async function() {
 async function fetchYouTubeVideoInfo(url) {
   const videoId = extractYouTubeId(url);
   if (!videoId) return null;
-  const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+  const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(videoId)}&key=${YOUTUBE_API_KEY}`;
   try {
     const res = await fetch(apiUrl);
+    if (!res.ok) return null;
     const data = await res.json();
-    if (data.items && data.items[0]) {
+    if (data.items && data.items[0] && data.items[0].snippet) {
       return {
-        title: data.items[0].snippet.title,
-        channelTitle: data.items[0].snippet.channelTitle,
-        thumbnail: data.items[0].snippet.thumbnails?.high?.url,
-        videoUrl: url
+        title: data.items[0].snippet.title || '',
+        description: data.items[0].snippet.description || '',
+        channelTitle: data.items[0].snippet.channelTitle || '',
+        thumbnail: data.items[0].snippet.thumbnails?.high?.url || data.items[0].snippet.thumbnails?.medium?.url || data.items[0].snippet.thumbnails?.default?.url || '',
+        videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        videoId
       };
     }
     return null;
@@ -836,7 +841,29 @@ async function fetchYouTubeVideoInfo(url) {
 
 function extractYouTubeId(url) {
   if (!url) return null;
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|live\/))([^&\?\/]+)/);
+  const normalizedUrl = cleanUrl(url);
+  try {
+    const withProtocol = /^https?:\/\//i.test(normalizedUrl) ? normalizedUrl : `https://${normalizedUrl}`;
+    const parsed = new URL(withProtocol);
+    const host = parsed.hostname.replace(/^www\./i, '').replace(/^m\./i, '');
+
+    if (host === 'youtu.be') {
+      const shortId = parsed.pathname.split('/').filter(Boolean)[0];
+      return shortId ? shortId.substring(0, 11) : null;
+    }
+
+    if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+      const searchId = parsed.searchParams.get('v');
+      if (searchId) return searchId.substring(0, 11);
+
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      if (parts[0] && ['embed', 'v', 'live', 'shorts'].includes(parts[0]) && parts[1]) {
+        return parts[1].substring(0, 11);
+      }
+    }
+  } catch(e) {}
+
+  const m = normalizedUrl.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?.*?v=|embed\/|v\/|live\/|shorts\/))([A-Za-z0-9_-]{11})/i);
   return m ? m[1] : null;
 }
 
@@ -847,6 +874,274 @@ function isValidYouTubeUrl(url) {
 function cleanUrl(url) {
   if (!url) return null;
   return url.trim().replace(/\s/g, '');
+}
+
+function getSuggestedUsername(user) {
+  const rawName = user?.user_metadata?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'user';
+  const normalized = String(rawName).trim().replace(/\s+/g, '_').replace(/[^\p{L}\p{N}_]/gu, '').slice(0, 24);
+  return normalized || 'user';
+}
+
+function isGoogleUser(user) {
+  if (!user) return false;
+  const provider = user.app_metadata?.provider || user.identities?.[0]?.provider || '';
+  return provider === 'google';
+}
+
+function hasAuthCallbackParams() {
+  const href = window.location.href;
+  return /[#?].*(access_token|refresh_token|provider_token|provider_refresh_token|code=|error=)/i.test(href);
+}
+
+function cleanupAuthCallbackUrl() {
+  if (!hasAuthCallbackParams()) return;
+  const clean = window.location.origin + window.location.pathname;
+  window.history.replaceState({}, document.title, clean);
+}
+
+function bindAutofillAwareInput(input) {
+  if (!input || input.dataset.autofillBound === 'true') return;
+  input.addEventListener('input', function() {
+    if (this.dataset.autoFilled === 'true') this.dataset.autoFilled = 'false';
+    this.dataset.userEdited = 'true';
+  });
+  input.dataset.autofillBound = 'true';
+}
+
+function setInputValueFromYouTube(input, value) {
+  if (!input || !value) return;
+  if (!input.value || input.dataset.autoFilled === 'true') {
+    input.value = value;
+    input.dataset.autoFilled = 'true';
+  }
+}
+
+function getYouTubeDescription(info) {
+  return (info?.description || info?.channelTitle || '').trim();
+}
+
+function applyYouTubeInfoToInputs(room, info) {
+  const titleInput = document.getElementById(`title-${room}`);
+  const descInput = document.getElementById(`desc-${room}`);
+  bindAutofillAwareInput(titleInput);
+  bindAutofillAwareInput(descInput);
+  setInputValueFromYouTube(titleInput, info?.title || '');
+  setInputValueFromYouTube(descInput, getYouTubeDescription(info));
+}
+
+function renderYouTubeVideoPreview(room, info, errorMessage) {
+  const previewDiv = document.getElementById(`yt-preview-${room}`);
+  if (!previewDiv) return;
+  if (errorMessage) {
+    previewDiv.innerHTML = errorMessage;
+    return;
+  }
+  if (!info) {
+    previewDiv.innerHTML = 'أدخل رابط يوتيوب لعرض معاينة';
+    return;
+  }
+  const previewDesc = escapeHtml(getYouTubeDescription(info).slice(0, 140));
+  previewDiv.innerHTML = `${info.thumbnail ? `<img src="${info.thumbnail}" style="max-width:100%; border-radius:8px;">` : ''}<div style="margin-top:6px; color:#d4af37; font-size:13px;">${escapeHtml(info.title || '')}</div>${previewDesc ? `<div style="margin-top:4px; color:#aaa; font-size:11px; line-height:1.5;">${previewDesc}</div>` : ''}`;
+}
+
+function renderLiveYouTubePreview(info, errorMessage) {
+  const thumb = document.getElementById('live-thumb');
+  if (!thumb) return;
+  if (errorMessage) {
+    thumb.innerHTML = errorMessage;
+    return;
+  }
+  if (!info) {
+    thumb.innerHTML = 'أدخل رابط البث';
+    return;
+  }
+  const previewDesc = escapeHtml(getYouTubeDescription(info).slice(0, 120));
+  thumb.innerHTML = `${info.thumbnail ? `<img src="${info.thumbnail}" style="max-width:100%;border-radius:7px;margin-bottom:5px;">` : ''}<div style="font-size:12px;color:#d4af37;">${escapeHtml(info.title || '')}</div>${previewDesc ? `<div style="font-size:11px;color:#aaa;margin-top:4px;line-height:1.4;">${previewDesc}</div>` : ''}`;
+}
+
+function scheduleRoomTask(room, fn) {
+  clearTimeout(ytAutofillTimers[room]);
+  ytAutofillTimers[room] = setTimeout(fn, 350);
+}
+
+function bindYouTubeVideoUrlAutofill(room) {
+  const urlInput = document.getElementById(`url-${room}`);
+  if (!urlInput || urlInput.dataset.ytBound === 'true') return;
+
+  const fetchAndApply = async () => {
+    const url = cleanUrl(urlInput.value);
+    if (!url) {
+      renderYouTubeVideoPreview(room, null);
+      return;
+    }
+    if (!isValidYouTubeUrl(url)) {
+      renderYouTubeVideoPreview(room, null, '❌ رابط يوتيوب غير صالح');
+      return;
+    }
+
+    renderYouTubeVideoPreview(room, null, '⏳ جاري جلب بيانات الفيديو...');
+    const info = await fetchYouTubeVideoInfo(url);
+    if (!info) {
+      renderYouTubeVideoPreview(room, null, '⚠️ لم يتم العثور على معلومات الفيديو');
+      return;
+    }
+
+    applyYouTubeInfoToInputs(room, info);
+    renderYouTubeVideoPreview(room, info);
+  };
+
+  const schedule = () => scheduleRoomTask(room, fetchAndApply);
+  ['input', 'change', 'blur'].forEach(evt => urlInput.addEventListener(evt, schedule));
+  urlInput.addEventListener('paste', () => setTimeout(schedule, 0));
+  urlInput.dataset.ytBound = 'true';
+}
+
+function bindLiveUrlAutofill() {
+  const urlInput = document.getElementById('url-live');
+  if (!urlInput || urlInput.dataset.liveBound === 'true') return;
+
+  bindAutofillAwareInput(document.getElementById('title-live'));
+  bindAutofillAwareInput(document.getElementById('desc-live'));
+
+  const fetchAndApply = async () => {
+    const lv = cleanUrl(urlInput.value);
+    const statusEl = document.getElementById('live-status');
+    const titleInput = document.getElementById('title-live');
+    const descInput = document.getElementById('desc-live');
+
+    if (!lv) {
+      if (statusEl) statusEl.textContent = '';
+      renderLiveYouTubePreview(null);
+      return;
+    }
+
+    if (statusEl) {
+      statusEl.style.color = '#aaa';
+      statusEl.textContent = '⏳ جاري جلب المعلومات...';
+    }
+
+    try {
+      if (lv.includes('youtube.com') || lv.includes('youtu.be')) {
+        const info = await fetchYouTubeVideoInfo(lv);
+        if (info) {
+          applyYouTubeInfoToInputs('live', info);
+          renderLiveYouTubePreview(info);
+          if (statusEl) {
+            statusEl.style.color = '#4caf90';
+            statusEl.textContent = '✅ تم جلب عنوان ووصف الفيديو';
+          }
+        } else {
+          renderLiveYouTubePreview(null, '⚠️ لم يُعثر على معلومات الفيديو');
+          if (statusEl) {
+            statusEl.style.color = '#f55';
+            statusEl.textContent = '⚠️ لم يُعثر على معلومات الفيديو';
+          }
+        }
+      } else if (lv.includes('twitch.tv')) {
+        const match = lv.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+        if (match) {
+          setInputValueFromYouTube(titleInput, `${match[1]} — Live on Twitch`);
+          setInputValueFromYouTube(descInput, `twitch.tv/${match[1]}`);
+        }
+        if (statusEl) {
+          statusEl.style.color = '#4caf90';
+          statusEl.textContent = '✅ Twitch';
+        }
+      } else if (lv.includes('facebook.com') || lv.includes('fb.watch')) {
+        setInputValueFromYouTube(titleInput, 'Facebook Live');
+        if (statusEl) {
+          statusEl.style.color = '#4caf90';
+          statusEl.textContent = '✅ Facebook Live';
+        }
+      } else if (lv.includes('tiktok.com')) {
+        const match = lv.match(/tiktok\.com\/@([^/?&]+)/);
+        if (match) setInputValueFromYouTube(titleInput, `@${match[1]} — TikTok Live`);
+        if (statusEl) {
+          statusEl.style.color = '#4caf90';
+          statusEl.textContent = '✅ TikTok Live';
+        }
+      } else if (statusEl) {
+        statusEl.textContent = '';
+      }
+    } catch(e) {
+      if (statusEl) {
+        statusEl.style.color = '#f55';
+        statusEl.textContent = '⚠️ خطأ في جلب المعلومات';
+      }
+    }
+  };
+
+  const schedule = () => scheduleRoomTask('live', fetchAndApply);
+  ['input', 'change', 'blur'].forEach(evt => urlInput.addEventListener(evt, schedule));
+  urlInput.addEventListener('paste', () => setTimeout(schedule, 0));
+  urlInput.dataset.liveBound = 'true';
+}
+
+async function getProfileById(userId) {
+  if (!userId) return null;
+  const { data, error } = await db.from('profiles').select('username,role,avatar_url,email').eq('id', userId).maybeSingle();
+  if (error) {
+    console.error('profile lookup error:', error);
+    return null;
+  }
+  return data || null;
+}
+
+function showGoogleUsernameModal(user) {
+  pendingGoogleUser = user;
+  const usernameModal = document.getElementById('usernameModal');
+  const input = document.getElementById('newUsername');
+  if (input) input.value = getSuggestedUsername(user);
+  const errorEl = document.getElementById('usernameError');
+  if (errorEl) errorEl.innerText = '';
+  if (usernameModal) usernameModal.classList.add('active');
+}
+
+async function maybePromptForGoogleUsername(user) {
+  if (!user || !isGoogleUser(user)) return false;
+  const profile = await getProfileById(user.id);
+  if (profile) return false;
+  showGoogleUsernameModal(user);
+  return true;
+}
+
+function setMemberPostingVisibility(isSignedIn) {
+  document.querySelectorAll('.btn-user-post').forEach(btn => {
+    btn.style.display = isSignedIn ? 'inline-flex' : 'none';
+  });
+}
+
+async function startGoogleAuth(errorElementId) {
+  const errorEl = document.getElementById(errorElementId);
+  if (errorEl) errorEl.innerText = '';
+  try {
+    const { error } = await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: SITE_URL,
+        scopes: 'email profile',
+        queryParams: { access_type: 'offline', prompt: 'consent' }
+      }
+    });
+    if (error) throw error;
+  } catch(e) {
+    if (errorEl) errorEl.innerText = e.message || 'فشل تسجيل الدخول عبر Google';
+  }
+}
+
+async function initializeAuth() {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    authReady = true;
+    await updateUIAfterAuth(session || null);
+    if (session?.user) {
+      maybePromptForGoogleUsername(session.user).catch(err => console.error('username modal error:', err));
+      if (hasAuthCallbackParams()) setTimeout(cleanupAuthCallbackUrl, 1500);
+    }
+  } catch(err) {
+    authReady = true;
+    console.error('initializeAuth error:', err);
+  }
 }
 
 // ==================== رفع الملفات إلى Supabase Storage ====================
@@ -1053,109 +1348,12 @@ window.openUserPostModal = function(room) {
 
   // معاينة يوتيوب
   if (room === 'yt-videos') {
-    const urlInput = document.getElementById(`url-${room}`);
-    if (urlInput) {
-      urlInput.addEventListener('blur', async () => {
-        const url = cleanUrl(urlInput.value);
-        if (isValidYouTubeUrl(url)) {
-          const info = await fetchYouTubeVideoInfo(url);
-          const previewDiv = document.getElementById(`yt-preview-${room}`);
-          if (info && info.thumbnail) {
-            previewDiv.innerHTML = `<img src="${info.thumbnail}" style="max-width:100%; border-radius:8px;"><div style="margin-top:4px;">${escapeHtml(info.title)}</div>`;
-            if (!document.getElementById(`title-${room}`).value) document.getElementById(`title-${room}`).value = info.title;
-            if (!document.getElementById(`desc-${room}`).value) document.getElementById(`desc-${room}`).value = info.channelTitle;
-          } else {
-            previewDiv.innerHTML = '⚠️ لم يتم العثور على معلومات الفيديو';
-          }
-        } else if (url) {
-          document.getElementById(`yt-preview-${room}`).innerHTML = '❌ رابط يوتيوب غير صالح';
-        }
-      });
-    }
+    bindYouTubeVideoUrlAutofill(room);
   }
 
   // جلب معلومات البث تلقائياً — live
   if (room === 'live') {
-    var _lu = document.getElementById('url-live');
-    if (_lu) {
-      _lu.addEventListener('blur', async function() {
-        var lv = this.value.trim();
-        if (!lv) return;
-        var st = document.getElementById('live-status');
-        var ti = document.getElementById('title-live');
-        var de = document.getElementById('desc-live');
-        var th = document.getElementById('live-thumb');
-        if (st) { st.style.color='#aaa'; st.textContent='⏳ جاري جلب المعلومات...'; }
-        try {
-          if (lv.includes('youtube.com') || lv.includes('youtu.be')) {
-            var info = await fetchYouTubeVideoInfo(lv);
-            if (info) {
-              if (ti && !ti.value) ti.value = info.title || '';
-              if (de && !de.value) de.value = info.channelTitle || '';
-              if (th) th.innerHTML = (info.thumbnail ? '<img src="'+info.thumbnail+'" style="max-width:100%;border-radius:7px;margin-bottom:5px;">' : '') + '<div style="font-size:12px;color:#d4af37;">'+(info.title||'')+'</div>';
-              if (st) { st.style.color='#4caf90'; st.textContent='✅ تم جلب المعلومات'; }
-            } else {
-              if (st) { st.style.color='#f55'; st.textContent='⚠️ لم يُعثر على معلومات الفيديو'; }
-            }
-          } else if (lv.includes('twitch.tv')) {
-            var m = lv.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-            if (m) { if (ti&&!ti.value) ti.value=m[1]+' — Live on Twitch'; if (de&&!de.value) de.value='twitch.tv/'+m[1]; }
-            if (st) { st.style.color='#4caf90'; st.textContent='✅ Twitch'; }
-          } else if (lv.includes('facebook.com')||lv.includes('fb.watch')) {
-            if (ti&&!ti.value) ti.value='Facebook Live';
-            if (st) { st.style.color='#4caf90'; st.textContent='✅ Facebook Live'; }
-          } else if (lv.includes('tiktok.com')) {
-            var tt=lv.match(/tiktok\.com\/@([^/?&]+)/);
-            if (tt&&ti&&!ti.value) ti.value='@'+tt[1]+' — TikTok Live';
-            if (st) { st.style.color='#4caf90'; st.textContent='✅ TikTok Live'; }
-          } else {
-            if (st) st.textContent='';
-          }
-        } catch(e) {
-          if (st) { st.style.color='#f55'; st.textContent='⚠️ خطأ في جلب المعلومات'; }
-        }
-      });
-    }
-  }
-
-  // جلب معلومات البث تلقائياً — live
-  if (room === 'live') {
-    var _lu = document.getElementById('url-live');
-    if (_lu) {
-      _lu.addEventListener('blur', async function() {
-        var lv = this.value.trim();
-        if (!lv) return;
-        var st = document.getElementById('live-status');
-        var ti = document.getElementById('title-live');
-        var de = document.getElementById('desc-live');
-        var th = document.getElementById('live-thumb');
-        if (st) { st.style.color='#aaa'; st.textContent='⏳ جاري جلب المعلومات...'; }
-        try {
-          if (lv.includes('youtube.com') || lv.includes('youtu.be')) {
-            var info = await fetchYouTubeVideoInfo(lv);
-            if (info) {
-              if (ti && !ti.value) ti.value = info.title || '';
-              if (de && !de.value) de.value = info.channelTitle || '';
-              if (th) th.innerHTML = (info.thumbnail?'<img src="'+info.thumbnail+'" style="max-width:100%;border-radius:7px;margin-bottom:5px;">':'')+'<div style="font-size:12px;color:#d4af37;">'+(info.title||'')+'</div>';
-              if (st) { st.style.color='#4caf90'; st.textContent='✅ تم جلب المعلومات'; }
-            } else {
-              if (st) { st.style.color='#f55'; st.textContent='⚠️ لم يُعثر على معلومات'; }
-            }
-          } else if (lv.includes('twitch.tv')) {
-            var m=lv.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-            if (m) { if(ti&&!ti.value)ti.value=m[1]+' — Live on Twitch'; if(de&&!de.value)de.value='twitch.tv/'+m[1]; }
-            if (st) { st.style.color='#4caf90'; st.textContent='✅ Twitch'; }
-          } else if (lv.includes('facebook.com')||lv.includes('fb.watch')) {
-            if (ti&&!ti.value) ti.value='Facebook Live';
-            if (st) { st.style.color='#4caf90'; st.textContent='✅ Facebook Live'; }
-          } else if (lv.includes('tiktok.com')) {
-            var tt=lv.match(/tiktok\.com\/@([^/?&]+)/);
-            if(tt&&ti&&!ti.value)ti.value='@'+tt[1]+' — TikTok Live';
-            if(st){st.style.color='#4caf90';st.textContent='✅ TikTok Live';}
-          } else { if(st)st.textContent=''; }
-        } catch(e) { if(st){st.style.color='#f55';st.textContent='⚠️ خطأ';} }
-      });
-    }
+    bindLiveUrlAutofill();
   }
 
   document.getElementById('upm-submit').onclick = () => submitUserPost(room);
@@ -1222,13 +1420,13 @@ async function submitUserPost(room) {
     var isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
     var isImg = pickedIcon === '🖼️' || fileIsImage || (finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl));
     var isVid = pickedIcon === '🎥' || fileIsVideo || (finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl));
-    // إذا العنوان فارغ وكان youtube نأخذ العنوان من API قبل النشر
-    if (!title && room === 'live' && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
+    // إذا كان الرابط يوتيوب ولم تُملأ الخانات نأخذ البيانات من API قبل النشر
+    if ((!title || !desc) && (room === 'live' || room === 'yt-videos') && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
       try {
         var _inf = await fetchYouTubeVideoInfo(finalUrl);
-        if (_inf && _inf.title) {
-          title = _inf.title;
-          if (!desc && _inf.channelTitle) desc = _inf.channelTitle;
+        if (_inf) {
+          if (!title && _inf.title) title = _inf.title;
+          if (!desc) desc = _inf.description || _inf.channelTitle || '';
         }
       } catch(e) {}
     }
@@ -1441,62 +1639,55 @@ document.addEventListener('click', e=>{ if(!e.target.closest('.dd')) closeDD(); 
 function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
 
 // ==================== دوال المصادقة والملف الشخصي ====================
-let _authUpdatePromise = null;
-async function updateUIAfterAuth() {
-  if (_authUpdatePromise) { await _authUpdatePromise; return; }
-  _authUpdatePromise = _doUpdateUI();
-  try { await _authUpdatePromise; } finally { _authUpdatePromise = null; }
-}
-async function _doUpdateUI() {
+async function updateUIAfterAuth(sessionOverride) {
   try {
-    // نجلب الـ session مباشرة من localStorage بدون network call
-    const { data: { session } } = await db.auth.getSession();
+    const session = typeof sessionOverride === 'undefined'
+      ? (await db.auth.getSession()).data.session
+      : sessionOverride;
     const loginLink = document.getElementById('btn-login-link');
     const userArea = document.getElementById('btn-user-area');
     const userNameSpan = document.getElementById('user-name');
     const roleBadge = document.getElementById('user-role-badge');
     const userAvatarImg = document.getElementById('user-avatar-img');
-    if (!loginLink || !userArea) return; // DOM not ready
+    if (!loginLink || !userArea) return;
 
     if (session && session.user) {
       loginLink.style.display = 'none';
       userArea.style.display = 'flex';
 
-      let { data: profile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
-      if (!profile) {
-        let userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-        let finalUsername = userName;
-        for (let i = 1; i <= 20; i++) {
-          const { data: existing } = await db.from('profiles').select('username').eq('username', finalUsername).maybeSingle();
-          if (!existing) break;
-          finalUsername = `${userName}${i}`;
-        }
-        await db.from('profiles').insert({ id: session.user.id, username: finalUsername, email: session.user.email, role: 'user', created_at: new Date().toISOString() });
-        const { data: newProfile } = await db.from('profiles').select('username,role,avatar_url').eq('id', session.user.id).single();
-        profile = newProfile;
+      const profile = authReady ? await getProfileById(session.user.id) : null;
+      const displayName = profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
+
+      userNameSpan.textContent = '👋 ' + displayName;
+      roleBadge.style.display = profile?.role && profile.role !== 'user' ? 'inline-block' : 'none';
+      if (profile?.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
+
+      if (profile?.avatar_url) {
+        userAvatarImg.src = profile.avatar_url;
+        userAvatarImg.style.display = 'inline-block';
+      } else {
+        userAvatarImg.style.display = 'none';
       }
-      if (profile) {
-        userNameSpan.textContent = '👋 ' + (profile.username || session.user.email.split('@')[0]);
-        roleBadge.style.display = profile.role && profile.role !== 'user' ? 'inline-block' : 'none';
-        if (profile.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
-        if (profile.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; }
-        else userAvatarImg.style.display = 'none';
-        window.userRole = profile.role || 'user';
-        window.currentUserId = session.user.id;
-        window.currentUsername = profile.username || '';
-        if (profile.role === 'youtuber-vip' || profile.role === 'vip' || profile.role === 'admin') {
-          document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
-        } else {
-          document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
-        }
+
+      window.userRole = profile?.role || 'user';
+      window.currentUserId = session.user.id;
+      window.currentUsername = profile?.username || displayName;
+      setMemberPostingVisibility(true);
+
+      if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
+        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
+      } else {
+        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
       }
+
+      if (modal && modal.classList.contains('active')) closeModal();
     } else {
-      // لا يوجد session — أظهر زر تسجيل الدخول
       loginLink.style.display = 'inline-block';
       userArea.style.display = 'none';
       window.userRole = 'guest';
       window.currentUserId = null;
       window.currentUsername = null;
+      setMemberPostingVisibility(false);
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
     }
   } catch(err) { console.error('updateUI error:', err); }
@@ -1504,27 +1695,16 @@ async function _doUpdateUI() {
 
 async function checkAuth() { await updateUIAfterAuth(); }
 
-db.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN') {
-    // تحقق إذا المستخدم يحتاج اسم مستخدم (Google جديد)
-    if (session?.user) {
-      const { data: profile } = await db.from('profiles').select('id').eq('id', session.user.id).single();
-      if (!profile) {
-        pendingGoogleUser = session.user;
-        const usernameModal = document.getElementById('usernameModal');
-        const input = document.getElementById('newUsername');
-        input.value = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-        document.getElementById('usernameError').innerText = '';
-        usernameModal.classList.add('active');
-        return;
-      }
+db.auth.onAuthStateChange((event, session) => {
+  authReady = true;
+  setTimeout(() => {
+    updateUIAfterAuth(session || null).catch(err => console.error('auth sync error:', err));
+
+    if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+      maybePromptForGoogleUsername(session.user).catch(err => console.error('username modal error:', err));
+      if (hasAuthCallbackParams()) setTimeout(cleanupAuthCallbackUrl, 1500);
     }
-    await updateUIAfterAuth();
-  } else if (event === 'SIGNED_OUT') {
-    await updateUIAfterAuth();
-  } else if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-    await updateUIAfterAuth();
-  }
+  }, 0);
 });
 
 document.getElementById('confirmUsernameBtn')?.addEventListener('click', async () => {
@@ -1581,8 +1761,8 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     document.getElementById('loginIdentifier').value = username;
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
-document.getElementById('googleLoginBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: SITE_URL, scopes: 'email profile' } }));
-document.getElementById('googleSignupBtn')?.addEventListener('click', () => db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: SITE_URL, scopes: 'email profile' } }));
+document.getElementById('googleLoginBtn')?.addEventListener('click', async () => { await startGoogleAuth('loginError'); });
+document.getElementById('googleSignupBtn')?.addEventListener('click', async () => { await startGoogleAuth('signupError'); });
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
 // ==================== شريط الأخبار ====================
@@ -1644,6 +1824,7 @@ window.openYTVIPModal = function() { alert('VIP video posting is available in ad
 window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
 loadTickerNews();
+initializeAuth();
 showPage('home');
 </script>
 </body>
