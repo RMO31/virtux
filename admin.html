@@ -230,28 +230,6 @@ function loadContact() {
 }
 
 // ==================== Dashboard ====================
-function hasRole(user, roleName) {
-  if (Array.isArray(user.roles)) return user.roles.includes(roleName);
-  return user.role === roleName;
-}
-function getRolesArray(user) {
-  if (Array.isArray(user.roles) && user.roles.length > 0) return user.roles;
-  if (user.role) return [user.role];
-  return ['user'];
-}
-function getRoleColor(role) {
-  const colors = { vip:'#d4e800', member:'#4caf90', moderator:'#ff9800', youtuber:'#ff4444', 'youtuber vip':'#ff6b35', user:'#aab' };
-  return colors[role] || '#aab';
-}
-function getRoleBg(role) {
-  const bgs = { vip:'#2a2000', member:'#0f3d2e', moderator:'#3d2e0f', youtuber:'#3d0a0a', 'youtuber vip':'#3d1a0a', user:'#0f1e55' };
-  return bgs[role] || '#0f1e55';
-}
-function getRoleEmoji(role) {
-  const emojis = { vip:'👑', member:'⭐', moderator:'🛡️', youtuber:'🎬', 'youtuber vip':'🔥', user:'👤' };
-  return emojis[role] || '👤';
-}
-
 async function loadDashboard() {
   let container = document.getElementById('content-dashboard');
   container.innerHTML = '<div class="loading">جاري التحميل...</div>';
@@ -259,26 +237,18 @@ async function loadDashboard() {
     let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     if (!users) users = [];
-
     let total = users.length;
-    // نستخدم إجمالي المستخدمين المسجلين كعدد الداخلين
-    let loginCount = total;
-    let vipCount = users.filter(u => hasRole(u,'vip')).length;
-    let memberCount = users.filter(u => hasRole(u,'member')).length;
-    let modCount = users.filter(u => hasRole(u,'moderator')).length;
-    let youtuberCount = users.filter(u => hasRole(u,'youtuber')).length;
-    let youtuberVipCount = users.filter(u => hasRole(u,'youtuber vip')).length;
-    let userCount = users.filter(u => { let r = getRolesArray(u); return r.length === 0 || (r.length === 1 && r[0] === 'user'); }).length;
+    let vipCount = users.filter(u => u.role === 'vip').length;
+    let memberCount = users.filter(u => u.role === 'member').length;
+    let modCount = users.filter(u => u.role === 'moderator').length;
+    let userCount = users.filter(u => u.role === 'user' || (!u.role)).length;
 
     let statsHtml = `<div class="stats-grid">
-      <div class="stat-card" style="border-color:#00c8ff;"><div class="stat-number" style="color:#00c8ff;">${loginCount}</div><div class="stat-label">✅ دخلوا الموقع</div></div>
       <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">إجمالي المستخدمين</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#d4e800;">${vipCount}</div><div class="stat-label">👑 VIP</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#4caf90;">${memberCount}</div><div class="stat-label">⭐ Member</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff9800;">${modCount}</div><div class="stat-label">🛡️ Moderator</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff4444;">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff6b35;">${youtuberVipCount}</div><div class="stat-label">🔥 Youtuber VIP</div></div>
-      <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">👤 عادي</div></div>
+      <div class="stat-card"><div class="stat-number">${vipCount}</div><div class="stat-label">VIP</div></div>
+      <div class="stat-card"><div class="stat-number">${memberCount}</div><div class="stat-label">Member</div></div>
+      <div class="stat-card"><div class="stat-number">${modCount}</div><div class="stat-label">Moderator</div></div>
+      <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">عادي</div></div>
     </div>`;
 
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
@@ -286,15 +256,15 @@ async function loadDashboard() {
       let recent = users.slice(0, 5);
       recentMembersHtml += `<div class="posts-list">`;
       recent.forEach(u => {
-        let roles = getRolesArray(u);
+        let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
+        let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
         let date = new Date(u.created_at).toLocaleDateString('ar-EG');
-        let rolesHtml = roles.map(r => `<span style="display:inline-block;font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:2px 6px;margin-right:3px;">${getRoleEmoji(r)} ${r.toUpperCase()}</span>`).join('');
         recentMembersHtml += `<div class="recent-member-item">
           <div class="recent-avatar">👤</div>
           <div class="pi-info">
             <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
             <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
-            <div style="margin-top:3px;">${rolesHtml}</div>
+            <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;">${u.role?.toUpperCase() || 'USER'}</span>
           </div>
         </div>`;
       });
@@ -322,26 +292,21 @@ async function loadDashboard() {
     </div>`;
 
     let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
-      let roles = getRolesArray(u);
-      let rolesHtml = roles.map(r => `<span style="display:inline-block;font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:2px 6px;margin-right:3px;">${getRoleEmoji(r)} ${r.toUpperCase()}</span>`).join('');
-      const allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
-      let roleButtons = allRoles.map(r => {
-        let has = roles.includes(r);
-        const rEsc = r.replace(/'/g, "\'");
-        return has
-          ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
-      }).join('');
+      let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
+      let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
       return `<div class="pi" id="user-${u.id}">
         <div class="pi-icon">👤</div>
         <div class="pi-info">
           <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
           <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
-          <div style="margin-top:3px;">${rolesHtml}</div>
+          <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;margin-top:3px;">${u.role?.toUpperCase() || 'USER'}</span>
         </div>
-        <div style="display:flex; gap:4px; flex-wrap:wrap; max-width:280px;">
-          ${roleButtons}
-          <button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          ${u.role !== 'vip' ? `<button class="btn-edit" onclick="setRole('${u.id}','vip')">👑 VIP</button>` : ''}
+          ${u.role !== 'member' ? `<button class="btn-edit" onclick="setRole('${u.id}','member')">⭐ Member</button>` : ''}
+          ${u.role !== 'moderator' ? `<button class="btn-edit" onclick="setRole('${u.id}','moderator')">🛡️ Mod</button>` : ''}
+          ${u.role !== 'user' ? `<button class="btn-edit" onclick="setRole('${u.id}','user')">👤 User</button>` : ''}
+          <button class="btn-del" onclick="deleteUser('${u.id}')">🗑️ حذف</button>
         </div>
       </div>`;
     }).join('') + `</div></div>`;
@@ -397,85 +362,15 @@ async function searchUsersForRole(query) {
   if (!query || query.length < 2) { resultsDiv.innerHTML = ''; return; }
   try {
     let { data: users, error } = await supabaseClient.from('profiles')
-      .select('id,username,email,role,roles')
+      .select('id,username,email,role')
       .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
     if (error) throw error;
     if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
-    const allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
-    resultsDiv.innerHTML = users.map(u => {
-      let roles = getRolesArray(u);
-      let rolesHtml = roles.map(r => `<span style="font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:1px 5px;margin-right:2px;">${r}</span>`).join('');
-      let roleButtons = allRoles.map(r => {
-        let has = roles.includes(r);
-        const rEsc = r.replace(/'/g, "\'");
-        return has
-          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
-      }).join('');
-      return `<div class="role-search-result-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
-        <div><strong>${escapeHtml(u.username||u.email)}</strong> <small style="color:#667;">${escapeHtml(u.email)}</small></div>
-        <div>${rolesHtml}</div>
-        <div class="role-buttons" style="display:flex;flex-wrap:wrap;gap:4px;">${roleButtons}</div>
-      </div>`;
-    }).join('');
+    resultsDiv.innerHTML = users.map(u => `<div class="role-search-result-item"><div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)} • الرتبة: ${u.role||'user'}</small></div><div class="role-buttons">${u.role!=='vip'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'vip\')">VIP</button>':''}${u.role!=='member'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'member\')">Member</button>':''}${u.role!=='moderator'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'moderator\')">Mod</button>':''}${u.role!=='user'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'user\')">User</button>':''}<button class="btn-del" onclick="deleteUser(\''+u.id+'\')">حذف</button></div></div>`).join('');
   } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
 }
 function refreshDashboard() { loadDashboard(); }
-
-// Event delegation for role buttons — avoids JSON-in-onclick issues
-document.addEventListener('click', async function(e) {
-  const btn = e.target.closest('.role-btn');
-  if (!btn) return;
-  const userId = btn.dataset.userid;
-  const role = btn.dataset.role;
-  const action = btn.dataset.action;
-  if (!userId || !role || !action) return;
-  btn.disabled = true;
-  try {
-    // Fetch current roles fresh from DB to avoid stale data
-    const { data: userData, error } = await supabaseClient
-      .from('profiles').select('role,roles').eq('id', userId).single();
-    if (error) throw error;
-    let roles = getRolesArray(userData);
-    if (action === 'add') {
-      if (!roles.includes(role)) roles.push(role);
-      if (roles.length > 1) roles = roles.filter(r => r !== 'user');
-    } else {
-      roles = roles.filter(r => r !== role);
-    }
-    if (roles.length === 0) roles = ['user'];
-    const { error: updateError } = await supabaseClient
-      .from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
-    if (updateError) throw updateError;
-    loadDashboard();
-  } catch(e) {
-    alert('خطأ: ' + e.message);
-    btn.disabled = false;
-  }
-});
-
-async function addRoleToUser(userId, roleToAdd) {
-  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
-  let roles = getRolesArray(userData || {});
-  if (!roles.includes(roleToAdd)) roles.push(roleToAdd);
-  if (roles.length > 1) roles = roles.filter(r => r !== 'user');
-  if (roles.length === 0) roles = ['user'];
-  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
-  loadDashboard();
-}
-
-async function removeRoleFromUser(userId, roleToRemove) {
-  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
-  let roles = getRolesArray(userData || {}).filter(r => r !== roleToRemove);
-  if (roles.length === 0) roles = ['user'];
-  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
-  loadDashboard();
-}
-
-async function setRole(userId, role) { 
-  await supabaseClient.from('profiles').update({ role: role, roles: [role] }).eq('id', userId); 
-  loadDashboard(); 
-}
+async function setRole(userId, role) { await supabaseClient.from('profiles').update({ role }).eq('id', userId); loadDashboard(); }
 async function deleteUser(userId) { if(!confirm('حذف المستخدم نهائياً؟')) return; await supabaseClient.from('profiles').delete().eq('id', userId); loadDashboard(); }
 
 // ==================== تحميل صفحة المحتوى ====================
