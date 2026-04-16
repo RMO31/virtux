@@ -260,14 +260,9 @@ async function loadDashboard() {
     if (error) throw error;
     if (!users) users = [];
 
-    // جلب عدد المستخدمين الذين دخلوا الموقع (لديهم last_sign_in_at)
-    let { data: authStats, error: authErr } = await supabaseClient
-      .from('profiles')
-      .select('id, last_sign_in_at, created_at')
-      .not('last_sign_in_at', 'is', null);
-    let loginCount = authStats ? authStats.length : '—';
-
     let total = users.length;
+    // نستخدم إجمالي المستخدمين المسجلين كعدد الداخلين
+    let loginCount = total;
     let vipCount = users.filter(u => hasRole(u,'vip')).length;
     let memberCount = users.filter(u => hasRole(u,'member')).length;
     let modCount = users.filter(u => hasRole(u,'moderator')).length;
@@ -332,7 +327,7 @@ async function loadDashboard() {
       const allRoles = ['vip','member','moderator','youtuber','youtuber vip','user'];
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
-        const rEsc = r.replace(/'/g, "\\'");
+        const rEsc = r.replace(/'/g, "\'");
         return has
           ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
           : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
@@ -412,7 +407,7 @@ async function searchUsersForRole(query) {
       let rolesHtml = roles.map(r => `<span style="font-size:10px;background:${getRoleBg(r)};color:${getRoleColor(r)};border-radius:4px;padding:1px 5px;margin-right:2px;">${r}</span>`).join('');
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
-        const rEsc = r.replace(/'/g, "\\'");
+        const rEsc = r.replace(/'/g, "\'");
         return has
           ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${rEsc}')">✕ ${r}</button>`
           : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${rEsc}')">+ ${r}</button>`;
@@ -444,7 +439,7 @@ document.addEventListener('click', async function(e) {
     let roles = getRolesArray(userData);
     if (action === 'add') {
       if (!roles.includes(role)) roles.push(role);
-      roles = roles.filter(r => r !== 'user' || roles.length === 1);
+      if (roles.length > 1) roles = roles.filter(r => r !== 'user');
     } else {
       roles = roles.filter(r => r !== role);
     }
