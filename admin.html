@@ -333,8 +333,8 @@ async function loadDashboard() {
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
         return has
-          ? `<button class="btn-del" style="font-size:10px;padding:3px 7px;" onclick="removeRoleFromUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:3px 7px;" onclick="addRoleToUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">+ ${r}</button>`;
+          ? `<button class="btn-del role-btn" style="font-size:10px;padding:3px 7px;" data-userid="${u.id}" data-role="${r}" data-action="remove">✕ ${r}</button>`
+          : `<button class="btn-edit role-btn" style="font-size:10px;padding:3px 7px;" data-userid="${u.id}" data-role="${r}" data-action="add">+ ${r}</button>`;
       }).join('');
       return `<div class="pi" id="user-${u.id}">
         <div class="pi-icon">👤</div>
@@ -412,8 +412,8 @@ async function searchUsersForRole(query) {
       let roleButtons = allRoles.map(r => {
         let has = roles.includes(r);
         return has
-          ? `<button class="btn-del" style="font-size:10px;padding:2px 6px;" onclick="removeRoleFromUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">✕ ${r}</button>`
-          : `<button class="btn-edit" style="font-size:10px;padding:2px 6px;" onclick="addRoleToUser('${u.id}','${r}','${escapeHtml(JSON.stringify(roles))}')">+ ${r}</button>`;
+          ? `<button class="btn-del role-btn" style="font-size:10px;padding:2px 6px;" data-userid="${u.id}" data-role="${r}" data-action="remove">✕ ${r}</button>`
+          : `<button class="btn-edit role-btn" style="font-size:10px;padding:2px 6px;" data-userid="${u.id}" data-role="${r}" data-action="add">+ ${r}</button>`;
       }).join('');
       return `<div class="role-search-result-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
         <div><strong>${escapeHtml(u.username||u.email)}</strong> <small style="color:#667;">${escapeHtml(u.email)}</small></div>
@@ -425,25 +425,54 @@ async function searchUsersForRole(query) {
 }
 function refreshDashboard() { loadDashboard(); }
 
-async function addRoleToUser(userId, roleToAdd, rolesJson) {
+// Event delegation for role buttons — avoids JSON-in-onclick issues
+document.addEventListener('click', async function(e) {
+  const btn = e.target.closest('.role-btn');
+  if (!btn) return;
+  const userId = btn.dataset.userid;
+  const role = btn.dataset.role;
+  const action = btn.dataset.action;
+  if (!userId || !role || !action) return;
+  btn.disabled = true;
   try {
-    let roles = JSON.parse(rolesJson.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
-    if (!roles.includes(roleToAdd)) roles.push(roleToAdd);
-    roles = roles.filter(r => r !== 'user' || roles.length === 1); // إزالة 'user' إذا كان هناك role آخر
+    // Fetch current roles fresh from DB to avoid stale data
+    const { data: userData, error } = await supabaseClient
+      .from('profiles').select('role,roles').eq('id', userId).single();
+    if (error) throw error;
+    let roles = getRolesArray(userData);
+    if (action === 'add') {
+      if (!roles.includes(role)) roles.push(role);
+      roles = roles.filter(r => r !== 'user' || roles.length === 1);
+    } else {
+      roles = roles.filter(r => r !== role);
+    }
     if (roles.length === 0) roles = ['user'];
-    await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+    const { error: updateError } = await supabaseClient
+      .from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+    if (updateError) throw updateError;
     loadDashboard();
-  } catch(e) { alert('خطأ: ' + e.message); }
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+    btn.disabled = false;
+  }
+});
+
+async function addRoleToUser(userId, roleToAdd) {
+  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
+  let roles = getRolesArray(userData || {});
+  if (!roles.includes(roleToAdd)) roles.push(roleToAdd);
+  roles = roles.filter(r => r !== 'user' || roles.length === 1);
+  if (roles.length === 0) roles = ['user'];
+  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+  loadDashboard();
 }
 
-async function removeRoleFromUser(userId, roleToRemove, rolesJson) {
-  try {
-    let roles = JSON.parse(rolesJson.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
-    roles = roles.filter(r => r !== roleToRemove);
-    if (roles.length === 0) roles = ['user'];
-    await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
-    loadDashboard();
-  } catch(e) { alert('خطأ: ' + e.message); }
+async function removeRoleFromUser(userId, roleToRemove) {
+  const { data: userData } = await supabaseClient.from('profiles').select('role,roles').eq('id', userId).single();
+  let roles = getRolesArray(userData || {}).filter(r => r !== roleToRemove);
+  if (roles.length === 0) roles = ['user'];
+  await supabaseClient.from('profiles').update({ roles: roles, role: roles[0] }).eq('id', userId);
+  loadDashboard();
 }
 
 async function setRole(userId, role) { 
