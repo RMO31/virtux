@@ -366,12 +366,36 @@ async function searchUsersForRole(query) {
       .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
     if (error) throw error;
     if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
-    resultsDiv.innerHTML = users.map(u => `<div class="role-search-result-item"><div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)} • الرتبة: ${u.role||'user'}</small></div><div class="role-buttons">${u.role!=='vip'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'vip\')">VIP</button>':''}${u.role!=='member'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'member\')">Member</button>':''}${u.role!=='moderator'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'moderator\')">Mod</button>':''}${u.role!=='user'?'<button class="btn-edit" onclick="setRole(\''+u.id+'\',\'user\')">User</button>':''}<button class="btn-del" onclick="deleteUser(\''+u.id+'\')">حذف</button></div></div>`).join('');
+    resultsDiv.innerHTML = users.map(u => {
+      const id = u.id;
+      const rBtns = [
+        u.role!=='vip'     ? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;vip&quot;)">VIP</button>`       : '',
+        u.role!=='member'  ? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;member&quot;)">Member</button>` : '',
+        u.role!=='moderator'? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;moderator&quot;)">Mod</button>`  : '',
+        u.role!=='user'    ? `<button class="btn-edit" onclick="setRole(&quot;${id}&quot;,&quot;user&quot;)">User</button>`     : '',
+        `<button class="btn-del" onclick="deleteUser(&quot;${id}&quot;)">حذف</button>`
+      ].join('');
+      return `<div class="role-search-result-item"><div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)} • الرتبة: ${u.role||'user'}</small></div><div class="role-buttons">${rBtns}</div></div>`;
+    }).join('');
   } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
 }
 function refreshDashboard() { loadDashboard(); }
-async function setRole(userId, role) { await supabaseClient.from('profiles').update({ role }).eq('id', userId); loadDashboard(); }
-async function deleteUser(userId) { if(!confirm('حذف المستخدم نهائياً؟')) return; await supabaseClient.from('profiles').delete().eq('id', userId); loadDashboard(); }
+async function setRole(userId, role) {
+  try {
+    const { error } = await supabaseClient.from('profiles').update({ role: role }).eq('id', userId);
+    if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error(error); return; }
+    await loadDashboard();
+  } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
+}
+async function deleteUser(userId) {
+  if (!confirm('حذف المستخدم نهائياً؟ لا يمكن التراجع')) return;
+  try {
+    const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
+    if (error) { alert('❌ فشل الحذف: ' + error.message + '\n\nتأكد أن RLS policy تسمح بالحذف للأدمن'); console.error(error); return; }
+    alert('✅ تم حذف المستخدم');
+    await loadDashboard();
+  } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
+}
 
 // ==================== تحميل صفحة المحتوى ====================
 async function loadContentPage(room) {
