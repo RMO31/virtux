@@ -1823,6 +1823,179 @@ window.clearMediaForRoom = clearMediaForRoom;
 window.openYTVIPModal = function() { alert('VIP video posting is available in admin panel.'); };
 window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
+// ==================== الملف الشخصي ====================
+document.getElementById('profileButton')?.addEventListener('click', async () => {
+  if (!window.currentUserId) return;
+  const profileModal = document.getElementById('profileModal');
+  if (!profileModal) return;
+
+  try {
+    const { data: profile } = await db.from('profiles')
+      .select('username, email, avatar_url, birthdate, birth_place, country, favorite_game, role')
+      .eq('id', window.currentUserId)
+      .single();
+
+    if (profile) {
+      currentProfileData = profile;
+      document.getElementById('profileUsername').value = profile.username || '';
+      document.getElementById('profileEmail').value = profile.email || '';
+      document.getElementById('profileBirthdate').value = profile.birthdate || '';
+      document.getElementById('profileBirthPlace').value = profile.birth_place || '';
+      document.getElementById('profileCountry').value = profile.country || '';
+      document.getElementById('profileFavoriteGame').value = profile.favorite_game || '';
+
+      const avatarImg = document.getElementById('profileAvatarImg');
+      const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
+      if (profile.avatar_url) {
+        avatarImg.src = profile.avatar_url;
+        avatarImg.style.display = 'inline-block';
+        avatarPlaceholder.style.display = 'none';
+      } else {
+        avatarImg.style.display = 'none';
+        avatarPlaceholder.style.display = 'flex';
+      }
+    }
+  } catch(e) {
+    console.error('Error loading profile:', e);
+  }
+
+  document.getElementById('passwordError').innerText = '';
+  document.getElementById('usernameFeedback').innerText = '';
+  document.getElementById('oldPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmNewPassword').value = '';
+  profileModal.classList.add('active');
+});
+
+document.getElementById('closeProfileBtn')?.addEventListener('click', () => {
+  document.getElementById('profileModal')?.classList.remove('active');
+});
+
+document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
+  if (!window.currentUserId) return;
+  const btn = document.getElementById('saveProfileBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الحفظ...';
+
+  try {
+    const newUsername = document.getElementById('profileUsername').value.trim();
+    if (!newUsername || newUsername.length < 3) {
+      document.getElementById('usernameFeedback').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
+      btn.disabled = false;
+      btn.textContent = originalText;
+      return;
+    }
+
+    if (currentProfileData && newUsername !== currentProfileData.username) {
+      const { data: existing } = await db.from('profiles').select('username').eq('username', newUsername).maybeSingle();
+      if (existing) {
+        document.getElementById('usernameFeedback').innerText = 'اسم المستخدم موجود بالفعل';
+        btn.disabled = false;
+        btn.textContent = originalText;
+        return;
+      }
+    }
+
+    const updates = {
+      username: newUsername,
+      birthdate: document.getElementById('profileBirthdate').value || null,
+      birth_place: document.getElementById('profileBirthPlace').value.trim() || null,
+      country: document.getElementById('profileCountry').value.trim() || null,
+      favorite_game: document.getElementById('profileFavoriteGame').value.trim() || null
+    };
+
+    const { error } = await db.from('profiles').update(updates).eq('id', window.currentUserId);
+    if (error) throw error;
+
+    window.currentUsername = newUsername;
+    document.getElementById('user-name').textContent = '👋 ' + newUsername;
+    document.getElementById('usernameFeedback').innerText = '';
+    alert('✅ تم حفظ التغييرات بنجاح');
+    document.getElementById('profileModal').classList.remove('active');
+  } catch(e) {
+    alert('❌ خطأ في حفظ البيانات: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
+
+document.getElementById('changeAvatarBtn')?.addEventListener('click', () => {
+  document.getElementById('avatarUpload')?.click();
+});
+
+document.getElementById('avatarUpload')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file || !window.currentUserId) return;
+
+  const changeBtn = document.getElementById('changeAvatarBtn');
+  const originalText = changeBtn.textContent;
+  changeBtn.disabled = true;
+  changeBtn.textContent = '⏳ جاري الرفع...';
+
+  try {
+    const publicUrl = await uploadAvatar(file, window.currentUserId);
+    await db.from('profiles').update({ avatar_url: publicUrl }).eq('id', window.currentUserId);
+
+    const avatarImg = document.getElementById('profileAvatarImg');
+    const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
+    avatarImg.src = publicUrl;
+    avatarImg.style.display = 'inline-block';
+    avatarPlaceholder.style.display = 'none';
+
+    const headerAvatar = document.getElementById('user-avatar-img');
+    if (headerAvatar) {
+      headerAvatar.src = publicUrl;
+      headerAvatar.style.display = 'inline-block';
+    }
+  } catch(e) {
+    alert('❌ فشل رفع الصورة: ' + (e.message || e));
+  } finally {
+    changeBtn.disabled = false;
+    changeBtn.textContent = originalText;
+  }
+});
+
+document.getElementById('changePasswordBtn')?.addEventListener('click', async () => {
+  const oldPass = document.getElementById('oldPassword').value;
+  const newPass = document.getElementById('newPassword').value;
+  const confirmPass = document.getElementById('confirmNewPassword').value;
+  const errorEl = document.getElementById('passwordError');
+
+  if (!oldPass || !newPass || !confirmPass) { errorEl.innerText = 'يرجى ملء جميع حقول كلمة المرور'; return; }
+  if (newPass.length < 6) { errorEl.innerText = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'; return; }
+  if (newPass !== confirmPass) { errorEl.innerText = 'كلمة المرور الجديدة غير متطابقة'; return; }
+
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session?.user?.email) throw new Error('لا يوجد جلسة نشطة');
+
+    const { error: signInError } = await db.auth.signInWithPassword({ email: session.user.email, password: oldPass });
+    if (signInError) { errorEl.innerText = 'كلمة المرور الحالية غير صحيحة'; return; }
+
+    const { error } = await db.auth.updateUser({ password: newPass });
+    if (error) throw error;
+
+    errorEl.style.color = '#4caf90';
+    errorEl.innerText = '✅ تم تغيير كلمة المرور بنجاح';
+    document.getElementById('oldPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
+    setTimeout(() => { errorEl.innerText = ''; errorEl.style.color = ''; }, 3000);
+  } catch(e) {
+    errorEl.style.color = '';
+    errorEl.innerText = '❌ ' + (e.message || 'خطأ في تغيير كلمة المرور');
+  }
+});
+
+// إغلاق نافذة الملف الشخصي بالنقر خارجها
+document.getElementById('profileModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'profileModal') {
+    document.getElementById('profileModal').classList.remove('active');
+  }
+});
+
 loadTickerNews();
 initializeAuth();
 showPage('home');
