@@ -106,7 +106,8 @@
       background:
         repeating-linear-gradient(45deg, rgba(100,80,40,0.18) 0px, rgba(100,80,40,0.18) 2px, transparent 2px, transparent 8px),
         repeating-linear-gradient(135deg, rgba(60,40,20,0.25) 0px, rgba(60,40,20,0.25) 1px, transparent 1px, transparent 6px),
-        linear-gradient(160deg, #1e3a1e 0%, #3d2710 40%, #1a2a1a 100%);
+        linear-gradient(160deg, #1e3a1e 0%, #3d2710 45%, #1a2a1a 100%);
+      background-attachment: fixed;
       min-height: calc(100vh - 84px);
       display: flex;
       flex-direction: column;
@@ -208,7 +209,10 @@
     .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
     .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column;position:relative}
     .post-card:hover{border-color:#d4af37}
-    .post-card-img{width:100%;height:160px;object-fit:cover}
+    .post-card-img{width:100%;height:auto;max-height:420px;min-height:100px;object-fit:contain;background:#0d0d1a;display:block}
+    .post-card-img.img-landscape{object-fit:cover;height:210px;max-height:210px}
+    .post-card-img.img-square{object-fit:cover;height:230px;max-height:230px}
+    .post-card-img.img-portrait{object-fit:contain;max-height:420px}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
     .post-card-video{width:100%;height:200px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
     .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;object-fit:cover}
@@ -567,60 +571,35 @@
     @media (max-width: 700px) { .form-with-preview { grid-template-columns: 1fr; } }
   
     /* ══ HOME CHANNEL PANEL ══ */
-    .home-channel-panel {
-      width: 100%;
-      max-width: 1200px;
-      margin: 36px auto;
-      padding: 0 4px;
-    }
-    .hcp-title {
-      color: #d4af37;
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .home-split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    @media(max-width:680px){ .home-split{ grid-template-columns:1fr; } }
-    .hcp-half {
-      background: rgba(0,0,0,0.55);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(212,175,55,0.3);
-      border-radius: 14px;
-      overflow: hidden;
-    }
-    .hcp-half-head {
-      font-size: 11px; font-weight: 700; color: #d4af37;
-      padding: 9px 13px 8px;
-      border-bottom: 1px solid rgba(212,175,55,0.15);
-    }
-    .hc-wrap { position: relative; overflow: hidden; min-height: 210px; }
-    .hc-track { display: flex; transition: transform 0.36s cubic-bezier(.4,0,.2,1); }
-    .hc-slide { min-width: 100%; box-sizing: border-box; padding: 11px 12px 46px; }
-    .hc-slide a { text-decoration: none; color: inherit; display: block; }
-    .hc-thumb-wrap { position: relative; border-radius: 9px; overflow: hidden; background: #0a0a18; }
-    .hc-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-    .hc-thumb-placeholder { width: 100%; aspect-ratio: 16/9; background: #0d0d1a; display: flex; align-items: center; justify-content: center; font-size: 38px; }
-    .hc-badge-live { position:absolute;top:7px;right:8px;background:#e00;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.5px;animation:hc-blink 1.3s infinite; }
-    .hc-badge-soon { position:absolute;top:7px;right:8px;background:#ff9800;color:#000;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px; }
-    @keyframes hc-blink { 0%,100%{opacity:1} 50%{opacity:.35} }
-    .hc-info-title { font-size:12px;font-weight:600;color:#eee;margin-top:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
-    .hc-info-ch { font-size:11px;color:#d4af37;margin-top:3px;opacity:.8; }
-    .hc-nav { position:absolute;bottom:10px;right:11px;display:flex;align-items:center;gap:7px;z-index:5; }
-    .hc-dots { display:flex;gap:5px;align-items:center; }
-    .hc-dot { width:6px;height:6px;border-radius:50%;background:#444;transition:background .2s,transform .2s; }
-    .hc-dot.active { background:#d4af37;transform:scale(1.35); }
-    .hc-btn { width:27px;height:27px;border-radius:50%;background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.45);color:#d4af37;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:background .18s,color .18s;line-height:1; }
-    .hc-btn:hover { background:#d4af37;color:#000; }
-    .hc-empty { display:flex;align-items:center;justify-content:center;min-height:180px;color:#555;font-size:12px; }
-    .hc-loading { display:flex;align-items:center;justify-content:center;min-height:180px;color:#555;font-size:12px;gap:6px; }
+    .home-channel-panel{width:100%;max-width:1200px;margin:36px auto;padding:0 4px;}
+    .hcp-title{color:#d4af37;font-size:14px;font-weight:700;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+    .home-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    @media(max-width:680px){.home-split{grid-template-columns:1fr;}}
+    .hcp-half{background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);border:1px solid rgba(212,175,55,0.3);border-radius:14px;overflow:hidden;}
+    .hcp-half-head{font-size:11px;font-weight:700;color:#d4af37;padding:9px 13px 8px;border-bottom:1px solid rgba(212,175,55,0.15);}
+    .hc-wrap{position:relative;overflow:hidden;min-height:210px;}
+    .hc-track{display:flex;transition:transform 0.36s cubic-bezier(.4,0,.2,1);}
+    .hc-slide{min-width:100%;box-sizing:border-box;padding:11px 12px 46px;}
+    .hc-slide a{text-decoration:none;color:inherit;display:block;}
+    .hc-thumb-wrap{position:relative;border-radius:9px;overflow:hidden;background:#0a0a18;}
+    .hc-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;}
+    .hc-thumb-placeholder{width:100%;aspect-ratio:16/9;background:#0d0d1a;display:flex;align-items:center;justify-content:center;font-size:38px;}
+    .hc-badge-live{position:absolute;top:7px;right:8px;background:#e00;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;animation:hc-blink 1.3s infinite;}
+    .hc-badge-soon{position:absolute;top:7px;right:8px;background:#ff9800;color:#000;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;}
+    @keyframes hc-blink{0%,100%{opacity:1}50%{opacity:.35}}
+    .hc-info-title{font-size:12px;font-weight:600;color:#eee;margin-top:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .hc-info-ch{font-size:11px;color:#d4af37;margin-top:3px;opacity:.8;}
+    .hc-nav{position:absolute;bottom:10px;right:11px;display:flex;align-items:center;gap:7px;z-index:5;}
+    .hc-dots{display:flex;gap:5px;align-items:center;}
+    .hc-dot{width:6px;height:6px;border-radius:50%;background:#444;transition:background .2s,transform .2s;}
+    .hc-dot.active{background:#d4af37;transform:scale(1.35);}
+    .hc-btn{width:27px;height:27px;border-radius:50%;background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.45);color:#d4af37;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:background .18s,color .18s;line-height:1;}
+    .hc-btn:hover{background:#d4af37;color:#000;}
+    .hc-empty{display:flex;align-items:center;justify-content:center;min-height:180px;color:#555;font-size:12px;}
+    .hc-loading{display:flex;align-items:center;justify-content:center;min-height:180px;color:#555;font-size:12px;gap:6px;}
+    /* subscribers groups */
+    .sub-role-section{margin:20px 0 10px;}
+    .sub-role-header{padding:10px 16px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
     </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -671,19 +650,43 @@
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
           <div class="home-welcome">Welcome to Virtux</div>
-          <div class="home-content-row">
+
+          <!-- ══ ROW: About | Channel Panel | Rules ══ -->
+          <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
+
+            <!-- About يسار -->
             <div class="home-about">
               <h3>🎮 About Virtux</h3>
-              <div class="about-text">
-                Virtux is an English‑speaking gaming community platform designed to deliver a professional and enjoyable experience for players.
+              <div class="about-text" style="font-size:13px;line-height:1.75;color:#ddd;">
+                <p style="margin:0 0 10px;"><strong style="color:#ff4444;">🔴 Live Streams</strong><br>
+                قسم خاص بالبثوث المباشرة، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة.</p>
+                <p style="margin:0 0 10px;"><strong style="color:#d4af37;">🏆 Tournaments</strong><br>
+                منطقة البطولات في Virtux، وتضم: بطولات مفتوحة لجميع اللاعبين، بطولات VIP للاعبين المميزين، ومنافسات قوية بنظام احترافي وجوائز مستمرة.</p>
+                <p style="margin:0 0 10px;"><strong style="color:#4caf90;">🎬 Highlights</strong><br>
+                قسم مخصص لأقوى اللحظات داخل الألعاب، حيث يتم عرض أفضل اللقطات والانتصارات والمشاهد الحماسية التي يشاركها اللاعبون والمجتمع.</p>
+                <p style="margin:0 0 10px;"><strong style="color:#8888ff;">👥 Subscribers System</strong><br>
+                نظام الاشتراكات داخل Virtux يتيح للمستخدمين دعم القنوات أو اللاعبين المفضلين لديهم، والحصول على مزايا خاصة ومحتوى حصري.</p>
+                <p style="margin:0;padding:8px 12px;background:rgba(212,175,55,0.1);border-radius:8px;border-right:3px solid #d4af37;"><strong style="color:#d4af37;">🚀 هدفنا</strong><br>
+                <span style="font-size:12px;">نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، والبث المباشر في بيئة احترافية وآمنة.</span></p>
               </div>
-              <ul class="about-features">
-                <li>🔴 Live Streams</li>
-                <li>🏆 Tournaments</li>
-                <li>🎬 Highlights</li>
-                <li>👥 Subscribers System</li>
-              </ul>
             </div>
+
+            <!-- لوحة القنوات في المنتصف -->
+            <div class="home-channel-panel" style="margin:0;">
+              <div class="hcp-title">📡 قنوات الموقع</div>
+              <div class="home-split">
+                <div class="hcp-half">
+                  <div class="hcp-half-head">🔴 البث المباشر وما قبل البث</div>
+                  <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+                </div>
+                <div class="hcp-half">
+                  <div class="hcp-half-head">🎬 آخر الفيديوهات</div>
+                  <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rules يمين -->
             <div class="home-rules">
               <h3>🛑 Rules</h3>
               <ul class="rules-list">
@@ -695,23 +698,8 @@
                 <li>✅ Respectful and elegant style required</li>
               </ul>
             </div>
-          </div>
 
-          <!-- ══ CHANNEL PANEL: بين About/Rules والنهاية ══ -->
-          <div class="home-channel-panel">
-            <div class="hcp-title">📡 قنوات الموقع</div>
-            <div class="home-split">
-              <div class="hcp-half">
-                <div class="hcp-half-head">🔴 البث المباشر وما قبل البث</div>
-                <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
-              </div>
-              <div class="hcp-half">
-                <div class="hcp-half-head">🎬 آخر الفيديوهات</div>
-                <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
-              </div>
-            </div>
-          </div>
-
+          </div><!-- end grid -->
         </div>
       </div>
     </div>
@@ -1706,17 +1694,10 @@ function renderCards(posts, gridId, room) {
     let mediaContent = '';
     const isRestricted = isVIPContent(p) && !canViewVIP;
     if (isRestricted) {
-      // صورة مصغرة مع overlay قوي — لا يُشغَّل الفيديو ولا يُعرض الرابط
-      const isTournament = room === 'tournaments';
-      const lockMsg = isTournament
-        ? '🏆 بطولة VIP — للأعضاء المميزين فقط'
-        : '🔒 محتوى VIP — للأعضاء المميزين فقط';
-      mediaContent = `<div style="position:relative;background:#0a0a18;">
-        <div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1a0a2e,#0a1020);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
-          <span style="font-size:44px;">👑</span>
-          <span style="color:#d4af37;font-size:13px;font-weight:700;">${lockMsg}</span>
-          <span style="color:#888;font-size:11px;">سجّل دخول بـ VIP أو Member للوصول</span>
-        </div>
+      mediaContent = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1a0a2e,#0a1020);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+        <span style="font-size:42px;">👑</span>
+        <span style="color:#d4af37;font-size:13px;font-weight:700;">${room==='tournaments'?'🏆 بطولة VIP':'🎬 محتوى VIP'}</span>
+        <span style="color:#888;font-size:11px;">خاص بأعضاء VIP و Member</span>
       </div>`;
     } else {
       const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
@@ -1725,7 +1706,7 @@ function renderCards(posts, gridId, room) {
       const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
       if (isImageUrl) {
-        mediaContent = `<img class="post-card-img" src="${p.url}">`;
+        mediaContent = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       }
       else if (isLocalVideo) {
         mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
@@ -1734,7 +1715,7 @@ function renderCards(posts, gridId, room) {
         const videoId = extractYouTubeId(p.url);
         mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
-      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
     let summary = (p.content || p.description || '').substring(0,150);
@@ -1752,16 +1733,13 @@ function renderCards(posts, gridId, room) {
         actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
       }
     }
-    // بطولة VIP — زر تسجيل مقيّد لغير المميزين
+    // زر تسجيل بطولة VIP
     let registerBtn = '';
     if (room === 'tournaments' && isVIPContent(p)) {
       if (canViewVIP) {
-        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')"
-          style="background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-left:4px;">
-          🏆 تسجيل
-        </button>`;
+        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">🏆 تسجيل</button>`;
       } else {
-        registerBtn = `<span style="color:#888;font-size:11px;font-style:italic;">🔒 VIP فقط</span>`;
+        registerBtn = `<span style="color:#888;font-size:11px;">🔒 VIP فقط</span>`;
       }
     }
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
@@ -1771,7 +1749,7 @@ function renderCards(posts, gridId, room) {
     const deleteBtn = (isOwner || isAdmin)
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="حذف">🗑️</button>`
       : '';
-    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn}${readMoreLink}${deleteBtn}</div></div></div></div>`;
+    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn||''}${readMoreLink}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -1793,11 +1771,12 @@ async function loadSubscribersWithVIP(el, posts) {
       console.log('[Subscribers] عيّنة من الرولات:', vipUsers.slice(0,5).map(u => ({ name: u.username, role: u.role, roles: u.roles, normalized: normalizeRoles(u) })));
       debugInfo = `<div style="font-size:11px;color:#666;margin-bottom:8px;">📊 ${vipUsers.length} مستخدم محمل</div>`;
       const ROLE_DEFS = [
-        { key: 'admin',     title: '🛡️ الإدارة',      short: 'ADMIN',     color: '#f55',    bg: '#3d0f0f' },
-        { key: 'moderator', title: '🛡️ المشرفون',     short: 'MOD',       color: '#ff9800', bg: '#3d2e0f' },
-        { key: 'youtuber',  title: '📺 يوتيوبرز',     short: 'YOUTUBER',  color: '#f55',    bg: '#3d0f0f' },
-        { key: 'vip',       title: '👑 VIP',           short: 'VIP',       color: '#d4af37', bg: '#2a1500' },
-        { key: 'member',    title: '⭐ الأعضاء',       short: 'MEMBER',    color: '#4caf90', bg: '#1a2a1a' }
+        { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff4444', bg: '#3d0f0f', border: '#ff4444' },
+        { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff9800', bg: '#3d2e0f', border: '#ff9800' },
+        { key: 'youtuber_vip',title: '🔥 Youtuber VIP',     short: 'YT VIP',       color: '#ff6b35', bg: '#3d1a0f', border: '#ff6b35' },
+        { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#e53935', bg: '#2d0a0a', border: '#e53935' },
+        { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#d4af37', bg: '#2a1800', border: '#d4af37' },
+        { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#4caf90', bg: '#0f2a1a', border: '#4caf90' },
       ];
       const userCard = (u, accentColor) => {
         const avatar = u.avatar_url
@@ -1815,11 +1794,19 @@ async function loadSubscribersWithVIP(el, posts) {
         const usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(def.key));
         if (!usersInRole.length) return;
         groupedHtml += `
-          <div style="margin:24px 0 12px 0;padding:10px 14px;background:${def.bg};border-left:4px solid ${def.color};border-radius:6px;display:flex;align-items:center;justify-content:space-between;">
-            <h3 style="color:${def.color};margin:0;font-size:16px;">${def.title}</h3>
-            <span style="color:${def.color};font-size:13px;font-weight:bold;">${usersInRole.length} عضو</span>
+          <div class="sub-role-section">
+            <div class="sub-role-header" style="background:${def.bg};border:1px solid ${def.border};border-radius:10px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:22px;">${def.title.split(' ')[0]}</span>
+                <div>
+                  <div style="color:${def.color};font-size:15px;font-weight:700;">${def.title}</div>
+                  <div style="color:${def.color};font-size:11px;opacity:.7;">${usersInRole.length} عضو</div>
+                </div>
+              </div>
+              <span style="background:${def.color};color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
+            </div>
+            <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>
           </div>
-          <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>
         `;
       });
     }
@@ -1922,12 +1909,16 @@ async function updateUIAfterAuth(sessionOverride) {
       window.currentUsername = profile?.username || displayName;
       setMemberPostingVisibility(true);
 
-      // زر نشر فيديو VIP يظهر للأدمن/VIP/Youtuber/Moderator
-      if (userHasAnyRole(['admin','vip','youtuber','youtuber_vip','moderator'])) {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
-      } else {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
-      }
+      // نشر فيديو VIP: youtuber_vip + admin فقط
+      const canPostVipVideo = userHasAnyRole(['admin','youtuber_vip']);
+      const canPostVipTour  = userHasAnyRole(['admin','vip','youtuber_vip']);
+      document.querySelectorAll('.btn-ytvip-post').forEach(btn => {
+        if (btn.id && btn.id.startsWith('btn-vip-tournaments')) {
+          btn.style.display = canPostVipTour ? 'inline-flex' : 'none';
+        } else {
+          btn.style.display = canPostVipVideo ? 'inline-flex' : 'none';
+        }
+      });
 
       if (modal && modal.classList.contains('active')) closeModal();
     } else {
@@ -2066,21 +2057,16 @@ function startTickerAnimation() {
 window.deletePost = deletePost;
 
 // ══════════════════════════════════════════════════════════════
-// 📺 HOME CHANNEL PANEL
+// 📺 HOME CHANNEL PANEL — carousel
 // ══════════════════════════════════════════════════════════════
 (function(){
-  function ytId(url){
-    if(!url) return null;
-    const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
-    return m ? m[1] : null;
-  }
-  function buildCarousel(wrap, items, renderFn){
+  function ytId(url){ if(!url) return null; const m=url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
+  function buildCarousel(wrap,items,renderFn){
     if(!items||!items.length){ wrap.innerHTML='<div class="hc-empty">لا يوجد محتوى حالياً</div>'; return; }
-    const track = document.createElement('div');
-    track.className = 'hc-track';
+    const track=document.createElement('div'); track.className='hc-track';
     items.forEach(it=>{ const sl=document.createElement('div'); sl.className='hc-slide'; sl.innerHTML=renderFn(it); track.appendChild(sl); });
-    const nav = document.createElement('div'); nav.className='hc-nav';
-    const dotsEl = document.createElement('div'); dotsEl.className='hc-dots';
+    const nav=document.createElement('div'); nav.className='hc-nav';
+    const dotsEl=document.createElement('div'); dotsEl.className='hc-dots';
     items.forEach((_,i)=>{ const d=document.createElement('div'); d.className='hc-dot'+(i===0?' active':''); dotsEl.appendChild(d); });
     const prev=document.createElement('div'); prev.className='hc-btn'; prev.innerHTML='&#8249;'; prev.title='السابق';
     const next=document.createElement('div'); next.className='hc-btn'; next.innerHTML='&#8250;'; next.title='التالي';
@@ -2098,8 +2084,7 @@ window.deletePost = deletePost;
     wrap.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx; if(Math.abs(dx)>40) go(cur+(dx<0?1:-1)); });
   }
   function renderLive(p){
-    const vid=ytId(p.url);
-    const tag=(p.tag||'').toLowerCase();
+    const vid=ytId(p.url); const tag=(p.tag||'').toLowerCase();
     const isLive=tag.includes('live'); const isSoon=tag.includes('pre')||tag.includes('upcoming');
     const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy">`:`<div class="hc-thumb-placeholder">🔴</div>`;
     const badge=isLive?`<span class="hc-badge-live">🔴 LIVE</span>`:isSoon?`<span class="hc-badge-soon">⏰ قريباً</span>`:'';
@@ -2118,7 +2103,6 @@ window.deletePost = deletePost;
       if(liveEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').order('id',{ascending:false}).limit(10); buildCarousel(liveEl,data||[],renderLive); }
       if(videosEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').order('id',{ascending:false}).limit(12); buildCarousel(videosEl,data||[],renderVideo); }
     }catch(e){
-      console.error('loadHomePanel:',e);
       if(liveEl) liveEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
       if(videosEl) videosEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
     }
@@ -2130,25 +2114,29 @@ window.deletePost = deletePost;
   setInterval(()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); },60000);
 })();
 
+// ── Smart image framing ──
+window.applyImgClass = function(img){
+  const w=img.naturalWidth, h=img.naturalHeight;
+  if(!w||!h) return;
+  const r=w/h;
+  img.classList.remove('img-portrait','img-landscape','img-square');
+  if(r<0.8) img.classList.add('img-portrait');
+  else if(r>1.4) img.classList.add('img-landscape');
+  else img.classList.add('img-square');
+};
+
 // ── VIP Tournament Registration ──
-window.registerTournamentVIP = async function(postId, titleEncoded) {
-  const title = decodeURIComponent(titleEncoded);
-  if (!window.currentUserId) { alert('⚠️ سجّل دخولك أولاً'); return; }
-  const canReg = (window.userRoles||[]).some(r=>['vip','member','admin','moderator','youtuber_vip'].includes(r));
-  if (!canReg) { alert('⛔ هذه البطولة مخصصة لأعضاء VIP و Member فقط'); return; }
-  if (!confirm(`تأكيد التسجيل في: ${title}؟`)) return;
-  try {
-    const { error } = await db.from('tournament_registrations').insert({
-      post_id: postId,
-      user_id: window.currentUserId,
-      username: window.currentUsername || ''
-    });
-    if (error) {
-      if (error.code === '23505') { alert('✅ أنت مسجّل مسبقاً في هذه البطولة'); return; }
-      throw error;
-    }
+window.registerTournamentVIP = async function(postId, titleEncoded){
+  const title=decodeURIComponent(titleEncoded);
+  if(!window.currentUserId){ alert('⚠️ سجّل دخولك أولاً'); return; }
+  const ok=(window.userRoles||[]).some(r=>['vip','member','admin','moderator','youtuber_vip'].includes(r));
+  if(!ok){ alert('⛔ هذه البطولة للأعضاء المميزين فقط (VIP / Member)'); return; }
+  if(!confirm(`تأكيد التسجيل في: ${title}؟`)) return;
+  try{
+    const {error}=await db.from('tournament_registrations').insert({post_id:postId,user_id:window.currentUserId,username:window.currentUsername||''});
+    if(error){ if(error.code==='23505'){ alert('✅ أنت مسجّل مسبقاً'); return; } throw error; }
     alert('✅ تم التسجيل بنجاح!');
-  } catch(e) { alert('❌ ' + e.message); }
+  }catch(e){ alert('❌ '+e.message); }
 };
 
 window.showPage = showPage;
