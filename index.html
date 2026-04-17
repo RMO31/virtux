@@ -207,13 +207,10 @@
     .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
     .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column;position:relative}
     .post-card:hover{border-color:#d4af37}
-    .post-card-img{width:100%;height:auto;max-height:400px;min-height:120px;object-fit:contain;background:#0d0d1a;display:block}
-    .post-card-img.img-portrait{object-fit:contain;max-height:480px}
-    .post-card-img.img-landscape{object-fit:cover;height:220px}
-    .post-card-img.img-square{object-fit:cover;height:240px}
+    .post-card-img{width:100%;height:160px;object-fit:cover}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-    .post-card-video{width:100%;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;aspect-ratio:16/9;border-radius:0}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none}
+    .post-card-video{width:100%;height:200px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;object-fit:cover}
     .restricted-overlay{position:relative}
     .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#d4af37;pointer-events:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
@@ -1645,7 +1642,7 @@ function renderCards(posts, gridId, room) {
       const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
       if (isImageUrl) {
-        mediaContent = `<img class="post-card-img" src="${p.url}" onload="applyImgClass(this)">`;
+        mediaContent = `<img class="post-card-img" src="${p.url}">`;
       }
       else if (isLocalVideo) {
         mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
@@ -1654,7 +1651,7 @@ function renderCards(posts, gridId, room) {
         const videoId = extractYouTubeId(p.url);
         mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
-      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}" onload="applyImgClass(this)">`;
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
       else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
     let summary = (p.content || p.description || '').substring(0,150);
@@ -1831,7 +1828,7 @@ async function updateUIAfterAuth(sessionOverride) {
       setMemberPostingVisibility(true);
 
       // زر نشر فيديو VIP يظهر للأدمن/VIP/Youtuber/Moderator
-      if (userHasAnyRole(['admin','vip','youtuber','moderator'])) {
+      if (userHasAnyRole(['admin','vip','youtuber','youtuber_vip','moderator'])) {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
       } else {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
@@ -1979,98 +1976,132 @@ window.closeDD = closeDD;
 window.openUserPostModal = openUserPostModal;
 window.clearMediaForRoom = clearMediaForRoom;
 window.openYTVIPModal = function() {
-  // فتح modal نشر فيديو VIP
+  // التحقق من الصلاحية
+  if (!window.currentUserId) {
+    alert('⚠️ يجب تسجيل الدخول أولاً');
+    return;
+  }
+  const allowed = (window.userRoles || []).some(r => ['admin','vip','youtuber','youtuber_vip','moderator'].includes(r));
+  if (!allowed) {
+    alert('⛔ هذا الزر مخصص لأصحاب رتبة Youtuber VIP فقط');
+    return;
+  }
+
   let m = document.getElementById('ytvip-post-modal');
   if (!m) {
     m = document.createElement('div');
     m.id = 'ytvip-post-modal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.onclick = function(e){ if(e.target===m) m.style.display='none'; };
     m.innerHTML = `
-      <div style="background:#1a1a2e;border:1px solid #d4af37;border-radius:14px;padding:24px;width:100%;max-width:480px;position:relative;">
-        <button onclick="document.getElementById('ytvip-post-modal').style.display='none'" style="position:absolute;top:10px;left:12px;background:transparent;border:none;color:#888;font-size:20px;cursor:pointer;">✕</button>
-        <h3 style="color:#d4af37;margin:0 0 16px;text-align:center;">👑 نشر فيديو VIP</h3>
-        <input id="ytvip-url" type="text" placeholder="رابط يوتيوب..." style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px;">
-        <input id="ytvip-title" type="text" placeholder="العنوان..." style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px;">
-        <textarea id="ytvip-desc" placeholder="وصف (اختياري)..." rows="3" style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:14px;resize:vertical;"></textarea>
-        <button onclick="window.submitYTVIPPost()" style="width:100%;background:#d4af37;color:#000;font-weight:700;border:none;border-radius:8px;padding:12px;font-size:15px;cursor:pointer;">🚀 نشر كـ VIP</button>
-        <div id="ytvip-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;"></div>
+      <div style="background:#13131f;border:1.5px solid #d4af37;border-radius:16px;padding:26px 22px;width:100%;max-width:500px;position:relative;box-shadow:0 0 40px rgba(212,175,55,0.15);">
+        <button onclick="document.getElementById('ytvip-post-modal').style.display='none'"
+          style="position:absolute;top:12px;left:14px;background:transparent;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="font-size:28px;margin-bottom:4px;">👑</div>
+          <h3 style="color:#d4af37;margin:0;font-size:17px;">نشر فيديو VIP</h3>
+          <p style="color:#777;font-size:12px;margin:6px 0 0;">يظهر فقط لأعضاء Member و VIP وما فوق</p>
+        </div>
+
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🔗 رابط يوتيوب *</label>
+        <input id="ytvip-url" type="text" placeholder="https://youtube.com/watch?v=..."
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;"
+          oninput="window.previewYTVIP(this.value)">
+
+        <div id="ytvip-preview" style="display:none;margin-bottom:12px;border-radius:8px;overflow:hidden;border:1px solid #2a2a3a;"></div>
+
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">📝 العنوان *</label>
+        <input id="ytvip-title" type="text" placeholder="عنوان الفيديو..."
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;">
+
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">💬 وصف (اختياري)</label>
+        <textarea id="ytvip-desc" placeholder="اكتب وصفاً..." rows="3"
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:16px;resize:vertical;outline:none;"></textarea>
+
+        <button onclick="window.submitYTVIPPost()"
+          style="width:100%;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:15px;cursor:pointer;letter-spacing:0.5px;">
+          🚀 نشر الفيديو VIP
+        </button>
+        <div id="ytvip-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;min-height:18px;"></div>
       </div>`;
     document.body.appendChild(m);
   }
+
+  // reset
   m.style.display = 'flex';
-  document.getElementById('ytvip-url').value = '';
+  document.getElementById('ytvip-url').value   = '';
   document.getElementById('ytvip-title').value = '';
-  document.getElementById('ytvip-desc').value = '';
+  document.getElementById('ytvip-desc').value  = '';
   document.getElementById('ytvip-status').textContent = '';
+  document.getElementById('ytvip-preview').style.display = 'none';
+};
+
+// معاينة مصغرة عند لصق رابط يوتيوب
+window.previewYTVIP = function(url) {
+  const prev = document.getElementById('ytvip-preview');
+  if (!prev) return;
+  const match = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  if (!match) { prev.style.display='none'; return; }
+  const vid = match[1];
+  prev.style.display = 'block';
+  prev.innerHTML = `<img src="https://img.youtube.com/vi/${vid}/hqdefault.jpg"
+    style="width:100%;display:block;border-radius:8px;">`;
+  // تعبئة تلقائية للعنوان إذا كان فارغاً
+  const titleEl = document.getElementById('ytvip-title');
+  if (titleEl && !titleEl.value) {
+    fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + vid + '&key=' + (window.YOUTUBE_API_KEY || ''))
+      .then(r=>r.json()).then(d=>{
+        if (d.items?.[0]?.snippet?.title && titleEl && !titleEl.value)
+          titleEl.value = d.items[0].snippet.title;
+      }).catch(()=>{});
+  }
 };
 
 window.submitYTVIPPost = async function() {
-  const url   = document.getElementById('ytvip-url').value.trim();
-  const title = document.getElementById('ytvip-title').value.trim();
-  const desc  = document.getElementById('ytvip-desc').value.trim();
+  const url    = (document.getElementById('ytvip-url')?.value   || '').trim();
+  const title  = (document.getElementById('ytvip-title')?.value || '').trim();
+  const desc   = (document.getElementById('ytvip-desc')?.value  || '').trim();
   const status = document.getElementById('ytvip-status');
-  if (!url || !title) { status.style.color='#f55'; status.textContent='⚠️ أدخل الرابط والعنوان'; return; }
-  if (!url.includes('youtube.com') && !url.includes('youtu.be')) { status.style.color='#f55'; status.textContent='⚠️ رابط يوتيوب غير صحيح'; return; }
-  status.style.color='#aaa'; status.textContent='⏳ جارٍ النشر...';
-  try {
-    const { error } = await db.from('posts').insert({
-      title: title,
-      description: desc || '',
-      url: url,
-      tag: 'VIP',
-      room: 'yt-videos',
-      user_id: window.currentUserId || null,
-      icon: '👑'
-    });
-    if (error) throw error;
-    status.style.color='#4caf90'; status.textContent='✅ تم النشر بنجاح!';
-    setTimeout(() => { document.getElementById('ytvip-post-modal').style.display='none'; if(window.currentRoom==='yt-videos') loadPosts('yt-videos'); }, 1500);
-  } catch(e) { status.style.color='#f55'; status.textContent='❌ ' + e.message; }
-};
 
-window.openTournamentsVIPModal = function() {
-  let m = document.getElementById('tourvip-post-modal');
-  if (!m) {
-    m = document.createElement('div');
-    m.id = 'tourvip-post-modal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-    m.innerHTML = `
-      <div style="background:#1a1a2e;border:1px solid #d4af37;border-radius:14px;padding:24px;width:100%;max-width:480px;position:relative;">
-        <button onclick="document.getElementById('tourvip-post-modal').style.display='none'" style="position:absolute;top:10px;left:12px;background:transparent;border:none;color:#888;font-size:20px;cursor:pointer;">✕</button>
-        <h3 style="color:#d4af37;margin:0 0 16px;text-align:center;">🏆 نشر بطولة VIP</h3>
-        <input id="tourvip-title" type="text" placeholder="اسم البطولة..." style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px;">
-        <input id="tourvip-url" type="text" placeholder="رابط (اختياري)..." style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px;">
-        <textarea id="tourvip-desc" placeholder="تفاصيل البطولة..." rows="3" style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #444;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:14px;resize:vertical;"></textarea>
-        <button onclick="window.submitTourVIPPost()" style="width:100%;background:#d4af37;color:#000;font-weight:700;border:none;border-radius:8px;padding:12px;font-size:15px;cursor:pointer;">🚀 نشر البطولة</button>
-        <div id="tourvip-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;"></div>
-      </div>`;
-    document.body.appendChild(m);
+  if (!url)   { status.style.color='#f55'; status.textContent='⚠️ أدخل رابط يوتيوب'; return; }
+  if (!title) { status.style.color='#f55'; status.textContent='⚠️ أدخل عنواناً للفيديو'; return; }
+  if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+    status.style.color='#f55'; status.textContent='⚠️ الرابط يجب أن يكون من يوتيوب'; return;
   }
-  m.style.display = 'flex';
-};
 
-window.submitTourVIPPost = async function() {
-  const title = document.getElementById('tourvip-title').value.trim();
-  const url   = document.getElementById('tourvip-url').value.trim();
-  const desc  = document.getElementById('tourvip-desc').value.trim();
-  const status = document.getElementById('tourvip-status');
-  if (!title) { status.style.color='#f55'; status.textContent='⚠️ أدخل اسم البطولة'; return; }
+  const match = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  const thumb = match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : '';
+
   status.style.color='#aaa'; status.textContent='⏳ جارٍ النشر...';
+  const btn = document.querySelector('#ytvip-post-modal button[onclick*="submitYTVIPPost"]');
+  if (btn) btn.disabled = true;
+
   try {
     const { error } = await db.from('posts').insert({
-      title: title,
-      description: desc || '',
-      url: url || null,
-      tag: 'VIP',
-      room: 'tournaments',
-      user_id: window.currentUserId || null,
-      icon: '🏆'
+      title:       title,
+      description: desc || window.currentUsername || '',
+      url:         url,
+      icon:        thumb || '👑',
+      tag:         'VIP',
+      room:        'yt-videos',
+      user_id:     window.currentUserId || null
     });
     if (error) throw error;
-    status.style.color='#4caf90'; status.textContent='✅ تم نشر البطولة!';
-    setTimeout(() => { document.getElementById('tourvip-post-modal').style.display='none'; if(window.currentRoom==='tournaments') loadPosts('tournaments'); }, 1500);
-  } catch(e) { status.style.color='#f55'; status.textContent='❌ ' + e.message; }
+    status.style.color = '#4caf90';
+    status.textContent = '✅ تم النشر بنجاح!';
+    setTimeout(() => {
+      document.getElementById('ytvip-post-modal').style.display = 'none';
+      if (window.currentRoom === 'yt-videos' || !window.currentRoom) loadPosts('yt-videos');
+    }, 1400);
+  } catch(e) {
+    status.style.color = '#f55';
+    status.textContent = '❌ ' + (e.message || 'حدث خطأ');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 };
+window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
 // ==================== الملف الشخصي ====================
 document.getElementById('profileButton')?.addEventListener('click', async () => {
