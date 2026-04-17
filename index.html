@@ -564,27 +564,6 @@
     .preview-panel { background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 12px; text-align: center; }
     .preview-media { max-width: 100%; max-height: 150px; border-radius: 6px; margin-bottom: 8px; }
     @media (max-width: 700px) { .form-with-preview { grid-template-columns: 1fr; } }
-  
-    /* ── Lazy loading skeletons ── */
-    .lazy-img, .lazy-frame {
-      transition: opacity 0.4s ease;
-    }
-    .lazy-img.loading-skeleton {
-      background: linear-gradient(90deg, #1a1a2e 25%, #252540 50%, #1a1a2e 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      min-height: 180px;
-      opacity: 0.6;
-    }
-    @keyframes shimmer {
-      0%   { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    .lazy-frame {
-      min-height: 180px;
-      background: #0a0a14;
-    }
-
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1099,7 +1078,7 @@ function bindLiveUrlAutofill() {
 }
 
 // ==================== Roles helpers (multi-role support) ====================
-window.ALL_ROLES = ['admin','vip','member','moderator','youtuber','youtuber_vip','user'];
+window.ALL_ROLES = ['admin','vip','member','moderator','youtuber','user'];
 function normalizeRoles(profile) {
   if (!profile) return ['guest'];
   let raw = profile.roles;
@@ -1649,12 +1628,12 @@ function renderCards(posts, gridId, room) {
     loadSubscribersWithVIP(el, posts);
     return;
   }
-  const canViewVIP = userHasAnyRole(['member','vip','admin','moderator','youtuber','youtuber_vip']);
+  const canViewVIP = userHasAnyRole(['member','vip','admin','moderator','youtuber']);
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
     const isRestricted = isVIPContent(p) && !canViewVIP;
     if (isRestricted) {
-      let thumb = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="post-card-img lazy-img" data-src="${p.icon}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 3'%3E%3C/svg%3E" style="background:#1a1a2e;">` : `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
+      let thumb = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
       mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">للأعضاء فقط</span></div></div>`;
     } else {
       const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
@@ -1663,16 +1642,16 @@ function renderCards(posts, gridId, room) {
       const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
       if (isImageUrl) {
-        mediaContent = `<img class="post-card-img lazy-img" data-src="${p.url}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 3'%3E%3C/svg%3E" style="background:#1a1a2e;">`;
+        mediaContent = `<img class="post-card-img" src="${p.url}">`;
       }
       else if (isLocalVideo) {
-        mediaContent = `<div class="post-card-video"><video class="lazy-video" data-src="${p.url}" controls preload="none" style="width:100%;border-radius:8px;background:#0a0a14;"></video></div>`;
+        mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
       }
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
-        mediaContent = videoId ? `<div class="post-card-video"><iframe class="lazy-frame" data-src="https://www.youtube.com/embed/${videoId}?loading=lazy" src="about:blank" frameborder="0" allowfullscreen style="width:100%;aspect-ratio:16/9;border-radius:8px;background:#0a0a14;"></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
+        mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
-      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img lazy-img" data-src="${p.icon}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 3'%3E%3C/svg%3E" style="background:#1a1a2e;">`;
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
       else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
     let summary = (p.content || p.description || '').substring(0,150);
@@ -1693,7 +1672,7 @@ function renderCards(posts, gridId, room) {
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
     const currentUid = window.currentUserId;
     const isOwner = currentUid && p.user_id && p.user_id === currentUid;
-    const isAdmin = userHasAnyRole(['admin','moderator','youtuber_vip']);
+    const isAdmin = userHasAnyRole(['admin','moderator']);
     const deleteBtn = (isOwner || isAdmin)
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="حذف">🗑️</button>`
       : '';
@@ -1849,7 +1828,7 @@ async function updateUIAfterAuth(sessionOverride) {
       setMemberPostingVisibility(true);
 
       // زر نشر فيديو VIP يظهر للأدمن/VIP/Youtuber/Moderator
-      if (userHasAnyRole(['admin','vip','youtuber','youtuber_vip','moderator'])) {
+      if (userHasAnyRole(['admin','vip','youtuber','moderator'])) {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
       } else {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
