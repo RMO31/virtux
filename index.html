@@ -1077,12 +1077,34 @@ function bindLiveUrlAutofill() {
   urlInput.dataset.liveBound = 'true';
 }
 
+// ==================== Roles helpers (multi-role support) ====================
+window.ALL_ROLES = ['admin','vip','member','moderator','youtuber','user'];
+function normalizeRoles(profile) {
+  if (!profile) return ['guest'];
+  if (Array.isArray(profile.roles) && profile.roles.length) return profile.roles;
+  if (profile.role) return [profile.role];
+  return ['user'];
+}
+function userHasRole(role) {
+  const roles = window.userRoles || [];
+  return roles.includes(role);
+}
+function userHasAnyRole(list) {
+  const roles = window.userRoles || [];
+  return list.some(r => roles.includes(r));
+}
+window.userHasRole = userHasRole;
+window.userHasAnyRole = userHasAnyRole;
+
 async function getProfileById(userId) {
   if (!userId) return null;
-  const { data, error } = await db.from('profiles').select('username,role,avatar_url,email').eq('id', userId).maybeSingle();
+  // نحاول جلب roles (مصفوفة) + role (للتوافق مع القديم)
+  let { data, error } = await db.from('profiles').select('username,role,roles,avatar_url,email').eq('id', userId).maybeSingle();
   if (error) {
-    console.error('profile lookup error:', error);
-    return null;
+    // fallback لو عمود roles غير موجود
+    const fb = await db.from('profiles').select('username,role,avatar_url,email').eq('id', userId).maybeSingle();
+    if (fb.error) { console.error('profile lookup error:', fb.error); return null; }
+    data = fb.data;
   }
   return data || null;
 }
@@ -1535,9 +1557,7 @@ function renderCards(posts, gridId, room) {
     loadSubscribersWithVIP(el, posts);
     return;
   }
-  const userRole = window.userRole || 'guest';
-  const allowedRoles = ['member', 'vip', 'admin'];
-  const canViewVIP = allowedRoles.includes(userRole);
+  const canViewVIP = userHasAnyRole(['member','vip','admin','moderator','youtuber']);
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
     const isRestricted = isVIPContent(p) && !canViewVIP;
@@ -1581,7 +1601,7 @@ function renderCards(posts, gridId, room) {
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
     const currentUid = window.currentUserId;
     const isOwner = currentUid && p.user_id && p.user_id === currentUid;
-    const isAdmin = window.userRole === 'admin';
+    const isAdmin = userHasAnyRole(['admin','moderator']);
     const deleteBtn = (isOwner || isAdmin)
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="حذف">🗑️</button>`
       : '';
@@ -1592,18 +1612,34 @@ function renderCards(posts, gridId, room) {
 async function loadSubscribersWithVIP(el, posts) {
   let vipCards = '';
   try {
-    const { data: vipUsers } = await db.from('profiles')
-      .select('username, avatar_url, role')
-      .in('role', ['vip', 'member'])
+    let { data: vipUsers, error } = await db.from('profiles')
+      .select('username, avatar_url, role, roles')
       .order('created_at', { ascending: false });
+    if (error) {
+      const fb = await db.from('profiles').select('username, avatar_url, role').order('created_at',{ascending:false});
+      vipUsers = fb.data;
+    }
     if (vipUsers && vipUsers.length) {
-      vipCards = vipUsers.map(u => {
+      const TARGET = ['vip','member','moderator','youtuber'];
+      const filtered = vipUsers.filter(u => {
+        const rs = normalizeRoles(u);
+        return rs.some(r => TARGET.includes(r));
+      });
+      const badgeFor = (r) => {
+        if (r === 'vip') return `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 8px;">👑 VIP</span>`;
+        if (r === 'moderator') return `<span style="font-size:11px;background:#3d2e0f;color:#ff9800;border:1px solid #ff9800;border-radius:4px;padding:2px 8px;">🛡️ MOD</span>`;
+        if (r === 'youtuber') return `<span style="font-size:11px;background:#3d0f0f;color:#f55;border:1px solid #f55;border-radius:4px;padding:2px 8px;">📺 YOUTUBER</span>`;
+        if (r === 'member') return `<span style="font-size:11px;background:#1a2a1a;color:#4caf90;border:1px solid #4caf90;border-radius:4px;padding:2px 8px;">⭐ MEMBER</span>`;
+        return '';
+      };
+      vipCards = filtered.map(u => {
         const avatar = u.avatar_url ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">` : `<div class="channel-avatar">👤</div>`;
-        const badge = u.role === 'vip' ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 8px;">👑 VIP</span>` : `<span style="font-size:11px;background:#1a2a1a;color:#4caf90;border:1px solid #4caf90;border-radius:4px;padding:2px 8px;">⭐ MEMBER</span>`;
-        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username)}</div><div style="margin-top:4px;">${badge}</div></div></div>`;
+        const rs = normalizeRoles(u).filter(r => r !== 'user');
+        const badges = rs.map(badgeFor).filter(Boolean).join(' ');
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username)}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${badges}</div></div></div>`;
       }).join('');
     }
-  } catch(e) {}
+  } catch(e) { console.error(e); }
   const youtuberCards = posts.map(p => {
     const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
     const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
@@ -1659,8 +1695,27 @@ async function updateUIAfterAuth(sessionOverride) {
       const displayName = profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
 
       userNameSpan.textContent = '👋 ' + displayName;
-      roleBadge.style.display = profile?.role && profile.role !== 'user' ? 'inline-block' : 'none';
-      if (profile?.role && profile.role !== 'user') roleBadge.textContent = profile.role.toUpperCase();
+
+      // عرض كل الرولات كشارات متعددة
+      const roles = normalizeRoles(profile).filter(r => r !== 'user');
+      if (roles.length) {
+        const colors = {
+          admin:    {bg:'#3d0f0f', fg:'#f55', label:'ADMIN'},
+          vip:      {bg:'#2a1500', fg:'#d4af37', label:'👑 VIP'},
+          moderator:{bg:'#3d2e0f', fg:'#ff9800', label:'🛡️ MOD'},
+          youtuber: {bg:'#3d0f0f', fg:'#f55', label:'📺 YOUTUBER'},
+          member:   {bg:'#1a2a1a', fg:'#4caf90', label:'⭐ MEMBER'}
+        };
+        roleBadge.innerHTML = roles.map(r => {
+          const c = colors[r] || {bg:'#2a2a3a', fg:'#d4af37', label:r.toUpperCase()};
+          return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:2px 6px;margin-right:3px;font-size:11px;">${c.label}</span>`;
+        }).join('');
+        roleBadge.style.display = 'inline-block';
+        roleBadge.style.background = 'transparent';
+        roleBadge.style.padding = '0';
+      } else {
+        roleBadge.style.display = 'none';
+      }
 
       if (profile?.avatar_url) {
         userAvatarImg.src = profile.avatar_url;
@@ -1669,12 +1724,14 @@ async function updateUIAfterAuth(sessionOverride) {
         userAvatarImg.style.display = 'none';
       }
 
-      window.userRole = profile?.role || 'user';
+      window.userRoles = roles.length ? roles : ['user'];
+      window.userRole = window.userRoles[0]; // للتوافق مع كود قديم
       window.currentUserId = session.user.id;
       window.currentUsername = profile?.username || displayName;
       setMemberPostingVisibility(true);
 
-      if (profile?.role === 'youtuber-vip' || profile?.role === 'vip' || profile?.role === 'admin') {
+      // زر نشر فيديو VIP يظهر للأدمن/VIP/Youtuber/Moderator
+      if (userHasAnyRole(['admin','vip','youtuber','moderator'])) {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
       } else {
         document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
@@ -1685,6 +1742,7 @@ async function updateUIAfterAuth(sessionOverride) {
       loginLink.style.display = 'inline-block';
       userArea.style.display = 'none';
       window.userRole = 'guest';
+      window.userRoles = ['guest'];
       window.currentUserId = null;
       window.currentUsername = null;
       setMemberPostingVisibility(false);
@@ -1831,7 +1889,7 @@ document.getElementById('profileButton')?.addEventListener('click', async () => 
 
   try {
     const { data: profile } = await db.from('profiles')
-      .select('username, email, avatar_url, birthdate, birth_place, country, favorite_game, role')
+      .select('*')
       .eq('id', window.currentUserId)
       .single();
 
