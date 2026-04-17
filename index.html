@@ -1233,6 +1233,46 @@ function clearMediaForRoom(room) {
   document.getElementById(`url-${room}`).value = '';
 }
 
+function extractTitleFromFilename(filename) {
+  if (!filename) return '';
+  // remove extension
+  let name = filename.replace(/\.[^/.]+$/, '');
+  // replace _ - . with spaces
+  name = name.replace(/[_\-\.]+/g, ' ');
+  // collapse multiple spaces
+  name = name.replace(/\s+/g, ' ').trim();
+  // capitalize first letter of each word
+  name = name.replace(/\b\w/g, c => c.toUpperCase());
+  return name;
+}
+
+function buildMediaDescription(file, mediaInfo) {
+  const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+  const type = file.type.startsWith('image/') ? '🖼️ صورة' : (file.type.startsWith('video/') ? '🎥 فيديو' : '📄 ملف');
+  const ext = (file.name.split('.').pop() || '').toUpperCase();
+  let parts = [`${type} (${ext})`, `📦 ${sizeMB} MB`];
+  if (mediaInfo) {
+    if (mediaInfo.width && mediaInfo.height) parts.push(`📐 ${mediaInfo.width}×${mediaInfo.height}`);
+    if (mediaInfo.duration) {
+      const m = Math.floor(mediaInfo.duration / 60);
+      const s = Math.floor(mediaInfo.duration % 60).toString().padStart(2, '0');
+      parts.push(`⏱️ ${m}:${s}`);
+    }
+  }
+  return parts.join(' • ');
+}
+
+function autofillFromFile(room, file, mediaInfo) {
+  const titleEl = document.getElementById(`title-${room}`);
+  const descEl = document.getElementById(`desc-${room}`);
+  if (titleEl && !titleEl.value.trim()) {
+    titleEl.value = extractTitleFromFilename(file.name);
+  }
+  if (descEl && !descEl.value.trim()) {
+    descEl.value = buildMediaDescription(file, mediaInfo);
+  }
+}
+
 function handleMediaFile(room, file) {
   if (!file) return;
   currentMediaFile = file;
@@ -1246,6 +1286,11 @@ function handleMediaFile(room, file) {
     else if (isVideoFile) tagEl.value = 'Video';
   }
 
+  // ملء العنوان والوصف تلقائياً في غرفة Highlights
+  if (room === 'highlights') {
+    autofillFromFile(room, file, null);
+  }
+
   const reader = new FileReader();
   reader.onload = e => {
     currentPreviewDataUrl = e.target.result;
@@ -1253,12 +1298,24 @@ function handleMediaFile(room, file) {
     const previewVideo = document.getElementById(`preview-video-${room}`);
     const previewText = document.getElementById(`preview-text-${room}`);
     if (isImageFile) {
-      if (previewImg) { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
+      if (previewImg) {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+        previewImg.onload = () => {
+          if (room === 'highlights') autofillFromFile(room, file, { width: previewImg.naturalWidth, height: previewImg.naturalHeight });
+        };
+      }
       if (previewVideo) previewVideo.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
       if (iconEl) iconEl.value = '🖼️';
     } else if (isVideoFile) {
-      if (previewVideo) { previewVideo.src = e.target.result; previewVideo.style.display = 'block'; }
+      if (previewVideo) {
+        previewVideo.src = e.target.result;
+        previewVideo.style.display = 'block';
+        previewVideo.onloadedmetadata = () => {
+          if (room === 'highlights') autofillFromFile(room, file, { width: previewVideo.videoWidth, height: previewVideo.videoHeight, duration: previewVideo.duration });
+        };
+      }
       if (previewImg) previewImg.style.display = 'none';
       if (previewText) previewText.style.display = 'none';
       if (iconEl) iconEl.value = '🎥';
@@ -1610,7 +1667,7 @@ function renderCards(posts, gridId, room) {
 }
 
 async function loadSubscribersWithVIP(el, posts) {
-  let vipCards = '';
+  let groupedHtml = '';
   try {
     let { data: vipUsers, error } = await db.from('profiles')
       .select('username, avatar_url, role, roles')
@@ -1620,40 +1677,60 @@ async function loadSubscribersWithVIP(el, posts) {
       vipUsers = fb.data;
     }
     if (vipUsers && vipUsers.length) {
-      const TARGET = ['vip','member','moderator','youtuber'];
-      const filtered = vipUsers.filter(u => {
-        const rs = normalizeRoles(u);
-        return rs.some(r => TARGET.includes(r));
-      });
-      const badgeFor = (r) => {
-        if (r === 'vip') return `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 8px;">👑 VIP</span>`;
-        if (r === 'moderator') return `<span style="font-size:11px;background:#3d2e0f;color:#ff9800;border:1px solid #ff9800;border-radius:4px;padding:2px 8px;">🛡️ MOD</span>`;
-        if (r === 'youtuber') return `<span style="font-size:11px;background:#3d0f0f;color:#f55;border:1px solid #f55;border-radius:4px;padding:2px 8px;">📺 YOUTUBER</span>`;
-        if (r === 'member') return `<span style="font-size:11px;background:#1a2a1a;color:#4caf90;border:1px solid #4caf90;border-radius:4px;padding:2px 8px;">⭐ MEMBER</span>`;
-        return '';
+      const ROLE_DEFS = [
+        { key: 'admin',     title: '🛡️ الإدارة',      short: 'ADMIN',     color: '#f55',    bg: '#3d0f0f' },
+        { key: 'moderator', title: '🛡️ المشرفون',     short: 'MOD',       color: '#ff9800', bg: '#3d2e0f' },
+        { key: 'youtuber',  title: '📺 يوتيوبرز',     short: 'YOUTUBER',  color: '#f55',    bg: '#3d0f0f' },
+        { key: 'vip',       title: '👑 VIP',           short: 'VIP',       color: '#d4af37', bg: '#2a1500' },
+        { key: 'member',    title: '⭐ الأعضاء',       short: 'MEMBER',    color: '#4caf90', bg: '#1a2a1a' }
+      ];
+      const userCard = (u, accentColor) => {
+        const avatar = u.avatar_url
+          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
+          : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
+        const allRoles = normalizeRoles(u).filter(r => r !== 'user');
+        const badges = allRoles.map(r => {
+          const def = ROLE_DEFS.find(d => d.key === r);
+          if (!def) return '';
+          return `<span style="font-size:10px;background:${def.bg};color:${def.color};border:1px solid ${def.color};border-radius:4px;padding:1px 6px;">${def.short}</span>`;
+        }).filter(Boolean).join(' ');
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${badges}</div></div></div>`;
       };
-      vipCards = filtered.map(u => {
-        const avatar = u.avatar_url ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">` : `<div class="channel-avatar">👤</div>`;
-        const rs = normalizeRoles(u).filter(r => r !== 'user');
-        const badges = rs.map(badgeFor).filter(Boolean).join(' ');
-        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username)}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${badges}</div></div></div>`;
-      }).join('');
+      ROLE_DEFS.forEach(def => {
+        const usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(def.key));
+        if (!usersInRole.length) return;
+        groupedHtml += `
+          <div style="margin:24px 0 12px 0;padding:10px 14px;background:${def.bg};border-left:4px solid ${def.color};border-radius:6px;display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="color:${def.color};margin:0;font-size:16px;">${def.title}</h3>
+            <span style="color:${def.color};font-size:13px;font-weight:bold;">${usersInRole.length} عضو</span>
+          </div>
+          <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>
+        `;
+      });
     }
   } catch(e) { console.error(e); }
-  const youtuberCards = posts.map(p => {
-    const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
-    const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-    const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
-    let subText = p.description || '';
-    if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
-    const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
-    return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
-  }).join('');
-  let html = '<div class="channels-grid">';
-  if (vipCards) html += vipCards;
-  if (youtuberCards) html += youtuberCards;
-  html += '</div>';
-  el.innerHTML = html;
+
+  let youtuberHtml = '';
+  if (posts && posts.length) {
+    const youtuberCards = posts.map(p => {
+      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+      let subText = p.description || '';
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+      const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
+    }).join('');
+    youtuberHtml = `
+      <div style="margin:24px 0 12px 0;padding:10px 14px;background:#2a1500;border-left:4px solid #d4af37;border-radius:6px;">
+        <h3 style="color:#d4af37;margin:0;font-size:16px;">📺 قنوات يوتيوب</h3>
+      </div>
+      <div class="channels-grid">${youtuberCards}</div>
+    `;
+  }
+
+  el.innerHTML = (groupedHtml + youtuberHtml) ||
+    '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد</div>';
 }
 
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
