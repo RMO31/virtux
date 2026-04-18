@@ -104,9 +104,9 @@
     .home-hero {
       position: relative;
       background:
-        repeating-linear-gradient(45deg, rgba(100,80,40,0.18) 0px, rgba(100,80,40,0.18) 2px, transparent 2px, transparent 8px),
-        repeating-linear-gradient(135deg, rgba(60,40,20,0.25) 0px, rgba(60,40,20,0.25) 1px, transparent 1px, transparent 6px),
-        linear-gradient(160deg, #1e3a1e 0%, #3d2710 45%, #1a2a1a 100%);
+        radial-gradient(circle at 20% 20%, rgba(212,175,55,0.12), transparent 55%),
+        radial-gradient(circle at 80% 70%, rgba(212,175,55,0.08), transparent 60%),
+        linear-gradient(160deg, #0a0a0a 0%, #14140d 50%, #0a0a0a 100%);
       background-attachment: fixed;
       min-height: calc(100vh - 84px);
       display: flex;
@@ -1673,6 +1673,12 @@ async function deletePost(id, room) {
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
+  // ⚠️ غرفة Subscribers تُحمّل المستخدمين من جدول profiles حتى لو لم توجد منشورات
+  if (room === 'subscribers') {
+    el.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">⏳ جارٍ تحميل المشتركين...</div>';
+    loadSubscribersWithVIP(el, posts || []);
+    return;
+  }
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
   if (room === 'yt-channels') {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
@@ -1683,10 +1689,6 @@ function renderCards(posts, gridId, room) {
       if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
       return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div></div>${link}</div>`;
     }).join('')}</div>`;
-    return;
-  }
-  if (room === 'subscribers') {
-    loadSubscribersWithVIP(el, posts);
     return;
   }
   const canViewVIP = userHasAnyRole(['vip','member','admin','moderator','youtuber_vip']);
@@ -1778,19 +1780,17 @@ async function loadSubscribersWithVIP(el, posts) {
         { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#d4af37', bg: '#2a1800', border: '#d4af37' },
         { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#4caf90', bg: '#0f2a1a', border: '#4caf90' },
       ];
-      const userCard = (u, def) => {
+      const userCard = (u, accentColor) => {
         const avatar = u.avatar_url
-          ? `<img src="${u.avatar_url}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid ${def.color};flex-shrink:0;">`
-          : `<div style="width:56px;height:56px;border-radius:50%;background:#1a1a1a;border:2px solid ${def.color};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">👤</div>`;
-        return `
-          <div style="display:flex;align-items:center;gap:10px;background:#111;border:1px solid #222;border-radius:10px;padding:10px;">
-            ${avatar}
-            <div style="min-width:0;flex:1;">
-              <div style="color:#fff;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(u.username || 'مستخدم')}</div>
-              <span style="display:inline-block;margin-top:4px;font-size:10px;background:${def.bg};color:${def.color};border:1px solid ${def.color};border-radius:4px;padding:2px 8px;font-weight:700;">${def.short}</span>
-            </div>
-          </div>
-        `;
+          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
+          : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
+        const allRoles = normalizeRoles(u).filter(r => r !== 'user');
+        const badges = allRoles.map(r => {
+          const def = ROLE_DEFS.find(d => d.key === r);
+          if (!def) return '';
+          return `<span style="font-size:10px;background:${def.bg};color:${def.color};border:1px solid ${def.color};border-radius:4px;padding:1px 6px;">${def.short}</span>`;
+        }).filter(Boolean).join(' ');
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${badges}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
         const usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(def.key));
@@ -1807,15 +1807,34 @@ async function loadSubscribersWithVIP(el, posts) {
               </div>
               <span style="background:${def.color};color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
             </div>
-            <div class="channels-grid">${usersInRole.map(u => userCard(u, def)).join('')}</div>
+            <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>
           </div>
         `;
       });
     }
   } catch(e) { console.error(e); }
 
-  el.innerHTML = debugInfo + (groupedHtml ||
-    '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
+  let youtuberHtml = '';
+  if (posts && posts.length) {
+    const youtuberCards = posts.map(p => {
+      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+      let subText = p.description || '';
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+      const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
+    }).join('');
+    youtuberHtml = `
+      <div style="margin:24px 0 12px 0;padding:10px 14px;background:#2a1500;border-left:4px solid #d4af37;border-radius:6px;">
+        <h3 style="color:#d4af37;margin:0;font-size:16px;">📺 قنوات يوتيوب</h3>
+      </div>
+      <div class="channels-grid">${youtuberCards}</div>
+    `;
+  }
+
+  el.innerHTML = debugInfo + ((groupedHtml + youtuberHtml) ||
+    '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
 }
 
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
@@ -2275,7 +2294,87 @@ window.submitYTVIPPost = async function() {
     if (btn) btn.disabled = false;
   }
 };
-window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
+// ==================== VIP TOURNAMENT POST MODAL ====================
+window.openTournamentsVIPModal = function() {
+  const allowed = (window.userRoles || []).some(r => ['admin','vip','youtuber_vip','moderator'].includes(r));
+  if (!allowed) { alert('⛔ زر مخصص لأصحاب رتبة VIP فقط'); return; }
+
+  let m = document.getElementById('vip-tour-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'vip-tour-modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.onclick = function(e){ if(e.target===m) m.style.display='none'; };
+    m.innerHTML = `
+      <div style="background:#13131f;border:1.5px solid #d4af37;border-radius:16px;padding:26px 22px;width:100%;max-width:520px;position:relative;box-shadow:0 0 40px rgba(212,175,55,0.18);">
+        <button onclick="document.getElementById('vip-tour-modal').style.display='none'"
+          style="position:absolute;top:12px;left:14px;background:transparent;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="font-size:30px;margin-bottom:4px;">🏆</div>
+          <h3 style="color:#d4af37;margin:0;font-size:17px;">نشر بطولة VIP</h3>
+          <p style="color:#777;font-size:12px;margin:6px 0 0;">تظهر فقط لأعضاء VIP و Member وما فوق</p>
+        </div>
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">📝 عنوان البطولة *</label>
+        <input id="vipt-title" type="text" placeholder="اسم البطولة..."
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">💬 الوصف</label>
+        <textarea id="vipt-desc" placeholder="تفاصيل البطولة، الجوائز، المواعيد..." rows="4"
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;resize:vertical;outline:none;"></textarea>
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🔗 رابط (اختياري)</label>
+        <input id="vipt-url" type="text" placeholder="https://..."
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🖼️ أيقونة/إيموجي (اختياري)</label>
+        <input id="vipt-icon" type="text" placeholder="🏆 أو رابط صورة" value="🏆"
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:16px;outline:none;">
+        <button onclick="window.submitVIPTournament()"
+          style="width:100%;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:15px;cursor:pointer;letter-spacing:0.5px;">
+          🚀 نشر البطولة VIP
+        </button>
+        <div id="vipt-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;min-height:18px;"></div>
+      </div>`;
+    document.body.appendChild(m);
+  }
+  m.style.display = 'flex';
+  ['vipt-title','vipt-desc','vipt-url'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
+  const ic = document.getElementById('vipt-icon'); if (ic) ic.value = '🏆';
+  document.getElementById('vipt-status').textContent = '';
+};
+
+window.submitVIPTournament = async function() {
+  const title  = (document.getElementById('vipt-title')?.value || '').trim();
+  const desc   = (document.getElementById('vipt-desc')?.value  || '').trim();
+  const url    = (document.getElementById('vipt-url')?.value   || '').trim();
+  const icon   = (document.getElementById('vipt-icon')?.value  || '🏆').trim();
+  const status = document.getElementById('vipt-status');
+  if (!title) { status.style.color='#f55'; status.textContent='⚠️ أدخل عنوان البطولة'; return; }
+  status.style.color='#aaa'; status.textContent='⏳ جارٍ النشر...';
+  const btn = document.querySelector('#vip-tour-modal button[onclick*="submitVIPTournament"]');
+  if (btn) btn.disabled = true;
+  try {
+    const { error } = await db.from('posts').insert({
+      title:       title,
+      description: desc || '',
+      content:     desc || '',
+      url:         url || null,
+      icon:        icon || '🏆',
+      tag:         'VIP',
+      room:        'tournaments',
+      user_id:     window.currentUserId || null
+    });
+    if (error) throw error;
+    status.style.color = '#4caf90';
+    status.textContent = '✅ تم نشر البطولة VIP بنجاح!';
+    setTimeout(() => {
+      document.getElementById('vip-tour-modal').style.display = 'none';
+      if (window.currentRoom === 'tournaments' || !window.currentRoom) loadPosts('tournaments');
+    }, 1300);
+  } catch(e) {
+    status.style.color = '#f55';
+    status.textContent = '❌ ' + (e.message || 'حدث خطأ');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
 
 // ==================== الملف الشخصي ====================
 document.getElementById('profileButton')?.addEventListener('click', async () => {
