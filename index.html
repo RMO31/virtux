@@ -1780,20 +1780,25 @@ async function loadSubscribersWithVIP(el, posts) {
         { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#d4af37', bg: '#2a1800', border: '#d4af37' },
         { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#4caf90', bg: '#0f2a1a', border: '#4caf90' },
       ];
-      const userCard = (u, accentColor) => {
+      // ترتيب الأولوية من الأعلى إلى الأدنى
+      const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member'];
+      const getTopRole = (u) => {
+        const rs = normalizeRoles(u);
+        return ROLE_PRIORITY.find(r => rs.includes(r)) || null;
+      };
+      const userCard = (u, accentColor, topRoleDef) => {
         const avatar = u.avatar_url
           ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
           : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
-        const allRoles = normalizeRoles(u).filter(r => r !== 'user');
-        const badges = allRoles.map(r => {
-          const def = ROLE_DEFS.find(d => d.key === r);
-          if (!def) return '';
-          return `<span style="font-size:10px;background:${def.bg};color:${def.color};border:1px solid ${def.color};border-radius:4px;padding:1px 6px;">${def.short}</span>`;
-        }).filter(Boolean).join(' ');
-        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${badges}</div></div></div>`;
+        // شارة واحدة فقط = الرتبة الأعلى للمستخدم
+        const badge = topRoleDef
+          ? `<span style="font-size:10px;background:${topRoleDef.bg};color:${topRoleDef.color};border:1px solid ${topRoleDef.color};border-radius:4px;padding:1px 6px;">${topRoleDef.short}</span>`
+          : '';
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
-        const usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(def.key));
+        // كل مستخدم يظهر في خانة رتبته الأعلى فقط
+        const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
         if (!usersInRole.length) return;
         groupedHtml += `
           <div class="sub-role-section">
@@ -1807,7 +1812,7 @@ async function loadSubscribersWithVIP(el, posts) {
               </div>
               <span style="background:${def.color};color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
             </div>
-            <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>
+            <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>
           </div>
         `;
       });
