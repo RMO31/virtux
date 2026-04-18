@@ -69,9 +69,11 @@
       height: 32px;
       align-items: center;
       position: absolute;
+      right: auto;
       left: 0;
       top: 0;
       will-change: transform;
+      direction: ltr;
     }
     .ticker-item {
       display: inline-flex;
@@ -106,8 +108,9 @@
       background:
         repeating-linear-gradient(45deg, rgba(100,80,40,0.18) 0px, rgba(100,80,40,0.18) 2px, transparent 2px, transparent 8px),
         repeating-linear-gradient(135deg, rgba(60,40,20,0.25) 0px, rgba(60,40,20,0.25) 1px, transparent 1px, transparent 6px),
-        linear-gradient(160deg, #1e3a1e 0%, #3d2710 45%, #1a2a1a 100%);
-      background-attachment: fixed;
+        linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
+      background-image: repeating-linear-gradient(45deg, rgba(100,80,40,0.2) 0px, rgba(100,80,40,0.2) 2px, transparent 2px, transparent 8px),
+                        repeating-linear-gradient(135deg, rgba(60,40,20,0.3) 0px, rgba(60,40,20,0.3) 1px, transparent 1px, transparent 6px);
       min-height: calc(100vh - 84px);
       display: flex;
       flex-direction: column;
@@ -600,6 +603,68 @@
     /* subscribers groups */
     .sub-role-section{margin:20px 0 10px;}
     .sub-role-header{padding:10px 16px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    
+    /* ── لوحة القنوات: إطار نسبة فيديو 16:9 ── */
+    .hcp-video-frame {
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid rgba(212,175,55,0.3);
+    }
+    .hcp-video-frame .hc-wrap {
+      aspect-ratio: 16/9;
+      min-height: unset;
+    }
+    .hcp-video-frame .hc-slide {
+      padding: 0;
+    }
+    .hcp-video-frame .hc-slide a {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .hcp-video-frame .hc-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .hcp-video-frame .hc-thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: unset;
+    }
+    .hcp-video-frame .hc-info-title,
+    .hcp-video-frame .hc-info-ch {
+      display: none;
+    }
+    .hcp-video-frame .hc-nav {
+      bottom: 8px;
+      right: 8px;
+    }
+    /* overlay عنوان فوق الصورة */
+    .hcp-video-frame .hc-slide-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+      padding: 24px 10px 36px;
+      pointer-events: none;
+    }
+    .hcp-video-frame .hc-ol-title {
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hcp-video-frame .hc-ol-ch {
+      color: #d4af37;
+      font-size: 10px;
+      margin-top: 2px;
+    }
     </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -675,12 +740,10 @@
             <div class="home-channel-panel" style="margin:0;">
               <div class="hcp-title">📡 قنوات الموقع</div>
               <div class="home-split">
-                <div class="hcp-half">
-                  <div class="hcp-half-head">🔴 البث المباشر وما قبل البث</div>
+                <div class="hcp-half hcp-video-frame">
                   <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
                 </div>
-                <div class="hcp-half">
-                  <div class="hcp-half-head">🎬 آخر الفيديوهات</div>
+                <div class="hcp-half hcp-video-frame">
                   <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
                 </div>
               </div>
@@ -1154,10 +1217,18 @@ function normalizeRoles(profile) {
     }
   }
   if (Array.isArray(raw) && raw.length) {
-    const cleaned = raw.map(r => String(r).toLowerCase().trim()).filter(Boolean);
+    const cleaned = raw.map(r => String(r).toLowerCase().trim()
+      .replace(/youtuber vip/g,'youtuber_vip')
+      .replace(/youtuber-vip/g,'youtuber_vip')
+    ).filter(Boolean);
     if (cleaned.length) return cleaned;
   }
-  if (profile.role) return [String(profile.role).toLowerCase().trim()];
+  if (profile.role) {
+    const r = String(profile.role).toLowerCase().trim()
+      .replace(/youtuber vip/g,'youtuber_vip')
+      .replace(/youtuber-vip/g,'youtuber_vip');
+    return [r];
+  }
   return ['user'];
 }
 function userHasRole(role) {
@@ -1769,7 +1840,7 @@ async function loadSubscribersWithVIP(el, posts) {
     console.log('[Subscribers] إجمالي البروفايلات المُحمَّلة:', vipUsers?.length || 0);
     if (vipUsers && vipUsers.length) {
       console.log('[Subscribers] عيّنة من الرولات:', vipUsers.slice(0,5).map(u => ({ name: u.username, role: u.role, roles: u.roles, normalized: normalizeRoles(u) })));
-      debugInfo = `<div style="font-size:11px;color:#666;margin-bottom:8px;">📊 ${vipUsers.length} مستخدم محمل</div>`;
+      // debugInfo disabled
       const ROLE_DEFS = [
         { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff4444', bg: '#3d0f0f', border: '#ff4444' },
         { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff9800', bg: '#3d2e0f', border: '#ff9800' },
@@ -1831,7 +1902,7 @@ async function loadSubscribersWithVIP(el, posts) {
     `;
   }
 
-  el.innerHTML = debugInfo + ((groupedHtml + youtuberHtml) ||
+  el.innerHTML = ((groupedHtml + youtuberHtml) ||
     '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
 }
 
@@ -1911,7 +1982,7 @@ async function updateUIAfterAuth(sessionOverride) {
 
       // نشر فيديو VIP: youtuber_vip + admin فقط
       const canPostVipVideo = userHasAnyRole(['admin','youtuber_vip']);
-      const canPostVipTour  = userHasAnyRole(['admin','vip','youtuber_vip']);
+      const canPostVipTour  = userHasAnyRole(['admin','vip','youtuber_vip','moderator']);
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => {
         if (btn.id && btn.id.startsWith('btn-vip-tournaments')) {
           btn.style.display = canPostVipTour ? 'inline-flex' : 'none';
@@ -2013,9 +2084,20 @@ let tickerPosition = 0;
 const TICKER_SPEED = 1.2;
 async function loadTickerNews() {
   try {
-    const { data, error } = await db.from('posts').select('title, url').eq('room', 'ticker').order('id', { ascending: false }).limit(15);
-    if (error) throw error;
-    tickerItems = (data && data.length) ? data.map(item => ({ text: item.title, url: item.url })) : [{ text: '📢 لا توجد أخبار حالياً', url: null }];
+    // جلب آخر بث مباشر + آخر فيديوهات
+    const [liveRes, videosRes] = await Promise.all([
+      db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
+      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(10)
+    ]);
+    let items = [];
+    (liveRes.data||[]).forEach(p => {
+      const isLive = (p.tag||'').toLowerCase().includes('live');
+      const isSoon = (p.tag||'').toLowerCase().includes('pre') || (p.tag||'').toLowerCase().includes('upcoming');
+      const icon = isLive ? '🔴 LIVE:' : isSoon ? '⏰ قريباً:' : '📡';
+      items.push({ text: icon + ' ' + p.title, url: p.url });
+    });
+    (videosRes.data||[]).forEach(p => items.push({ text: '🎬 ' + p.title, url: p.url }));
+    tickerItems = items.length ? items : [{ text: '📢 لا يوجد محتوى حالياً', url: null }];
     buildTickerTrack();
     startTickerAnimation();
   } catch(e) { console.error(e); tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }]; buildTickerTrack(); startTickerAnimation(); }
@@ -2086,14 +2168,30 @@ window.deletePost = deletePost;
   function renderLive(p){
     const vid=ytId(p.url); const tag=(p.tag||'').toLowerCase();
     const isLive=tag.includes('live'); const isSoon=tag.includes('pre')||tag.includes('upcoming');
-    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy">`:`<div class="hc-thumb-placeholder">🔴</div>`;
+    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`:`<div class="hc-thumb-placeholder">🔴</div>`;
     const badge=isLive?`<span class="hc-badge-live">🔴 LIVE</span>`:isSoon?`<span class="hc-badge-soon">⏰ قريباً</span>`:'';
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}${badge}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener" style="position:relative;display:block;width:100%;height:100%;">
+      <div class="hc-thumb-wrap" style="width:100%;height:100%;">${thumbEl}${badge}</div>
+      <div class="hc-slide-overlay">
+        <div class="hc-ol-title">${p.title||'بث مباشر'}</div>
+        <div class="hc-ol-ch">${p.description||''}</div>
+      </div>
+    </a>`;
   }
   function renderVideo(p){
     const vid=ytId(p.url);
-    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    const thumbEl=vid
+      ?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
+      :(p.icon&&p.icon.startsWith('http'))
+        ?`<img class="hc-thumb" src="${p.icon}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">`
+        :`<div class="hc-thumb-placeholder">🎬</div>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener" style="position:relative;display:block;width:100%;height:100%;">
+      <div class="hc-thumb-wrap" style="width:100%;height:100%;">${thumbEl}</div>
+      <div class="hc-slide-overlay">
+        <div class="hc-ol-title">${p.title||''}</div>
+        <div class="hc-ol-ch">${p.description||''}</div>
+      </div>
+    </a>`;
   }
   async function loadHomePanel(){
     const liveEl=document.getElementById('hc-live');
