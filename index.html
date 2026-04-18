@@ -72,7 +72,6 @@
       left: 0;
       top: 0;
       will-change: transform;
-      direction: ltr;
     }
     .ticker-item {
       display: inline-flex;
@@ -104,10 +103,11 @@
     
     .home-hero {
       position: relative;
-      background: linear-gradient(135deg, #2b4d2b 0%, #5a3a1a 50%, #1a2a1a 100%);
-      background-image:
-        repeating-linear-gradient(45deg, rgba(100,80,40,0.2) 0px, rgba(100,80,40,0.2) 2px, transparent 2px, transparent 8px),
-        repeating-linear-gradient(135deg, rgba(60,40,20,0.3) 0px, rgba(60,40,20,0.3) 1px, transparent 1px, transparent 6px);
+      background:
+        repeating-linear-gradient(45deg, rgba(100,80,40,0.18) 0px, rgba(100,80,40,0.18) 2px, transparent 2px, transparent 8px),
+        repeating-linear-gradient(135deg, rgba(60,40,20,0.25) 0px, rgba(60,40,20,0.25) 1px, transparent 1px, transparent 6px),
+        linear-gradient(160deg, #1e3a1e 0%, #3d2710 45%, #1a2a1a 100%);
+      background-attachment: fixed;
       min-height: calc(100vh - 84px);
       display: flex;
       flex-direction: column;
@@ -115,7 +115,7 @@
       justify-content: flex-start;
       text-align: center;
       border-bottom: none;
-      padding: 40px 20px;
+      padding: 40px 20px 60px;
     }
     
     .home-welcome {
@@ -1142,33 +1142,23 @@ function bindLiveUrlAutofill() {
 window.ALL_ROLES = ['admin','vip','member','moderator','youtuber','user'];
 function normalizeRoles(profile) {
   if (!profile) return ['guest'];
-
-  // ── عمود roles (array) ──
   let raw = profile.roles;
+  // إذا كانت سترينغ JSON
   if (typeof raw === 'string') {
     try {
-      const p = JSON.parse(raw);
-      raw = Array.isArray(p) ? p : raw.replace(/[{}"'\[\]]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) raw = parsed;
+      else raw = raw.split(',').map(s => s.trim()).filter(Boolean);
     } catch(e) {
-      raw = raw.replace(/[{}"'\[\]]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
+      raw = raw.split(',').map(s => s.trim()).filter(Boolean);
     }
   }
-  const normalize = r => String(r).toLowerCase().trim()
-    .replace(/youtuber vip/g,'youtuber_vip')
-    .replace(/youtuber-vip/g,'youtuber_vip');
-
-  let fromArr = Array.isArray(raw)
-    ? raw.map(normalize).filter(r => r && r !== 'user')
-    : [];
-
-  // ── عمود role (string) ──
-  let fromStr = profile.role ? normalize(profile.role) : null;
-
-  // ── دمج: نتجاهل 'user' الافتراضي ──
-  const merged = new Set(fromArr);
-  if (fromStr && fromStr !== 'user') merged.add(fromStr);
-
-  return merged.size > 0 ? Array.from(merged) : ['user'];
+  if (Array.isArray(raw) && raw.length) {
+    const cleaned = raw.map(r => String(r).toLowerCase().trim()).filter(Boolean);
+    if (cleaned.length) return cleaned;
+  }
+  if (profile.role) return [String(profile.role).toLowerCase().trim()];
+  return ['user'];
 }
 function userHasRole(role) {
   const roles = window.userRoles || [];
@@ -1779,7 +1769,7 @@ async function loadSubscribersWithVIP(el, posts) {
     console.log('[Subscribers] إجمالي البروفايلات المُحمَّلة:', vipUsers?.length || 0);
     if (vipUsers && vipUsers.length) {
       console.log('[Subscribers] عيّنة من الرولات:', vipUsers.slice(0,5).map(u => ({ name: u.username, role: u.role, roles: u.roles, normalized: normalizeRoles(u) })));
-      // debug removed
+      debugInfo = `<div style="font-size:11px;color:#666;margin-bottom:8px;">📊 ${vipUsers.length} مستخدم محمل</div>`;
       const ROLE_DEFS = [
         { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff4444', bg: '#3d0f0f', border: '#ff4444' },
         { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff9800', bg: '#3d2e0f', border: '#ff9800' },
@@ -1841,7 +1831,7 @@ async function loadSubscribersWithVIP(el, posts) {
     `;
   }
 
-  el.innerHTML = (groupedHtml + youtuberHtml) ||
+  el.innerHTML = debugInfo + ((groupedHtml + youtuberHtml) ||
     '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
 }
 
@@ -1921,7 +1911,7 @@ async function updateUIAfterAuth(sessionOverride) {
 
       // نشر فيديو VIP: youtuber_vip + admin فقط
       const canPostVipVideo = userHasAnyRole(['admin','youtuber_vip']);
-      const canPostVipTour  = userHasAnyRole(['admin','vip','youtuber_vip','moderator']);
+      const canPostVipTour  = userHasAnyRole(['admin','vip','youtuber_vip']);
       document.querySelectorAll('.btn-ytvip-post').forEach(btn => {
         if (btn.id && btn.id.startsWith('btn-vip-tournaments')) {
           btn.style.display = canPostVipTour ? 'inline-flex' : 'none';
@@ -2023,59 +2013,69 @@ let tickerPosition = 0;
 const TICKER_SPEED = 1.2;
 async function loadTickerNews() {
   try {
-    // جلب آخر بثوث + فيديوهات
     const [liveRes, vidRes] = await Promise.all([
       db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(6),
       db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(10)
     ]);
     let items = [];
     for (const p of (liveRes.data||[])) {
-      const t = (p.tag||'').toLowerCase();
-      const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? '⏰ قريباً' : '📡';
-      items.push({ text: `${icon}: ${p.title}`, url: p.url });
+      const t=(p.tag||'').toLowerCase();
+      items.push({ text: (t.includes('live')?'🔴 LIVE':t.includes('pre')?'⏰ قريباً':'📡')+': '+p.title, url:p.url });
     }
-    for (const p of (vidRes.data||[])) {
-      items.push({ text: `🎬 ${p.title}`, url: p.url });
-    }
-    tickerItems = items.length ? items : [{ text: '📢 لا يوجد محتوى حالياً', url: null }];
-    buildTickerTrack();
-    startTickerAnimation();
+    for (const p of (vidRes.data||[])) items.push({ text:'🎬 '+p.title, url:p.url });
+    tickerItems = items.length ? items : [{ text:'🎮 مرحباً في Virtux', url:null }];
+    buildTickerTrack(); // startTickerAnimation تُستدعى بداخله بعد reflow
   } catch(e) {
     console.error(e);
-    tickerItems = [{ text: '⚠️ فشل تحميل الشريط', url: null }];
+    tickerItems = [{ text:'🎮 مرحباً في Virtux', url:null }];
     buildTickerTrack();
-    startTickerAnimation();
   }
 }
+let tickerContainerWidth = 0;
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
   track.innerHTML = '';
-  [...tickerItems, ...tickerItems].forEach(item => {
+  if (!tickerItems.length) return;
+  // نضاعف العناصر لضمان حلقة سلسة
+  [...tickerItems, ...tickerItems, ...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
-    if (item.url) { const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.textContent = `📢 ${item.text}`; span.appendChild(a); }
-    else span.textContent = `📢 ${item.text}`;
+    const icon = item.text.startsWith('🔴') ? '' : item.text.startsWith('⏰') ? '' : item.text.startsWith('🎬') ? '' : '📢 ';
+    if (item.url) {
+      const a = document.createElement('a');
+      a.href = item.url; a.target = '_blank';
+      a.textContent = icon + item.text;
+      span.appendChild(a);
+    } else {
+      span.textContent = icon + item.text;
+    }
     track.appendChild(span);
   });
-  const scrollDiv = document.getElementById('tickerScroll');
-  if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
-  const halfCount = tickerItems.length;
-  let originalWidth = 0;
-  const children = Array.from(track.children);
-  for (let i = 0; i < halfCount; i++) if (children[i]) originalWidth += children[i].offsetWidth + 60;
-  tickerPosition = tickerContainerWidth;
-  track.style.transform = `translateX(${tickerPosition}px)`;
-  window.tickerHalfWidth = originalWidth;
+  // نحتاج reflow لحساب الأبعاد الحقيقية
+  requestAnimationFrame(() => {
+    const scrollDiv = document.getElementById('tickerScroll');
+    tickerContainerWidth = scrollDiv ? scrollDiv.clientWidth : 800;
+    const children = Array.from(track.children);
+    const third = Math.floor(children.length / 3);
+    let w = 0;
+    for (let i = 0; i < third; i++) w += (children[i]?.offsetWidth || 0) + 0;
+    window.tickerHalfWidth = w > 0 ? w : 600; // fallback إذا كان 0
+    tickerPosition = tickerContainerWidth;
+    track.style.transform = `translateX(${tickerPosition}px)`;
+    startTickerAnimation();
+  });
 }
 function startTickerAnimation() {
-  if (tickerAnimationIdLocal) cancelAnimationFrame(tickerAnimationIdLocal);
+  if (tickerAnimationIdLocal) { cancelAnimationFrame(tickerAnimationIdLocal); tickerAnimationIdLocal = null; }
   const track = document.getElementById('tickerTrack');
-  if (!track) return;
+  if (!track || !window.tickerHalfWidth) return;
   function animate() {
     tickerPosition -= TICKER_SPEED;
+    if (tickerPosition <= -window.tickerHalfWidth) {
+      tickerPosition += window.tickerHalfWidth; // reset بدون قفز
+    }
     track.style.transform = `translateX(${tickerPosition}px)`;
-    if (tickerPosition <= -window.tickerHalfWidth) { tickerPosition += window.tickerHalfWidth; track.style.transform = `translateX(${tickerPosition}px)`; }
     tickerAnimationIdLocal = requestAnimationFrame(animate);
   }
   animate();
@@ -2084,62 +2084,107 @@ function startTickerAnimation() {
 window.deletePost = deletePost;
 
 // ══════════════════════════════════════════════════════════════
-// 📺 HOME CHANNEL PANEL — carousel
+// 📺 HOME CHANNEL PANEL
 // ══════════════════════════════════════════════════════════════
 (function(){
-  function ytId(url){ if(!url) return null; const m=url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
-  function buildCarousel(wrap,items,renderFn){
-    if(!items||!items.length){ wrap.innerHTML='<div class="hc-empty">لا يوجد محتوى حالياً</div>'; return; }
-    const track=document.createElement('div'); track.className='hc-track';
-    items.forEach(it=>{ const sl=document.createElement('div'); sl.className='hc-slide'; sl.innerHTML=renderFn(it); track.appendChild(sl); });
-    const nav=document.createElement('div'); nav.className='hc-nav';
-    const dotsEl=document.createElement('div'); dotsEl.className='hc-dots';
-    items.forEach((_,i)=>{ const d=document.createElement('div'); d.className='hc-dot'+(i===0?' active':''); dotsEl.appendChild(d); });
-    const prev=document.createElement('div'); prev.className='hc-btn'; prev.innerHTML='&#8249;'; prev.title='السابق';
-    const next=document.createElement('div'); next.className='hc-btn'; next.innerHTML='&#8250;'; next.title='التالي';
+  function ytId(u){ if(!u) return null; const m=u.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
+
+  function buildCarousel(wrap, items, renderFn) {
+    if (!items || !items.length) { wrap.innerHTML='<div class="hc-empty">لا يوجد محتوى</div>'; return; }
+    const track = document.createElement('div'); track.className='hc-track';
+    items.forEach(it => {
+      const sl = document.createElement('div');
+      sl.className='hc-slide';
+      sl.style.cssText='min-width:100%;height:100%;position:relative;overflow:hidden;';
+      sl.innerHTML = renderFn(it);
+      track.appendChild(sl);
+    });
+    const nav = document.createElement('div'); nav.className='hc-nav';
+    const dotsEl = document.createElement('div'); dotsEl.className='hc-dots';
+    items.forEach((_,i) => { const d=document.createElement('div'); d.className='hc-dot'+(i===0?' active':''); dotsEl.appendChild(d); });
+    const prev = document.createElement('div'); prev.className='hc-btn'; prev.innerHTML='&#8249;';
+    const next = document.createElement('div'); next.className='hc-btn'; next.innerHTML='&#8250;';
     nav.appendChild(dotsEl); nav.appendChild(prev); nav.appendChild(next);
     wrap.innerHTML=''; wrap.appendChild(track); wrap.appendChild(nav);
     let cur=0; const total=items.length;
-    const dots=dotsEl.querySelectorAll('.hc-dot');
-    function go(n){ cur=((n%total)+total)%total; track.style.transform=`translateX(-${cur*100}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===cur)); }
+    const dots = dotsEl.querySelectorAll('.hc-dot');
+    function go(n) {
+      cur=((n%total)+total)%total;
+      track.style.transform=`translateX(-${cur*100}%)`;
+      dots.forEach((d,i) => d.classList.toggle('active', i===cur));
+    }
     prev.onclick=()=>go(cur-1); next.onclick=()=>go(cur+1);
-    let iv=setInterval(()=>go(cur+1),6000);
-    wrap.addEventListener('mouseenter',()=>clearInterval(iv));
-    wrap.addEventListener('mouseleave',()=>{ iv=setInterval(()=>go(cur+1),6000); });
+    let iv = setInterval(()=>go(cur+1), 7000);
+    wrap.addEventListener('mouseenter', ()=>clearInterval(iv));
+    wrap.addEventListener('mouseleave', ()=>{ iv=setInterval(()=>go(cur+1),7000); });
     let tx=0;
-    wrap.addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; },{passive:true});
-    wrap.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx; if(Math.abs(dx)>40) go(cur+(dx<0?1:-1)); });
+    wrap.addEventListener('touchstart', e=>{ tx=e.touches[0].clientX; }, {passive:true});
+    wrap.addEventListener('touchend',   e=>{ const dx=e.changedTouches[0].clientX-tx; if(Math.abs(dx)>40) go(cur+(dx<0?1:-1)); });
   }
-  function renderLive(p){
+
+  function renderLive(p) {
     const vid=ytId(p.url); const tag=(p.tag||'').toLowerCase();
     const isLive=tag.includes('live'); const isSoon=tag.includes('pre')||tag.includes('upcoming');
-    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy">`:`<div class="hc-thumb-placeholder">🔴</div>`;
     const badge=isLive?`<span class="hc-badge-live">🔴 LIVE</span>`:isSoon?`<span class="hc-badge-soon">⏰ قريباً</span>`:'';
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}${badge}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    const uid='hl'+Math.random().toString(36).slice(2,8);
+    if (!vid) return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#555;flex-direction:column;gap:8px;"><span style="font-size:28px;">🔴</span><span style="font-size:11px;">لا يوجد بث</span></div>`;
+    const thumb=`https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+    const src=`https://www.youtube.com/embed/${vid}?autoplay=1&rel=0${isLive?'&mute=0':''}`;
+    return `<div id="${uid}" style="width:100%;height:100%;position:relative;cursor:pointer;" onclick="(function(el,s){el.innerHTML='<iframe src=\''+s+'\' frameborder=\'0\' allowfullscreen allow=\'autoplay;encrypted-media\' style=\'width:100%;height:100%;border:none;\'></iframe>';})(document.getElementById('${uid}'),'${src}')">
+      <img src="${thumb}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">
+      ${badge}
+      <div class="hc-title-overlay"><div class="t">${p.title||'بث مباشر'}</div><div class="c">${p.description||''}</div></div>
+      <div class="hc-play-overlay"><div class="hc-play-circle"><div class="hc-play-arrow"></div></div></div>
+    </div>`;
   }
-  function renderVideo(p){
+
+  function renderVideo(p) {
     const vid=ytId(p.url);
-    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    const uid='hv'+Math.random().toString(36).slice(2,8);
+    if (!vid) return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#555;">🎬</div>`;
+    const thumb=`https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+    const src=`https://www.youtube.com/embed/${vid}?autoplay=1&rel=0`;
+    return `<div id="${uid}" style="width:100%;height:100%;position:relative;cursor:pointer;" onclick="(function(el,s){el.innerHTML='<iframe src=\''+s+'\' frameborder=\'0\' allowfullscreen allow=\'autoplay;encrypted-media\' style=\'width:100%;height:100%;border:none;\'></iframe>';})(document.getElementById('${uid}'),'${src}')">
+      <img src="${thumb}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">
+      <div class="hc-title-overlay"><div class="t">${p.title||''}</div><div class="c">${p.description||''}</div></div>
+      <div class="hc-play-overlay"><div class="hc-play-circle"><div class="hc-play-arrow"></div></div></div>
+    </div>`;
   }
-  async function loadHomePanel(){
-    const liveEl=document.getElementById('hc-live');
-    const videosEl=document.getElementById('hc-videos');
-    if(!liveEl&&!videosEl) return;
-    try{
-      if(liveEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').order('id',{ascending:false}).limit(10); buildCarousel(liveEl,data||[],renderLive); }
-      if(videosEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').order('id',{ascending:false}).limit(12); buildCarousel(videosEl,data||[],renderVideo); }
-    }catch(e){
-      if(liveEl) liveEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
-      if(videosEl) videosEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
+
+  async function loadHomePanel() {
+    const liveEl   = document.getElementById('hc-live');
+    const videosEl = document.getElementById('hc-videos');
+    if (!liveEl && !videosEl) return;
+    try {
+      if (liveEl) {
+        const {data} = await db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').order('id',{ascending:false}).limit(8);
+        buildCarousel(liveEl, data||[], renderLive);
+      }
+      if (videosEl) {
+        const {data} = await db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').order('id',{ascending:false}).limit(10);
+        buildCarousel(videosEl, data||[], renderVideo);
+      }
+    } catch(e) {
+      if (liveEl)   liveEl.innerHTML='<div class="hc-empty">⚠️ خطأ في التحميل</div>';
+      if (videosEl) videosEl.innerHTML='<div class="hc-empty">⚠️ خطأ في التحميل</div>';
     }
   }
-  window.loadHomePanel=loadHomePanel;
-  const _orig=window.showPage;
-  window.showPage=function(room){ if(typeof _orig==='function') _orig(room); if(room==='home') setTimeout(loadHomePanel,80); };
-  document.addEventListener('DOMContentLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
-  setInterval(()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); },60000);
+
+  window.loadHomePanel = loadHomePanel;
+
+  // تشغيل فقط عند فتح صفحة home
+  const _orig = window.showPage;
+  window.showPage = function(room) {
+    if (typeof _orig === 'function') _orig(room);
+    if (room === 'home') setTimeout(loadHomePanel, 150);
+  };
+  document.addEventListener('DOMContentLoaded', () => {
+    const pg = document.getElementById('page-home');
+    if (pg && pg.classList.contains('active')) setTimeout(loadHomePanel, 300);
+  });
+  // لا يوجد setInterval — نتجنب التحديث التلقائي الذي يجمّد الصفحة
 })();
+
 
 // ── Smart image framing ──
 window.applyImgClass = function(img){
@@ -2298,77 +2343,7 @@ window.submitYTVIPPost = async function() {
     if (btn) btn.disabled = false;
   }
 };
-window.openTournamentsVIPModal = function() {
-  if (!window.currentUserId) { alert('⚠️ سجّل دخولك أولاً'); return; }
-  const ok = (window.userRoles||[]).some(r => ['admin','vip','youtuber_vip','moderator'].includes(r));
-  if (!ok) { alert('⛔ هذه الميزة لأصحاب رتبة VIP فقط'); return; }
-  let m = document.getElementById('tourvip-post-modal');
-  if (!m) {
-    m = document.createElement('div');
-    m.id = 'tourvip-post-modal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-    m.onclick = e => { if(e.target===m) m.style.display='none'; };
-    m.innerHTML = `
-      <div style="background:#13131f;border:1.5px solid #d4af37;border-radius:16px;padding:26px 22px;width:100%;max-width:500px;position:relative;box-shadow:0 0 40px rgba(212,175,55,0.15);">
-        <button onclick="document.getElementById('tourvip-post-modal').style.display='none'"
-          style="position:absolute;top:12px;left:14px;background:transparent;border:none;color:#666;font-size:22px;cursor:pointer;">✕</button>
-        <div style="text-align:center;margin-bottom:18px;">
-          <div style="font-size:28px;">🏆</div>
-          <h3 style="color:#d4af37;margin:4px 0 0;font-size:17px;">نشر بطولة VIP</h3>
-          <p style="color:#777;font-size:12px;margin:5px 0 0;">تظهر فقط لأعضاء VIP و Member</p>
-        </div>
-        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🏆 اسم البطولة *</label>
-        <input id="tvip-title" type="text" placeholder="اسم البطولة..."
-          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;">
-        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">📝 التفاصيل</label>
-        <textarea id="tvip-desc" placeholder="وصف البطولة، الجوائز، الموعد..." rows="3"
-          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;resize:vertical;outline:none;"></textarea>
-        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🔗 رابط (اختياري)</label>
-        <input id="tvip-url" type="text" placeholder="رابط التسجيل..."
-          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;">
-        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🖼️ رابط صورة (اختياري)</label>
-        <input id="tvip-icon" type="text" placeholder="https://..."
-          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:16px;outline:none;">
-        <button onclick="window.submitTourVIPPost()"
-          style="width:100%;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:15px;cursor:pointer;">
-          🚀 نشر البطولة
-        </button>
-        <div id="tvip-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;min-height:18px;"></div>
-      </div>`;
-    document.body.appendChild(m);
-  }
-  m.style.display = 'flex';
-  ['tvip-title','tvip-desc','tvip-url','tvip-icon'].forEach(id => {
-    const el = document.getElementById(id); if(el) el.value='';
-  });
-  document.getElementById('tvip-status').textContent = '';
-};
-
-window.submitTourVIPPost = async function() {
-  const title  = (document.getElementById('tvip-title')?.value||'').trim();
-  const desc   = (document.getElementById('tvip-desc')?.value||'').trim();
-  const url    = (document.getElementById('tvip-url')?.value||'').trim();
-  const icon   = (document.getElementById('tvip-icon')?.value||'').trim();
-  const status = document.getElementById('tvip-status');
-  if (!title) { status.style.color='#f55'; status.textContent='⚠️ أدخل اسم البطولة'; return; }
-  status.style.color='#aaa'; status.textContent='⏳ جارٍ النشر...';
-  const btn = document.querySelector('#tourvip-post-modal button[onclick*="submitTourVIPPost"]');
-  if(btn) btn.disabled=true;
-  try {
-    const { error } = await db.from('posts').insert({
-      title, description: desc||'', url: url||null,
-      icon: icon||'🏆', tag:'VIP', room:'tournaments',
-      user_id: window.currentUserId||null
-    });
-    if (error) throw error;
-    status.style.color='#4caf90'; status.textContent='✅ تم نشر البطولة!';
-    setTimeout(() => {
-      document.getElementById('tourvip-post-modal').style.display='none';
-      if(window._currentPage==='tournaments') loadPosts('tournaments');
-    }, 1400);
-  } catch(e) { status.style.color='#f55'; status.textContent='❌ '+e.message; }
-  finally { if(btn) btn.disabled=false; }
-};
+window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
 // ==================== الملف الشخصي ====================
 document.getElementById('profileButton')?.addEventListener('click', async () => {
