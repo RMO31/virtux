@@ -103,9 +103,11 @@
     
     .home-hero {
       position: relative;
-      background: linear-gradient(135deg, #2b4d2b, #5a3a1a, #1a2a1a);
-      background-image: repeating-linear-gradient(45deg, rgba(100,80,40,0.2) 0px, rgba(100,80,40,0.2) 2px, transparent 2px, transparent 8px),
-                        repeating-linear-gradient(135deg, rgba(60,40,20,0.3) 0px, rgba(60,40,20,0.3) 1px, transparent 1px, transparent 6px);
+      background:
+        repeating-linear-gradient(45deg, rgba(100,80,40,0.18) 0px, rgba(100,80,40,0.18) 2px, transparent 2px, transparent 8px),
+        repeating-linear-gradient(135deg, rgba(60,40,20,0.25) 0px, rgba(60,40,20,0.25) 1px, transparent 1px, transparent 6px),
+        linear-gradient(160deg, #1e3a1e 0%, #3d2710 45%, #1a2a1a 100%);
+      background-attachment: fixed;
       min-height: calc(100vh - 84px);
       display: flex;
       flex-direction: column;
@@ -113,7 +115,7 @@
       justify-content: flex-start;
       text-align: center;
       border-bottom: none;
-      padding: 40px 20px;
+      padding: 40px 20px 60px;
     }
     
     .home-welcome {
@@ -207,7 +209,10 @@
     .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
     .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column;position:relative}
     .post-card:hover{border-color:#d4af37}
-    .post-card-img{width:100%;height:160px;object-fit:cover}
+    .post-card-img{width:100%;height:auto;max-height:420px;min-height:100px;object-fit:contain;background:#0d0d1a;display:block}
+    .post-card-img.img-landscape{object-fit:cover;height:210px;max-height:210px}
+    .post-card-img.img-square{object-fit:cover;height:230px;max-height:230px}
+    .post-card-img.img-portrait{object-fit:contain;max-height:420px}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
     .post-card-video{width:100%;height:200px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
     .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;object-fit:cover}
@@ -564,7 +569,38 @@
     .preview-panel { background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 12px; text-align: center; }
     .preview-media { max-width: 100%; max-height: 150px; border-radius: 6px; margin-bottom: 8px; }
     @media (max-width: 700px) { .form-with-preview { grid-template-columns: 1fr; } }
-  </style>
+  
+    /* ══ HOME CHANNEL PANEL ══ */
+    .home-channel-panel{width:100%;max-width:1200px;margin:36px auto;padding:0 4px;}
+    .hcp-title{color:#d4af37;font-size:14px;font-weight:700;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+    .home-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    @media(max-width:680px){.home-split{grid-template-columns:1fr;}}
+    .hcp-half{background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);border:1px solid rgba(212,175,55,0.3);border-radius:14px;overflow:hidden;}
+    .hcp-half-head{font-size:11px;font-weight:700;color:#d4af37;padding:9px 13px 8px;border-bottom:1px solid rgba(212,175,55,0.15);}
+    .hc-wrap{position:relative;overflow:hidden;min-height:210px;}
+    .hc-track{display:flex;transition:transform 0.36s cubic-bezier(.4,0,.2,1);}
+    .hc-slide{min-width:100%;box-sizing:border-box;padding:11px 12px 46px;}
+    .hc-slide a{text-decoration:none;color:inherit;display:block;}
+    .hc-thumb-wrap{position:relative;border-radius:9px;overflow:hidden;background:#0a0a18;}
+    .hc-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;}
+    .hc-thumb-placeholder{width:100%;aspect-ratio:16/9;background:#0d0d1a;display:flex;align-items:center;justify-content:center;font-size:38px;}
+    .hc-badge-live{position:absolute;top:7px;right:8px;background:#e00;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;animation:hc-blink 1.3s infinite;}
+    .hc-badge-soon{position:absolute;top:7px;right:8px;background:#ff9800;color:#000;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;}
+    @keyframes hc-blink{0%,100%{opacity:1}50%{opacity:.35}}
+    .hc-info-title{font-size:12px;font-weight:600;color:#eee;margin-top:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .hc-info-ch{font-size:11px;color:#d4af37;margin-top:3px;opacity:.8;}
+    .hc-nav{position:absolute;bottom:10px;right:11px;display:flex;align-items:center;gap:7px;z-index:5;}
+    .hc-dots{display:flex;gap:5px;align-items:center;}
+    .hc-dot{width:6px;height:6px;border-radius:50%;background:#444;transition:background .2s,transform .2s;}
+    .hc-dot.active{background:#d4af37;transform:scale(1.35);}
+    .hc-btn{width:27px;height:27px;border-radius:50%;background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.45);color:#d4af37;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:background .18s,color .18s;line-height:1;}
+    .hc-btn:hover{background:#d4af37;color:#000;}
+    .hc-empty{display:flex;align-items:center;justify-content:center;min-height:180px;color:#555;font-size:12px;}
+    .hc-loading{display:flex;align-items:center;justify-content:center;min-height:180px;color:#555;font-size:12px;gap:6px;}
+    /* subscribers groups */
+    .sub-role-section{margin:20px 0 10px;}
+    .sub-role-header{padding:10px 16px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -614,19 +650,43 @@
       <div class="vx-page active" id="page-home">
         <div class="home-hero">
           <div class="home-welcome">Welcome to Virtux</div>
-          <div class="home-content-row">
+
+          <!-- ══ ROW: About | Channel Panel | Rules ══ -->
+          <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
+
+            <!-- About يسار -->
             <div class="home-about">
               <h3>🎮 About Virtux</h3>
-              <div class="about-text">
-                Virtux is an English‑speaking gaming community platform designed to deliver a professional and enjoyable experience for players.
+              <div class="about-text" style="font-size:13px;line-height:1.75;color:#ddd;">
+                <p style="margin:0 0 10px;"><strong style="color:#ff4444;">🔴 Live Streams</strong><br>
+                قسم خاص بالبثوث المباشرة، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة.</p>
+                <p style="margin:0 0 10px;"><strong style="color:#d4af37;">🏆 Tournaments</strong><br>
+                منطقة البطولات في Virtux، وتضم: بطولات مفتوحة لجميع اللاعبين، بطولات VIP للاعبين المميزين، ومنافسات قوية بنظام احترافي وجوائز مستمرة.</p>
+                <p style="margin:0 0 10px;"><strong style="color:#4caf90;">🎬 Highlights</strong><br>
+                قسم مخصص لأقوى اللحظات داخل الألعاب، حيث يتم عرض أفضل اللقطات والانتصارات والمشاهد الحماسية التي يشاركها اللاعبون والمجتمع.</p>
+                <p style="margin:0 0 10px;"><strong style="color:#8888ff;">👥 Subscribers System</strong><br>
+                نظام الاشتراكات داخل Virtux يتيح للمستخدمين دعم القنوات أو اللاعبين المفضلين لديهم، والحصول على مزايا خاصة ومحتوى حصري.</p>
+                <p style="margin:0;padding:8px 12px;background:rgba(212,175,55,0.1);border-radius:8px;border-right:3px solid #d4af37;"><strong style="color:#d4af37;">🚀 هدفنا</strong><br>
+                <span style="font-size:12px;">نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، والبث المباشر في بيئة احترافية وآمنة.</span></p>
               </div>
-              <ul class="about-features">
-                <li>🔴 Live Streams</li>
-                <li>🏆 Tournaments</li>
-                <li>🎬 Highlights</li>
-                <li>👥 Subscribers System</li>
-              </ul>
             </div>
+
+            <!-- لوحة القنوات في المنتصف -->
+            <div class="home-channel-panel" style="margin:0;">
+              <div class="hcp-title">📡 قنوات الموقع</div>
+              <div class="home-split">
+                <div class="hcp-half">
+                  <div class="hcp-half-head">🔴 البث المباشر وما قبل البث</div>
+                  <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+                </div>
+                <div class="hcp-half">
+                  <div class="hcp-half-head">🎬 آخر الفيديوهات</div>
+                  <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rules يمين -->
             <div class="home-rules">
               <h3>🛑 Rules</h3>
               <ul class="rules-list">
@@ -638,7 +698,8 @@
                 <li>✅ Respectful and elegant style required</li>
               </ul>
             </div>
-          </div>
+
+          </div><!-- end grid -->
         </div>
       </div>
     </div>
@@ -1612,8 +1673,6 @@ async function deletePost(id, room) {
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
-  // غرفة subscribers تعرض المستخدمين بحسب الرولات حتى لو لم تكن هناك منشورات
-  if (room === 'subscribers') { loadSubscribersWithVIP(el, posts || []); return; }
   if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
   if (room === 'yt-channels') {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
@@ -1626,13 +1685,20 @@ function renderCards(posts, gridId, room) {
     }).join('')}</div>`;
     return;
   }
-  const canViewVIP = userHasAnyRole(['member','vip','admin','moderator','youtuber']);
+  if (room === 'subscribers') {
+    loadSubscribersWithVIP(el, posts);
+    return;
+  }
+  const canViewVIP = userHasAnyRole(['vip','member','admin','moderator','youtuber_vip']);
   el.innerHTML = posts.map(p => {
     let mediaContent = '';
     const isRestricted = isVIPContent(p) && !canViewVIP;
     if (isRestricted) {
-      let thumb = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="post-card-img" src="${p.icon}">` : `<div class="post-card-emoji" style="filter: blur(4px);">${p.icon || '📄'}</div>`;
-      mediaContent = `<div class="restricted-overlay" style="position:relative;">${thumb}<div style="position:absolute; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; flex-direction:column;"><span style="font-size:40px;">🔒</span><span style="color:#d4af37; font-size:12px; margin-top:8px;">للأعضاء فقط</span></div></div>`;
+      mediaContent = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1a0a2e,#0a1020);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+        <span style="font-size:42px;">👑</span>
+        <span style="color:#d4af37;font-size:13px;font-weight:700;">${room==='tournaments'?'🏆 بطولة VIP':'🎬 محتوى VIP'}</span>
+        <span style="color:#888;font-size:11px;">خاص بأعضاء VIP و Member</span>
+      </div>`;
     } else {
       const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
       const isVideoExt = p.url && /\.(mp4|webm|ogg|mov)/i.test(p.url);
@@ -1640,7 +1706,7 @@ function renderCards(posts, gridId, room) {
       const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
       const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
       if (isImageUrl) {
-        mediaContent = `<img class="post-card-img" src="${p.url}">`;
+        mediaContent = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       }
       else if (isLocalVideo) {
         mediaContent = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
@@ -1649,7 +1715,7 @@ function renderCards(posts, gridId, room) {
         const videoId = extractYouTubeId(p.url);
         mediaContent = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
-      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}">`;
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) mediaContent = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       else mediaContent = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'Live Now' ? '<div class="live-badge">LIVE</div>' : ''}</div>`;
     }
     let summary = (p.content || p.description || '').substring(0,150);
@@ -1667,6 +1733,15 @@ function renderCards(posts, gridId, room) {
         actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
       }
     }
+    // زر تسجيل بطولة VIP
+    let registerBtn = '';
+    if (room === 'tournaments' && isVIPContent(p)) {
+      if (canViewVIP) {
+        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">🏆 تسجيل</button>`;
+      } else {
+        registerBtn = `<span style="color:#888;font-size:11px;">🔒 VIP فقط</span>`;
+      }
+    }
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
     const currentUid = window.currentUserId;
     const isOwner = currentUid && p.user_id && p.user_id === currentUid;
@@ -1674,7 +1749,7 @@ function renderCards(posts, gridId, room) {
     const deleteBtn = (isOwner || isAdmin)
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="حذف">🗑️</button>`
       : '';
-    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${readMoreLink}${deleteBtn}</div></div></div></div>`;
+    return `<div class="post-card">${mediaContent}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn||''}${readMoreLink}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -1696,59 +1771,51 @@ async function loadSubscribersWithVIP(el, posts) {
       console.log('[Subscribers] عيّنة من الرولات:', vipUsers.slice(0,5).map(u => ({ name: u.username, role: u.role, roles: u.roles, normalized: normalizeRoles(u) })));
       debugInfo = `<div style="font-size:11px;color:#666;margin-bottom:8px;">📊 ${vipUsers.length} مستخدم محمل</div>`;
       const ROLE_DEFS = [
-        { key: 'admin',     title: '🛡️ الإدارة',      short: 'ADMIN',     color: '#f55',    bg: '#3d0f0f' },
-        { key: 'moderator', title: '🛡️ المشرفون',     short: 'MOD',       color: '#ff9800', bg: '#3d2e0f' },
-        { key: 'youtuber',  title: '📺 يوتيوبرز',     short: 'YOUTUBER',  color: '#f55',    bg: '#3d0f0f' },
-        { key: 'vip',       title: '👑 VIP',           short: 'VIP',       color: '#d4af37', bg: '#2a1500' },
-        { key: 'member',    title: '⭐ الأعضاء',       short: 'MEMBER',    color: '#4caf90', bg: '#1a2a1a' }
+        { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff4444', bg: '#3d0f0f', border: '#ff4444' },
+        { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff9800', bg: '#3d2e0f', border: '#ff9800' },
+        { key: 'youtuber_vip',title: '🔥 Youtuber VIP',     short: 'YT VIP',       color: '#ff6b35', bg: '#3d1a0f', border: '#ff6b35' },
+        { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#e53935', bg: '#2d0a0a', border: '#e53935' },
+        { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#d4af37', bg: '#2a1800', border: '#d4af37' },
+        { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#4caf90', bg: '#0f2a1a', border: '#4caf90' },
       ];
-      const userCard = (u, accentColor) => {
+      const userCard = (u, def) => {
         const avatar = u.avatar_url
-          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
-          : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
-        const allRoles = normalizeRoles(u).filter(r => r !== 'user');
-        const badges = allRoles.map(r => {
-          const def = ROLE_DEFS.find(d => d.key === r);
-          if (!def) return '';
-          return `<span style="font-size:10px;background:${def.bg};color:${def.color};border:1px solid ${def.color};border-radius:4px;padding:1px 6px;">${def.short}</span>`;
-        }).filter(Boolean).join(' ');
-        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">${badges}</div></div></div>`;
+          ? `<img src="${u.avatar_url}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid ${def.color};flex-shrink:0;">`
+          : `<div style="width:56px;height:56px;border-radius:50%;background:#1a1a1a;border:2px solid ${def.color};display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">👤</div>`;
+        return `
+          <div style="display:flex;align-items:center;gap:10px;background:#111;border:1px solid #222;border-radius:10px;padding:10px;">
+            ${avatar}
+            <div style="min-width:0;flex:1;">
+              <div style="color:#fff;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(u.username || 'مستخدم')}</div>
+              <span style="display:inline-block;margin-top:4px;font-size:10px;background:${def.bg};color:${def.color};border:1px solid ${def.color};border-radius:4px;padding:2px 8px;font-weight:700;">${def.short}</span>
+            </div>
+          </div>
+        `;
       };
       ROLE_DEFS.forEach(def => {
         const usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(def.key));
         if (!usersInRole.length) return;
         groupedHtml += `
-          <div style="margin:24px 0 12px 0;padding:10px 14px;background:${def.bg};border-left:4px solid ${def.color};border-radius:6px;display:flex;align-items:center;justify-content:space-between;">
-            <h3 style="color:${def.color};margin:0;font-size:16px;">${def.title}</h3>
-            <span style="color:${def.color};font-size:13px;font-weight:bold;">${usersInRole.length} عضو</span>
+          <div class="sub-role-section">
+            <div class="sub-role-header" style="background:${def.bg};border:1px solid ${def.border};border-radius:10px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:22px;">${def.title.split(' ')[0]}</span>
+                <div>
+                  <div style="color:${def.color};font-size:15px;font-weight:700;">${def.title}</div>
+                  <div style="color:${def.color};font-size:11px;opacity:.7;">${usersInRole.length} عضو</div>
+                </div>
+              </div>
+              <span style="background:${def.color};color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
+            </div>
+            <div class="channels-grid">${usersInRole.map(u => userCard(u, def)).join('')}</div>
           </div>
-          <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>
         `;
       });
     }
   } catch(e) { console.error(e); }
 
-  let youtuberHtml = '';
-  if (posts && posts.length) {
-    const youtuberCards = posts.map(p => {
-      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
-      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
-      let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
-      const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#2a1500;color:#d4af37;border:1px solid #d4af37;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
-      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
-    }).join('');
-    youtuberHtml = `
-      <div style="margin:24px 0 12px 0;padding:10px 14px;background:#2a1500;border-left:4px solid #d4af37;border-radius:6px;">
-        <h3 style="color:#d4af37;margin:0;font-size:16px;">📺 قنوات يوتيوب</h3>
-      </div>
-      <div class="channels-grid">${youtuberCards}</div>
-    `;
-  }
-
-  el.innerHTML = debugInfo + ((groupedHtml + youtuberHtml) ||
-    '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
+  el.innerHTML = debugInfo + (groupedHtml ||
+    '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
 }
 
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
@@ -1825,12 +1892,16 @@ async function updateUIAfterAuth(sessionOverride) {
       window.currentUsername = profile?.username || displayName;
       setMemberPostingVisibility(true);
 
-      // زر نشر فيديو VIP يظهر للأدمن/VIP/Youtuber/Moderator
-      if (userHasAnyRole(['admin','vip','youtuber','moderator'])) {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'inline-flex');
-      } else {
-        document.querySelectorAll('.btn-ytvip-post').forEach(btn => btn.style.display = 'none');
-      }
+      // نشر فيديو VIP: youtuber_vip + admin فقط
+      const canPostVipVideo = userHasAnyRole(['admin','youtuber_vip']);
+      const canPostVipTour  = userHasAnyRole(['admin','vip','youtuber_vip']);
+      document.querySelectorAll('.btn-ytvip-post').forEach(btn => {
+        if (btn.id && btn.id.startsWith('btn-vip-tournaments')) {
+          btn.style.display = canPostVipTour ? 'inline-flex' : 'none';
+        } else {
+          btn.style.display = canPostVipVideo ? 'inline-flex' : 'none';
+        }
+      });
 
       if (modal && modal.classList.contains('active')) closeModal();
     } else {
@@ -1922,58 +1993,288 @@ document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.
 let tickerItems = [];
 let tickerAnimationIdLocal = null;
 let tickerPosition = 0;
+let tickerContainerWidth = 0;
+let tickerHalfWidth = 0;
 const TICKER_SPEED = 1.2;
 async function loadTickerNews() {
   try {
-    const { data, error } = await db.from('posts').select('title, url').eq('room', 'ticker').order('id', { ascending: false }).limit(15);
-    if (error) throw error;
-    tickerItems = (data && data.length) ? data.map(item => ({ text: item.title, url: item.url })) : [{ text: '📢 لا توجد أخبار حالياً', url: null }];
-    buildTickerTrack();
-    startTickerAnimation();
-  } catch(e) { console.error(e); tickerItems = [{ text: '⚠️ فشل تحميل الأخبار', url: null }]; buildTickerTrack(); startTickerAnimation(); }
+    const [liveRes, vidRes] = await Promise.all([
+      db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
+      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8)
+    ]);
+    let items = [];
+    for (const p of (liveRes.data||[])) {
+      const t = (p.tag||'').toLowerCase();
+      const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? '⏰ قريباً' : '📡';
+      items.push({ text: icon + ': ' + (p.title||''), url: p.url });
+    }
+    for (const p of (vidRes.data||[])) items.push({ text: '🎬 ' + (p.title||''), url: p.url });
+    tickerItems = items.length ? items : [{ text: '🎮 مرحباً في Virtux', url: null }];
+  } catch(e) {
+    tickerItems = [{ text: '🎮 مرحباً في Virtux', url: null }];
+  }
+  buildTickerTrack();
 }
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
+  if (tickerAnimationIdLocal) { cancelAnimationFrame(tickerAnimationIdLocal); tickerAnimationIdLocal = null; }
   track.innerHTML = '';
-  [...tickerItems, ...tickerItems].forEach(item => {
+  if (!tickerItems.length) return;
+  [...tickerItems, ...tickerItems, ...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
-    if (item.url) { const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.textContent = `📢 ${item.text}`; span.appendChild(a); }
-    else span.textContent = `📢 ${item.text}`;
+    if (item.url) {
+      const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = item.text; span.appendChild(a);
+    } else { span.textContent = item.text; }
     track.appendChild(span);
   });
-  const scrollDiv = document.getElementById('tickerScroll');
-  if (scrollDiv) tickerContainerWidth = scrollDiv.clientWidth;
-  const halfCount = tickerItems.length;
-  let originalWidth = 0;
-  const children = Array.from(track.children);
-  for (let i = 0; i < halfCount; i++) if (children[i]) originalWidth += children[i].offsetWidth + 60;
-  tickerPosition = tickerContainerWidth;
-  track.style.transform = `translateX(${tickerPosition}px)`;
-  window.tickerHalfWidth = originalWidth;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const scrollDiv = document.getElementById('tickerScroll');
+      tickerContainerWidth = scrollDiv ? scrollDiv.clientWidth : 800;
+      const children = Array.from(track.children);
+      const third = Math.ceil(children.length / 3);
+      let w = 0;
+      for (let i = 0; i < third; i++) w += children[i] ? children[i].getBoundingClientRect().width : 0;
+      tickerHalfWidth = w > 10 ? w : 800;
+      tickerPosition = tickerContainerWidth;
+      track.style.transform = 'translateX(' + tickerPosition + 'px)';
+      startTickerAnimation();
+    });
+  });
 }
 function startTickerAnimation() {
-  if (tickerAnimationIdLocal) cancelAnimationFrame(tickerAnimationIdLocal);
+  if (tickerAnimationIdLocal) { cancelAnimationFrame(tickerAnimationIdLocal); tickerAnimationIdLocal = null; }
   const track = document.getElementById('tickerTrack');
-  if (!track) return;
+  if (!track || tickerHalfWidth <= 0) return;
   function animate() {
     tickerPosition -= TICKER_SPEED;
-    track.style.transform = `translateX(${tickerPosition}px)`;
-    if (tickerPosition <= -window.tickerHalfWidth) { tickerPosition += window.tickerHalfWidth; track.style.transform = `translateX(${tickerPosition}px)`; }
+    if (tickerPosition <= -tickerHalfWidth) tickerPosition += tickerHalfWidth;
+    track.style.transform = 'translateX(' + tickerPosition + 'px)';
     tickerAnimationIdLocal = requestAnimationFrame(animate);
   }
   animate();
 }
 
 window.deletePost = deletePost;
+
+// ══════════════════════════════════════════════════════════════
+// 📺 HOME CHANNEL PANEL — carousel
+// ══════════════════════════════════════════════════════════════
+(function(){
+  function ytId(url){ if(!url) return null; const m=url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
+  function buildCarousel(wrap,items,renderFn){
+    if(!items||!items.length){ wrap.innerHTML='<div class="hc-empty">لا يوجد محتوى حالياً</div>'; return; }
+    const track=document.createElement('div'); track.className='hc-track';
+    items.forEach(it=>{ const sl=document.createElement('div'); sl.className='hc-slide'; sl.innerHTML=renderFn(it); track.appendChild(sl); });
+    const nav=document.createElement('div'); nav.className='hc-nav';
+    const dotsEl=document.createElement('div'); dotsEl.className='hc-dots';
+    items.forEach((_,i)=>{ const d=document.createElement('div'); d.className='hc-dot'+(i===0?' active':''); dotsEl.appendChild(d); });
+    const prev=document.createElement('div'); prev.className='hc-btn'; prev.innerHTML='&#8249;'; prev.title='السابق';
+    const next=document.createElement('div'); next.className='hc-btn'; next.innerHTML='&#8250;'; next.title='التالي';
+    nav.appendChild(dotsEl); nav.appendChild(prev); nav.appendChild(next);
+    wrap.innerHTML=''; wrap.appendChild(track); wrap.appendChild(nav);
+    let cur=0; const total=items.length;
+    const dots=dotsEl.querySelectorAll('.hc-dot');
+    function go(n){ cur=((n%total)+total)%total; track.style.transform=`translateX(-${cur*100}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===cur)); }
+    prev.onclick=()=>go(cur-1); next.onclick=()=>go(cur+1);
+    let iv=setInterval(()=>go(cur+1),6000);
+    wrap.addEventListener('mouseenter',()=>clearInterval(iv));
+    wrap.addEventListener('mouseleave',()=>{ iv=setInterval(()=>go(cur+1),6000); });
+    let tx=0;
+    wrap.addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; },{passive:true});
+    wrap.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx; if(Math.abs(dx)>40) go(cur+(dx<0?1:-1)); });
+  }
+  function renderLive(p){
+    const vid=ytId(p.url); const tag=(p.tag||'').toLowerCase();
+    const isLive=tag.includes('live'); const isSoon=tag.includes('pre')||tag.includes('upcoming');
+    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy">`:`<div class="hc-thumb-placeholder">🔴</div>`;
+    const badge=isLive?`<span class="hc-badge-live">🔴 LIVE</span>`:isSoon?`<span class="hc-badge-soon">⏰ قريباً</span>`:'';
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}${badge}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+  }
+  function renderVideo(p){
+    const vid=ytId(p.url);
+    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/hqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+  }
+  async function loadHomePanel(){
+    const liveEl=document.getElementById('hc-live');
+    const videosEl=document.getElementById('hc-videos');
+    if(!liveEl&&!videosEl) return;
+    try{
+      if(liveEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').order('id',{ascending:false}).limit(10); buildCarousel(liveEl,data||[],renderLive); }
+      if(videosEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').order('id',{ascending:false}).limit(12); buildCarousel(videosEl,data||[],renderVideo); }
+    }catch(e){
+      if(liveEl) liveEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
+      if(videosEl) videosEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
+    }
+  }
+  window.loadHomePanel=loadHomePanel;
+  const _orig=window.showPage;
+  window.showPage=function(room){ if(typeof _orig==='function') _orig(room); if(room==='home') setTimeout(loadHomePanel,80); };
+  document.addEventListener('DOMContentLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
+  // auto-refresh disabled to prevent freezing
+})();
+
+// ── Smart image framing ──
+window.applyImgClass = function(img){
+  const w=img.naturalWidth, h=img.naturalHeight;
+  if(!w||!h) return;
+  const r=w/h;
+  img.classList.remove('img-portrait','img-landscape','img-square');
+  if(r<0.8) img.classList.add('img-portrait');
+  else if(r>1.4) img.classList.add('img-landscape');
+  else img.classList.add('img-square');
+};
+
+// ── VIP Tournament Registration ──
+window.registerTournamentVIP = async function(postId, titleEncoded){
+  const title=decodeURIComponent(titleEncoded);
+  if(!window.currentUserId){ alert('⚠️ سجّل دخولك أولاً'); return; }
+  const ok=(window.userRoles||[]).some(r=>['vip','member','admin','moderator','youtuber_vip'].includes(r));
+  if(!ok){ alert('⛔ هذه البطولة للأعضاء المميزين فقط (VIP / Member)'); return; }
+  if(!confirm(`تأكيد التسجيل في: ${title}؟`)) return;
+  try{
+    const {error}=await db.from('tournament_registrations').insert({post_id:postId,user_id:window.currentUserId,username:window.currentUsername||''});
+    if(error){ if(error.code==='23505'){ alert('✅ أنت مسجّل مسبقاً'); return; } throw error; }
+    alert('✅ تم التسجيل بنجاح!');
+  }catch(e){ alert('❌ '+e.message); }
+};
+
 window.showPage = showPage;
 window.filterPosts = filterPosts;
 window.toggleDD = toggleDD;
 window.closeDD = closeDD;
 window.openUserPostModal = openUserPostModal;
 window.clearMediaForRoom = clearMediaForRoom;
-window.openYTVIPModal = function() { alert('VIP video posting is available in admin panel.'); };
+window.openYTVIPModal = function() {
+  // التحقق من الصلاحية
+  if (!window.currentUserId) {
+    alert('⚠️ يجب تسجيل الدخول أولاً');
+    return;
+  }
+  const allowed = (window.userRoles || []).some(r => ['admin','vip','youtuber','youtuber_vip','moderator'].includes(r));
+  if (!allowed) {
+    alert('⛔ هذا الزر مخصص لأصحاب رتبة Youtuber VIP فقط');
+    return;
+  }
+
+  let m = document.getElementById('ytvip-post-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'ytvip-post-modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.onclick = function(e){ if(e.target===m) m.style.display='none'; };
+    m.innerHTML = `
+      <div style="background:#13131f;border:1.5px solid #d4af37;border-radius:16px;padding:26px 22px;width:100%;max-width:500px;position:relative;box-shadow:0 0 40px rgba(212,175,55,0.15);">
+        <button onclick="document.getElementById('ytvip-post-modal').style.display='none'"
+          style="position:absolute;top:12px;left:14px;background:transparent;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="font-size:28px;margin-bottom:4px;">👑</div>
+          <h3 style="color:#d4af37;margin:0;font-size:17px;">نشر فيديو VIP</h3>
+          <p style="color:#777;font-size:12px;margin:6px 0 0;">يظهر فقط لأعضاء Member و VIP وما فوق</p>
+        </div>
+
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🔗 رابط يوتيوب *</label>
+        <input id="ytvip-url" type="text" placeholder="https://youtube.com/watch?v=..."
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;"
+          oninput="window.previewYTVIP(this.value)">
+
+        <div id="ytvip-preview" style="display:none;margin-bottom:12px;border-radius:8px;overflow:hidden;border:1px solid #2a2a3a;"></div>
+
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">📝 العنوان *</label>
+        <input id="ytvip-title" type="text" placeholder="عنوان الفيديو..."
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;">
+
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">💬 وصف (اختياري)</label>
+        <textarea id="ytvip-desc" placeholder="اكتب وصفاً..." rows="3"
+          style="width:100%;box-sizing:border-box;background:#0d0d1a;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:16px;resize:vertical;outline:none;"></textarea>
+
+        <button onclick="window.submitYTVIPPost()"
+          style="width:100%;background:linear-gradient(135deg,#d4af37,#b8962e);color:#000;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:15px;cursor:pointer;letter-spacing:0.5px;">
+          🚀 نشر الفيديو VIP
+        </button>
+        <div id="ytvip-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;min-height:18px;"></div>
+      </div>`;
+    document.body.appendChild(m);
+  }
+
+  // reset
+  m.style.display = 'flex';
+  document.getElementById('ytvip-url').value   = '';
+  document.getElementById('ytvip-title').value = '';
+  document.getElementById('ytvip-desc').value  = '';
+  document.getElementById('ytvip-status').textContent = '';
+  document.getElementById('ytvip-preview').style.display = 'none';
+};
+
+// معاينة مصغرة عند لصق رابط يوتيوب
+window.previewYTVIP = function(url) {
+  const prev = document.getElementById('ytvip-preview');
+  if (!prev) return;
+  const match = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  if (!match) { prev.style.display='none'; return; }
+  const vid = match[1];
+  prev.style.display = 'block';
+  prev.innerHTML = `<img src="https://img.youtube.com/vi/${vid}/hqdefault.jpg"
+    style="width:100%;display:block;border-radius:8px;">`;
+  // تعبئة تلقائية للعنوان إذا كان فارغاً
+  const titleEl = document.getElementById('ytvip-title');
+  if (titleEl && !titleEl.value) {
+    fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + vid + '&key=' + (window.YOUTUBE_API_KEY || ''))
+      .then(r=>r.json()).then(d=>{
+        if (d.items?.[0]?.snippet?.title && titleEl && !titleEl.value)
+          titleEl.value = d.items[0].snippet.title;
+      }).catch(()=>{});
+  }
+};
+
+window.submitYTVIPPost = async function() {
+  const url    = (document.getElementById('ytvip-url')?.value   || '').trim();
+  const title  = (document.getElementById('ytvip-title')?.value || '').trim();
+  const desc   = (document.getElementById('ytvip-desc')?.value  || '').trim();
+  const status = document.getElementById('ytvip-status');
+
+  if (!url)   { status.style.color='#f55'; status.textContent='⚠️ أدخل رابط يوتيوب'; return; }
+  if (!title) { status.style.color='#f55'; status.textContent='⚠️ أدخل عنواناً للفيديو'; return; }
+  if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+    status.style.color='#f55'; status.textContent='⚠️ الرابط يجب أن يكون من يوتيوب'; return;
+  }
+
+  const match = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  const thumb = match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : '';
+
+  status.style.color='#aaa'; status.textContent='⏳ جارٍ النشر...';
+  const btn = document.querySelector('#ytvip-post-modal button[onclick*="submitYTVIPPost"]');
+  if (btn) btn.disabled = true;
+
+  try {
+    const { error } = await db.from('posts').insert({
+      title:       title,
+      description: desc || window.currentUsername || '',
+      url:         url,
+      icon:        thumb || '👑',
+      tag:         'VIP',
+      room:        'yt-videos',
+      user_id:     window.currentUserId || null
+    });
+    if (error) throw error;
+    status.style.color = '#4caf90';
+    status.textContent = '✅ تم النشر بنجاح!';
+    setTimeout(() => {
+      document.getElementById('ytvip-post-modal').style.display = 'none';
+      if (window.currentRoom === 'yt-videos' || !window.currentRoom) loadPosts('yt-videos');
+    }, 1400);
+  } catch(e) {
+    status.style.color = '#f55';
+    status.textContent = '❌ ' + (e.message || 'حدث خطأ');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
 window.openTournamentsVIPModal = function() { alert('VIP tournament posting is available in admin panel.'); };
 
 // ==================== الملف الشخصي ====================
