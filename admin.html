@@ -634,13 +634,16 @@ function getAddForm(room) {
   } else if (room === 'yt-channels') {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"><textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
   } else if (room === 'subscribers') {
-    return `<div class="card"><h3>🔔 إضافة Youtuber (برابط)</h3>
-      <div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div>
-      <div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب"><select id="tag-${room}"><option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف" rows="2"></textarea></div>
-      <button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>
-      <div class="card"><h3>⭐ إضافة Member/Donor (من المستخدمين)</h3><div class="ok" id="ok-sub-user">✅ تمت!</div><div class="er" id="er-sub-user"></div>
-      <div class="fg"><input class="full" id="sub-user-search" placeholder="ابحث باسم المستخدم..." oninput="searchUsers(this.value)"><div class="full" id="user-search-results" style="background:#0a1540;border:1px solid #1e2d6b;border-radius:7px;max-height:180px;overflow-y:auto;display:none;"></div><input class="full" id="sub-user-selected" placeholder="المستخدم المختار..." readonly><input type="hidden" id="sub-user-id"><select id="sub-user-role"><option value="Member">⭐ Member</option><option value="Donor">🎁 Donor</option></select></div>
-      <button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة</button></div>`;
+    setTimeout(() => loadSubscribersAdmin(), 80);
+    return `<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <h3 style="margin:0;">👥 المستخدمون حسب الرتبة</h3>
+        <button class="btn-edit" onclick="loadSubscribersAdmin()" style="font-size:12px;padding:5px 14px;">🔄 تحديث</button>
+      </div>
+      <div id="subscribers-admin-view" style="margin-top:14px;">
+        <div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>
+      </div>
+    </div>`;
   } else if (room === 'yt-videos') {
     return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
   } else {
@@ -1100,7 +1103,7 @@ async function addUserSubscriber() { let userId = document.getElementById('sub-u
 
 // ربط الدوال
 window.startAutoCheck = startAutoCheck; window.autoCheckAllChannels = autoCheckAllChannels;
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
 </script>
 
 <script>
