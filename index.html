@@ -1638,7 +1638,7 @@ rooms.forEach(room => {
   let buttonsHtml = '';
   if (postableRooms.includes(room)) {
     buttonsHtml = `<div class="post-actions">
-      <button class="btn-user-post" data-room="${room}" onclick="window.openUserModal('${room}')">➕ نشر</button>
+      <button class="btn-user-post" data-room="${room}" onclick="window.openUserModal('${room}')">➕ ${window.t('نشر','Post')}</button>
       ${room === 'yt-videos' ? `<button class="btn-ytvip-post" id="btn-ytvip-${room}" onclick="window.openYTVIPModal()" style="display:none;">👑 نشر فيديو VIP</button>` : ''}
       ${room === 'tournaments' ? `<button class="btn-ytvip-post" id="btn-vip-tournaments" onclick="window.openTournamentsVIPModal()" style="display:none;">👑 نشر بطولة VIP</button>` : ''}
     </div>`;
@@ -1654,13 +1654,13 @@ rooms.forEach(room => {
 const contactPage = document.createElement('div');
 contactPage.className = 'vx-page';
 contactPage.id = 'page-contact';
-contactPage.innerHTML = `<div class="page-header"><h2>📞 التواصل Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card" onclick="window.open('https://discord.gg/45fJNmww6D','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/45fJNmww6D</div></div><div class="contact-card" onclick="window.location.href='mailto:menouer.rayane310201@gmail.com'"><div class="cc-icon">📧</div><div class="cc-name">البريد الإلكتروني</div><div class="cc-handle" style="font-size:10px;word-break:break-all;">menouer.rayane310201@gmail.com</div></div></div></div>`;
+contactPage.innerHTML = `<div class="page-header"><h2>📞 ${window.t("التواصل","Contact")} Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card" onclick="window.open('https://discord.gg/45fJNmww6D','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/45fJNmww6D</div></div><div class="contact-card" onclick="window.location.href='mailto:menouer.rayane310201@gmail.com'"><div class="cc-icon">📧</div><div class="cc-name">${window.t("البريد الإلكتروني","Email")}</div><div class="cc-handle" style="font-size:10px;word-break:break-all;">menouer.rayane310201@gmail.com</div></div></div></div>`;
 mainContainer.appendChild(contactPage);
 
 async function loadPage(room) {
   const el = document.getElementById(`grid-${room}`);
   if (!el) return;
-  el.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
+  el.innerHTML = `<div class="loading-state">${window.t('جاري التحميل...','Loading...')}</div>`;
   try {
     const { data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false });
     if (error) throw error;
@@ -1693,7 +1693,7 @@ function renderCards(posts, gridId, room) {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
       let subText = p.description || '';
       if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
       return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div></div>${link}</div>`;
@@ -1727,11 +1727,11 @@ function renderCards(posts, gridId, room) {
         media = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
       else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
-      else media = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'مباشر Now' ? '<div class="live-badge">مباشر</div>' : ''}</div>`;
+      else media = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'مباشر Now' ? `<div class="live-badge">\${window.t('مباشر','LIVE')}</div>` : ''}</div>`;
     }
     let summary = (p.content || p.description || '').substring(0,150);
     if ((p.content || '').length > 150) summary += '...';
-    const readMoreLink = (p.content && room !== 'yt-videos') ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
+    const readMoreLink = (p.content && room !== 'yt-videos') ? `<a href="post.html?id=${p.id}" class="read-more">📖 \${window.t("اقرأ المزيد","Read More")}</a>` : '';
     let actions = '';
     if (!isRestricted && p.url) {
       const isStorageFile = p.url.includes('/storage/v1/object/public/');
@@ -1739,18 +1739,18 @@ function renderCards(posts, gridId, room) {
       const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
       const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
       if (isVideoFile || isImageFile) {
-        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ تحميل</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ \${window.t("تحميل","Download")}</a>`;
       } else if (!isYouTubeUrl) {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 رابط</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 \${window.t("رابط","Link")}</a>`;
       }
     }
     // زر تسجيل بطولة VIP
     let registerBtn = '';
     if (room === 'tournaments' && isVIP(p)) {
       if (canViewVIP) {
-        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">🏆 تسجيل</button>`;
+        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">\${window.t("🏆 تسجيل","🏆 Register")}</button>`;
       } else {
-        registerBtn = `<span style="color:#888;font-size:11px;">🔒 VIP فقط</span>`;
+        registerBtn = `<span style="color:#888;font-size:11px;">\${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
       }
     }
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
@@ -1802,7 +1802,7 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
         const badge = topRoleDef
           ? `<span style="font-size:10px;background:${topRoleDef.bg};color:${topRoleDef.color};border:1px solid ${topRoleDef.color};border-radius:4px;padding:1px 6px;">${topRoleDef.short}</span>`
           : '';
-        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
         if (roleFilter && def.key !== roleFilter) return;
@@ -1822,7 +1822,7 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
     const youtuberCards = posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
       let subText = p.description || '';
       if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
       const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
@@ -1830,14 +1830,14 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
     }).join('');
     youtuberHtml = `
       <div style="margin:24px 0 12px 0;padding:10px 14px;background:#1a0000;border-left:4px solid #e01010;border-radius:6px;">
-        <h3 style="color:#e01010;margin:0;font-size:16px;">📺 قنوات يوتيوب</h3>
+        <h3 style="color:#e01010;margin:0;font-size:16px;">${window.t("📺 قنوات يوتيوب","📺 YouTube Channels")}</h3>
       </div>
       <div class="channels-grid">${youtuberCards}</div>
     `;
   }
 
   el.innerHTML = ((groupedHtml + youtuberHtml) ||
-    '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
+    window.t('<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد</div>','<div style="text-align:center;color:#888;padding:30px;">No subscribers yet.</div>'));
 }
 
 window.filterSubscribers = function(roleKey, btn) {
@@ -1847,6 +1847,17 @@ window.filterSubscribers = function(roleKey, btn) {
   }
   const el = document.getElementById('grid-subscribers');
   if (!el) return;
+  loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
+};
+
+window.filterSubscribers = function(roleKey, btn) {
+  if (btn && btn.closest('.filter-bar')) {
+    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const el = document.getElementById('grid-subscribers');
+  if (!el) return;
+  window._subscribersRoleFilter = roleKey || '';
   loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
 };
 
@@ -2314,7 +2325,7 @@ window.submitYTVIP = async function() {
 };
 // ==================== VIP TOURNAMENT POST MODAL ====================
 window.openTournamentsVIPModal = function() {
-  const allowed = (window.userRoles || []).some(r => ['admin','vip','youtuber_vip','moderator'].includes(r));
+  const allowed = (window.userRoles || []).some(r => ['admin','vip'].includes(r));
   if (!allowed) { alert('⛔ زر مخصص لأصحاب رتبة VIP فقط'); return; }
 
   let m = document.getElementById('vip-tour-modal');
@@ -2599,38 +2610,10 @@ window.confirmDeleteAccount = async function() {
 
 // ==================== نظام الترجمة EN/AR ====================
 window._siteLanguage = 'ar';
-window._translations = {
-  // Topbar / Navbar
-  'الأخبار ▾': 'News ▾',
-  'يوتيوب ▾': 'YouTube ▾',
-  '📢 الإعلانات ▾': '📢 Announcements ▾',
-  '📰 أخبار الألعاب': '📰 Gaming News',
-  '▶️ أخبار يوتيوب': '▶️ YouTube News',
-  '📺 القنوات': '📺 Channels',
-  '🎬 الفيديوهات': '🎬 Videos',
-  '🌐 التعاون': '🌐 Collaboration',
-  'تسجيل الدخول': 'Login',
-  // Sidebar
-  '🏠 الرئيسية': '🏠 Home',
-  'المحتوى': 'Content',
-  '🔴 live المباشر': '🔴 Live',
-  '🏆 البطولات': '🏆 Tournaments',
-  '🎬 أبرز اللحظات': '🎬 Highlights',
-  'المجتمع': 'Community',
-  '👥 المشتركون': '👥 Subscribers',
-  '📞 التواصل': '📞 Contact',
-  // Home
-  'مرحباً بك في Virtux': 'Welcome to Virtux',
-  // Profile modal
-  '👤 الملف الشخصي': '👤 Profile',
-  'خروج': 'Logout',
-  '🗑️ حذف الحساب نهائياً': '🗑️ Delete Account Permanently',
-  '💾 حفظ التغييرات': '💾 Save Changes',
-  'إغلاق': 'Close',
-  // Ticker
-  'مباشر': 'LIVE',
-  // Page headers
-  '📰 أخبار الألعاب': '📰 Gaming News',
+
+// دالة مساعدة تُرجع النص حسب اللغة الحالية
+window.t = function(ar, en) {
+  return window._siteLanguage === 'en' ? en : ar;
 };
 
 window.toggleLanguage = function() {
@@ -2641,51 +2624,164 @@ window.toggleLanguage = function() {
     document.documentElement.dir = 'ltr';
     document.body.style.direction = 'ltr';
     if (btn) btn.textContent = '🌐 AR';
-    applyTranslations('en');
   } else {
     window._siteLanguage = 'ar';
     document.documentElement.lang = 'ar';
     document.documentElement.dir = 'rtl';
     document.body.style.direction = 'rtl';
     if (btn) btn.textContent = '🌐 EN';
-    applyTranslations('ar');
+  }
+  applyTranslations();
+  // إعادة بناء كل الغرف المحملة
+  if (window.allPosts) {
+    Object.keys(window.allPosts).forEach(room => {
+      const el = document.getElementById('grid-' + room);
+      if (el && window.allPosts[room]?.length) {
+        if (room === 'subscribers' || room === 'yt-channels') {
+          loadSubscribersWithVIP(el, window.allPosts[room] || [], window._subscribersRoleFilter || '');
+        } else {
+          renderCards(window.allPosts[room], 'grid-' + room, room);
+        }
+      }
+    });
+    // إعادة بناء filter bars
+    document.querySelectorAll('.vx-page').forEach(page => {
+      const room = page.id.replace('page-','');
+      rebuildFilterBar(room);
+    });
   }
 };
 
-function applyTranslations(lang) {
-  const t = window._translations;
-  const isEN = lang === 'en';
-  // Translate text nodes that match our dictionary
-  function translateEl(el) {
-    if (!el) return;
-    const txt = el.textContent?.trim();
-    if (isEN && t[txt]) { el.textContent = t[txt]; }
-    else if (!isEN) {
-      const arKey = Object.keys(t).find(k => t[k] === txt);
-      if (arKey) el.textContent = arKey;
-    }
+function rebuildFilterBar(room) {
+  const page = document.getElementById('page-' + room);
+  if (!page) return;
+  const existing = page.querySelector('.filter-bar');
+  if (!existing) return;
+  const isEN = window._siteLanguage === 'en';
+  let newBar = '';
+  if (room === 'live') {
+    newBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('live','',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button>
+    </div>`;
+  } else if (room === 'tournaments') {
+    newBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">${isEN?'Register':'تسجيل'}</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">${isEN?'Global':'عالمي'}</button>
+      <button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button>
+    </div>`;
+  } else if (room === 'highlights') {
+    newBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button>
+      <button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button>
+    </div>`;
+  } else if (room === 'subscribers') {
+    newBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button>
+    </div>`;
   }
-  // Buttons & links in topnav
-  document.querySelectorAll('.dd-btn, .dd-menu a, .sb-btn, .sb-section').forEach(translateEl);
-  // Auth buttons
-  translateEl(document.getElementById('btn-login-link'));
+  if (newBar) existing.outerHTML = newBar;
+}
+
+function applyTranslations() {
+  const isEN = window._siteLanguage === 'en';
+
+  // Topbar dropdowns
+  const ddMap = {
+    'الأخبار ▾':'News ▾','يوتيوب ▾':'YouTube ▾','📢 الإعلانات ▾':'📢 Announcements ▾',
+    '📰 أخبار الألعاب':'📰 Gaming News','▶️ أخبار يوتيوب':'▶️ YouTube News',
+    '📺 القنوات':'📺 Channels','🎬 الفيديوهات':'🎬 Videos','🌐 التعاون':'🌐 Collaboration',
+    'تسجيل الدخول':'Login'
+  };
+  document.querySelectorAll('.dd-btn, .dd-menu a').forEach(el => {
+    const txt = el.textContent.trim();
+    if (isEN && ddMap[txt]) el.textContent = ddMap[txt];
+    else if (!isEN) { const k = Object.keys(ddMap).find(k=>ddMap[k]===txt); if(k) el.textContent=k; }
+  });
+
+  // Sidebar
+  const sbMap = {
+    '🏠 الرئيسية':'🏠 Home','المحتوى':'Content','🔴 live المباشر':'🔴 Live',
+    '🏆 البطولات':'🏆 Tournaments','🎬 أبرز اللحظات':'🎬 Highlights',
+    'المجتمع':'Community','👥 المشتركون':'👥 Subscribers','📞 التواصل':'📞 Contact'
+  };
+  document.querySelectorAll('.sb-btn, .sb-section').forEach(el => {
+    const txt = el.textContent.trim();
+    if (isEN && sbMap[txt]) el.textContent = sbMap[txt];
+    else if (!isEN) { const k = Object.keys(sbMap).find(k=>sbMap[k]===txt); if(k) el.textContent=k; }
+  });
+
+  // Auth
+  const loginBtn = document.getElementById('btn-login-link');
+  if (loginBtn) loginBtn.textContent = isEN ? 'Login' : 'تسجيل الدخول';
   const logoutBtn = document.getElementById('logoutButton');
   if (logoutBtn) logoutBtn.textContent = isEN ? 'Logout' : 'خروج';
   const profileBtn = document.getElementById('profileButton');
   if (profileBtn) profileBtn.textContent = isEN ? '👤 Profile' : '👤 الملف الشخصي';
-  // Welcome
+
+  // Home welcome
   const welcome = document.querySelector('.home-welcome');
   if (welcome) welcome.textContent = isEN ? 'Welcome to Virtux' : 'مرحباً بك في Virtux';
-  // Ticker label
+
+  // Ticker
   const tickerLabel = document.querySelector('.ticker-label');
   if (tickerLabel) tickerLabel.textContent = isEN ? 'LIVE' : 'مباشر';
-  // Profile modal buttons
+
+  // Profile modal
   const saveBtn = document.getElementById('save Btn');
   if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
   const closeBtn = document.getElementById('close Btn');
   if (closeBtn) closeBtn.textContent = isEN ? 'Close' : 'إغلاق';
   const delBtn = document.getElementById('deleteAccountBtn');
   if (delBtn && !delBtn.disabled) delBtn.textContent = isEN ? '🗑️ Delete Account Permanently' : '🗑️ حذف الحساب نهائياً';
+
+  // Page headers & post buttons
+  const roomLabelsEN = {
+    live:'🔴 Live Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
+    subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News',
+    'youtube-news':'▶️ YouTube News', 'yt-channels':'📺 Youtube Channels',
+    'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
+  };
+  const roomLabelsAR = {
+    live:'🔴 مباشر Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
+    subscribers:'👥 Subscribers', 'gaming-news':'📰 أخبار الألعاب',
+    'youtube-news':'▶️ أخبار يوتيوب', 'yt-channels':'📺 Youtube Channels',
+    'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
+  };
+  document.querySelectorAll('.vx-page').forEach(page => {
+    const room = page.id.replace('page-','');
+    const h2 = page.querySelector('.page-header h2');
+    if (h2) h2.textContent = isEN ? (roomLabelsEN[room]||room) : (roomLabelsAR[room]||room);
+    // نشر button
+    const postBtn = page.querySelector('.btn-user-post');
+    if (postBtn) postBtn.textContent = isEN ? '➕ Post' : '➕ نشر';
+    const vipVideoBtn = page.querySelector('.btn-ytvip-post[id^="btn-ytvip"]');
+    if (vipVideoBtn) vipVideoBtn.textContent = isEN ? '👑 Post VIP Video' : '👑 نشر فيديو VIP';
+    const vipTourBtn = page.querySelector('#btn-vip-tournaments');
+    if (vipTourBtn) vipTourBtn.textContent = isEN ? '👑 Post VIP Tournament' : '👑 نشر بطولة VIP';
+  });
+
+  // Contact page
+  const emailLabel = document.querySelector('.cc-name');
+  // يُعالج في إعادة بناء الصفحة
+
+  // Loading states
+  document.querySelectorAll('.loading-state').forEach(el => {
+    el.textContent = isEN ? 'Loading...' : 'جاري التحميل...';
+  });
 }
 
 loadTicker();
