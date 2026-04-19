@@ -1257,18 +1257,34 @@ async function uploadMediaFile(file, userId) {
 }
 
 async function uploadAvatar(file, userId) {
+  // التحقق من نوع وحجم الملف
+  const allowed = ['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/svg+xml'];
+  if (!allowed.includes(file.type)) throw new Error('نوع الملف غير مدعوم. استخدم JPG أو PNG أو WebP.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('حجم الصورة يجب أن يكون أقل من 5MB.');
+
+  // التحقق من وجود bucket
   try {
-    const { data: buckets } = await db.storage.listBuckets();
+    const { data: buckets, error: buckErr } = await db.storage.listBuckets();
+    if (buckErr) throw buckErr;
     const bucketExists = buckets?.some(b => b.name === 'avatars');
-    if (!bucketExists) throw new Error('Bucket "avatars" غير موجود.');
-  } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
-  const ext = file.name.split('.').pop();
-  const fileName = `${userId}-${Date.now()}.${ext}`;
-  const filePath = `avatars/${fileName}`;
-  const { error } = await db.storage.from('avatars').upload(filePath, file);
-  if (error) throw error;
-  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath);
-  return publicUrl;
+    if (!bucketExists) throw new Error('Bucket "avatars" غير موجود في Supabase Storage.');
+  } catch(e) {
+    throw new Error('فشل التحقق من التخزين: ' + (e.message || e));
+  }
+
+  const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+  // المسار مباشرة بدون تكرار اسم الـ bucket
+  const filePath = `${userId}-${Date.now()}.${ext}`;
+
+  const { error: upErr } = await db.storage.from('avatars').upload(filePath, file, {
+    upsert: true,
+    contentType: file.type
+  });
+  if (upErr) throw new Error('فشل الرفع: ' + (upErr.message || upErr));
+
+  const { data: urlData } = db.storage.from('avatars').getPublicUrl(filePath);
+  if (!urlData?.publicUrl) throw new Error('فشل الحصول على رابط الصورة.');
+  return urlData.publicUrl;
 }
 
 // ==================== دوال النشر ====================
@@ -2501,24 +2517,34 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
 
   try {
     const publicUrl = await uploadAvatar(file, window.currentUserId);
-    await db.from('profiles').update({ avatar_url: publicUrl }).eq('id', window.currentUserId);
 
+    const { error: dbErr } = await db.from('profiles').update({ avatar_url: publicUrl }).eq('id', window.currentUserId);
+    if (dbErr) throw new Error('تم رفع الصورة لكن فشل حفظها في قاعدة البيانات: ' + dbErr.message);
+
+    // تحديث صورة modal الملف الشخصي
     const avatarImg = document.getElementById('profileAvatarImg');
     const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
-    avatarImg.src = publicUrl;
-    avatarImg.style.display = 'inline-block';
-    avatarPlaceholder.style.display = 'none';
+    if (avatarImg) {
+      avatarImg.src = publicUrl + '?t=' + Date.now(); // تجنب cache
+      avatarImg.style.display = 'inline-block';
+    }
+    if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
 
+    // تحديث صورة الهيدر
     const headerAvatar = document.getElementById('user-avatar-img');
     if (headerAvatar) {
-      headerAvatar.src = publicUrl;
+      headerAvatar.src = publicUrl + '?t=' + Date.now();
       headerAvatar.style.display = 'inline-block';
     }
+
+    changeBtn.textContent = '✅ تم الرفع!';
+    setTimeout(() => { changeBtn.textContent = originalText; }, 2000);
   } catch(e) {
     alert('❌ فشل رفع الصورة: ' + (e.message || e));
+    changeBtn.textContent = originalText;
   } finally {
     changeBtn.disabled = false;
-    changeBtn.textContent = originalText;
+    e.target.value = ''; // إعادة ضبط input للسماح برفع نفس الملف مجدداً
   }
 });
 
