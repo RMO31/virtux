@@ -1257,16 +1257,18 @@ async function uploadMediaFile(file, userId) {
 }
 
 async function uploadAvatar(file, userId) {
-  const allowed = ['image/jpeg','image/png','image/gif','image/webp','image/bmp','image/svg+xml'];
-  if (!allowed.includes(file.type)) throw new Error('نوع الملف غير مدعوم. استخدم JPG أو PNG أو WebP.');
-  if (file.size > 5 * 1024 * 1024) throw new Error('حجم الصورة يجب أن يكون أقل من 5MB.');
-  const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
-  const filePath = `avatars/${userId}-${Date.now()}.${ext}`;
-  const { error: upErr } = await db.storage.from('posts-media').upload(filePath, file, { upsert: true, contentType: file.type });
-  if (upErr) throw new Error('فشل الرفع: ' + (upErr.message || upErr));
-  const { data: urlData } = db.storage.from('posts-media').getPublicUrl(filePath);
-  if (!urlData?.publicUrl) throw new Error('فشل الحصول على رابط الصورة.');
-  return urlData.publicUrl;
+  try {
+    const { data: buckets } = await db.storage.listBuckets();
+    const bucketExists = buckets?.some(b => b.name === 'avatars');
+    if (!bucketExists) throw new Error('Bucket "avatars" غير موجود.');
+  } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
+  const ext = file.name.split('.').pop();
+  const fileName = `${userId}-${Date.now()}.${ext}`;
+  const filePath = `avatars/${fileName}`;
+  const { error } = await db.storage.from('avatars').upload(filePath, file);
+  if (error) throw error;
+  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath);
+  return publicUrl;
 }
 
 // ==================== دوال النشر ====================
@@ -1724,7 +1726,7 @@ function renderCards(posts, gridId, room) {
     }
     let summary = (p.content || p.description || '').substring(0,150);
     if ((p.content || '').length > 150) summary += '...';
-    const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
+    const readMoreLink = (p.content && room !== 'yt-videos') ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
     let actions = '';
     if (!isRestricted && p.url) {
       const isStorageFile = p.url.includes('/storage/v1/object/public/');
