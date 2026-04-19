@@ -1184,23 +1184,30 @@ function bindLiveUrlAutofill() {
 window.ALL_ROLES = ['admin','vip','member','moderator','youtuber','user'];
 function normalizeRoles(profile) {
   if (!profile) return ['guest'];
+  const collected = new Set();
+
+  // 1. قراءة roles (array أو JSON string أو comma-separated)
   let raw = profile.roles;
-  // إذا كانت سترينغ JSON
-  if (typeof raw === 'string') {
+  if (typeof raw === 'string' && raw.trim()) {
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) raw = parsed;
-      else raw = raw.split(',').map(s => s.trim()).filter(Boolean);
+      if (Array.isArray(parsed)) parsed.forEach(r => r && collected.add(String(r).toLowerCase().trim()));
+      else raw.split(',').forEach(r => r.trim() && collected.add(r.trim().toLowerCase()));
     } catch(e) {
-      raw = raw.split(',').map(s => s.trim()).filter(Boolean);
+      raw.split(',').forEach(r => r.trim() && collected.add(r.trim().toLowerCase()));
     }
+  } else if (Array.isArray(raw)) {
+    raw.forEach(r => r && collected.add(String(r).toLowerCase().trim()));
   }
-  if (Array.isArray(raw) && raw.length) {
-    const cleaned = raw.map(r => String(r).toLowerCase().trim()).filter(Boolean);
-    if (cleaned.length) return cleaned;
+
+  // 2. قراءة role (string واحد)
+  if (profile.role && String(profile.role).trim()) {
+    collected.add(String(profile.role).toLowerCase().trim());
   }
-  if (profile.role) return [String(profile.role).toLowerCase().trim()];
-  return ['user'];
+
+  // 3. إزالة القيم الفارغة أو guest
+  const result = [...collected].filter(r => r && r !== 'guest');
+  return result.length ? result : ['user'];
 }
 function userHasRole(role) {
   const roles = window.userRoles || [];
@@ -1839,12 +1846,20 @@ function renderCards(posts, gridId, room) {
 async function loadSubscribersWithVIP(el, posts) {
   let groupedHtml = '';
   try {
-    let { data: vipUsers, error } = await db.from('profiles')
-      .select('username, avatar_url, role, roles')
-      .order('created_at', { ascending: false });
-    if (error) {
-      const fb = await db.from('profiles').select('username, avatar_url, role').order('created_at',{ascending:false});
-      vipUsers = fb.data;
+    // محاولة مع roles أولاً
+    let vipUsers = null;
+    try {
+      const { data, error } = await db.from('profiles')
+        .select('username, avatar_url, role, roles')
+        .order('created_at', { ascending: false });
+      if (!error && data) vipUsers = data;
+    } catch(_) {}
+    // إذا فشل أو كان فارغاً جرب بدون roles
+    if (!vipUsers || !vipUsers.length) {
+      const { data: data2 } = await db.from('profiles')
+        .select('username, avatar_url, role')
+        .order('created_at', { ascending: false });
+      if (data2) vipUsers = data2;
     }
     if (vipUsers && vipUsers.length) {
       const ROLE_DEFS = [
@@ -1859,23 +1874,28 @@ async function loadSubscribersWithVIP(el, posts) {
       const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','user'];
       const getTopRole = u => { const rs = normalizeRoles(u); return ROLE_PRIORITY.find(r => rs.includes(r)) || 'user'; };
       // كل رتب المستخدم (للعرض)
-      const getUserRoles = u => normalizeRoles(u).filter(r => ROLE_PRIORITY.includes(r));
+      const getUserRoles = u => {
+        const roles = normalizeRoles(u);
+        const filtered = roles.filter(r => ROLE_PRIORITY.includes(r));
+        return filtered.length ? filtered : ['user'];
+      };
 
       const roleRow = (u) => {
-        const topDef = ROLE_DEFS.find(d => d.key === getTopRole(u));
+        const topDef = ROLE_DEFS.find(d => d.key === getTopRole(u)) || ROLE_DEFS[ROLE_DEFS.length-1];
         const userRoles = getUserRoles(u);
         const badges = userRoles.map(r => {
           const d = ROLE_DEFS.find(x => x.key === r);
           if (!d) return '';
-          return `<span style="font-size:10px;background:${d.bg};color:${d.color};border:1px solid ${d.color};border-radius:3px;padding:1px 6px;white-space:nowrap;">${d.short}</span>`;
+          return `<span style="font-size:10px;background:${d.bg};color:${d.color};border:1px solid ${d.color};border-radius:4px;padding:2px 7px;white-space:nowrap;font-weight:600;">${d.short}</span>`;
         }).join('');
+        const avatarBorder = topDef.color;
         const avatar = u.avatar_url
-          ? `<img src="${escapeHtml(u.avatar_url)}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid ${topDef?.color||'#444'};flex-shrink:0;">`
-          : `<div style="width:38px;height:38px;border-radius:50%;background:#1a0000;border:2px solid ${topDef?.color||'#444'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>`;
-        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;transition:background .15s;" onmouseenter="this.style.background='#150000'" onmouseleave="this.style.background='transparent'">
+          ? `<img src="${escapeHtml(u.avatar_url)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid ${avatarBorder};flex-shrink:0;">`
+          : `<div style="width:40px;height:40px;border-radius:50%;background:#1a0000;border:2px solid ${avatarBorder};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">👤</div>`;
+        return `<div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:8px;transition:background .15s;border-bottom:1px solid #150000;" onmouseenter="this.style.background='#120000'" onmouseleave="this.style.background='transparent'">
           ${avatar}
-          <span style="color:#ddd;font-size:13px;font-weight:600;min-width:100px;">${escapeHtml(u.username||'مستخدم')}</span>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">${badges}</div>
+          <span style="color:#eee;font-size:13px;font-weight:600;flex:1;min-width:80px;">${escapeHtml(u.username||'مستخدم')}</span>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">${badges||'<span style="font-size:10px;color:#555;">USER</span>'}</div>
         </div>`;
       };
 
@@ -2037,7 +2057,7 @@ document.getElementById('confirmUsernameBtn')?.addEventListener('click', async (
   if (!pendingGoogleUser) return;
   const { data: existing } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
   if (existing) { document.getElementById('usernameError').innerText = 'اسم المستخدم موجود بالفعل'; return; }
-  const { error } = await db.from('profiles').insert({ id: pendingGoogleUser.id, username: username, email: pendingGoogleUser.email, role: 'user', created_at: new Date().toISOString() });
+  const { error } = await db.from('profiles').insert({ id: pendingGoogleUser.id, username: username, email: pendingGoogleUser.email, role: 'user', roles: ['user'], created_at: new Date().toISOString() });
   if (error) { document.getElementById('usernameError').innerText = 'حدث خطأ أثناء حفظ الاسم'; return; }
   document.getElementById('usernameModal').classList.remove('active');
   pendingGoogleUser = null;
@@ -2079,7 +2099,7 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   try {
     const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
     if (error) throw error;
-    await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user', created_at: new Date().toISOString() });
+    await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user', roles: ['user'], created_at: new Date().toISOString() });
     alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول.');
     document.getElementById('switchTo الدخول').click();
     document.getElementById('loginIdentifier').value = username;
