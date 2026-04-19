@@ -1642,7 +1642,7 @@ rooms.forEach(room => {
   if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">مباشر Now</button><button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
   else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">تسجيل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">عالمي</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
   else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
-  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button><button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button></div>`;
+  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">الكل</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button></div>`;
   pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${buttonsHtml}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
   mainContainer.appendChild(pageDiv);
 });
@@ -1755,11 +1755,11 @@ function renderCards(posts, gridId, room) {
     const deleteBtn = (isOwner || isAdmin)
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
       : '';
-    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn||''}${readMoreLink}${deleteBtn}</div></div></div></div>`;
+    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
-async function loadSubscribersWithVIP(el, posts) {
+async function loadSubscribersWithVIP(el, posts, roleFilter) {
   let groupedHtml = '';
   let debugInfo = '';
   try {
@@ -1783,14 +1783,14 @@ async function loadSubscribersWithVIP(el, posts) {
         { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
         { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#e01010', bg: '#1a0000', border: '#e01010' },
         { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#cc2222', bg: '#100000', border: '#cc2222' },
+        { key: 'user',         title: '👤 المستخدمون',        short: 'USER',         color: '#888888', bg: '#111111', border: '#444444' },
       ];
       // ترتيب الأولوية من الأعلى إلى الأدنى
-      const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member'];
+      const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','user'];
       const getTopRole = (u) => {
         const rs = normalizeRoles(u);
-        // لا نعرض المستخدمين العاديين (user/guest) في صفحة المشتركين
         const found = ROLE_PRIORITY.find(r => rs.includes(r));
-        return found || null;
+        return found || 'user';
       };
       const userCard = (u, accentColor, topRoleDef) => {
         const avatar = u.avatar_url
@@ -1803,7 +1803,7 @@ async function loadSubscribersWithVIP(el, posts) {
         return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
-        // كل مستخدم يظهر في خانة رتبته الأعلى فقط — لا يظهر المستخدمون العاديون (user)
+        if (roleFilter && def.key !== roleFilter) return;
         const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
         if (!usersInRole.length) return;
         groupedHtml += `
@@ -1847,6 +1847,17 @@ async function loadSubscribersWithVIP(el, posts) {
   el.innerHTML = debugInfo + ((groupedHtml + youtuberHtml) ||
     '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
 }
+
+window.filterSubscribers = function(roleKey, btn) {
+  if (btn && btn.closest('.filter-bar')) {
+    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const el = document.getElementById('grid-subscribers');
+  if (!el) return;
+  window._subscribersRoleFilter = roleKey;
+  loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey);
+};
 
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
 let _currentPage = 'home';
