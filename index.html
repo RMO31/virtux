@@ -1802,7 +1802,11 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
       };
       ROLE_DEFS.forEach(def => {
         if (roleFilter && def.key !== roleFilter) return;
-        const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
+        const usersInRole = vipUsers.filter(u => {
+          const rs = normalizeRoles(u);
+          if (def.key === 'user') return rs.length === 0 || (rs.length === 1 && rs[0] === 'user');
+          return rs.includes(def.key);
+        });
         if (!usersInRole.length) return;
         groupedHtml += `<div class="channels-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
       });
