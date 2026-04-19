@@ -1075,14 +1075,14 @@ function bindLiveUrlAutofill() {
     const descInput = document.getElementById('desc-live');
 
     if (!lv) {
-      if (statusEl) statusEl.text = '';
+      if (statusEl) statusEl.textContent = '';
       renderLiveYouTubePreview(null);
       return;
     }
 
     if (statusEl) {
       statusEl.style.color = '#aaa';
-      statusEl.text = '⏳ جاري جلب المعلومات...';
+      statusEl.textContent = '⏳ جاري جلب المعلومات...';
     }
 
     try {
@@ -1093,13 +1093,13 @@ function bindLiveUrlAutofill() {
           renderLiveYouTubePreview(info);
           if (statusEl) {
             statusEl.style.color = '#cc2222';
-            statusEl.text = '✅ تم جلب عنوان ووصف الفيديو';
+            statusEl.textContent = '✅ تم جلب عنوان ووصف الفيديو';
           }
         } else {
           renderLiveYouTubePreview(null, '⚠️ لم يُعثر على معلومات الفيديو');
           if (statusEl) {
             statusEl.style.color = '#f55';
-            statusEl.text = '⚠️ لم يُعثر على معلومات الفيديو';
+            statusEl.textContent = '⚠️ لم يُعثر على معلومات الفيديو';
           }
         }
       } else if (lv.includes('twitch.tv')) {
@@ -1110,28 +1110,28 @@ function bindLiveUrlAutofill() {
         }
         if (statusEl) {
           statusEl.style.color = '#cc2222';
-          statusEl.text = '✅ Twitch';
+          statusEl.textContent = '✅ Twitch';
         }
       } else if (lv.includes('facebook.com') || lv.includes('fb.watch')) {
         setInputValueFromYouTube(titleInput, 'Facebook مباشر');
         if (statusEl) {
           statusEl.style.color = '#cc2222';
-          statusEl.text = '✅ Facebook مباشر';
+          statusEl.textContent = '✅ Facebook مباشر';
         }
       } else if (lv.includes('tiktok.com')) {
         const match = lv.match(/tiktok\.com\/@([^/?&]+)/);
         if (match) setInputValueFromYouTube(titleInput, `@${match[1]} — TikTok مباشر`);
         if (statusEl) {
           statusEl.style.color = '#cc2222';
-          statusEl.text = '✅ TikTok مباشر';
+          statusEl.textContent = '✅ TikTok مباشر';
         }
       } else if (statusEl) {
-        statusEl.text = '';
+        statusEl.textContent = '';
       }
     } catch(e) {
       if (statusEl) {
         statusEl.style.color = '#f55';
-        statusEl.text = '⚠️ خطأ في جلب المعلومات';
+        statusEl.textContent = '⚠️ خطأ في جلب المعلومات';
       }
     }
   };
@@ -1548,14 +1548,14 @@ async function submitUser(room) {
   var btn  = document.getElementById('upm-submit');
   var okEl = document.getElementById('upm-ok');
   var errEl = document.getElementById('upm-err');
-  if (btn)  { btn.disabled = true; btn.text = 'جاري النشر...'; }
+  if (btn)  { btn.disabled = true;  btn.textContent = 'جاري النشر...'; }
   if (okEl)  okEl.style.display = 'none';
   if (errEl) errEl.style.display = 'none';
 
   function done(ok, msg) {
-    if (btn) { btn.disabled = false; btn.text = '➕ Publish'; }
+    if (btn) { btn.disabled = false;  btn.textContent = '➕ Publish'; }
     if (ok) {
-      if (okEl) { okEl.text = '✅ تم النشر!'; okEl.style.display = 'block'; }
+      if (okEl) { okEl.textContent = '✅ تم النشر!'; okEl.style.display = 'block'; }
       currentEditPost = null;
       loadPage(room);
       setTimeout(function() {
@@ -1563,7 +1563,7 @@ async function submitUser(room) {
         if (m) m.classList.remove('active');
       }, 1300);
     } else {
-      if (errEl) { errEl.text = '❌ ' + (msg || 'خطأ'); errEl.style.display = 'block'; }
+      if (errEl) { errEl.textContent = '❌ ' + (msg || 'خطأ'); errEl.style.display = 'block'; }
       else alert('❌ ' + (msg || 'خطأ'));
     }
   }
@@ -1571,7 +1571,7 @@ async function submitUser(room) {
   try {
     var mediaUrl = null;
     if (currentMediaFile) {
-      if (btn) btn.text = 'رفع الملف...';
+      if (btn)  btn.textContent = 'رفع الملف...';
       mediaUrl = await uploadMediaFile(currentMediaFile, window.currentUserId);
     }
     var finalUrl = mediaUrl || url || null;
@@ -1609,9 +1609,9 @@ async function submitUser(room) {
 
 function showUPMError(msg) {
   const errEl = document.getElementById('upm-err');
-  if (errEl) { errEl.text = '❌ ' + msg; errEl.style.display = 'block'; }
+  if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
   const btn = document.getElementById('upm-submit');
-  if (btn) { btn.disabled = false; btn.text = '➕ Publish'; }
+  if (btn) { btn.disabled = false;  btn.textContent = '➕ Publish'; }
 }
 
 // ==================== باقي دوال الموقع (التكرار، تحميل المنشورات، المصادقة، إلخ) ====================
@@ -1886,7 +1886,7 @@ async function updateUIAfterAuth(sessionOverride) {
       const profile = authReady ? await getProfileById(session.user.id) : null;
       const displayName = profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
 
-      userNameSpan.text = '👋 ' + displayName;
+      userNameSpan.textContent = '👋 ' + displayName;
 
       // عرض كل الرولات كشارات متعددة
       const roles = normalizeRoles(profile).filter(r => r !== 'user');
@@ -2056,8 +2056,8 @@ function buildTickerTrack() {
     span.className = 'ticker-item';
     if (item.url) {
       const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.rel = 'noopener';
-      a.text = item.text; span.appendChild(a);
-    } else { span.text = item.text; }
+      a.textContent = item.text; span.appendChild(a);
+    } else { span.textContent = item.text; }
     track.appendChild(span);
   });
   requestAnimationFrame(() => {
@@ -2237,7 +2237,7 @@ window.openYTVIPModal = function() {
   document.getElementById('ytvip-url').value   = '';
   document.getElementById('ytvip-title').value = '';
   document.getElementById('ytvip-desc').value  = '';
-  document.getElementById('ytvip-status').text = '';
+  document.getElementById('ytvip-status').textContent = '';
   document.getElementById('ytvip-preview').style.display = 'none';
 };
 
@@ -2293,14 +2293,14 @@ window.submitYTVIP = async function() {
     });
     if (error) throw error;
     status.style.color = '#cc2222';
-    status.text = '✅ تم النشر بنجاح!';
+    status.textContent = '✅ تم النشر بنجاح!';
     setTimeout(() => {
       document.getElementById('ytvip-post-modal').style.display = 'none';
       if (window.currentRoom === 'yt-videos' || !window.currentRoom) loadPosts('yt-videos');
     }, 1400);
   } catch(e) {
     status.style.color = '#f55';
-    status.text = '❌ ' + (e.message || 'حدث خطأ');
+    status.textContent = '❌ ' + (e.message || 'حدث خطأ');
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2348,7 +2348,7 @@ window.openTournamentsVIPModal = function() {
   m.style.display = 'flex';
   ['vipt-title','vipt-desc','vipt-url'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
   const ic = document.getElementById('vipt-icon'); if (ic) ic.value = '🏆';
-  document.getElementById('vipt-status').text = '';
+  document.getElementById('vipt-status').textContent = '';
 };
 
 window.submitVIPTournament = async function() {
@@ -2374,14 +2374,14 @@ window.submitVIPTournament = async function() {
     });
     if (error) throw error;
     status.style.color = '#cc2222';
-    status.text = '✅ تم نشر البطولة VIP بنجاح!';
+    status.textContent = '✅ تم نشر البطولة VIP بنجاح!';
     setTimeout(() => {
       document.getElementById('vip-tour-modal').style.display = 'none';
       if (window.currentRoom === 'tournaments' || !window.currentRoom) loadPosts('tournaments');
     }, 1300);
   } catch(e) {
     status.style.color = '#f55';
-    status.text = '❌ ' + (e.message || 'حدث خطأ');
+    status.textContent = '❌ ' + (e.message || 'حدث خطأ');
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2438,31 +2438,31 @@ document.getElementById('close Btn')?.addEventListener('click', () => {
 document.getElementById('save Btn')?.addEventListener('click', async () => {
   if (!window.currentUserId) return;
   const btn = document.getElementById('save Btn');
-  const originalText = btn.text;
+  const originalText = btn.textContent;
   btn.disabled = true;
-  btn.text = '⏳ جاري الحفظ...';
+  btn.textContent = '⏳ جاري الحفظ...';
 
   try {
-    const newPassword = document.getElementById('newPassword').value.trim();
-    if (!new المستخدم || new المستخدم.length < 3) {
+    const newUsername = document.getElementById('profile المستخدم').value.trim();
+    if (!newUsername || newUsername.length < 3) {
       document.getElementById('usernameFeedback').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
       btn.disabled = false;
-      btn.text = originalText;
+      btn.textContent = originalText;
       return;
     }
 
-    if (currentProfileData && new المستخدم !== currentProfileData.username) {
-      const { data: existing } = await db.from('profiles').select('username').eq('username', new المستخدم).maybeSingle();
+    if (currentProfileData && newUsername !== currentProfileData.username) {
+      const { data: existing } = await db.from('profiles').select('username').eq('username', newUsername).maybeSingle();
       if (existing) {
         document.getElementById('usernameFeedback').innerText = 'اسم المستخدم موجود بالفعل';
         btn.disabled = false;
-        btn.text = originalText;
+        btn.textContent = originalText;
         return;
       }
     }
 
     const updates = {
-      username: new المستخدم,
+      username: newUsername,
       birthdate: document.getElementById('profileBirthdate').value || null,
       birth_place: document.getElementById('profileBirthPlace').value.trim() || null,
       country: document.getElementById('profileCountry').value.trim() || null,
@@ -2472,8 +2472,9 @@ document.getElementById('save Btn')?.addEventListener('click', async () => {
     const { error } = await db.from('profiles').update(updates).eq('id', window.currentUserId);
     if (error) throw error;
 
-    window.currentUsername= new المستخدم;
-    document.getElementById('user-name').text = '👋 ' + new المستخدم;
+    window.currentUsername = newUsername;
+    const userNameSpan = document.getElementById('user-name');
+    if (userNameSpan) userNameSpan.textContent = '👋 ' + newUsername;
     document.getElementById('usernameFeedback').innerText = '';
     alert('✅ تم حفظ التغييرات بنجاح');
     document.getElementById('profileModal').classList.remove('active');
@@ -2481,7 +2482,7 @@ document.getElementById('save Btn')?.addEventListener('click', async () => {
     alert('❌ خطأ في حفظ البيانات: ' + (e.message || e));
   } finally {
     btn.disabled = false;
-    btn.text = originalText;
+    btn.textContent = originalText;
   }
 });
 
@@ -2494,9 +2495,9 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
   if (!file || !window.currentUserId) return;
 
   const changeBtn = document.getElementById('changeAvatarBtn');
-  const originalText = changeBtn.text;
+  const originalText = changeBtn.textContent;
   changeBtn.disabled = true;
-  changeBtn.text = '⏳ جاري الرفع...';
+  changeBtn.textContent = '⏳ جاري الرفع...';
 
   try {
     const publicUrl = await uploadAvatar(file, window.currentUserId);
@@ -2517,7 +2518,7 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
     alert('❌ فشل رفع الصورة: ' + (e.message || e));
   } finally {
     changeBtn.disabled = false;
-    changeBtn.text = originalText;
+    changeBtn.textContent = originalText;
   }
 });
 
