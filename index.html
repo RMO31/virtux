@@ -618,10 +618,12 @@
         <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
       </div>
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img id="user-avatar-img" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#2a2a3a; display:none;">
-          <span id="user-name" style="font-size:13px;color:#e01010;"></span>
-          <span id="user-role-badge" style="font-size:11px;padding:2px 8px;border-radius:4px;background:#2a2a3a;color:#e01010;display:none;"></span>
+        <!-- إطار معلومات المستخدم: صورة + اسم + كل الرتب -->
+        <div id="user-info-box" style="display:flex;align-items:center;gap:8px;background:#0d0000;border:1px solid #e01010;border-radius:8px;padding:4px 10px;">
+          <img id="user-avatar-img" src="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;background:#2a2a3a;display:none;flex-shrink:0;">
+          <span id="user-avatar-placeholder" style="width:28px;height:28px;border-radius:50%;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">👤</span>
+          <span id="user-name" style="font-size:13px;color:#e01010;white-space:nowrap;"></span>
+          <div id="user-role-badge" style="display:none;flex-wrap:wrap;gap:3px;align-items:center;"></div>
         </div>
         <button id="profileButton" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
         <button id="logoutButton" onclick="window.doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
@@ -877,6 +879,10 @@ window.doLogout = async function() {
   var _ua = document.getElementById('btn-user-area');
   if (_ll) _ll.style.display = 'inline-block';
   if (_ua) _ua.style.display = 'none';
+  var _ai = document.getElementById('user-avatar-img');
+  var _ap = document.getElementById('user-avatar-placeholder');
+  if (_ai) _ai.style.display = 'none';
+  if (_ap) _ap.style.display = 'flex';
   document.querySelectorAll('.btn-user-post').forEach(function(b){ b.style.display = 'none'; });
   document.querySelectorAll('.btn-ytvip-post').forEach(function(b){ b.style.display = 'none'; });
 };
@@ -1834,9 +1840,9 @@ async function loadSubscribersWithVIP(el, posts) {
       ROLE_DEFS.forEach(def => {
         const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
         if (!usersInRole.length) return;
-        // خانة USER: نخفي الـ header box (بناءً على طلب المستخدم)
-        const showHeader = def.key !== 'user';
-        const headerHtml = showHeader ? `<div style="background:${def.bg};border:1px solid ${def.border};border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        groupedHtml += `
+          <div class="sub-role-section">
+            <div style="background:${def.bg};border:1px solid ${def.border};border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
               <div style="display:flex;align-items:center;gap:10px;">
                 <span style="font-size:22px;">${def.title.split(' ')[0]}</span>
                 <div>
@@ -1844,11 +1850,8 @@ async function loadSubscribersWithVIP(el, posts) {
                   <div style="color:${def.color};font-size:11px;opacity:.7;">${usersInRole.length} عضو</div>
                 </div>
               </div>
-              <span style="background:${def.color};color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
-            </div>` : '';
-        groupedHtml += `
-          <div class="sub-role-section">
-            ${headerHtml}
+              <span style="background:${def.color};color:${def.key==='user'?'#fff':'#000'};font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
+            </div>
             <div class="channels-grid">${usersInRole.map(u => userCard(u, def)).join('')}</div>
           </div>`;
       });
@@ -1917,34 +1920,36 @@ async function updateUIAfterAuth(sessionOverride) {
 
       userNameSpan.text = '👋 ' + displayName;
 
-      // عرض شارة رتبة واحدة فقط (الأعلى) لتجنب التداخل
-      const ROLE_PRIORITY_HEADER = ['admin','moderator','youtuber_vip','youtuber','vip','member'];
+      // عرض كل الرتب كشارات في الإطار
       const allRoles = normalizeRoles(profile);
-      const topRole = ROLE_PRIORITY_HEADER.find(r => allRoles.includes(r));
-      if (topRole) {
-        const colors = {
-          admin:       {bg:'#3d0f0f', fg:'#f55',    label:'ADMIN'},
-          vip:         {bg:'#1a0000', fg:'#e01010',  label:'👑 VIP'},
-          moderator:   {bg:'#2a0000', fg:'#ff2222',  label:'🛡️ MOD'},
-          youtuber_vip:{bg:'#3d1a0f', fg:'#ff1111',  label:'🔥 YT VIP'},
-          youtuber:    {bg:'#3d0f0f', fg:'#f55',     label:'📺 YT'},
-          member:      {bg:'#0d0000', fg:'#cc2222',  label:'⭐ MEMBER'}
-        };
-        const c = colors[topRole] || {bg:'#2a2a3a', fg:'#e01010', label: topRole.toUpperCase()};
-        roleBadge.innerHTML = `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:2px 7px;font-size:11px;white-space:nowrap;">${c.label}</span>`;
-        roleBadge.style.display = 'inline-block';
-        roleBadge.style.background = 'transparent';
-        roleBadge.style.padding = '0';
+      const roleColors = {
+        admin:       {bg:'#3d0f0f', fg:'#f55',    label:'ADMIN'},
+        vip:         {bg:'#1a0000', fg:'#e01010',  label:'👑 VIP'},
+        moderator:   {bg:'#2a0000', fg:'#ff2222',  label:'🛡️ MOD'},
+        youtuber_vip:{bg:'#3d1a0f', fg:'#ff1111',  label:'🔥 YT VIP'},
+        youtuber:    {bg:'#3d0f0f', fg:'#f55',     label:'📺 YT'},
+        member:      {bg:'#0d0000', fg:'#cc2222',  label:'⭐ MEMBER'}
+      };
+      const displayRoles = allRoles.filter(r => r !== 'user' && r !== 'guest');
+      if (displayRoles.length) {
+        roleBadge.innerHTML = displayRoles.map(r => {
+          const c = roleColors[r] || {bg:'#2a2a3a', fg:'#e01010', label: r.toUpperCase()};
+          return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:1px 6px;font-size:10px;white-space:nowrap;">${c.label}</span>`;
+        }).join('');
+        roleBadge.style.display = 'flex';
       } else {
         roleBadge.style.display = 'none';
       }
-      const roles = allRoles.filter(r => r !== 'user' && r !== 'guest');
+      const roles = displayRoles;
 
+      const avatarPlaceholderHeader = document.getElementById('user-avatar-placeholder');
       if (profile?.avatar_url) {
         userAvatarImg.src = profile.avatar_url;
         userAvatarImg.style.display = 'inline-block';
+        if (avatarPlaceholderHeader) avatarPlaceholderHeader.style.display = 'none';
       } else {
         userAvatarImg.style.display = 'none';
+        if (avatarPlaceholderHeader) avatarPlaceholderHeader.style.display = 'flex';
       }
 
       window.userRoles = roles.length ? roles : ['user'];
@@ -2469,31 +2474,31 @@ document.getElementById('close Btn')?.addEventListener('click', () => {
 document.getElementById('save Btn')?.addEventListener('click', async () => {
   if (!window.currentUserId) return;
   const btn = document.getElementById('save Btn');
-  const originalText = btn.text;
+  const originalText = btn.textContent;
   btn.disabled = true;
-  btn.text = '⏳ جاري الحفظ...';
+  btn.textContent = '⏳ جاري الحفظ...';
 
   try {
-    const newPassword = document.getElementById('newPassword').value.trim();
-    if (!new المستخدم || new المستخدم.length < 3) {
+    const newUsername = document.getElementById('profile المستخدم').value.trim();
+    if (!newUsername || newUsername.length < 3) {
       document.getElementById('usernameFeedback').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
       btn.disabled = false;
-      btn.text = originalText;
+      btn.textContent = originalText;
       return;
     }
 
-    if (currentProfileData && new المستخدم !== currentProfileData.username) {
-      const { data: existing } = await db.from('profiles').select('username').eq('username', new المستخدم).maybeSingle();
+    if (currentProfileData && newUsername !== currentProfileData.username) {
+      const { data: existing } = await db.from('profiles').select('username').eq('username', newUsername).maybeSingle();
       if (existing) {
         document.getElementById('usernameFeedback').innerText = 'اسم المستخدم موجود بالفعل';
         btn.disabled = false;
-        btn.text = originalText;
+        btn.textContent = originalText;
         return;
       }
     }
 
     const updates = {
-      username: new المستخدم,
+      username: newUsername,
       birthdate: document.getElementById('profileBirthdate').value || null,
       birth_place: document.getElementById('profileBirthPlace').value.trim() || null,
       country: document.getElementById('profileCountry').value.trim() || null,
@@ -2503,8 +2508,9 @@ document.getElementById('save Btn')?.addEventListener('click', async () => {
     const { error } = await db.from('profiles').update(updates).eq('id', window.currentUserId);
     if (error) throw error;
 
-    window.currentUsername= new المستخدم;
-    document.getElementById('user-name').text = '👋 ' + new المستخدم;
+    window.currentUsername = newUsername;
+    const userNameSpan = document.getElementById('user-name');
+    if (userNameSpan) userNameSpan.textContent = '👋 ' + newUsername;
     document.getElementById('usernameFeedback').innerText = '';
     alert('✅ تم حفظ التغييرات بنجاح');
     document.getElementById('profileModal').classList.remove('active');
@@ -2512,7 +2518,7 @@ document.getElementById('save Btn')?.addEventListener('click', async () => {
     alert('❌ خطأ في حفظ البيانات: ' + (e.message || e));
   } finally {
     btn.disabled = false;
-    btn.text = originalText;
+    btn.textContent = originalText;
   }
 });
 
@@ -2525,9 +2531,9 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
   if (!file || !window.currentUserId) return;
 
   const changeBtn = document.getElementById('changeAvatarBtn');
-  const originalText = changeBtn.text;
+  const originalText = changeBtn.textContent;
   changeBtn.disabled = true;
-  changeBtn.text = '⏳ جاري الرفع...';
+  changeBtn.textContent = '⏳ جاري الرفع...';
 
   try {
     const publicUrl = await uploadAvatar(file, window.currentUserId);
@@ -2540,10 +2546,12 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
     avatarPlaceholder.style.display = 'none';
 
     const headerAvatar = document.getElementById('user-avatar-img');
+    const headerPlaceholder = document.getElementById('user-avatar-placeholder');
     if (headerAvatar) {
       headerAvatar.src = publicUrl;
       headerAvatar.style.display = 'inline-block';
     }
+    if (headerPlaceholder) headerPlaceholder.style.display = 'none';
   } catch(e) {
     alert('❌ فشل رفع الصورة: ' + (e.message || e));
   } finally {
