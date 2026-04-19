@@ -1846,21 +1846,119 @@ function renderCards(posts, gridId, room) {
 async function loadSubscribersWithVIP(el, posts) {
   let groupedHtml = '';
   try {
-    // محاولة مع roles أولاً
+    // جلب المستخدمين من profiles
     let vipUsers = null;
+    let fetchError = null;
+
+    // محاولة 1: مع عمود roles
     try {
       const { data, error } = await db.from('profiles')
         .select('username, avatar_url, role, roles')
         .order('created_at', { ascending: false });
-      if (!error && data) vipUsers = data;
-    } catch(_) {}
-    // إذا فشل أو كان فارغاً جرب بدون roles
-    if (!vipUsers || !vipUsers.length) {
-      const { data: data2 } = await db.from('profiles')
-        .select('username, avatar_url, role')
-        .order('created_at', { ascending: false });
-      if (data2) vipUsers = data2;
+      if (!error && data) { vipUsers = data; }
+      else { fetchError = error; }
+    } catch(e) { fetchError = e; }
+
+    // محاولة 2: بدون عمود roles إذا فشلت الأولى
+    if (!vipUsers) {
+      try {
+        const { data, error } = await db.from('profiles')
+          .select('username, avatar_url, role')
+          .order('created_at', { ascending: false });
+        if (!error && data) vipUsers = data;
+        else fetchError = error;
+      } catch(e) { fetchError = e; }
     }
+
+    // إذا فشل الجلب نهائياً
+    if (!vipUsers) {
+      el.innerHTML = `<div style="text-align:center;padding:30px;color:#f55;">
+        ❌ فشل تحميل المشتركين<br>
+        <small style="color:#888;font-size:11px;">${fetchError?.message || 'تحقق من صلاحيات RLS في Supabase على جدول profiles'}</small>
+        <br><button onclick="window.loadPage('subscribers')" style="margin-top:10px;background:#e01010;color:#000;border:none;border-radius:5px;padding:6px 16px;cursor:pointer;">🔄 إعادة المحاولة</button>
+      </div>`;
+      return;
+    }
+
+    if (vipUsers.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون بعد</div>';
+      return;
+    }
+
+    const ROLE_DEFS = [
+      { key: 'admin',        title: '🛡️ الإدارة',     short: 'ADMIN',     color: '#ff4444', bg: '#200000' },
+      { key: 'moderator',    title: '🔧 المشرفون',     short: 'MOD',       color: '#ff6666', bg: '#1a0000' },
+      { key: 'youtuber_vip', title: '🔥 Youtuber VIP', short: 'YT VIP',    color: '#ff3333', bg: '#220a00' },
+      { key: 'youtuber',     title: '🎬 يوتيوبرز',     short: 'YT',        color: '#cc3333', bg: '#180000' },
+      { key: 'vip',          title: '👑 VIP',           short: 'VIP',       color: '#e01010', bg: '#150000' },
+      { key: 'member',       title: '⭐ الأعضاء',       short: 'MEMBER',    color: '#cc2222', bg: '#100000' },
+      { key: 'user',         title: '👤 المستخدمون',   short: 'USER',      color: '#888',    bg: '#0e0e0e' },
+    ];
+    const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','user'];
+    const getTopRole = u => { const rs = normalizeRoles(u); return ROLE_PRIORITY.find(r => rs.includes(r)) || 'user'; };
+    const getUserRoles = u => {
+      const roles = normalizeRoles(u);
+      const filtered = roles.filter(r => ROLE_PRIORITY.includes(r));
+      return filtered.length ? filtered : ['user'];
+    };
+
+    const roleRow = (u) => {
+      const topDef = ROLE_DEFS.find(d => d.key === getTopRole(u)) || ROLE_DEFS[ROLE_DEFS.length-1];
+      const userRoles = getUserRoles(u);
+      const badges = userRoles.map(r => {
+        const d = ROLE_DEFS.find(x => x.key === r);
+        if (!d) return '';
+        return `<span style="font-size:10px;background:${d.bg};color:${d.color};border:1px solid ${d.color};border-radius:4px;padding:2px 7px;white-space:nowrap;font-weight:600;">${d.short}</span>`;
+      }).join('');
+      const avatarBorder = topDef.color;
+      const avatar = u.avatar_url
+        ? `<img src="${escapeHtml(u.avatar_url)}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid ${avatarBorder};flex-shrink:0;">`
+        : `<div style="width:40px;height:40px;border-radius:50%;background:#1a0000;border:2px solid ${avatarBorder};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">👤</div>`;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:8px;transition:background .15s;border-bottom:1px solid #150000;" onmouseenter="this.style.background='#120000'" onmouseleave="this.style.background='transparent'">
+        ${avatar}
+        <span style="color:#eee;font-size:13px;font-weight:600;flex:1;min-width:80px;">${escapeHtml(u.username||'مستخدم')}</span>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">${badges||'<span style="font-size:10px;color:#555;border:1px solid #333;border-radius:3px;padding:1px 5px;">USER</span>'}</div>
+      </div>`;
+    };
+
+    ROLE_DEFS.forEach(def => {
+      const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
+      if (!usersInRole.length) return;
+      groupedHtml += `<div style="margin-bottom:18px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:${def.bg};border-right:3px solid ${def.color};border-radius:0 6px 6px 0;margin-bottom:4px;">
+          <span style="color:${def.color};font-size:14px;font-weight:700;">${def.title}</span>
+          <span style="color:${def.color};font-size:11px;opacity:.6;">(${usersInRole.length})</span>
+        </div>
+        <div style="padding:4px 0;">${usersInRole.map(u => roleRow(u)).join('')}</div>
+      </div>`;
+    });
+
+  } catch(e) {
+    console.error('[Subscribers]', e);
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:#f55;">❌ خطأ: ${e.message}</div>`;
+    return;
+  }
+
+  let youtuberHtml = '';
+  if (posts && posts.length) {
+    const youtuberCards = posts.map(p => {
+      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon||'📺'}</div>`;
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">زيارة القناة</a>` : '';
+      let subText = p.description || '';
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+      const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
+    }).join('');
+    youtuberHtml = `<div style="margin:20px 0 10px;padding:8px 14px;background:#1a0000;border-right:3px solid #e01010;border-radius:0 6px 6px 0;">
+      <span style="color:#e01010;font-size:14px;font-weight:700;">📺 قنوات يوتيوب</span>
+    </div>
+    <div class="channels-grid">${youtuberCards}</div>`;
+  }
+
+  el.innerHTML = (groupedHtml + youtuberHtml) ||
+    '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون بعد</div>';
+}
     if (vipUsers && vipUsers.length) {
       const ROLE_DEFS = [
         { key: 'admin',        title: '🛡️ الإدارة',     short: 'ADMIN',     color: '#ff4444', bg: '#200000' },
@@ -2085,7 +2183,7 @@ document.getElementById('doLogin Btn')?.addEventListener('click', async () => {
       if (!data) throw new Error('اسم المستخدم غير موجود');
       email = data.email;
     }
-const{error}=awaitdb.auth.signInWith({email,password});
+    const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) throw new Error('بيانات الدخول غير صحيحة');
     closeModal();
     await updateUIAfterAuth();
