@@ -1633,7 +1633,7 @@ rooms.forEach(room => {
   let buttonsHtml = '';
   if (postableRooms.includes(room)) {
     buttonsHtml = `<div class="post-actions">
-      <button class="btn-user-post" onclick="window.openUserModal('${room}')">➕ نشر</button>
+      <button class="btn-user-post" data-room="${room}" onclick="window.openUserModal('${room}')">➕ نشر</button>
       ${room === 'yt-videos' ? `<button class="btn-ytvip-post" id="btn-ytvip-${room}" onclick="window.openYTVIPModal()" style="display:none;">👑 نشر فيديو VIP</button>` : ''}
       ${room === 'tournaments' ? `<button class="btn-ytvip-post" id="btn-vip-tournaments" onclick="window.openTournamentsVIPModal()" style="display:none;">👑 نشر بطولة VIP</button>` : ''}
     </div>`;
@@ -1751,8 +1751,7 @@ function renderCards(posts, gridId, room) {
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
     const currentUid = window.currentUserId;
     const isOwner = currentUid && p.user_id && p.user_id === currentUid;
-    const isAdmin = userHasAnyRole(['admin','moderator']);
-    const deleteBtn = (isOwner || isAdmin)
+    const deleteBtn = isOwner
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
       : '';
     return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
@@ -1922,6 +1921,11 @@ async function updateUIAfterAuth(sessionOverride) {
       window.currentUsername= profile?.username || displayName;
       setMemberingVisibility(true);
 
+      // نشر بث: admin و youtuber_vip فقط
+      const canLivePost = userHasAnyRole(['admin','youtuber_vip']);
+      document.querySelectorAll('.btn-user-post[data-room="live"]').forEach(btn => {
+        btn.style.display = canLivePost ? 'inline-flex' : 'none';
+      });
       // نشر فيديو VIP: youtuber_vip + admin فقط
       const canVipVideo = userHasAnyRole(['admin','youtuber_vip']);
       const canVipTour  = userHasAnyRole(['admin','vip']);
@@ -2307,7 +2311,7 @@ window.submitYTVIP = async function() {
 };
 // ==================== VIP TOURNAMENT POST MODAL ====================
 window.openTournamentsVIPModal = function() {
-  const allowed = (window.userRoles || []).some(r => ['admin','vip'].includes(r));
+  const allowed = (window.userRoles || []).some(r => ['admin','vip','youtuber_vip','moderator'].includes(r));
   if (!allowed) { alert('⛔ زر مخصص لأصحاب رتبة VIP فقط'); return; }
 
   let m = document.getElementById('vip-tour-modal');
