@@ -1208,7 +1208,12 @@ showGoogleModal(user);
 
 function setMemberingVisibility(isSignedIn) {
   document.querySelectorAll('.btn-user-post').forEach(btn => {
-    btn.style.display = isSignedIn ? 'inline-flex' : 'none';
+    const room = btn.getAttribute('data-room') || '';
+    if (room === 'live') {
+      btn.style.display = 'none';
+    } else {
+      btn.style.display = isSignedIn ? 'inline-flex' : 'none';
+    }
   });
 }
 
@@ -1642,7 +1647,7 @@ rooms.forEach(room => {
   if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">مباشر Now</button><button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
   else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">تسجيل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">عالمي</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
   else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
-  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('subscribers','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('subscribers','YouTube',this)">YouTube</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Member',this)">Members</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Donor',this)">Donors</button><button class="filter-btn" onclick="window.filterPosts('subscribers','VIP',this)">VIP</button><button class="filter-btn" onclick="window.filterPosts('subscribers','Youtuber VIP',this)">Youtuber VIP</button></div>`;
+  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">الكل</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button></div>`;
   pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${buttonsHtml}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
   mainContainer.appendChild(pageDiv);
 });
@@ -1758,9 +1763,8 @@ function renderCards(posts, gridId, room) {
   }).join('');
 }
 
-async function loadSubscribersWithVIP(el, posts) {
+async function loadSubscribersWithVIP(el, posts, roleFilter) {
   let groupedHtml = '';
-  let debugInfo = '';
   try {
     let { data: vipUsers, error } = await db.from('profiles')
       .select('username, avatar_url, role, roles')
@@ -1774,7 +1778,6 @@ async function loadSubscribersWithVIP(el, posts) {
     console.log('[Subscribers] إجمالي البروفايلات المُحمَّلة:', vipUsers?.length || 0);
     if (vipUsers && vipUsers.length) {
       console.log('[Subscribers] عيّنة من الرولات:', vipUsers.slice(0,5).map(u => ({ name: u.username, role: u.role, roles: u.roles, normalized: normalizeRoles(u) })));
-      debugInfo = `<div style="font-size:11px;color:#666;margin-bottom:8px;">📊 ${vipUsers.length} مستخدم محمل</div>`;
       const ROLE_DEFS = [
         { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff0000', bg: '#3d0f0f', border: '#ff0000' },
         { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff2222', bg: '#2a0000', border: '#ff2222' },
@@ -1782,14 +1785,14 @@ async function loadSubscribersWithVIP(el, posts) {
         { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
         { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#e01010', bg: '#1a0000', border: '#e01010' },
         { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#cc2222', bg: '#100000', border: '#cc2222' },
+        { key: 'user',         title: '👤 المستخدمون',        short: 'USER',         color: '#888888', bg: '#111111', border: '#444444' },
       ];
       // ترتيب الأولوية من الأعلى إلى الأدنى
-      const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member'];
+      const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','user'];
       const getTopRole = (u) => {
         const rs = normalizeRoles(u);
-        // لا نعرض المستخدمين العاديين (user/guest) في صفحة المشتركين
         const found = ROLE_PRIORITY.find(r => rs.includes(r));
-        return found || null;
+        return found || 'user';
       };
       const userCard = (u, accentColor, topRoleDef) => {
         const avatar = u.avatar_url
@@ -1802,24 +1805,14 @@ async function loadSubscribersWithVIP(el, posts) {
         return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
-        // كل مستخدم يظهر في خانة رتبته الأعلى فقط — لا يظهر المستخدمون العاديون (user)
-        const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
+        if (roleFilter && def.key !== roleFilter) return;
+        const usersInRole = vipUsers.filter(u => {
+          const rs = normalizeRoles(u);
+          if (def.key === 'user') return rs.length === 0 || (rs.length === 1 && rs[0] === 'user');
+          return rs.includes(def.key);
+        });
         if (!usersInRole.length) return;
-        groupedHtml += `
-          <div class="sub-role-section">
-            <div class="sub-role-header" style="background:${def.bg};border:1px solid ${def.border};border-radius:10px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:22px;">${def.title.split(' ')[0]}</span>
-                <div>
-                  <div style="color:${def.color};font-size:15px;font-weight:700;">${def.title}</div>
-                  <div style="color:${def.color};font-size:11px;opacity:.7;">${usersInRole.length} عضو</div>
-                </div>
-              </div>
-              <span style="background:${def.color};color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
-            </div>
-            <div class="channels-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>
-          </div>
-        `;
+        groupedHtml += `<div class="channels-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
       });
     }
   } catch(e) { console.error(e); }
@@ -1843,9 +1836,19 @@ async function loadSubscribersWithVIP(el, posts) {
     `;
   }
 
-  el.innerHTML = debugInfo + ((groupedHtml + youtuberHtml) ||
+  el.innerHTML = ((groupedHtml + youtuberHtml) ||
     '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد<br><span style="font-size:12px;">تأكد من أن RLS يسمح بقراءة جدول profiles وأن عمود roles موجود</span></div>');
 }
+
+window.filterSubscribers = function(roleKey, btn) {
+  if (btn && btn.closest('.filter-bar')) {
+    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const el = document.getElementById('grid-subscribers');
+  if (!el) return;
+  loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
+};
 
 function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
 let _currentPage = 'home';
