@@ -607,6 +607,7 @@
 <div class="vx-root">
   <div class="vx-topbar">
     <div class="vx-logo">VIRT<span>UX</span></div>
+    <button id="lang-toggle-btn" onclick="window.toggleLanguage()" style="background:transparent;border:1px solid #555;color:#aaa;padding:4px 11px;border-radius:5px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;flex-shrink:0;" title="Translate">🌐 EN</button>
     <div class="vx-topnav">
       <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">الأخبار ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 أخبار الألعاب</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ أخبار يوتيوب</a></div></div>
       <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">يوتيوب ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 القنوات</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 الفيديوهات</a></div></div>
@@ -614,7 +615,6 @@
     </div>
     <div id="auth-btn-area" style="margin-left:8px;">
       <div class="auth-buttons-header">
-        <button id="lang-toggle-btn" onclick="window.toggleLanguage()" style="background:transparent;border:1px solid #555;color:#aaa;padding:4px 11px;border-radius:5px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;margin-right:6px;" title="Translate">🌐 EN</button>
         <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
       </div>
       <div id="btn-user-area" style="display:none;align-items:center;gap:8px;">
@@ -723,7 +723,7 @@
       </div>
       <div id="loginError" class="error-msg"></div>
       <button class="btn-submit" id="doLogin Btn">دخول</button>
-      <button class="btn-submit google-btn-modal" id="google Btn">🔵 تسجيل دخول عن طريق غوغل</button>
+      <div id="loginError-google" class="error-msg" style="margin-top:6px;"></div>
       <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
     </div>
     <div id="modal-signup" style="display:none;">
@@ -1201,8 +1201,26 @@ function showGoogleModal(user) {
 async function maybePromptForGoogle(user) {
   if (!user || !isGoogleUser(user)) return false;
   const profile = await getProfileById(user.id);
-  if (profile) return false;
-showGoogleModal(user);
+  if (profile) return false; // له حساب → دخول عادي
+  // ليس له حساب → سجّل خروج وأظهر رسالة خطأ
+  await db.auth.signOut();
+  window.currentUserId = null;
+  window.currentUsername = null;
+  window.userRoles = ['guest'];
+  const loginLink = document.getElementById('btn-login-link');
+  const userArea = document.getElementById('btn-user-area');
+  if (loginLink) loginLink.style.display = 'inline-block';
+  if (userArea) userArea.style.display = 'none';
+  // افتح modal وأظهر رسالة
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.add('active');
+  const errEl = document.getElementById('loginError');
+  if (errEl) errEl.innerText = '⚠️ لا يوجد حساب مرتبط بهذا البريد. يرجى إنشاء حساب جديد عبر Google أولاً.';
+  // التبديل لصفحة إنشاء الحساب
+  const loginDiv = document.getElementById('modal-login');
+  const signupDiv = document.getElementById('modal-signup');
+  if (loginDiv) loginDiv.style.display = 'none';
+  if (signupDiv) signupDiv.style.display = 'block';
   return true;
 }
 
@@ -1234,9 +1252,21 @@ async function initializeAuth() {
   try {
     const { data: { session } } = await db.auth.getSession();
     authReady = true;
+    if (session?.user && isGoogleUser(session.user)) {
+      // تحقق أولاً من وجود profile قبل عرض واجهة المستخدم
+      const profile = await getProfileById(session.user.id);
+      if (!profile) {
+        // لا يوجد حساب → اطرده وأظهر نافذة إنشاء حساب
+        await maybePromptForGoogle(session.user);
+        return;
+      }
+    }
     await updateUIAfterAuth(session || null);
     if (session?.user) {
-maybePromptForGoogle(session.user).catch(err=>console.error('usernamemodalerror:',err));
+      if (isGoogleUser(session.user)) {
+        const profile = await getProfileById(session.user.id);
+        if (!profile) { showGoogleModal(session.user); }
+      }
       if (hasAuthCallbackParams()) setTimeout(cleanupAuthCallbackUrl, 1500);
     }
   } catch(err) {
@@ -1257,16 +1287,25 @@ async function uploadMediaFile(file, userId) {
 }
 
 async function uploadAvatar(file, userId) {
-  try {
-    const { data: buckets } = await db.storage.listBuckets();
-    const bucketExists = buckets?.some(b => b.name === 'avatars');
-    if (!bucketExists) throw new Error('Bucket "avatars" غير موجود.');
-  } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
-  const ext = file.name.split('.').pop();
-  const fileName = `${userId}-${Date.now()}.${ext}`;
-  const filePath = `avatars/${fileName}`;
-  const { error } = await db.storage.from('avatars').upload(filePath, file);
-  if (error) throw error;
+  // محاولة الرفع مع upsert=true لتجاوز أخطاء الملفات المكررة
+  const ext = file.name.split('.').pop().toLowerCase();
+  const fileName = `avatar-${userId}-${Date.now()}.${ext}`;
+  const filePath = fileName; // بدون مجلد فرعي لتجنب مشاكل الصلاحيات
+  let { error } = await db.storage.from('avatars').upload(filePath, file, {
+    upsert: true,
+    contentType: file.type || 'image/jpeg'
+  });
+  if (error) {
+    // محاولة ثانية في مجلد public/
+    const filePath2 = `public/${fileName}`;
+    const res2 = await db.storage.from('avatars').upload(filePath2, file, {
+      upsert: true,
+      contentType: file.type || 'image/jpeg'
+    });
+    if (res2.error) throw new Error('فشل رفع الصورة: ' + (res2.error.message || res2.error));
+    const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath2);
+    return publicUrl;
+  }
   const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath);
   return publicUrl;
 }
@@ -1795,9 +1834,9 @@ async function loadSubscribersWithVIP(el, posts) {
       ROLE_DEFS.forEach(def => {
         const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
         if (!usersInRole.length) return;
-        groupedHtml += `
-          <div class="sub-role-section">
-            <div style="background:${def.bg};border:1px solid ${def.border};border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        // خانة USER: نخفي الـ header box (بناءً على طلب المستخدم)
+        const showHeader = def.key !== 'user';
+        const headerHtml = showHeader ? `<div style="background:${def.bg};border:1px solid ${def.border};border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
               <div style="display:flex;align-items:center;gap:10px;">
                 <span style="font-size:22px;">${def.title.split(' ')[0]}</span>
                 <div>
@@ -1806,7 +1845,10 @@ async function loadSubscribersWithVIP(el, posts) {
                 </div>
               </div>
               <span style="background:${def.color};color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;">${def.short}</span>
-            </div>
+            </div>` : '';
+        groupedHtml += `
+          <div class="sub-role-section">
+            ${headerHtml}
             <div class="channels-grid">${usersInRole.map(u => userCard(u, def)).join('')}</div>
           </div>`;
       });
