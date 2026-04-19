@@ -722,8 +722,8 @@
         <input type="password" id="loginPassword" placeholder="********">
       </div>
       <div id="loginError" class="error-msg"></div>
-      <button class="btn-submit" id="doLoginBtn">دخول</button>
-      <button class="btn-submit google-btn-modal" id="googleBtn">🔵 تسجيل دخول عن طريق غوغل</button>
+      <button class="btn-submit" id="doLogin Btn">دخول</button>
+      <button class="btn-submit google-btn-modal" id="google Btn">🔵 تسجيل دخول عن طريق غوغل</button>
       <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
     </div>
     <div id="modal-signup" style="display:none;">
@@ -817,7 +817,7 @@
         <input type="password" id="confirmNewPassword" placeholder="********">
       </div>
       <div id="passwordError" class="error-msg" style="margin-bottom:10px;"></div>
-      <button id="changeBtn" class="btn-submit" style="width:100%;">تغيير كلمة المرور</button>
+      <button id="change Btn" class="btn-submit" style="width:100%;">تغيير كلمة المرور</button>
     </div>
     
     <div class="profile-buttons">
@@ -1075,14 +1075,14 @@ function bindLiveUrlAutofill() {
     const descInput = document.getElementById('desc-live');
 
     if (!lv) {
-      if (statusEl) statusEl.text = '';
+      if (statusEl) statusEl.textContent = '';
       renderLiveYouTubePreview(null);
       return;
     }
 
     if (statusEl) {
       statusEl.style.color = '#aaa';
-      statusEl.text = '⏳ جاري جلب المعلومات...';
+      statusEl.textContent = '⏳ جاري جلب المعلومات...';
     }
 
     try {
@@ -1093,13 +1093,13 @@ function bindLiveUrlAutofill() {
           renderLiveYouTubePreview(info);
           if (statusEl) {
             statusEl.style.color = '#cc2222';
-            statusEl.text = '✅ تم جلب عنوان ووصف الفيديو';
+            statusEl.textContent = '✅ تم جلب عنوان ووصف الفيديو';
           }
         } else {
           renderLiveYouTubePreview(null, '⚠️ لم يُعثر على معلومات الفيديو');
           if (statusEl) {
             statusEl.style.color = '#f55';
-            statusEl.text = '⚠️ لم يُعثر على معلومات الفيديو';
+            statusEl.textContent = '⚠️ لم يُعثر على معلومات الفيديو';
           }
         }
       } else if (lv.includes('twitch.tv')) {
@@ -1110,28 +1110,28 @@ function bindLiveUrlAutofill() {
         }
         if (statusEl) {
           statusEl.style.color = '#cc2222';
-          statusEl.text = '✅ Twitch';
+          statusEl.textContent = '✅ Twitch';
         }
       } else if (lv.includes('facebook.com') || lv.includes('fb.watch')) {
         setInputValueFromYouTube(titleInput, 'Facebook مباشر');
         if (statusEl) {
           statusEl.style.color = '#cc2222';
-          statusEl.text = '✅ Facebook مباشر';
+          statusEl.textContent = '✅ Facebook مباشر';
         }
       } else if (lv.includes('tiktok.com')) {
         const match = lv.match(/tiktok\.com\/@([^/?&]+)/);
         if (match) setInputValueFromYouTube(titleInput, `@${match[1]} — TikTok مباشر`);
         if (statusEl) {
           statusEl.style.color = '#cc2222';
-          statusEl.text = '✅ TikTok مباشر';
+          statusEl.textContent = '✅ TikTok مباشر';
         }
       } else if (statusEl) {
-        statusEl.text = '';
+        statusEl.textContent = '';
       }
     } catch(e) {
       if (statusEl) {
         statusEl.style.color = '#f55';
-        statusEl.text = '⚠️ خطأ في جلب المعلومات';
+        statusEl.textContent = '⚠️ خطأ في جلب المعلومات';
       }
     }
   };
@@ -1555,7 +1555,7 @@ async function submitUser(room) {
   function done(ok, msg) {
     if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
     if (ok) {
-      if (okEl) { okEl.text = '✅ تم النشر!'; okEl.style.display = 'block'; }
+      if (okEl) { okEl.textContent = '✅ تم النشر!'; okEl.style.display = 'block'; }
       currentEditPost = null;
       loadPage(room);
       setTimeout(function() {
@@ -1563,7 +1563,7 @@ async function submitUser(room) {
         if (m) m.classList.remove('active');
       }, 1300);
     } else {
-      if (errEl) { errEl.text = '❌ ' + (msg || 'خطأ'); errEl.style.display = 'block'; }
+      if (errEl) { errEl.textContent = '❌ ' + (msg || 'خطأ'); errEl.style.display = 'block'; }
       else alert('❌ ' + (msg || 'خطأ'));
     }
   }
@@ -1609,7 +1609,7 @@ async function submitUser(room) {
 
 function showUPMError(msg) {
   const errEl = document.getElementById('upm-err');
-  if (errEl) { errEl.text = '❌ ' + msg; errEl.style.display = 'block'; }
+  if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
   const btn = document.getElementById('upm-submit');
   if (btn) { btn.disabled = false; btn.textContent = '➕ Publish'; }
 }
@@ -1719,25 +1719,14 @@ function renderCards(posts, gridId, room) {
       }
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
-        if (videoId) {
-          // عرض صورة مصغّرة قابلة للنقر بدلاً من تحميل iframe فوراً (تحميل أسرع بكثير)
-          const thumb = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-          media = `<div class="post-card-video yt-thumb-wrap" style="position:relative;cursor:pointer;" onclick="(function(el){el.outerHTML='<div class=\'post-card-video\'><iframe src=\'https://www.youtube.com/embed/${videoId}?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen></iframe></div>';})(this)">
-            <img src="${thumb}" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#000;">
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.25);">
-              <div style="width:64px;height:64px;border-radius:50%;background:rgba(224,16,16,0.9);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;">▶</div>
-            </div>
-          </div>`;
-        } else {
-          media = `<img class="post-card-img" src="${p.icon || '📹'}">`;
-        }
+        media = videoId ? `<div class="post-card-video" style="position:relative;cursor:pointer;" onclick="this.innerHTML='<iframe src=\'https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0\' frameborder=0 allow=\'autoplay; encrypted-media\' allowfullscreen style=\'width:100%;height:100%;border:0;\'></iframe>'"><img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" style="width:100%;display:block;"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);"><div style="background:rgba(224,16,16,.95);color:#fff;border-radius:50%;width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:26px;">▶</div></div></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
       else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       else media = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'مباشر Now' ? '<div class="live-badge">مباشر</div>' : ''}</div>`;
     }
     let summary = (p.content || p.description || '').substring(0,150);
     if ((p.content || '').length > 150) summary += '...';
-    const readMoreLink = p.content ? `<a href="post.html?id=${p.id}" class="read-more">📖 اقرأ المزيد</a>` : '';
+    const readMoreLink = '';
     let actions = '';
     if (!isRestricted && p.url) {
       const isStorageFile = p.url.includes('/storage/v1/object/public/');
@@ -1794,7 +1783,6 @@ async function loadSubscribersWithVIP(el, posts) {
         { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
         { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#e01010', bg: '#1a0000', border: '#e01010' },
         { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#cc2222', bg: '#100000', border: '#cc2222' },
-        { key: 'user',        title: '👤 المستخدمون',        short: 'USER',         color: '#888888', bg: '#0a0a0a', border: '#555555' },
       ];
       // ترتيب الأولوية من الأعلى إلى الأدنى
       const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member'];
@@ -1815,16 +1803,8 @@ async function loadSubscribersWithVIP(el, posts) {
         return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
-        // كل خانة تعرض فقط المستخدمين الذين لديهم رتبة بنفس اسم الخانة بالضبط
-        const usersInRole = vipUsers.filter(u => {
-          const rs = normalizeRoles(u);
-          if (def.key === 'user') {
-            // خانة USER: من ليس لديه أي رتبة مميزة (فقط user أو بدون رتبة)
-            const hasPrivileged = ['admin','moderator','youtuber_vip','youtuber','vip','member'].some(r => rs.includes(r));
-            return !hasPrivileged;
-          }
-          return rs.includes(def.key);
-        });
+        // كل مستخدم يظهر في خانة رتبته الأعلى فقط — لا يظهر المستخدمون العاديون (user)
+        const usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(def.key));
         if (!usersInRole.length) return;
         groupedHtml += `
           <div class="sub-role-section">
@@ -1906,7 +1886,7 @@ async function updateUIAfterAuth(sessionOverride) {
       const profile = authReady ? await getProfileById(session.user.id) : null;
       const displayName = profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
 
-      userNameSpan.text = '👋 ' + displayName;
+      userNameSpan.textContent = '👋 ' + displayName;
 
       // عرض كل الرولات كشارات متعددة
       const roles = normalizeRoles(profile).filter(r => r !== 'user');
@@ -2004,7 +1984,7 @@ document.getElementById('closeModal')?.addEventListener('click', closeModal);
 window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق */ } };
 document.getElementById('switchToSignup')?.addEventListener('click', () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; });
 document.getElementById('switchToLogin')?.addEventListener('click', () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; });
-document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
+document.getElementById('doLogin Btn')?.addEventListener('click', async () => {
   const identifier = document.getElementById('loginIdentifier').value.trim();
   const password = document.getElementById('loginPassword').value;
   if(!identifier || !password) { document.getElementById('loginError').innerText = 'يرجى ملء جميع الحقول'; return; }
@@ -2035,7 +2015,7 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     document.getElementById('loginIdentifier').value = username;
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
-document.getElementById('googleBtn')?.addEventListener('click', async () => { await startGoogleAuth('loginError'); });
+document.getElementById('google Btn')?.addEventListener('click', async () => { await startGoogleAuth('loginError'); });
 document.getElementById('googleSignupBtn')?.addEventListener('click', async () => { await startGoogleAuth('signupError'); });
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
@@ -2076,8 +2056,8 @@ function buildTickerTrack() {
     span.className = 'ticker-item';
     if (item.url) {
       const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.rel = 'noopener';
-      a.text = item.text; span.appendChild(a);
-    } else { span.text = item.text; }
+      a.textContent = item.text; span.appendChild(a);
+    } else { span.textContent = item.text; }
     track.appendChild(span);
   });
   requestAnimationFrame(() => {
@@ -2257,7 +2237,7 @@ window.openYTVIPModal = function() {
   document.getElementById('ytvip-url').value   = '';
   document.getElementById('ytvip-title').value = '';
   document.getElementById('ytvip-desc').value  = '';
-  document.getElementById('ytvip-status').text = '';
+  document.getElementById('ytvip-status').textContent = '';
   document.getElementById('ytvip-preview').style.display = 'none';
 };
 
@@ -2288,16 +2268,16 @@ window.submitYTVIP = async function() {
   const desc   = (document.getElementById('ytvip-desc')?.value  || '').trim();
   const status = document.getElementById('ytvip-status');
 
-  if (!url)   { status.style.color='#f55'; status.text='⚠️ أدخل رابط يوتيوب'; return; }
-  if (!title) { status.style.color='#f55'; status.text='⚠️ أدخل عنواناً للفيديو'; return; }
+  if (!url)   { status.style.color='#f55'; status.textContent='⚠️ أدخل رابط يوتيوب'; return; }
+  if (!title) { status.style.color='#f55'; status.textContent='⚠️ أدخل عنواناً للفيديو'; return; }
   if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
-    status.style.color='#f55'; status.text='⚠️ الرابط يجب أن يكون من يوتيوب'; return;
+    status.style.color='#f55'; status.textContent='⚠️ الرابط يجب أن يكون من يوتيوب'; return;
   }
 
   const match = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
   const thumb = match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : '';
 
-  status.style.color='#aaa'; status.text='⏳ جارٍ النشر...';
+  status.style.color='#aaa'; status.textContent='⏳ جارٍ النشر...';
   const btn = document.querySelector('#ytvip-post-modal button[onclick*="submitYTVIP"]');
   if (btn) btn.disabled = true;
 
@@ -2313,14 +2293,14 @@ window.submitYTVIP = async function() {
     });
     if (error) throw error;
     status.style.color = '#cc2222';
-    status.text = '✅ تم النشر بنجاح!';
+    status.textContent = '✅ تم النشر بنجاح!';
     setTimeout(() => {
       document.getElementById('ytvip-post-modal').style.display = 'none';
       if (window.currentRoom === 'yt-videos' || !window.currentRoom) loadPosts('yt-videos');
     }, 1400);
   } catch(e) {
     status.style.color = '#f55';
-    status.text = '❌ ' + (e.message || 'حدث خطأ');
+    status.textContent = '❌ ' + (e.message || 'حدث خطأ');
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2368,7 +2348,7 @@ window.openTournamentsVIPModal = function() {
   m.style.display = 'flex';
   ['vipt-title','vipt-desc','vipt-url'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
   const ic = document.getElementById('vipt-icon'); if (ic) ic.value = '🏆';
-  document.getElementById('vipt-status').text = '';
+  document.getElementById('vipt-status').textContent = '';
 };
 
 window.submitVIPTournament = async function() {
@@ -2377,8 +2357,8 @@ window.submitVIPTournament = async function() {
   const url    = (document.getElementById('vipt-url')?.value   || '').trim();
   const icon   = (document.getElementById('vipt-icon')?.value  || '🏆').trim();
   const status = document.getElementById('vipt-status');
-  if (!title) { status.style.color='#f55'; status.text='⚠️ أدخل عنوان البطولة'; return; }
-  status.style.color='#aaa'; status.text='⏳ جارٍ النشر...';
+  if (!title) { status.style.color='#f55'; status.textContent='⚠️ أدخل عنوان البطولة'; return; }
+  status.style.color='#aaa'; status.textContent='⏳ جارٍ النشر...';
   const btn = document.querySelector('#vip-tour-modal button[onclick*="submitVIPTournament"]');
   if (btn) btn.disabled = true;
   try {
@@ -2394,14 +2374,14 @@ window.submitVIPTournament = async function() {
     });
     if (error) throw error;
     status.style.color = '#cc2222';
-    status.text = '✅ تم نشر البطولة VIP بنجاح!';
+    status.textContent = '✅ تم نشر البطولة VIP بنجاح!';
     setTimeout(() => {
       document.getElementById('vip-tour-modal').style.display = 'none';
       if (window.currentRoom === 'tournaments' || !window.currentRoom) loadPosts('tournaments');
     }, 1300);
   } catch(e) {
     status.style.color = '#f55';
-    status.text = '❌ ' + (e.message || 'حدث خطأ');
+    status.textContent = '❌ ' + (e.message || 'حدث خطأ');
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2464,6 +2444,7 @@ document.getElementById('saveBtn')?.addEventListener('click', async () => {
 
   try {
     const newUsername = (document.getElementById('profileUsername')?.value || '').trim();
+    const newPassword = (document.getElementById('newPassword')?.value || '').trim();
     if (!newUsername || newUsername.length < 3) {
       document.getElementById('usernameFeedback').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
       btn.disabled = false;
@@ -2541,7 +2522,7 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
   }
 });
 
-document.getElementById('changeBtn')?.addEventListener('click', async () => {
+document.getElementById('change Btn')?.addEventListener('click', async () => {
   const oldPass = document.getElementById('oldPassword').value;
   const newPass = document.getElementById('newPassword').value;
   const confirmPass = document.getElementById('confirmNewPassword').value;
