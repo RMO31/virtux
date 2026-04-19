@@ -612,6 +612,7 @@
       <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">يوتيوب ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 القنوات</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 الفيديوهات</a></div></div>
       <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">📢 الإعلانات ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 التعاون</a></div></div>
     </div>
+    <button id="lang-toggle-btn" onclick="window.toggleLanguage()" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 12px;border-radius:5px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;" title="Toggle Language">🌐 EN</button>
     <div id="auth-btn-area" style="margin-left:8px;">
       <div class="auth-buttons-header">
         <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
@@ -822,6 +823,9 @@
     <div class="profile-buttons">
       <button id="save Btn" class="btn-save">💾 حفظ التغييرات</button>
       <button id="close Btn" class="btn-cancel">إغلاق</button>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #440000;">
+      <button id="deleteAccountBtn" style="width:100%;background:transparent;border:1px solid #f55;color:#f55;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px;font-family:'Poppins',sans-serif;" onclick="window.confirmDeleteAccount()">🗑️ حذف الحساب نهائياً</button>
     </div>
   </div>
 </div>
@@ -1784,7 +1788,9 @@ async function loadSubscribersWithVIP(el, posts) {
       const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member'];
       const getTopRole = (u) => {
         const rs = normalizeRoles(u);
-        return ROLE_PRIORITY.find(r => rs.includes(r)) || null;
+        // لا نعرض المستخدمين العاديين (user/guest) في صفحة المشتركين
+        const found = ROLE_PRIORITY.find(r => rs.includes(r));
+        return found || null;
       };
       const userCard = (u, accentColor, topRoleDef) => {
         const avatar = u.avatar_url
@@ -1797,7 +1803,7 @@ async function loadSubscribersWithVIP(el, posts) {
         return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || 'مستخدم')}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
-        // كل مستخدم يظهر في خانة رتبته الأعلى فقط
+        // كل مستخدم يظهر في خانة رتبته الأعلى فقط — لا يظهر المستخدمون العاديون (user)
         const usersInRole = vipUsers.filter(u => getTopRole(u) === def.key);
         if (!usersInRole.length) return;
         groupedHtml += `
@@ -2553,6 +2559,126 @@ document.getElementById('profileModal')?.addEventListener('click', (e) => {
     document.getElementById('profileModal').classList.remove('active');
   }
 });
+
+// ==================== حذف الحساب ====================
+window.confirmDeleteAccount = async function() {
+  if (!window.currentUserId) return;
+  const confirmed = confirm('⚠️ هل أنت متأكد من حذف حسابك نهائياً؟\nسيتم حذف جميع بياناتك ولا يمكن التراجع عن هذا الإجراء.');
+  if (!confirmed) return;
+  const doubleConfirm = confirm('⚠️ تأكيد أخير: سيتم حذف حسابك وكل بياناتك بشكل دائم. هل تريد المتابعة؟');
+  if (!doubleConfirm) return;
+  try {
+    const btn = document.getElementById('deleteAccountBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الحذف...'; }
+    // حذف البيانات من جدول profiles
+    await db.from('profiles').delete().eq('id', window.currentUserId);
+    // تسجيل الخروج
+    await db.auth.signOut();
+    alert('✅ تم حذف حسابك بنجاح.');
+    document.getElementById('profileModal')?.classList.remove('active');
+    window.currentUserId = null;
+    window.currentUsername = null;
+    window.userRole = 'guest';
+    window.userRoles = ['guest'];
+    document.getElementById('btn-login-link').style.display = 'inline-block';
+    document.getElementById('btn-user-area').style.display = 'none';
+  } catch(e) {
+    alert('❌ حدث خطأ أثناء حذف الحساب: ' + (e.message || e));
+    const btn = document.getElementById('deleteAccountBtn');
+    if (btn) { btn.disabled = false; btn.textContent = '🗑️ حذف الحساب نهائياً'; }
+  }
+};
+
+// ==================== نظام الترجمة EN/AR ====================
+window._siteLanguage = 'ar';
+window._translations = {
+  // Topbar / Navbar
+  'الأخبار ▾': 'News ▾',
+  'يوتيوب ▾': 'YouTube ▾',
+  '📢 الإعلانات ▾': '📢 Announcements ▾',
+  '📰 أخبار الألعاب': '📰 Gaming News',
+  '▶️ أخبار يوتيوب': '▶️ YouTube News',
+  '📺 القنوات': '📺 Channels',
+  '🎬 الفيديوهات': '🎬 Videos',
+  '🌐 التعاون': '🌐 Collaboration',
+  'تسجيل الدخول': 'Login',
+  // Sidebar
+  '🏠 الرئيسية': '🏠 Home',
+  'المحتوى': 'Content',
+  '🔴 live المباشر': '🔴 Live',
+  '🏆 البطولات': '🏆 Tournaments',
+  '🎬 أبرز اللحظات': '🎬 Highlights',
+  'المجتمع': 'Community',
+  '👥 المشتركون': '👥 Subscribers',
+  '📞 التواصل': '📞 Contact',
+  // Home
+  'مرحباً بك في Virtux': 'Welcome to Virtux',
+  // Profile modal
+  '👤 الملف الشخصي': '👤 Profile',
+  'خروج': 'Logout',
+  '🗑️ حذف الحساب نهائياً': '🗑️ Delete Account Permanently',
+  '💾 حفظ التغييرات': '💾 Save Changes',
+  'إغلاق': 'Close',
+  // Ticker
+  'مباشر': 'LIVE',
+  // Page headers
+  '📰 أخبار الألعاب': '📰 Gaming News',
+};
+
+window.toggleLanguage = function() {
+  const btn = document.getElementById('lang-toggle-btn');
+  if (window._siteLanguage === 'ar') {
+    window._siteLanguage = 'en';
+    document.documentElement.lang = 'en';
+    document.documentElement.dir = 'ltr';
+    document.body.style.direction = 'ltr';
+    if (btn) btn.textContent = '🌐 AR';
+    applyTranslations('en');
+  } else {
+    window._siteLanguage = 'ar';
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+    document.body.style.direction = 'rtl';
+    if (btn) btn.textContent = '🌐 EN';
+    applyTranslations('ar');
+  }
+};
+
+function applyTranslations(lang) {
+  const t = window._translations;
+  const isEN = lang === 'en';
+  // Translate text nodes that match our dictionary
+  function translateEl(el) {
+    if (!el) return;
+    const txt = el.textContent?.trim();
+    if (isEN && t[txt]) { el.textContent = t[txt]; }
+    else if (!isEN) {
+      const arKey = Object.keys(t).find(k => t[k] === txt);
+      if (arKey) el.textContent = arKey;
+    }
+  }
+  // Buttons & links in topnav
+  document.querySelectorAll('.dd-btn, .dd-menu a, .sb-btn, .sb-section').forEach(translateEl);
+  // Auth buttons
+  translateEl(document.getElementById('btn-login-link'));
+  const logoutBtn = document.getElementById('logoutButton');
+  if (logoutBtn) logoutBtn.textContent = isEN ? 'Logout' : 'خروج';
+  const profileBtn = document.getElementById('profileButton');
+  if (profileBtn) profileBtn.textContent = isEN ? '👤 Profile' : '👤 الملف الشخصي';
+  // Welcome
+  const welcome = document.querySelector('.home-welcome');
+  if (welcome) welcome.textContent = isEN ? 'Welcome to Virtux' : 'مرحباً بك في Virtux';
+  // Ticker label
+  const tickerLabel = document.querySelector('.ticker-label');
+  if (tickerLabel) tickerLabel.textContent = isEN ? 'LIVE' : 'مباشر';
+  // Profile modal buttons
+  const saveBtn = document.getElementById('save Btn');
+  if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
+  const closeBtn = document.getElementById('close Btn');
+  if (closeBtn) closeBtn.textContent = isEN ? 'Close' : 'إغلاق';
+  const delBtn = document.getElementById('deleteAccountBtn');
+  if (delBtn && !delBtn.disabled) delBtn.textContent = isEN ? '🗑️ Delete Account Permanently' : '🗑️ حذف الحساب نهائياً';
+}
 
 loadTicker();
 initializeAuth();
