@@ -859,7 +859,8 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     storage: window.localStorage
   }
 });
-let allPosts = {};
+window.allPosts = {};
+const allPosts = window.allPosts;
 let pendingGoogleUser = null;
 let currentProfileData = null;
 let currentEditPost = null;
@@ -1727,11 +1728,11 @@ function renderCards(posts, gridId, room) {
         media = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}" loading="lazy" frameborder="0" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
       else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
-      else media = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'مباشر Now' ? `<div class="live-badge">\${window.t('مباشر','LIVE')}</div>` : ''}</div>`;
+      else media = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'مباشر Now' ? `<div class="live-badge">${window.t('مباشر','LIVE')}</div>` : ''}</div>`;
     }
     let summary = (p.content || p.description || '').substring(0,150);
     if ((p.content || '').length > 150) summary += '...';
-    const readMoreLink = (p.content && room !== 'yt-videos') ? `<a href="post.html?id=${p.id}" class="read-more">📖 \${window.t("اقرأ المزيد","Read More")}</a>` : '';
+    const readMoreLink = (p.content && room !== 'yt-videos') ? `<a href="post.html?id=${p.id}" class="read-more">📖 ${window.t("اقرأ المزيد","Read More")}</a>` : '';
     let actions = '';
     if (!isRestricted && p.url) {
       const isStorageFile = p.url.includes('/storage/v1/object/public/');
@@ -1739,18 +1740,18 @@ function renderCards(posts, gridId, room) {
       const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
       const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
       if (isVideoFile || isImageFile) {
-        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ \${window.t("تحميل","Download")}</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل","Download")}</a>`;
       } else if (!isYouTubeUrl) {
-        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 \${window.t("رابط","Link")}</a>`;
+        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط","Link")}</a>`;
       }
     }
     // زر تسجيل بطولة VIP
     let registerBtn = '';
     if (room === 'tournaments' && isVIP(p)) {
       if (canViewVIP) {
-        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">\${window.t("🏆 تسجيل","🏆 Register")}</button>`;
+        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل","🏆 Register")}</button>`;
       } else {
-        registerBtn = `<span style="color:#888;font-size:11px;">\${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
+        registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
       }
     }
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
