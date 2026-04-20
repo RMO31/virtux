@@ -2829,95 +2829,215 @@ function applyTranslations() {
 // ==================== صفحة الميزات والرتب ====================
 (function() {
   const mainContainer = document.querySelector('.vx-main');
+  // ======== بيانات الرتب ========
+  const PLANS = [
+    {
+      key: 'vip', icon: '👑', color: '#e01010', bg: 'linear-gradient(160deg,#1a0000,#0d0000)', border: '#e01010',
+      name_ar: 'VIP', name_en: 'VIP',
+      features_ar: ['نشر بطولات VIP', 'مشاهدة فيديوهات VIP'],
+      features_en: ['Post VIP Tournaments', 'Watch VIP Videos'],
+    },
+    {
+      key: 'member', icon: '⭐', color: '#cc2222', bg: 'linear-gradient(160deg,#100a00,#0d0000)', border: '#cc2222',
+      name_ar: 'Member', name_en: 'Member',
+      features_ar: ['مشاهدة فيديوهات VIP', 'دعم الموقع كطرف داعم'],
+      features_en: ['Watch VIP Videos', 'Support the site as a member'],
+    },
+    {
+      key: 'youtuber_vip', icon: '🔥', color: '#ff6600', bg: 'linear-gradient(160deg,#1a0a00,#0d0000)', border: '#ff6600', best: true,
+      name_ar: 'Youtuber VIP', name_en: 'Youtuber VIP',
+      features_ar: ['نشر فيديوهات VIP', 'نشر بثوث مباشرة', 'إضافة قناتك في قسم القنوات', 'تحميل تلقائي لآخر 5 فيديوهات من قناتك يومياً'],
+      features_en: ['Post VIP Videos', 'Stream live broadcasts', 'Add your channel to the Channels section', 'Auto-import of your last 5 videos daily'],
+    },
+    {
+      key: 'donor', icon: '💎', color: '#00ccff', bg: 'linear-gradient(160deg,#001a22,#000d11)', border: '#00ccff',
+      name_ar: 'Donors', name_en: 'Donors',
+      features_ar: ['دعم مباشر لصاحب الموقع', 'شارة Donor مميزة في الملف الشخصي', 'شكراً جزيلاً على دعمكم 🙏'],
+      features_en: ['Direct support for the site owner', 'Exclusive Donor badge on your profile', 'Thank you so much for your support 🙏'],
+    },
+  ];
+
+  function buildPricingPage() {
+    const isEN = window._siteLanguage === 'en';
+    const cards = PLANS.map(p => `
+      <div style="background:${p.bg};border:1.5px solid ${p.border};border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:10px;position:relative;">
+        ${p.best ? `<div style="position:absolute;top:-10px;right:50%;transform:translateX(50%);background:${p.border};color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">${isEN?'Best':'الأفضل'}</div>` : ''}
+        <div style="font-size:28px;text-align:center;">${p.icon}</div>
+        <div style="color:${p.color};font-weight:700;font-size:18px;text-align:center;">${isEN ? p.name_en : p.name_ar}</div>
+        <hr style="border-color:${p.border}33;margin:4px 0;">
+        <ul style="color:#ddd;font-size:13px;line-height:1.9;padding-right:${isEN?'0':'16px'};padding-left:${isEN?'16px':'0'};margin:0;">
+          ${(isEN ? p.features_en : p.features_ar).map(f => `<li>${f}</li>`).join('')}
+        </ul>
+        <div style="margin-top:auto;padding-top:14px;text-align:center;">
+          <button onclick="window.openPayModal('${p.key}')"
+            style="background:${p.color};color:#000;font-weight:800;font-size:13px;border:none;border-radius:8px;padding:9px 22px;cursor:pointer;width:100%;transition:opacity .2s;"
+            onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+            💳 ${isEN ? 'Pay & Get Rank' : 'ادفع واحصل على الرتبة'}
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+    <div class="page-header"><h2>${isEN ? '💎 Features & Ranks' : '💎 الميزات والرتب'}</h2></div>
+    <div style="max-width:1000px;margin:0 auto;padding:20px 16px;">
+      <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:28px;background:rgba(220,0,0,0.07);border:1px solid #e0101033;border-radius:10px;padding:12px;">
+        ⚠️ ${isEN ? 'Offers may change in the future with new additions.' : 'العروض قابلة للتغيير في المستقبل مع إضافات جديدة.'}
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;">${cards}</div>
+      <p style="text-align:center;color:#666;font-size:11px;margin-top:28px;">
+        📌 ${isEN ? 'Note: All offers are subject to change. Contact us via the Contact page.' : 'ملاحظة: جميع العروض قابلة للتغيير. للاستفسار تواصل عبر صفحة التواصل.'}
+      </p>
+    </div>`;
+  }
+
   const pricingPage = document.createElement('div');
   pricingPage.className = 'vx-page';
   pricingPage.id = 'page-pricing';
-  pricingPage.innerHTML = `
-  <div class="page-header"><h2>💎 الميزات والرتب</h2></div>
-  <div style="max-width:1000px;margin:0 auto;padding:20px 16px;">
-
-    <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:28px;background:rgba(220,0,0,0.07);border:1px solid #e0101033;border-radius:10px;padding:12px;">
-      ⚠️ العروض قابلة للتغيير في المستقبل مع إضافات جديدة. للحصول على رتبة بعد الدفع، تواصل مع الإدارة.
-    </p>
-
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;">
-
-      <!-- VIP -->
-      <div style="background:linear-gradient(160deg,#1a0000,#0d0000);border:1.5px solid #e01010;border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:10px;">
-        <div style="font-size:24px;text-align:center;">👑</div>
-        <div style="color:#e01010;font-weight:700;font-size:18px;text-align:center;">VIP</div>
-        <hr style="border-color:#e0101033;margin:4px 0;">
-        <ul style="color:#ddd;font-size:13px;line-height:1.8;padding-right:16px;margin:0;">
-          <li>نشر بطولات VIP</li>
-          <li>مشاهدة فيديوهات VIP</li>
-        </ul>
-        <div style="margin-top:auto;padding-top:12px;text-align:center;">
-          <div style="color:#aaa;font-size:11px;margin-bottom:8px;">للدفع عبر IBAN</div>
-          <div style="background:#0a0000;border:1px solid #e01010;border-radius:8px;padding:8px;font-size:11px;color:#e01010;word-break:break-all;font-family:monospace;">LT383500010019000970</div>
-          <div style="color:#888;font-size:10px;margin-top:6px;">بعد الدفع تواصل مع الإدارة للحصول على رتبتك</div>
-        </div>
-      </div>
-
-      <!-- Member -->
-      <div style="background:linear-gradient(160deg,#100a00,#0d0000);border:1.5px solid #cc2222;border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:10px;">
-        <div style="font-size:24px;text-align:center;">⭐</div>
-        <div style="color:#cc2222;font-weight:700;font-size:18px;text-align:center;">Member</div>
-        <hr style="border-color:#cc222233;margin:4px 0;">
-        <ul style="color:#ddd;font-size:13px;line-height:1.8;padding-right:16px;margin:0;">
-          <li>مشاهدة فيديوهات VIP</li>
-          <li>دعم الموقع كطرف داعم</li>
-        </ul>
-        <div style="margin-top:auto;padding-top:12px;text-align:center;">
-          <div style="color:#aaa;font-size:11px;margin-bottom:8px;">للدفع عبر IBAN</div>
-          <div style="background:#0a0000;border:1px solid #cc2222;border-radius:8px;padding:8px;font-size:11px;color:#cc2222;word-break:break-all;font-family:monospace;">LT383500010019000970</div>
-          <div style="color:#888;font-size:10px;margin-top:6px;">بعد الدفع تواصل مع الإدارة للحصول على رتبتك</div>
-        </div>
-      </div>
-
-      <!-- Youtuber VIP -->
-      <div style="background:linear-gradient(160deg,#1a0a00,#0d0000);border:1.5px solid #ff6600;border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:10px;position:relative;">
-        <div style="position:absolute;top:-10px;right:50%;transform:translateX(50%);background:#ff6600;color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">الأفضل</div>
-        <div style="font-size:24px;text-align:center;">🔥</div>
-        <div style="color:#ff6600;font-weight:700;font-size:18px;text-align:center;">Youtuber VIP</div>
-        <hr style="border-color:#ff660033;margin:4px 0;">
-        <ul style="color:#ddd;font-size:13px;line-height:1.8;padding-right:16px;margin:0;">
-          <li>نشر فيديوهات VIP</li>
-          <li>نشر بثوث مباشرة</li>
-          <li>إضافة قناتك في قسم القنوات</li>
-          <li>تحميل تلقائي لآخر 5 فيديوهات من قناتك يومياً</li>
-        </ul>
-        <div style="margin-top:auto;padding-top:12px;text-align:center;">
-          <div style="color:#aaa;font-size:11px;margin-bottom:8px;">للدفع عبر IBAN</div>
-          <div style="background:#0a0000;border:1px solid #ff6600;border-radius:8px;padding:8px;font-size:11px;color:#ff6600;word-break:break-all;font-family:monospace;">LT383500010019000970</div>
-          <div style="color:#888;font-size:10px;margin-top:6px;">بعد الدفع تواصل مع الإدارة للحصول على رتبتك</div>
-        </div>
-      </div>
-
-      <!-- Donors -->
-      <div style="background:linear-gradient(160deg,#001a22,#000d11);border:1.5px solid #00ccff;border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:10px;">
-        <div style="font-size:24px;text-align:center;">💎</div>
-        <div style="color:#00ccff;font-weight:700;font-size:18px;text-align:center;">Donors</div>
-        <hr style="border-color:#00ccff33;margin:4px 0;">
-        <ul style="color:#ddd;font-size:13px;line-height:1.8;padding-right:16px;margin:0;">
-          <li>دعم مباشر لصاحب الموقع</li>
-          <li>شارة Donor مميزة في الملف الشخصي</li>
-          <li>شكراً جزيلاً على دعمكم 🙏</li>
-        </ul>
-        <div style="margin-top:auto;padding-top:12px;text-align:center;">
-          <div style="color:#aaa;font-size:11px;margin-bottom:8px;">للدفع عبر IBAN</div>
-          <div style="background:#000d11;border:1px solid #00ccff;border-radius:8px;padding:8px;font-size:11px;color:#00ccff;word-break:break-all;font-family:monospace;">LT383500010019000970</div>
-          <div style="color:#888;font-size:10px;margin-top:6px;">بعد الدفع تواصل مع الإدارة للحصول على رتبتك</div>
-        </div>
-      </div>
-
-    </div>
-
-    <p style="text-align:center;color:#666;font-size:11px;margin-top:28px;">
-      📌 ملاحظة: جميع العروض قابلة للتغيير. للاستفسار تواصل عبر صفحة التواصل.
-    </p>
-  </div>
-  `;
+  pricingPage.innerHTML = buildPricingPage();
   mainContainer.appendChild(pricingPage);
+
+  // إعادة بناء عند تغيير اللغة
+  const _origApply = window.applyTranslations || function(){};
+  window.applyTranslations = function() {
+    _origApply();
+    const pp = document.getElementById('page-pricing');
+    if (pp) pp.innerHTML = buildPricingPage();
+  };
+
+  // ======== Modal الدفع ========
+  const payModalEl = document.createElement('div');
+  payModalEl.id = 'pay-modal';
+  payModalEl.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:16px;';
+  payModalEl.innerHTML = `
+    <div style="background:#0d0000;border:1.5px solid #e01010;border-radius:16px;padding:28px 24px;width:100%;max-width:460px;position:relative;">
+      <button onclick="document.getElementById('pay-modal').style.display='none'"
+        style="position:absolute;top:12px;right:14px;background:transparent;border:1px solid #444;color:#aaa;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;">✕</button>
+      <h3 id="pay-modal-title" style="color:#e01010;margin:0 0 18px;font-size:17px;text-align:center;"></h3>
+
+      <div style="margin-bottom:14px;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="pay-label-username"></label>
+        <input id="pay-username" type="text" placeholder="username"
+          style="width:100%;background:#1a0000;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-box;">
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="pay-label-id"></label>
+        <input id="pay-userid" type="text" placeholder="User ID"
+          style="width:100%;background:#1a0000;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-all;box-sizing:border-box;" readonly>
+        <div style="color:#666;font-size:10px;margin-top:3px;" id="pay-id-hint"></div>
+      </div>
+
+      <div id="pay-iban-box" style="display:none;background:#0a0000;border:1px solid #e01010;border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">
+        <div style="color:#aaa;font-size:11px;margin-bottom:6px;" id="pay-iban-label"></div>
+        <div style="color:#e01010;font-size:15px;font-weight:800;font-family:monospace;letter-spacing:1px;">LT38 3500 0100 1900 0970</div>
+        <button onclick="navigator.clipboard.writeText('LT383500010019000970').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋 Copy',1500)})"
+          style="margin-top:8px;background:#1a0000;border:1px solid #e01010;color:#e01010;border-radius:6px;padding:4px 14px;font-size:11px;cursor:pointer;">📋 Copy</button>
+      </div>
+
+      <button id="pay-submit-btn" onclick="window.submitPayRequest()"
+        style="width:100%;background:#e01010;color:#000;font-weight:800;font-size:14px;border:none;border-radius:10px;padding:11px;cursor:pointer;">
+      </button>
+      <div id="pay-feedback" style="margin-top:10px;text-align:center;font-size:12px;min-height:18px;"></div>
+    </div>
+  `;
+  document.body.appendChild(payModalEl);
+
+  window._payPlanKey = '';
+  window.openPayModal = function(planKey) {
+    const isEN = window._siteLanguage === 'en';
+    const plan = PLANS.find(p => p.key === planKey);
+    if (!plan) return;
+    window._payPlanKey = planKey;
+
+    document.getElementById('pay-modal-title').textContent =
+      (isEN ? '💳 Payment for ' : '💳 الدفع للحصول على ') + (isEN ? plan.name_en : plan.name_ar);
+    document.getElementById('pay-label-username').textContent =
+      isEN ? 'Your username on the site:' : 'اسم المستخدم الخاص بك في الموقع:';
+    document.getElementById('pay-label-id').textContent =
+      isEN ? 'Your User ID (auto-filled):' : 'رقم حسابك (يُملأ تلقائياً):';
+    document.getElementById('pay-id-hint').textContent =
+      isEN ? 'This ID helps us identify your account after payment.' : 'هذا الرقم يساعدنا في التعرف على حسابك بعد الدفع.';
+    document.getElementById('pay-iban-label').textContent =
+      isEN ? 'Send payment to this IBAN:' : 'أرسل الدفع إلى هذا الـ IBAN:';
+    document.getElementById('pay-submit-btn').textContent =
+      isEN ? '📤 Send Payment Request' : '📤 إرسال طلب الدفع';
+    document.getElementById('pay-feedback').textContent = '';
+    document.getElementById('pay-iban-box').style.display = 'none';
+
+    // ملء User ID تلقائياً
+    const uid = window.currentUserId || '';
+    const uname = window.currentUsername || '';
+    document.getElementById('pay-userid').value = uid;
+    document.getElementById('pay-username').value = uname;
+
+    const modal = document.getElementById('pay-modal');
+    modal.style.display = 'flex';
+  };
+
+  window.submitPayRequest = async function() {
+    const isEN = window._siteLanguage === 'en';
+    const username = document.getElementById('pay-username').value.trim();
+    const userId   = document.getElementById('pay-userid').value.trim();
+    const planKey  = window._payPlanKey;
+    const plan     = PLANS.find(p => p.key === planKey);
+    const fb       = document.getElementById('pay-feedback');
+
+    if (!username) {
+      fb.style.color = '#f55';
+      fb.textContent = isEN ? '⚠️ Please enter your username.' : '⚠️ أدخل اسم المستخدم.';
+      return;
+    }
+
+    // حفظ طلب الدفع في Supabase
+    try {
+      fb.style.color = '#aaa';
+      fb.textContent = isEN ? '⏳ Sending...' : '⏳ جاري الإرسال...';
+
+      const { error } = await db.from('payment_requests').insert({
+        user_id:   userId || null,
+        username:  username,
+        plan_key:  planKey,
+        plan_name: isEN ? plan.name_en : plan.name_ar,
+        status:    'pending',
+      });
+
+      if (error) throw error;
+
+      // إظهار IBAN بعد الإرسال
+      document.getElementById('pay-iban-box').style.display = 'block';
+      document.getElementById('pay-submit-btn').style.display = 'none';
+      fb.style.color = '#4f4';
+      fb.textContent = isEN
+        ? '✅ Request sent! Now send the payment to the IBAN above and we will activate your rank.'
+        : '✅ تم إرسال الطلب! أرسل الآن الدفع إلى الـ IBAN أعلاه وسنفعّل رتبتك.';
+
+    } catch(e) {
+      fb.style.color = '#f55';
+      fb.textContent = (isEN ? '❌ Error: ' : '❌ خطأ: ') + (e.message || e);
+    }
+  };
+
+  // إغلاق modal بالضغط خارجه
+  document.getElementById('pay-modal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+
+  // ======== مراقبة طلبات الدفع (للأدمن) وإعطاء الرتبة تلقائياً ========
+  if (window.currentUserId) {
+    // اشتراك realtime لطلبات pending
+    db.channel('payment_requests_watch')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'payment_requests' }, async (payload) => {
+        const row = payload.new;
+        if (row.status === 'approved' && row.user_id === window.currentUserId) {
+          // أعطِ المستخدم الرتبة تلقائياً
+          await db.from('profiles').update({ role: row.plan_key }).eq('id', row.user_id);
+          alert((window._siteLanguage === 'en' ? '🎉 Your rank has been activated: ' : '🎉 تم تفعيل رتبتك: ') + row.plan_name);
+          location.reload();
+        }
+      })
+      .subscribe();
+  }
 })();
 
 // ==================== Auto-fetch يوتيوب للقنوات ====================
