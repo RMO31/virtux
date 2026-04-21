@@ -2,6 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-src https://www.youtube.com https://player.twitch.tv https://youtube.com;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux — مجتمع الألعاب</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -1728,7 +1729,7 @@ function renderCards(posts, gridId, room) {
         media = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       }
       else if (isLocalVideo) {
-        media = `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
+        media = `<div class="post-card-video"><video src="${p.url}" controls preload="none" style="width:100%;height:100%;" onerror="this.parentElement.innerHTML='<div style=\"display:flex;align-items:center;justify-content:center;height:100%;color:#f55;font-size:12px;\">❌ تعذر تحميل الفيديو</div>'"></video></div>`;
       }
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
