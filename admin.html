@@ -1106,7 +1106,7 @@ async function loadSubscribersAdmin() {
     const { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     if (!users || !users.length) { container.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">لا يوجد مستخدمون</div>'; return; }
-    const RM = window._ROLE_META || { vip:{label:'👑 VIP',color:'#ff4444',bg:'#3d0f0f'}, member:{label:'⭐ Member',color:'#4caf90',bg:'#0f3d2e'}, moderator:{label:'🛡️ Mod',color:'#ff9800',bg:'#3d2e0f'}, youtuber:{label:'🎬 Youtuber',color:'#ff4444',bg:'#3d0f0f'}, youtuber_vip:{label:'🔥 Youtuber VIP',color:'#ff6b35',bg:'#3d1a0f'}, user:{label:'👤 User',color:'#aabbcc',bg:'#1a1a2e'} };
+    const RM = window._ROLE_META || { vip:{label:'👑 VIP',color:'#d4e800',bg:'#2a2000'}, member:{label:'⭐ Member',color:'#4caf90',bg:'#0f3d2e'}, moderator:{label:'🛡️ Mod',color:'#ff9800',bg:'#3d2e0f'}, youtuber:{label:'🎬 Youtuber',color:'#ff4444',bg:'#3d0f0f'}, youtuber_vip:{label:'🔥 Youtuber VIP',color:'#ff6b35',bg:'#3d1a0f'}, user:{label:'👤 User',color:'#aabbcc',bg:'#1a1a2e'} };
     function getRoles(u) { if (Array.isArray(u.roles) && u.roles.length) return u.roles; if (u.role) return [u.role]; return ['user']; }
     const roleOrder = ['vip','youtuber_vip','youtuber','moderator','member','user'];
     const grouped = {};
@@ -1117,24 +1117,68 @@ async function loadSubscribersAdmin() {
       for (const r of roleOrder) { if (roles.includes(r)) { grouped[r].push(u); placed = true; break; } }
       if (!placed) grouped['user'].push(u);
     });
-    let html = '';
+
+    // Search bar for subscribers
+    let html = `<div style="margin-bottom:14px;">
+      <input type="text" id="subsSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد..." oninput="filterSubscribersList(this.value)">
+    </div>`;
+
     roleOrder.forEach(r => {
       const m = RM[r] || RM.user;
       const list = grouped[r];
       if (!list.length) return;
-      html += `<div style="margin-bottom:18px;"><div style="font-size:14px;font-weight:700;color:${m.color};margin-bottom:8px;padding:6px 10px;background:${m.bg};border-radius:8px;border:1px solid ${m.color}33;">${m.label} (${list.length})</div>`;
+      html += `<div class="subs-role-group" data-role="${r}" style="margin-bottom:18px;"><div style="font-size:14px;font-weight:700;color:${m.color};margin-bottom:8px;padding:6px 10px;background:${m.bg};border-radius:8px;border:1px solid ${m.color}33;">${m.label} (${list.length})</div>`;
       html += '<div class="posts-list">';
       list.forEach(u => {
+        const uid = u.id;
         const roles = getRoles(u);
         const badges = roles.map(rr => { const mm = RM[rr]||RM.user; return `<span style="font-size:10px;background:${mm.bg};color:${mm.color};border-radius:4px;padding:2px 6px;margin:2px;display:inline-block;">${mm.label}</span>`; }).join('');
         const date = new Date(u.created_at).toLocaleDateString('ar-EG');
-        html += `<div class="pi"><div class="pi-icon">👤</div><div class="pi-info" style="flex:1;"><div class="pi-title">${escapeHtml(u.username||u.email)}</div><div class="pi-meta">${escapeHtml(u.email)} • ${date}</div><div style="margin-top:4px;">${badges}</div></div></div>`;
+        const toggleBtns = Object.keys(RM).map(rr => {
+          const has = roles.includes(rr);
+          const mm = RM[rr];
+          return has
+            ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${mm.color};background:${mm.bg};color:${mm.color};cursor:pointer;" onclick="toggleRole('${uid}','${rr}',false).then(()=>loadSubscribersAdmin())">✕ ${mm.label}</button>`
+            : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole('${uid}','${rr}',true).then(()=>loadSubscribersAdmin())">${mm.label}</button>`;
+        }).join('');
+        html += `<div class="pi subs-user-item" data-username="${escapeHtml(u.username||'')}" data-email="${escapeHtml(u.email||'')}">
+          <div class="pi-icon">👤</div>
+          <div class="pi-info" style="flex:1;">
+            <div class="pi-title">${escapeHtml(u.username||u.email)}</div>
+            <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
+            <div style="margin-top:4px;">${badges}</div>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:280px;">
+            ${toggleBtns}
+            <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser('${uid}').then(()=>loadSubscribersAdmin())">🗑️ حذف</button>
+          </div>
+        </div>`;
       });
       html += '</div></div>';
     });
     container.innerHTML = html;
   } catch(e) { container.innerHTML = '<div style="color:#f55;text-align:center;padding:24px;">❌ خطأ في التحميل</div>'; console.error(e); }
 }
+
+function filterSubscribersList(query) {
+  const items = document.querySelectorAll('.subs-user-item');
+  const q = query.toLowerCase().trim();
+  items.forEach(item => {
+    const username = (item.dataset.username || '').toLowerCase();
+    const email = (item.dataset.email || '').toLowerCase();
+    if (!q || username.includes(q) || email.includes(q)) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  // Show/hide role groups if all children hidden
+  document.querySelectorAll('.subs-role-group').forEach(group => {
+    const visible = group.querySelectorAll('.subs-user-item:not([style*="display: none"])');
+    group.style.display = visible.length ? '' : 'none';
+  });
+}
+window.filterSubscribersList = filterSubscribersList;
 
 async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
 function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
