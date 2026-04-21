@@ -436,17 +436,14 @@ async function toggleRole(userId, role, add) {
     console.log('Current roles before change:', currentRoles);
 
     if (add) {
-      if (role === 'user') {
-        // When explicitly setting to "user" only, clear all other roles
-        currentRoles = ['user'];
-      } else {
-        if (!currentRoles.includes(role)) currentRoles.push(role);
-        // Remove plain 'user' when adding a real role (vip, member, etc.)
-        currentRoles = currentRoles.filter(r => r !== 'user');
-      }
+      // Simply add the role if not already present
+      if (!currentRoles.includes(role)) currentRoles.push(role);
+      // Always ensure 'user' is present as a base role
+      if (!currentRoles.includes('user')) currentRoles.unshift('user');
     } else {
       currentRoles = currentRoles.filter(r => r !== role);
-      if (currentRoles.length === 0) currentRoles = ['user'];
+      // Always ensure 'user' remains as base role
+      if (!currentRoles.includes('user')) currentRoles.unshift('user');
     }
 
     const primaryRole = currentRoles[0];
