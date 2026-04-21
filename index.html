@@ -1689,6 +1689,23 @@ async function deletePost(id, room) {
   } catch(e) { alert('خطأ: ' + e.message); }
 }
 
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const isEN = window._siteLanguage === 'en';
+  const now = new Date();
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 60)    return isEN ? 'Just now' : 'الآن';
+  if (diff < 3600)  { const m = Math.floor(diff/60);   return isEN ? m+'m ago' : 'منذ '+m+' د'; }
+  if (diff < 86400) { const h = Math.floor(diff/3600);  return isEN ? h+'h ago' : 'منذ '+h+' س'; }
+  if (diff < 604800){ const dd = Math.floor(diff/86400); return isEN ? dd+'d ago' : 'منذ '+dd+' يوم'; }
+  if (diff < 2592000){ const w = Math.floor(diff/604800); return isEN ? w+'w ago' : 'منذ '+w+' أسبوع'; }
+  if (diff < 31536000){ const mo = Math.floor(diff/2592000); return isEN ? mo+'mo ago' : 'منذ '+mo+' شهر'; }
+  const yr = Math.floor(diff/31536000);
+  return isEN ? yr+'y ago' : 'منذ '+yr+' سنة';
+}
+
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
   // ⚠️ غرفة Subscribers تُحمّل المستخدمين من جدول profiles حتى لو لم توجد منشورات
@@ -1795,7 +1812,8 @@ function renderCards(posts, gridId, room) {
     const deleteBtn = isOwner
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
       : '';
-    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+    const timeLabel = p.created_at ? `<span style="font-size:10px;color:#555;margin-right:auto;">${timeAgo(p.created_at)}</span>` : '';
+    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${timeLabel}<div style="display:flex;gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
