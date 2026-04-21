@@ -324,8 +324,8 @@ async function loadDashboard() {
         const has = userRoles.includes(r);
         const m = ROLE_META[r];
         return has
-          ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,false)">✕ ${m.label}</button>`
-          : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,true)">${m.label}</button>`;
+          ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,false).then(()=>loadDashboard())">✕ ${m.label}</button>`
+          : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,true).then(()=>loadDashboard())">${m.label}</button>`;
       }).join('');
       return `<div class="pi" id="user-${uid}">
         <div class="pi-icon">👤</div>
@@ -336,7 +336,7 @@ async function loadDashboard() {
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:260px;">
           ${toggleBtns}
-          <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser(&quot;${uid}&quot;)">🗑️ حذف</button>
+          <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser(&quot;${uid}&quot;).then(()=>loadDashboard())">🗑️ حذف</button>
         </div>
       </div>`;
     }).join('') + `</div></div>`;
@@ -404,12 +404,12 @@ async function searchUsersForRole(query) {
       const toggleBtns = Object.keys(RM).map(r => {
         const has = uRoles.includes(r); const m = RM[r];
         return has
-          ? `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,false)">✕ ${m.label}</button>`
-          : `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,true)">${m.label}</button>`;
+          ? `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,false).then(()=>loadDashboard())">✕ ${m.label}</button>`
+          : `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,true).then(()=>loadDashboard())">${m.label}</button>`;
       }).join('');
       return `<div class="role-search-result-item">
         <div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)}</small><br><div style="margin-top:4px;">${badges}</div></div>
-        <div class="role-buttons" style="flex-wrap:wrap;gap:4px;">${toggleBtns}<button class="btn-del" style="font-size:10px;padding:2px 7px;" onclick="deleteUser(&quot;${id}&quot;)">🗑️ حذف</button></div>
+        <div class="role-buttons" style="flex-wrap:wrap;gap:4px;">${toggleBtns}<button class="btn-del" style="font-size:10px;padding:2px 7px;" onclick="deleteUser(&quot;${id}&quot;).then(()=>loadDashboard())">🗑️ حذف</button></div>
       </div>`;
     }).join('');
   } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
@@ -421,31 +421,54 @@ async function setRole(userId, role) {
 }
 async function toggleRole(userId, role, add) {
   try {
+    console.log(`toggleRole called: userId=${userId}, role=${role}, add=${add}`);
     // Fetch current roles
     const { data: prof, error: fetchErr } = await supabaseClient
       .from('profiles').select('role,roles').eq('id', userId).single();
-    if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم: ' + fetchErr.message); return; }
+    if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم: ' + fetchErr.message); console.error('Fetch error:', fetchErr); return false; }
+
+    console.log('Current profile data:', prof);
 
     let currentRoles = Array.isArray(prof.roles) && prof.roles.length
       ? [...prof.roles]
       : (prof.role ? [prof.role] : ['user']);
 
+    console.log('Current roles before change:', currentRoles);
+
     if (add) {
-      if (!currentRoles.includes(role)) currentRoles.push(role);
-      // Remove plain 'user' if adding a real role
-      if (currentRoles.length > 1) currentRoles = currentRoles.filter(r => r !== 'user');
+      if (role === 'user') {
+        // When explicitly setting to "user" only, clear all other roles
+        currentRoles = ['user'];
+      } else {
+        if (!currentRoles.includes(role)) currentRoles.push(role);
+        // Remove plain 'user' when adding a real role (vip, member, etc.)
+        currentRoles = currentRoles.filter(r => r !== 'user');
+      }
     } else {
       currentRoles = currentRoles.filter(r => r !== role);
       if (currentRoles.length === 0) currentRoles = ['user'];
     }
 
     const primaryRole = currentRoles[0];
-    const { error } = await supabaseClient.from('profiles')
+    console.log('New roles:', currentRoles, 'Primary:', primaryRole);
+
+    const { data: updateData, error } = await supabaseClient.from('profiles')
       .update({ roles: currentRoles, role: primaryRole })
-      .eq('id', userId);
-    if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error(error); return; }
-    await loadDashboard();
-  } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
+      .eq('id', userId)
+      .select();
+    if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error('Update error:', error); return false; }
+
+    console.log('Update result:', updateData);
+
+    if (!updateData || updateData.length === 0) {
+      alert('⚠️ لم يتم تحديث أي صف. تأكد أن RLS policy تسمح بالتحديث في جدول profiles.');
+      console.warn('No rows updated. Check RLS policies on profiles table.');
+      return false;
+    }
+
+    console.log('✅ Role updated successfully');
+    return true;
+  } catch(e) { alert('❌ خطأ: ' + e.message); console.error('toggleRole error:', e); return false; }
 }
 async function deleteUser(userId) {
   if (!confirm('حذف المستخدم نهائياً؟ لا يمكن التراجع')) return;
