@@ -216,7 +216,7 @@
     .post-card-img.img-portrait{object-fit:contain;max-height:420px}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
     .post-card-video{width:100%;aspect-ratio:16/9;background:#000;display:block;overflow:hidden;position:relative;}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;display:block;position:absolute;top:0;left:0;}
+    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;display:block;}
     .restricted-overlay{position:relative}
     .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#e01010;pointer-events:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
@@ -1724,27 +1724,51 @@ function renderCards(posts, gridId, room) {
       const isVideoExt = p.url && /\.(mp4|webm|ogg|mov)/i.test(p.url);
       const isStorageVideo = p.url && !isImageUrl && (p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
       const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
-      const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+      const isYouTube = p.url && (p.url.includes('youtube.com') || p.url.includes('youtu.be'));
+      const isTwitch  = p.url && p.url.includes('twitch.tv');
+
       if (isImageUrl) {
         media = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       }
       else if (isLocalVideo) {
-        media = `<div class="post-card-video"><video src="${p.url}" controls preload="none" style="width:100%;height:100%;" onerror="this.parentElement.innerHTML='<div style=\"display:flex;align-items:center;justify-content:center;height:100%;color:#f55;font-size:12px;\">❌ تعذر تحميل الفيديو</div>'"></video></div>`;
+        media = `<div class="post-card-video"><video src="${p.url}" controls preload="none" style="width:100%;height:100%;background:#000;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video><div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;color:#f55;font-size:12px;background:#0a0000;">❌ تعذر تحميل الفيديو</div></div>`;
       }
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
-        media = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}?rel=0" loading="lazy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
+        if (videoId) {
+          const liveBadge = (p.url.includes('/live/') || p.tag === 'مباشر Now' || p.tag === 'Live Now')
+            ? `<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;">● LIVE</div>` : '';
+          media = `<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;"
+            onclick="(function(el){el.innerHTML='<iframe src=\'https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0\' frameborder=\'0\' allow=\'accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture\' allowfullscreen style=\'width:100%;height:100%;border:none;\'></iframe>';el.style.cursor='default';})(this)">
+            <img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null;this.src='https://img.youtube.com/vi/${videoId}/0.jpg'">
+            ${liveBadge}
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+              <div style="width:56px;height:56px;background:rgba(0,0,0,.75);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                <div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:4px;"></div>
+              </div>
+            </div>
+          </div>`;
+        } else {
+          media = `<div class="post-card-emoji">🎬${p.icon ? '<br>'+p.icon : ''}</div>`;
+        }
       }
-      else if (p.url && p.url.includes('twitch.tv')) {
+      else if (isTwitch) {
         const twitchMatch = p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
         if (twitchMatch) {
-          media = `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`;
+          media = `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe></div>`;
         } else {
           media = `<div class="post-card-emoji">📺</div>`;
         }
       }
-      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
-      else media = `<div class="post-card-emoji">${p.icon || '📄'}${room === 'live' && p.tag === 'مباشر Now' ? `<div class="live-badge">${window.t('مباشر','LIVE')}</div>` : ''}</div>`;
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+        media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
+      }
+      else {
+        // منشور بدون وسائط — أيقونة مع خلفية بدل شاشة سوداء
+        const liveTag = room === 'live' && (p.tag === 'مباشر Now' || p.tag === 'Live Now')
+          ? `<div class="live-badge">${window.t('مباشر','LIVE')}</div>` : '';
+        media = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0a0a1a,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">${liveTag}<span style="font-size:36px;">${p.icon || '📄'}</span></div>`;
+      }
     }
     let summary = (p.content || p.description || '').substring(0,150);
     if ((p.content || '').length > 150) summary += '...';
@@ -3252,7 +3276,20 @@ function applyTranslations() {
       else continue;
 
       try {
-        const resp = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`);
+        // جرب عدة proxies
+        let resp = null;
+        const proxies = [
+          `https://corsproxy.io/?${encodeURIComponent(feedUrl)}`,
+          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`,
+          `https://thingproxy.freeboard.io/fetch/${feedUrl}`,
+        ];
+        for (const proxy of proxies) {
+          try {
+            resp = await fetch(proxy, {signal: AbortSignal.timeout(5000)});
+            if (resp.ok) break;
+          } catch(e) { resp = null; }
+        }
+        if (!resp || !resp.ok) continue;
         if (!resp.ok) continue;
         const xml = await resp.text();
         const parser = new DOMParser();
