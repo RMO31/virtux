@@ -1736,20 +1736,15 @@ function renderCards(posts, gridId, room) {
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
         if (videoId) {
-          const liveBadge = (p.url.includes('/live/') || p.tag === 'مباشر Now' || p.tag === 'Live Now')
-            ? `<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;">● LIVE</div>` : '';
-          media = `<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;"
-            onclick="(function(el){el.innerHTML='<iframe src=\'https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0\' frameborder=\'0\' allow=\'accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture\' allowfullscreen style=\'width:100%;height:100%;border:none;\'></iframe>';el.style.cursor='default';})(this)">
-            <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null;this.src='https://img.youtube.com/vi/${videoId}/0.jpg'">
-            ${liveBadge}
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-              <div style="width:56px;height:56px;background:rgba(0,0,0,.75);border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                <div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:4px;"></div>
-              </div>
-            </div>
-          </div>`;
+          const isLiveVid = p.url.includes('/live/') || p.tag === 'مباشر Now' || p.tag === 'Live Now';
+          const liveBadgeHtml = isLiveVid ? '<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;">&#9679; LIVE</div>' : '';
+          media = '<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;" data-vid="' + videoId + '" onclick="window.playYT(this)">'
+            + '<img src="https://i.ytimg.com/vi/' + videoId + '/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="window.fixThumb(this,this.closest(\'[data-vid]\').dataset.vid)">'
+            + liveBadgeHtml
+            + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>'
+            + '</div>';
         } else {
-          media = `<div class="post-card-emoji">🎬${p.icon ? '<br>'+p.icon : ''}</div>`;
+          media = '<div class="post-card-emoji">🎬</div>';
         }
       }
       else if (isTwitch) {
@@ -2204,7 +2199,7 @@ window.deletePost = deletePost;
   function renderLive(p){
     const vid=ytId(p.url); const tag=(p.tag||'').toLowerCase();
     const isLive=tag.includes('live'); const isSoon=tag.includes('pre')||tag.includes('upcoming');
-    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:`<div class="hc-thumb-placeholder">🔴</div>`;
+    const thumbEl=vid?`<img class="hc-thumb" src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:`<div class="hc-thumb-placeholder">🔴</div>`;
     const badge=isLive?`<span class="hc-badge-live">🔴 LIVE</span>`:isSoon?`<span class="hc-badge-soon">⏰ قريباً</span>`:'';
     const isTwitch=p.url&&p.url.includes('twitch.tv');
     const twitchMatch=isTwitch&&p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
@@ -2217,7 +2212,7 @@ window.deletePost = deletePost;
   }
   function renderVideo(p){
     const vid=ytId(p.url);
-    const thumbEl=vid?`<img class="hc-thumb" src="https://img.youtube.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
+    const thumbEl=vid?`<img class="hc-thumb" src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
     if(vid){
       return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap">${thumbEl}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     }
@@ -2343,7 +2338,7 @@ window.previewYTVIP = function(url) {
   if (!match) { prev.style.display='none'; return; }
   const vid = match[1];
   prev.style.display = 'block';
-  prev.innerHTML = `<img src="https://img.youtube.com/vi/${vid}/mqdefault.jpg"
+  prev.innerHTML = `<img src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg"
     style="width:100%;display:block;border-radius:8px;">`;
   // تعبئة تلقائية للعنوان إذا كان فارغاً
   const titleEl = document.getElementById('ytvip-title');
@@ -2369,7 +2364,7 @@ window.submitYTVIP = async function() {
   }
 
   const match = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-  const thumb = match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : '';
+  const thumb = match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : '';
 
   status.style.color='#aaa'; status.text='⏳ جارٍ النشر...';
   const btn = document.querySelector('#ytvip-post-modal button[onclick*="submitYTVIP"]');
@@ -3279,19 +3274,20 @@ function applyTranslations() {
         // جرب عدة proxies
         let resp = null;
         const proxies = [
-          `https://corsproxy.io/?${encodeURIComponent(feedUrl)}`,
-          `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`,
-          `https://thingproxy.freeboard.io/fetch/${feedUrl}`,
+          'https://corsproxy.io/?' + encodeURIComponent(feedUrl),
+          'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl),
+          'https://api.allorigins.win/get?url=' + encodeURIComponent(feedUrl),
         ];
-        for (const proxy of proxies) {
+        for (const proxyUrl of proxies) {
           try {
-            resp = await fetch(proxy, {signal: AbortSignal.timeout(5000)});
-            if (resp.ok) break;
-          } catch(e) { resp = null; }
+            const r = await fetch(proxyUrl);
+            if (r.ok) { resp = r; break; }
+          } catch(e) {}
         }
-        if (!resp || !resp.ok) continue;
+        if (!resp) continue;
         if (!resp.ok) continue;
-        const xml = await resp.text();
+        let xml = await resp.text();
+        try { const j = JSON.parse(xml); if (j.contents) xml = j.contents; } catch(e) {}
         const parser = new DOMParser();
         const doc = parser.parseFromString(xml, 'application/xml');
         const entries = Array.from(doc.querySelectorAll('entry')).slice(0, 5);
@@ -3321,13 +3317,35 @@ function applyTranslations() {
 })();
 
 
-// دالة تشغيل يوتيوب عند الضغط على الـ thumbnail
+// ===== تشغيل يوتيوب =====
 window.playYT = function(el) {
-  const vid = el.getAttribute('data-vid');
+  var vid = el.getAttribute('data-vid');
   if (!vid) return;
-  el.style.cursor = 'default';
   el.onclick = null;
-  el.innerHTML = '<iframe src="https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0" frameborder="0" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>';
+  el.style.cursor = 'default';
+  var iframe = document.createElement('iframe');
+  iframe.src = 'https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0';
+  iframe.setAttribute('frameborder', '0');
+  iframe.setAttribute('allowfullscreen', '');
+  iframe.setAttribute('allow', 'accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
+  iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:none;';
+  el.innerHTML = '';
+  el.appendChild(iframe);
+};
+
+window.fixThumb = function(img, vid) {
+  var fallbacks = [
+    'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg',
+    'https://i.ytimg.com/vi/' + vid + '/0.jpg',
+    'https://i.ytimg.com/vi/' + vid + '/default.jpg',
+  ];
+  var idx = parseInt(img.getAttribute('data-fb') || '0');
+  if (idx < fallbacks.length) {
+    img.setAttribute('data-fb', idx + 1);
+    img.src = fallbacks[idx];
+  } else {
+    img.style.display = 'none';
+  }
 };
 
 initializeAuth();
