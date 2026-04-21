@@ -2851,24 +2851,28 @@ function applyTranslations() {
   const PLANS = [
     {
       key: 'vip', icon: '👑', color: '#e01010', bg: 'linear-gradient(160deg,#1a0000,#0d0000)', border: '#e01010',
+      price: 20, currency: '$',
       name_ar: 'VIP', name_en: 'VIP',
       features_ar: ['نشر بطولات VIP', 'مشاهدة فيديوهات VIP'],
       features_en: ['Post VIP Tournaments', 'Watch VIP Videos'],
     },
     {
       key: 'member', icon: '⭐', color: '#cc2222', bg: 'linear-gradient(160deg,#100a00,#0d0000)', border: '#cc2222',
+      price: 11, currency: '$',
       name_ar: 'Member', name_en: 'Member',
       features_ar: ['مشاهدة فيديوهات VIP', 'دعم الموقع كطرف داعم'],
       features_en: ['Watch VIP Videos', 'Support the site as a member'],
     },
     {
       key: 'youtuber_vip', icon: '🔥', color: '#ff6600', bg: 'linear-gradient(160deg,#1a0a00,#0d0000)', border: '#ff6600', best: true,
+      price: 29, currency: '$',
       name_ar: 'Youtuber VIP', name_en: 'Youtuber VIP',
       features_ar: ['نشر فيديوهات VIP', 'نشر بثوث مباشرة', 'إضافة قناتك في قسم القنوات', 'تحميل تلقائي لآخر 5 فيديوهات من قناتك يومياً'],
       features_en: ['Post VIP Videos', 'Stream live broadcasts', 'Add your channel to the Channels section', 'Auto-import of your last 5 videos daily'],
     },
     {
       key: 'donor', icon: '💎', color: '#00ccff', bg: 'linear-gradient(160deg,#001a22,#000d11)', border: '#00ccff',
+      price: null, currency: '$',
       name_ar: 'Donors', name_en: 'Donors',
       features_ar: ['دعم مباشر لصاحب الموقع', 'شارة Donor مميزة في الملف الشخصي', 'شكراً جزيلاً على دعمكم 🙏'],
       features_en: ['Direct support for the site owner', 'Exclusive Donor badge on your profile', 'Thank you so much for your support 🙏'],
@@ -2877,24 +2881,42 @@ function applyTranslations() {
 
   function buildPricingPage() {
     const isEN = window._siteLanguage === 'en';
-    const cards = PLANS.map(p => `
+    const cards = PLANS.map(p => {
+      const isDonor = p.key === 'donor';
+      const priceTag = p.price
+        ? `<div style="text-align:center;margin:4px 0 8px;">
+             <span style="color:${p.color};font-size:26px;font-weight:900;">${p.currency}${p.price}</span>
+             <span style="color:#888;font-size:11px;"> / ${isEN?'one time':'مرة واحدة'}</span>
+           </div>`
+        : `<div style="text-align:center;margin:4px 0 8px;">
+             <span style="color:${p.color};font-size:18px;font-weight:700;">${isEN?'Any Amount':'أي مبلغ'} 🙏</span>
+           </div>`;
+
+      const btnHtml = isDonor
+        ? `<button onclick="window.openDonorModal()"
+             style="background:${p.color};color:#000;font-weight:800;font-size:13px;border:none;border-radius:8px;padding:9px 22px;cursor:pointer;width:100%;transition:opacity .2s;"
+             onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+             💙 ${isEN ? 'Support & Donate' : 'ادعم الموقع'}
+           </button>`
+        : `<button onclick="window.openPayModal('${p.key}')"
+             style="background:${p.color};color:#000;font-weight:800;font-size:13px;border:none;border-radius:8px;padding:9px 22px;cursor:pointer;width:100%;transition:opacity .2s;"
+             onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+             💳 ${isEN ? 'Pay & Get Rank' : 'ادفع واحصل على الرتبة'}
+           </button>`;
+
+      return `
       <div style="background:${p.bg};border:1.5px solid ${p.border};border-radius:14px;padding:22px 18px;display:flex;flex-direction:column;gap:10px;position:relative;">
         ${p.best ? `<div style="position:absolute;top:-10px;right:50%;transform:translateX(50%);background:${p.border};color:#000;font-size:10px;font-weight:800;padding:2px 10px;border-radius:20px;">${isEN?'Best':'الأفضل'}</div>` : ''}
         <div style="font-size:28px;text-align:center;">${p.icon}</div>
         <div style="color:${p.color};font-weight:700;font-size:18px;text-align:center;">${isEN ? p.name_en : p.name_ar}</div>
-        <hr style="border-color:${p.border}33;margin:4px 0;">
+        ${priceTag}
+        <hr style="border-color:${p.border}33;margin:2px 0;">
         <ul style="color:#ddd;font-size:13px;line-height:1.9;padding-right:${isEN?'0':'16px'};padding-left:${isEN?'16px':'0'};margin:0;">
           ${(isEN ? p.features_en : p.features_ar).map(f => `<li>${f}</li>`).join('')}
         </ul>
-        <div style="margin-top:auto;padding-top:14px;text-align:center;">
-          <button onclick="window.openPayModal('${p.key}')"
-            style="background:${p.color};color:#000;font-weight:800;font-size:13px;border:none;border-radius:8px;padding:9px 22px;cursor:pointer;width:100%;transition:opacity .2s;"
-            onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
-            💳 ${isEN ? 'Pay & Get Rank' : 'ادفع واحصل على الرتبة'}
-          </button>
-        </div>
-      </div>
-    `).join('');
+        <div style="margin-top:auto;padding-top:14px;text-align:center;">${btnHtml}</div>
+      </div>`;
+    }).join('');
 
     return `
     <div class="page-header"><h2>${isEN ? '💎 Features & Ranks' : '💎 الميزات والرتب'}</h2></div>
@@ -2904,7 +2926,7 @@ function applyTranslations() {
       </p>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;">${cards}</div>
       <p style="text-align:center;color:#666;font-size:11px;margin-top:28px;">
-        📌 ${isEN ? 'Note: All offers are subject to change. Contact us via the Contact page.' : 'ملاحظة: جميع العروض قابلة للتغيير. للاستفسار تواصل عبر صفحة التواصل.'}
+        📌 ${isEN ? 'Note: All offers are subject to change.' : 'ملاحظة: جميع العروض قابلة للتغيير.'}
       </p>
     </div>`;
   }
@@ -2928,34 +2950,49 @@ function applyTranslations() {
   payModalEl.id = 'pay-modal';
   payModalEl.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:16px;';
   payModalEl.innerHTML = `
-    <div style="background:#0d0000;border:1.5px solid #e01010;border-radius:16px;padding:28px 24px;width:100%;max-width:460px;position:relative;">
+    <div style="background:#0d0000;border:1.5px solid #e01010;border-radius:16px;padding:28px 24px;width:100%;max-width:480px;position:relative;max-height:90vh;overflow-y:auto;">
       <button onclick="document.getElementById('pay-modal').style.display='none'"
         style="position:absolute;top:12px;right:14px;background:transparent;border:1px solid #444;color:#aaa;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;">✕</button>
-      <h3 id="pay-modal-title" style="color:#e01010;margin:0 0 18px;font-size:17px;text-align:center;"></h3>
+      <h3 id="pay-modal-title" style="color:#e01010;margin:0 0 6px;font-size:17px;text-align:center;"></h3>
+      <div id="pay-price-tag" style="text-align:center;margin-bottom:18px;"></div>
 
-      <div style="margin-bottom:14px;">
+      <!-- اسم المستخدم في الموقع -->
+      <div style="margin-bottom:12px;">
         <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="pay-label-username"></label>
         <input id="pay-username" type="text" placeholder="username"
           style="width:100%;background:#1a0000;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-box;">
       </div>
 
-      <div style="margin-bottom:18px;">
+      <!-- User ID -->
+      <div style="margin-bottom:12px;">
         <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="pay-label-id"></label>
         <input id="pay-userid" type="text" placeholder="User ID"
-          style="width:100%;background:#1a0000;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-all;box-sizing:border-box;" readonly>
-        <div style="color:#666;font-size:10px;margin-top:3px;" id="pay-id-hint"></div>
+          style="width:100%;background:#1a0000;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#777;font-size:12px;box-sizing:border-box;" readonly>
+        <div style="color:#555;font-size:10px;margin-top:3px;" id="pay-id-hint"></div>
       </div>
 
-      <div id="pay-iban-box" style="display:none;background:#0a0000;border:1px solid #e01010;border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">
-        <div style="color:#aaa;font-size:11px;margin-bottom:6px;" id="pay-iban-label"></div>
-        <div style="color:#e01010;font-size:15px;font-weight:800;font-family:monospace;letter-spacing:1px;">LT38 3500 0100 1900 0970</div>
-        <button onclick="navigator.clipboard.writeText('LT383500010019000970').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋 Copy',1500)})"
-          style="margin-top:8px;background:#1a0000;border:1px solid #e01010;color:#e01010;border-radius:6px;padding:4px 14px;font-size:11px;cursor:pointer;">📋 Copy</button>
+      <!-- اسم صاحب الحساب البنكي المرسِل -->
+      <div style="margin-bottom:18px;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="pay-label-bankname"></label>
+        <input id="pay-bankname" type="text"
+          style="width:100%;background:#1a0000;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-box;">
+        <div style="color:#555;font-size:10px;margin-top:3px;" id="pay-bankname-hint"></div>
       </div>
 
+      <!-- زر إرسال -->
       <button id="pay-submit-btn" onclick="window.submitPayRequest()"
-        style="width:100%;background:#e01010;color:#000;font-weight:800;font-size:14px;border:none;border-radius:10px;padding:11px;cursor:pointer;">
+        style="width:100%;background:#e01010;color:#000;font-weight:800;font-size:14px;border:none;border-radius:10px;padding:11px;cursor:pointer;margin-bottom:4px;">
       </button>
+
+      <!-- IBAN يظهر بعد الإرسال -->
+      <div id="pay-iban-box" style="display:none;background:#0a0000;border:1px solid #e01010;border-radius:10px;padding:16px;margin-top:14px;text-align:center;">
+        <div style="color:#aaa;font-size:11px;margin-bottom:8px;" id="pay-iban-label"></div>
+        <div style="color:#e01010;font-size:16px;font-weight:900;font-family:monospace;letter-spacing:2px;">LT38 3500 0100 1900 0970</div>
+        <button onclick="navigator.clipboard.writeText('LT383500010019000970').then(()=>{this.textContent='✅ Copied!';setTimeout(()=>this.textContent='📋 Copy IBAN',1800)})"
+          style="margin-top:10px;background:#1a0000;border:1px solid #e01010;color:#e01010;border-radius:6px;padding:5px 16px;font-size:12px;cursor:pointer;">📋 Copy IBAN</button>
+        <div style="color:#888;font-size:11px;margin-top:10px;" id="pay-after-hint"></div>
+      </div>
+
       <div id="pay-feedback" style="margin-top:10px;text-align:center;font-size:12px;min-height:18px;"></div>
     </div>
   `;
@@ -2969,45 +3006,59 @@ function applyTranslations() {
     window._payPlanKey = planKey;
 
     document.getElementById('pay-modal-title').textContent =
-      (isEN ? '💳 Payment for ' : '💳 الدفع للحصول على ') + (isEN ? plan.name_en : plan.name_ar);
+      (isEN ? '💳 ' : '💳 ') + (isEN ? plan.name_en : plan.name_ar);
+    document.getElementById('pay-price-tag').innerHTML = plan.price
+      ? `<span style="color:${plan.color};font-size:28px;font-weight:900;">${plan.currency}${plan.price}</span>`
+      : '';
     document.getElementById('pay-label-username').textContent =
-      isEN ? 'Your username on the site:' : 'اسم المستخدم الخاص بك في الموقع:';
+      isEN ? 'Your site username:' : 'اسم المستخدم في الموقع:';
     document.getElementById('pay-label-id').textContent =
-      isEN ? 'Your User ID (auto-filled):' : 'رقم حسابك (يُملأ تلقائياً):';
+      isEN ? 'Your User ID (auto):' : 'رقم حسابك (تلقائي):';
     document.getElementById('pay-id-hint').textContent =
-      isEN ? 'This ID helps us identify your account after payment.' : 'هذا الرقم يساعدنا في التعرف على حسابك بعد الدفع.';
+      isEN ? 'Helps us identify your account.' : 'يساعدنا للتعرف على حسابك بعد الدفع.';
+    document.getElementById('pay-label-bankname').textContent =
+      isEN ? 'Your bank account holder name:' : 'اسم صاحب الحساب البنكي الذي ستدفع منه:';
+    document.getElementById('pay-bankname-hint').textContent =
+      isEN ? 'The name shown on your bank transfer — so we can match your payment.' : 'الاسم الذي سيظهر في التحويل البنكي لنتمكن من تطابق دفعتك.';
     document.getElementById('pay-iban-label').textContent =
-      isEN ? 'Send payment to this IBAN:' : 'أرسل الدفع إلى هذا الـ IBAN:';
+      isEN ? 'Send your payment to this IBAN:' : 'أرسل دفعتك إلى هذا الـ IBAN:';
+    document.getElementById('pay-after-hint').textContent =
+      isEN ? 'After sending, your rank will be activated within 24 hours.' : 'بعد الإرسال سيتم تفعيل رتبتك خلال 24 ساعة.';
     document.getElementById('pay-submit-btn').textContent =
-      isEN ? '📤 Send Payment Request' : '📤 إرسال طلب الدفع';
-    document.getElementById('pay-feedback').textContent = '';
+      isEN ? '📤 Send Request & Show IBAN' : '📤 أرسل الطلب واعرض IBAN';
+    document.getElementById('pay-submit-btn').style.display = 'block';
     document.getElementById('pay-iban-box').style.display = 'none';
+    document.getElementById('pay-feedback').textContent = '';
+    document.getElementById('pay-bankname').value = '';
 
-    // ملء User ID تلقائياً
     const uid = window.currentUserId || '';
     const uname = window.currentUsername || '';
     document.getElementById('pay-userid').value = uid;
     document.getElementById('pay-username').value = uname;
 
-    const modal = document.getElementById('pay-modal');
-    modal.style.display = 'flex';
+    document.getElementById('pay-modal').style.display = 'flex';
   };
 
   window.submitPayRequest = async function() {
     const isEN = window._siteLanguage === 'en';
     const username = document.getElementById('pay-username').value.trim();
     const userId   = document.getElementById('pay-userid').value.trim();
+    const bankName = document.getElementById('pay-bankname').value.trim();
     const planKey  = window._payPlanKey;
     const plan     = PLANS.find(p => p.key === planKey);
     const fb       = document.getElementById('pay-feedback');
 
     if (!username) {
       fb.style.color = '#f55';
-      fb.textContent = isEN ? '⚠️ Please enter your username.' : '⚠️ أدخل اسم المستخدم.';
+      fb.textContent = isEN ? '⚠️ Please enter your site username.' : '⚠️ أدخل اسم المستخدم في الموقع.';
+      return;
+    }
+    if (!bankName) {
+      fb.style.color = '#f55';
+      fb.textContent = isEN ? '⚠️ Please enter your bank account holder name.' : '⚠️ أدخل اسم صاحب الحساب البنكي.';
       return;
     }
 
-    // حفظ طلب الدفع في Supabase
     try {
       fb.style.color = '#aaa';
       fb.textContent = isEN ? '⏳ Sending...' : '⏳ جاري الإرسال...';
@@ -3015,21 +3066,21 @@ function applyTranslations() {
       const { error } = await db.from('payment_requests').insert({
         user_id:   userId || null,
         username:  username,
+        bank_name: bankName,
         plan_key:  planKey,
         plan_name: isEN ? plan.name_en : plan.name_ar,
+        price:     plan.price || null,
         status:    'pending',
       });
 
       if (error) throw error;
 
-      // إظهار IBAN بعد الإرسال
       document.getElementById('pay-iban-box').style.display = 'block';
       document.getElementById('pay-submit-btn').style.display = 'none';
       fb.style.color = '#4f4';
       fb.textContent = isEN
-        ? '✅ Request sent! Now send the payment to the IBAN above and we will activate your rank.'
-        : '✅ تم إرسال الطلب! أرسل الآن الدفع إلى الـ IBAN أعلاه وسنفعّل رتبتك.';
-
+        ? '✅ Request saved! Now send the payment via IBAN above.'
+        : '✅ تم حفظ الطلب! أرسل الآن المبلغ عبر الـ IBAN أعلاه.';
     } catch(e) {
       fb.style.color = '#f55';
       fb.textContent = (isEN ? '❌ Error: ' : '❌ خطأ: ') + (e.message || e);
@@ -3040,6 +3091,109 @@ function applyTranslations() {
   document.getElementById('pay-modal').addEventListener('click', function(e) {
     if (e.target === this) this.style.display = 'none';
   });
+
+  // ======== Donor Modal ========
+  const donorModalEl = document.createElement('div');
+  donorModalEl.id = 'donor-modal';
+  donorModalEl.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:16px;';
+  donorModalEl.innerHTML = `
+    <div style="background:#000d11;border:1.5px solid #00ccff;border-radius:16px;padding:28px 24px;width:100%;max-width:440px;position:relative;">
+      <button onclick="document.getElementById('donor-modal').style.display='none'"
+        style="position:absolute;top:12px;right:14px;background:transparent;border:1px solid #444;color:#aaa;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;">✕</button>
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:36px;">💎</div>
+        <h3 style="color:#00ccff;font-size:18px;margin:6px 0 2px;" id="donor-title"></h3>
+        <p style="color:#aaa;font-size:12px;" id="donor-sub"></p>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="donor-label-username"></label>
+        <input id="donor-username" type="text"
+          style="width:100%;background:#001a22;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-box;">
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="donor-label-bankname"></label>
+        <input id="donor-bankname" type="text"
+          style="width:100%;background:#001a22;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-box;">
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label style="color:#aaa;font-size:12px;display:block;margin-bottom:5px;" id="donor-label-amount"></label>
+        <input id="donor-amount" type="number" min="1" placeholder="$"
+          style="width:100%;background:#001a22;border:1px solid #444;border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;box-sizing:border-box;">
+      </div>
+
+      <button id="donor-submit-btn" onclick="window.submitDonorRequest()"
+        style="width:100%;background:#00ccff;color:#000;font-weight:800;font-size:14px;border:none;border-radius:10px;padding:11px;cursor:pointer;margin-bottom:4px;">
+      </button>
+
+      <div id="donor-iban-box" style="display:none;background:#000d11;border:1px solid #00ccff;border-radius:10px;padding:16px;margin-top:14px;text-align:center;">
+        <div style="color:#aaa;font-size:11px;margin-bottom:8px;" id="donor-iban-label"></div>
+        <div style="color:#00ccff;font-size:16px;font-weight:900;font-family:monospace;letter-spacing:2px;">LT38 3500 0100 1900 0970</div>
+        <button onclick="navigator.clipboard.writeText('LT383500010019000970').then(()=>{this.textContent='✅ Copied!';setTimeout(()=>this.textContent='📋 Copy IBAN',1800)})"
+          style="margin-top:10px;background:#001a22;border:1px solid #00ccff;color:#00ccff;border-radius:6px;padding:5px 16px;font-size:12px;cursor:pointer;">📋 Copy IBAN</button>
+        <div style="color:#aaa;font-size:11px;margin-top:10px;" id="donor-after-hint"></div>
+      </div>
+
+      <div id="donor-feedback" style="margin-top:10px;text-align:center;font-size:12px;min-height:18px;"></div>
+    </div>
+  `;
+  document.body.appendChild(donorModalEl);
+  donorModalEl.addEventListener('click', function(e){ if(e.target===this) this.style.display='none'; });
+
+  window.openDonorModal = function() {
+    const isEN = window._siteLanguage === 'en';
+    document.getElementById('donor-title').textContent = isEN ? '💙 Support Virtux' : '💙 ادعم Virtux';
+    document.getElementById('donor-sub').textContent = isEN ? 'Any amount is appreciated!' : 'أي مبلغ نقدره جداً!';
+    document.getElementById('donor-label-username').textContent = isEN ? 'Your site username:' : 'اسم المستخدم في الموقع:';
+    document.getElementById('donor-label-bankname').textContent = isEN ? 'Your bank account holder name:' : 'اسم صاحب الحساب البنكي:';
+    document.getElementById('donor-label-amount').textContent = isEN ? 'Amount you wish to donate ($):' : 'المبلغ الذي تريد إرساله ($):';
+    document.getElementById('donor-submit-btn').textContent = isEN ? '💙 Send Donation Request' : '💙 أرسل طلب الدعم';
+    document.getElementById('donor-iban-label').textContent = isEN ? 'Send your donation to this IBAN:' : 'أرسل تبرعك إلى هذا الـ IBAN:';
+    document.getElementById('donor-after-hint').textContent = isEN ? 'After your donation, we will activate your Donor badge. Thank you! 🙏' : 'بعد تبرعك سنفعّل شارة Donor. شكراً جزيلاً! 🙏';
+    document.getElementById('donor-submit-btn').style.display = 'block';
+    document.getElementById('donor-iban-box').style.display = 'none';
+    document.getElementById('donor-feedback').textContent = '';
+    document.getElementById('donor-username').value = window.currentUsername || '';
+    document.getElementById('donor-bankname').value = '';
+    document.getElementById('donor-amount').value = '';
+    document.getElementById('donor-modal').style.display = 'flex';
+  };
+
+  window.submitDonorRequest = async function() {
+    const isEN = window._siteLanguage === 'en';
+    const username = document.getElementById('donor-username').value.trim();
+    const bankName = document.getElementById('donor-bankname').value.trim();
+    const amount   = document.getElementById('donor-amount').value.trim();
+    const userId   = window.currentUserId || null;
+    const fb       = document.getElementById('donor-feedback');
+
+    if (!username) { fb.style.color='#f55'; fb.textContent = isEN?'⚠️ Enter your username.':'⚠️ أدخل اسم المستخدم.'; return; }
+    if (!bankName) { fb.style.color='#f55'; fb.textContent = isEN?'⚠️ Enter your bank name.':'⚠️ أدخل اسم الحساب البنكي.'; return; }
+    if (!amount || isNaN(amount) || +amount <= 0) { fb.style.color='#f55'; fb.textContent = isEN?'⚠️ Enter a valid amount.':'⚠️ أدخل مبلغاً صحيحاً.'; return; }
+
+    try {
+      fb.style.color='#aaa'; fb.textContent = isEN?'⏳ Sending...':'⏳ جاري الإرسال...';
+      const { error } = await db.from('payment_requests').insert({
+        user_id:   userId,
+        username:  username,
+        bank_name: bankName,
+        plan_key:  'donor',
+        plan_name: 'Donors',
+        price:     +amount,
+        status:    'pending',
+      });
+      if (error) throw error;
+      document.getElementById('donor-iban-box').style.display = 'block';
+      document.getElementById('donor-submit-btn').style.display = 'none';
+      fb.style.color='#4f4';
+      fb.textContent = isEN ? '✅ Request saved! Now send via IBAN above.' : '✅ تم حفظ الطلب! أرسل الآن عبر الـ IBAN أعلاه.';
+    } catch(e) {
+      fb.style.color='#f55';
+      fb.textContent = (isEN?'❌ Error: ':'❌ خطأ: ') + (e.message||e);
+    }
+  };
 
   // ======== مراقبة طلبات الدفع (للأدمن) وإعطاء الرتبة تلقائياً ========
   if (window.currentUserId) {
