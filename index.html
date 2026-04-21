@@ -613,7 +613,10 @@
       <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">يوتيوب ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 القنوات</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 الفيديوهات</a></div></div>
       <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">📢 الإعلانات ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 التعاون</a></div></div>
     </div>
-    <button id="lang-toggle-btn" onclick="window.toggleLanguage()" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 12px;border-radius:5px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;" title="Toggle Language">🌐 EN</button>
+    <div id="lang-btns" style="display:flex;gap:4px;">
+      <button id="lang-ar-btn" onclick="window.setLang('ar')" style="background:#e01010;border:1px solid #e01010;color:#000;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:700;font-family:'Poppins',sans-serif;">ع</button>
+      <button id="lang-en-btn" onclick="window.setLang('en')" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:700;font-family:'Poppins',sans-serif;">EN</button>
+    </div>
     <div id="auth-btn-area" style="margin-left:8px;">
       <div class="auth-buttons-header">
         <a href="#" id="btn-login-link" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل الدخول</a>
@@ -1798,7 +1801,24 @@ function renderCards(posts, gridId, room) {
     const deleteBtn = isOwner
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
       : '';
-    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span><div style="display:flex; gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+    let dateLabel = '';
+    if (p.created_at) {
+      const isEN = window._siteLanguage === 'en';
+      const d = new Date(p.created_at);
+      const now = new Date();
+      const diff = Math.floor((now - d) / 1000);
+      let rel = '';
+      if (diff < 60)     rel = isEN ? 'Just now' : 'الآن';
+      else if (diff < 3600)  { const m=Math.floor(diff/60);   rel = isEN ? m+'m ago' : 'منذ '+m+' د'; }
+      else if (diff < 86400) { const h=Math.floor(diff/3600);  rel = isEN ? h+'h ago' : 'منذ '+h+' س'; }
+      else if (diff < 604800){ const dd=Math.floor(diff/86400); rel = isEN ? dd+'d ago' : 'منذ '+dd+' يوم'; }
+      else {
+        const opts = { year:'numeric', month:'short', day:'numeric' };
+        rel = d.toLocaleDateString(isEN ? 'en-US' : 'ar-EG', opts);
+      }
+      dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
+    }
+    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -2690,28 +2710,30 @@ window.t = function(ar, en) {
   return window._siteLanguage === 'en' ? en : ar;
 };
 
-window.toggleLanguage = function() {
-  const btn = document.getElementById('lang-toggle-btn');
-  if (window._siteLanguage === 'ar') {
-    window._siteLanguage = 'en';
-    document.documentElement.lang = 'en';
-    document.documentElement.dir = 'ltr';
-    document.body.style.direction = 'ltr';
-    if (btn) btn.textContent = '🌐 AR';
-  } else {
-    window._siteLanguage = 'ar';
+window.setLang = function(lang) {
+  if (window._siteLanguage === lang) return;
+  window._siteLanguage = lang;
+  const arBtn = document.getElementById('lang-ar-btn');
+  const enBtn = document.getElementById('lang-en-btn');
+  if (lang === 'ar') {
     document.documentElement.lang = 'ar';
     document.documentElement.dir = 'rtl';
     document.body.style.direction = 'rtl';
-    if (btn) btn.textContent = '🌐 EN';
+    if (arBtn) { arBtn.style.background='#e01010'; arBtn.style.color='#000'; }
+    if (enBtn) { enBtn.style.background='transparent'; enBtn.style.color='#e01010'; }
+  } else {
+    document.documentElement.lang = 'en';
+    document.documentElement.dir = 'ltr';
+    document.body.style.direction = 'ltr';
+    if (enBtn) { enBtn.style.background='#e01010'; enBtn.style.color='#000'; }
+    if (arBtn) { arBtn.style.background='transparent'; arBtn.style.color='#e01010'; }
   }
   applyTranslations();
-  // إعادة بناء كل الغرف المحملة
   if (window.allPosts) {
     Object.keys(window.allPosts).forEach(room => {
       const el = document.getElementById('grid-' + room);
       if (el && window.allPosts[room]?.length) {
-        el.innerHTML = ''; // تفريغ قبل إعادة البناء
+        el.innerHTML = '';
         if (room === 'subscribers' || room === 'yt-channels') {
           loadSubscribersWithVIP(el, window.allPosts[room] || [], window._subscribersRoleFilter || '');
         } else {
@@ -2719,15 +2741,18 @@ window.toggleLanguage = function() {
         }
       }
     });
-    // إعادة بناء filter bars بعد تأخير بسيط لضمان DOM جاهز
     setTimeout(() => {
       document.querySelectorAll('.vx-page').forEach(page => {
-        const room = page.id.replace('page-','');
-        rebuildFilterBar(room);
+        rebuildFilterBar(page.id.replace('page-',''));
       });
     }, 50);
   }
 };
+
+window.toggleLanguage = function() {
+  window.setLang(window._siteLanguage === 'ar' ? 'en' : 'ar');
+};
+
 
 function rebuildFilterBar(room) {
   const page = document.getElementById('page-' + room);
