@@ -1724,7 +1724,7 @@ function renderCards(posts, gridId, room) {
       const isVideoExt = p.url && /\.(mp4|webm|ogg|mov)/i.test(p.url);
       const isStorageVideo = p.url && !isImageUrl && (p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
       const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
-      const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be') || p.url.includes('youtube.com/shorts/') || p.url.includes('youtube.com/live/') || p.url.includes('youtube.com/embed/'));
+      const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
       if (isImageUrl) {
         media = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       }
@@ -1733,17 +1733,12 @@ function renderCards(posts, gridId, room) {
       }
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
-        if (videoId) {
-          media = `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}?rel=0" loading="lazy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
-        } else {
-          media = `<div class="post-card-emoji">📹</div>`;
-        }
+        media = videoId ? `<div class="post-card-video"><iframe src="https://www.youtube.com/embed/${videoId}?rel=0" loading="lazy" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : `<img class="post-card-img" src="${p.icon || '📹'}">`;
       }
       else if (p.url && p.url.includes('twitch.tv')) {
         const twitchMatch = p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
         if (twitchMatch) {
-          const twitchParent = location.hostname || 'localhost';
-          media = `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${twitchParent}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`;
+          media = `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`;
         } else {
           media = `<div class="post-card-emoji">📺</div>`;
         }
@@ -2060,7 +2055,7 @@ document.getElementById('doLogin Btn')?.addEventListener('click', async () => {
       if (!data) throw new Error('اسم المستخدم غير موجود');
       email = data.email;
     }
-    const { error } = await db.auth.signInWithPassword({ email, password });
+const{error}=awaitdb.auth.signInWith({email,password});
     if (error) throw new Error('بيانات الدخول غير صحيحة');
     closeModal();
     await updateUIAfterAuth();
@@ -2219,7 +2214,7 @@ window.deletePost = deletePost;
   window.loadHomePanel=loadHomePanel;
   const _orig=window.showPage;
   window.showPage=function(room){ if(typeof _orig==='function') _orig(room); if(room==='home') setTimeout(loadHomePanel,80); };
-  document.addEventListener('DOMContentLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
+  document.addEventListener('DOMLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
   // auto-refresh disabled to prevent freezing
 })();
 
