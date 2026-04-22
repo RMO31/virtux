@@ -737,31 +737,31 @@
       </div>
       <div class="form-group">
         <label>كلمة المرور</label>
-        <input type="password" id="login المرور" placeholder="********">
+        <input type="password" id="loginPassword" placeholder="********">
       </div>
       <div id="loginError" class="error-msg"></div>
-      <button class="btn-submit" id="doLogin Btn">دخول</button>
-      <button class="btn-submit google-btn-modal" id="google Btn">🔵 تسجيل دخول عن طريق غوغل</button>
+      <button class="btn-submit" id="doLoginBtn">دخول</button>
+      <button class="btn-submit google-btn-modal" id="googleBtn">🔵 تسجيل دخول عن طريق غوغل</button>
       <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
     </div>
     <div id="modal-signup" style="display:none;">
       <h3>📝 إنشاء حساب جديد</h3>
       <div class="form-group">
         <label>اسم المستخدم</label>
-        <input type="text" id="signup المستخدم" placeholder="اسم المستخدم">
+        <input type="text" id="signupUsername" placeholder="اسم المستخدم">
       </div>
       <div class="form-group">
         <label>البريد الإلكتروني</label>
-        <input type="email" id="signup الإلكتروني" placeholder="example@domain.com">
+        <input type="email" id="signupEmail" placeholder="example@domain.com">
       </div>
       <div class="form-group">
         <label>كلمة المرور</label>
-        <input type="password" id="signup المرور" placeholder="********">
+        <input type="password" id="signupPassword" placeholder="********">
       </div>
       <div id="signupError" class="error-msg"></div>
       <button class="btn-submit" id="doSignupBtn">تسجيل</button>
       <button class="btn-submit google-btn-modal" id="googleSignupBtn">🔵 تسجيل عبر Google</button>
-      <div class="auth-switch">لديك حساب بالفعل؟ <a id="switchTo الدخول">تسجيل الدخول</a></div>
+      <div class="auth-switch">لديك حساب بالفعل؟ <a id="switchToLogin">تسجيل الدخول</a></div>
     </div>
   </div>
 </div>
@@ -771,7 +771,7 @@
   <div class="modal-box">
     <h3>✨ Choose a username</h3>
     <p style="color:#ccc; font-size:14px;">Please choose a unique username to complete your registration</p>
-    <input type="text" id="new المستخدم" placeholder="اسم المستخدم" autocomplete="off">
+    <input type="text" id="newUsername" placeholder="اسم المستخدم" autocomplete="off">
     <div style="margin-top:10px;">
       <button id="confirmUsernameBtn">تأكيد</button>
       <button id="cancelUsernameBtn" class="cancel">إلغاء</button>
@@ -796,12 +796,12 @@
     </div>
     <div class="profile-field">
       <label>اسم المستخدم</label>
-      <input type="text" id="profile المستخدم" placeholder="اسم المستخدم">
+      <input type="text" id="profileUsername" placeholder="اسم المستخدم">
       <div id="usernameFeedback" class="username-feedback"></div>
     </div>
     <div class="profile-field">
       <label>📧 البريد الإلكتروني</label>
-      <input type="email" id="profile الإلكتروني" readonly disabled style="background:#3a3a4a;">
+      <input type="email" id="profileEmail" readonly disabled style="background:#3a3a4a;">
     </div>
     <div class="profile-field">
       <label>🎂 تاريخ الميلاد</label>
@@ -824,23 +824,23 @@
       <h3>🔒 تغيير كلمة المرور</h3>
       <div class="profile-field">
         <label>كلمة المرور الحالية</label>
-        <input type="password" id="old المرور" placeholder="********">
+        <input type="password" id="oldPassword" placeholder="********">
       </div>
       <div class="profile-field">
         <label>كلمة المرور الجديدة</label>
-        <input type="password" id="new المرور" placeholder="********">
+        <input type="password" id="newPassword" placeholder="********">
       </div>
       <div class="profile-field">
         <label>تأكيد كلمة المرور الجديدة</label>
-        <input type="password" id="confirmNew المرور" placeholder="********">
+        <input type="password" id="confirmNewPassword" placeholder="********">
       </div>
       <div id="passwordError" class="error-msg" style="margin-bottom:10px;"></div>
-      <button id="change Btn" class="btn-submit" style="width:100%;">تغيير كلمة المرور</button>
+      <button id="changePasswordBtn" class="btn-submit" style="width:100%;">تغيير كلمة المرور</button>
     </div>
     
     <div class="profile-buttons">
-      <button id="save Btn" class="btn-save">💾 حفظ التغييرات</button>
-      <button id="close Btn" class="btn-cancel">إغلاق</button>
+      <button id="saveProfileBtn" class="btn-save">💾 حفظ التغييرات</button>
+      <button id="closeProfileBtn" class="btn-cancel">إغلاق</button>
     </div>
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #440000;">
       <button id="deleteAccountBtn" style="width:100%;background:transparent;border:1px solid #f55;color:#f55;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px;font-family:'Poppins',sans-serif;" onclick="window.confirmDeleteAccount()">🗑️ حذف الحساب نهائياً</button>
@@ -1212,7 +1212,7 @@ async function getProfileById(userId) {
 function showGoogleModal(user) {
   pendingGoogleUser = user;
   const usernameModal = document.getElementById('usernameModal');
-  const input = document.getElementById('new المستخدم');
+  const input = document.getElementById('newUsername');
   if (input) input.value = getSuggestedUsername(user);
   const errorEl = document.getElementById('usernameError');
   if (errorEl) errorEl.innerText = '';
@@ -2095,7 +2095,7 @@ maybePromptForGoogle(session.user).catch(err=>console.error('usernamemodalerror:
 });
 
 document.getElementById('confirmUsernameBtn')?.addEventListener('click', async () => {
-  const username = document.getElementById('new المستخدم').value.trim();
+  const username = document.getElementById('newUsername').value.trim();
   if (!username || username.length < 3) { document.getElementById('usernameError').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل'; return; }
   if (!pendingGoogleUser) return;
   const { data: existing } = await db.from('profiles').select('username').eq('username', username).maybeSingle();
@@ -2116,10 +2116,10 @@ function closeModal() { modal.classList.remove('active'); loginDiv.style.display
 document.getElementById('closeModal')?.addEventListener('click', closeModal);
 window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق */ } };
 document.getElementById('switchToSignup')?.addEventListener('click', () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; });
-document.getElementById('switchTo الدخول')?.addEventListener('click', () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; });
-document.getElementById('doLogin Btn')?.addEventListener('click', async () => {
+document.getElementById('switchToLogin')?.addEventListener('click', () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; });
+document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   const identifier = document.getElementById('loginIdentifier').value.trim();
-  const password = document.getElementById('login المرور').value;
+  const password = document.getElementById('loginPassword').value;
   if(!identifier || !password) { document.getElementById('loginError').innerText = 'يرجى ملء جميع الحقول'; return; }
   try {
     let email = identifier;
@@ -2128,27 +2128,27 @@ document.getElementById('doLogin Btn')?.addEventListener('click', async () => {
       if (!data) throw new Error('اسم المستخدم غير موجود');
       email = data.email;
     }
-const{error}=awaitdb.auth.signInWith({email,password});
+    const { error } = await db.auth.signInWithPassword({email, password});
     if (error) throw new Error('بيانات الدخول غير صحيحة');
     closeModal();
     await updateUIAfterAuth();
   } catch(e) { document.getElementById('loginError').innerText = e.message; }
 });
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
-  const username = document.getElementById('signup المستخدم').value.trim();
-  const email = document.getElementById('signup الإلكتروني').value.trim();
-  const password = document.getElementById('signup المرور').value;
+  const username = document.getElementById('signupUsername').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
   if(!username || !email || !password) { document.getElementById('signupError').innerText = 'يرجى ملء جميع الحقول'; return; }
   try {
     const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
     if (error) throw error;
     await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user', created_at: new Date().toISOString() });
-    alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول.');
-    document.getElementById('switchTo الدخول').click();
+    alert('تم إنشاء الحساب بنجاح! يرجى تأكيد بريدك الإلكتروني إذا تطلب الأمر، ثم تسجيل الدخول.');
+    document.getElementById('switchToLogin').click();
     document.getElementById('loginIdentifier').value = username;
   } catch(e) { document.getElementById('signupError').innerText = e.message; }
 });
-document.getElementById('google Btn')?.addEventListener('click', async () => { await startGoogleAuth('loginError'); });
+document.getElementById('googleBtn')?.addEventListener('click', async () => { await startGoogleAuth('loginError'); });
 document.getElementById('googleSignupBtn')?.addEventListener('click', async () => { await startGoogleAuth('signupError'); });
 document.getElementById('btn-login-link')?.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
@@ -2547,8 +2547,8 @@ document.getElementById('profileButton')?.addEventListener('click', async () => 
 
     if (profile) {
       currentProfileData = profile;
-      document.getElementById('profile المستخدم').value = profile.username || '';
-      document.getElementById('profile الإلكتروني').value = profile.email || '';
+      document.getElementById('profileUsername').value = profile.username || '';
+      document.getElementById('profileEmail').value = profile.email || '';
       document.getElementById('profileBirthdate').value = profile.birthdate || '';
       document.getElementById('profileBirthPlace').value = profile.birth_place || '';
       document.getElementById('profileCountry').value = profile.country || '';
@@ -2571,25 +2571,25 @@ document.getElementById('profileButton')?.addEventListener('click', async () => 
 
   document.getElementById('passwordError').innerText = '';
   document.getElementById('usernameFeedback').innerText = '';
-  document.getElementById('old المرور').value = '';
-  document.getElementById('new المرور').value = '';
-  document.getElementById('confirmNew المرور').value = '';
+  document.getElementById('oldPassword').value = '';
+  document.getElementById('newPassword').value = '';
+  document.getElementById('confirmNewPassword').value = '';
   profileModal.classList.add('active');
 });
 
-document.getElementById('close Btn')?.addEventListener('click', () => {
+document.getElementById('closeProfileBtn')?.addEventListener('click', () => {
   document.getElementById('profileModal')?.classList.remove('active');
 });
 
-document.getElementById('save Btn')?.addEventListener('click', async () => {
+document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
   if (!window.currentUserId) return;
-  const btn = document.getElementById('save Btn');
+  const btn = document.getElementById('saveProfileBtn');
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '⏳ جاري الحفظ...';
 
   try {
-    const newUsername = document.getElementById('profile المستخدم').value.trim();
+    const newUsername = document.getElementById('profileUsername').value.trim();
     if (!newUsername || newUsername.length < 3) {
       document.getElementById('usernameFeedback').innerText = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
       btn.disabled = false;
@@ -2668,10 +2668,10 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
   }
 });
 
-document.getElementById('change Btn')?.addEventListener('click', async () => {
-  const oldPass = document.getElementById('old المرور').value;
-  const newPass = document.getElementById('new المرور').value;
-  const confirmPass = document.getElementById('confirmNew المرور').value;
+document.getElementById('changePasswordBtn')?.addEventListener('click', async () => {
+  const oldPass = document.getElementById('oldPassword').value;
+  const newPass = document.getElementById('newPassword').value;
+  const confirmPass = document.getElementById('confirmNewPassword').value;
   const errorEl = document.getElementById('passwordError');
 
   if (!oldPass || !newPass || !confirmPass) { errorEl.innerText = 'يرجى ملء جميع حقول كلمة المرور'; return; }
@@ -2690,9 +2690,9 @@ document.getElementById('change Btn')?.addEventListener('click', async () => {
 
     errorEl.style.color = '#cc2222';
     errorEl.innerText = '✅ تم تغيير كلمة المرور بنجاح';
-    document.getElementById('old المرور').value = '';
-    document.getElementById('new المرور').value = '';
-    document.getElementById('confirmNew المرور').value = '';
+    document.getElementById('oldPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
     setTimeout(() => { errorEl.innerText = ''; errorEl.style.color = ''; }, 3000);
   } catch(e) {
     errorEl.style.color = '';
