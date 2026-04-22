@@ -1195,6 +1195,31 @@ function userHasAnyRole(list) {
 }
 window.userHasRole = userHasRole;
 window.userHasAnyRole = userHasAnyRole;
+window.normalizeRoles = normalizeRoles;
+
+async function checkRoleExpiration(profile) {
+  if (!profile || !profile.expiry_date || !window.currentUserId) return;
+  const expiry = new Date(profile.expiry_date);
+  const now = new Date();
+  if (expiry < now) {
+    const roles = normalizeRoles(profile);
+    const paidRoles = ['vip', 'member', 'youtuber_vip'];
+    const hasPaidRole = roles.some(r => paidRoles.includes(r));
+    if (hasPaidRole) {
+      const newRoles = roles.filter(r => !paidRoles.includes(r));
+      if (!newRoles.includes('user')) newRoles.push('user');
+      const { error } = await db.from('profiles').update({ 
+        role: newRoles[0], 
+        roles: newRoles,
+        expiry_date: null 
+      }).eq('id', window.currentUserId);
+      if (!error) {
+        alert(window.t('انتهت مدة اشتراكك، تم تحويل حسابك لرتبة عادي.', 'Your subscription has expired, your account has been reverted to a normal user.'));
+        location.reload();
+      }
+    }
+  }
+}
 
 async function getProfileById(userId) {
   if (!userId) return null;
@@ -2056,6 +2081,7 @@ async function updateUIAfterAuth(sessionOverride) {
       userArea.style.display = 'flex';
 
       const profile = authReady ? await getProfileById(session.user.id) : null;
+      if (profile) await checkRoleExpiration(profile);
       const displayName = profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
 
       userNameSpan.textContent = '👋 ' + displayName;
@@ -2249,8 +2275,8 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     if (needsConfirm) {
       errEl.style.color = '#4f4';
       errEl.innerText = isEN
-        ? '✅ Account created! Please check your email to confirm, then log in.'
-        : '✅ تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك لتأكيده، ثم سجل دخولك.';
+        ? '✅ Account created! Please check your email (and Spam folder) to confirm your account, then you can log in.'
+        : '✅ تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني (وتفقد صندوق الرسائل المزعجة Spam) لتأكيد حسابك، ثم يمكنك تسجيل الدخول.';
     } else {
       await updateUIAfterAuth(data.session);
       closeModal();
@@ -3139,22 +3165,22 @@ function applyTranslations() {
       key: 'vip', icon: '👑', color: '#e01010', bg: 'linear-gradient(160deg,#1a0000,#0d0000)', border: '#e01010',
       price: 20, currency: '$',
       name_ar: 'VIP', name_en: 'VIP',
-      features_ar: ['نشر بطولات VIP', 'مشاهدة فيديوهات VIP'],
-      features_en: ['Post VIP Tournaments', 'Watch VIP Videos'],
+      features_ar: ['نشر بطولات VIP', 'مشاهدة فيديوهات VIP', 'اشتراك لمدة شهر (30 يوم)'],
+      features_en: ['Post VIP Tournaments', 'Watch VIP Videos', 'Subscription for 1 month (30 days)'],
     },
     {
       key: 'member', icon: '⭐', color: '#cc2222', bg: 'linear-gradient(160deg,#100a00,#0d0000)', border: '#cc2222',
       price: 11, currency: '$',
       name_ar: 'Member', name_en: 'Member',
-      features_ar: ['مشاهدة فيديوهات VIP', 'دعم الموقع كطرف داعم'],
-      features_en: ['Watch VIP Videos', 'Support the site as a member'],
+      features_ar: ['مشاهدة فيديوهات VIP', 'دعم الموقع كطرف داعم', 'اشتراك لمدة شهر (30 يوم)'],
+      features_en: ['Watch VIP Videos', 'Support the site as a member', 'Subscription for 1 month (30 days)'],
     },
     {
       key: 'youtuber_vip', icon: '🔥', color: '#ff6600', bg: 'linear-gradient(160deg,#1a0a00,#0d0000)', border: '#ff6600', best: true,
       price: 29, currency: '$',
       name_ar: 'Youtuber VIP', name_en: 'Youtuber VIP',
-      features_ar: ['نشر فيديوهات VIP', 'نشر بثوث مباشرة', 'إضافة قناتك في قسم القنوات', 'تحميل تلقائي لآخر 5 فيديوهات من قناتك يومياً'],
-      features_en: ['Post VIP Videos', 'Stream live broadcasts', 'Add your channel to the Channels section', 'Auto-import of your last 5 videos daily'],
+      features_ar: ['نشر فيديوهات VIP', 'نشر بثوث مباشرة', 'إضافة قناتك في قسم القنوات', 'تحميل تلقائي لآخر 5 فيديوهات يومياً', 'اشتراك لمدة شهر (30 يوم)'],
+      features_en: ['Post VIP Videos', 'Stream live broadcasts', 'Add your channel to the Channels section', 'Auto-import of last 5 videos daily', 'Subscription for 1 month (30 days)'],
     },
     {
       key: 'donor', icon: '💎', color: '#00ccff', bg: 'linear-gradient(160deg,#001a22,#000d11)', border: '#00ccff',
@@ -3172,7 +3198,7 @@ function applyTranslations() {
       const priceTag = p.price
         ? `<div style="text-align:center;margin:4px 0 8px;">
              <span style="color:${p.color};font-size:26px;font-weight:900;">${p.currency}${p.price}</span>
-             <span style="color:#888;font-size:11px;"> / ${isEN?'one time':'مرة واحدة'}</span>
+             <span style="color:#888;font-size:11px;"> / ${isEN?'month':'شهر'}</span>
            </div>`
         : `<div style="text-align:center;margin:4px 0 8px;">
              <span style="color:${p.color};font-size:18px;font-weight:700;">${isEN?'Any Amount':'أي مبلغ'} 🙏</span>

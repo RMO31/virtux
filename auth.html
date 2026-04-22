@@ -88,7 +88,7 @@
 
 <script>
 const SB_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SB_KEY = 'sb_publishable_wpU27Lgl48mMujV4UBZ9FA__NqIRQpP';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const db = window.supabase.createClient(SB_URL, SB_KEY);
 
 function switchTab(tab) {
@@ -142,9 +142,14 @@ async function doRegister() {
     if (data.user) {
       await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user' });
     }
-    showMsg('✅ Account created! You can now login.', 'ok');
-    btn.disabled = false; btn.textContent = 'Create Account';
-    setTimeout(() => switchTab('login'), 2000);
+    if (data.session) {
+      showMsg('✅ Account created! Redirecting...', 'ok');
+      setTimeout(() => window.location.href = 'index.html', 1500);
+    } else {
+      showMsg('✅ Account created! Please check your email (and Spam folder) to confirm, then you can login.', 'ok');
+      btn.disabled = false; btn.textContent = 'Create Account';
+      setTimeout(() => switchTab('login'), 4000);
+    }
   }
 }
 

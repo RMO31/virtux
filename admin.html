@@ -359,12 +359,14 @@ async function loadDashboard() {
           ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,false).then(()=>loadDashboard())">✕ ${m.label}</button>`
           : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,true).then(()=>loadDashboard())">${m.label}</button>`;
       }).join('');
+      const expiryStr = u.expiry_date ? `<div style="font-size:10px;color:#f55;margin-top:2px;">⏳ ينتهي في: ${new Date(u.expiry_date).toLocaleDateString('ar-EG')}</div>` : '';
       return `<div class="pi" id="user-${uid}">
         <div class="pi-icon">👤</div>
         <div class="pi-info" style="flex:1;">
           <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
           <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
           <div style="margin-top:4px;">${badgesHtml}</div>
+          ${expiryStr}
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:260px;">
           ${toggleBtns}
@@ -451,7 +453,7 @@ async function setRole(userId, role) {
   // Legacy: just call toggleRole add
   await toggleRole(userId, role, true);
 }
-async function toggleRole(userId, role, add) {
+async function toggleRole(userId, role, add, expiryDate = null) {
   try {
     console.log(`toggleRole called: userId=${userId}, role=${role}, add=${add}`);
     // Fetch current roles
@@ -482,7 +484,7 @@ async function toggleRole(userId, role, add) {
     console.log('New roles:', currentRoles, 'Primary:', primaryRole);
 
     const { data: updateData, error } = await supabaseClient.from('profiles')
-      .update({ roles: currentRoles, role: primaryRole })
+      .update({ roles: currentRoles, role: primaryRole, expiry_date: add ? expiryDate : null })
       .eq('id', userId)
       .select();
     if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error('Update error:', error); return false; }
@@ -515,7 +517,13 @@ async function approvePayment(reqId, userId, planKey) {
     let { error: err1 } = await supabaseClient.from('payment_requests').update({ status: 'approved' }).eq('id', reqId);
     if (err1) throw err1;
     if (userId && userId !== 'null' && planKey) {
-      let success = await toggleRole(userId, planKey, true);
+      let expiry = null;
+      if (['vip', 'member', 'youtuber_vip'].includes(planKey)) {
+        expiry = new Date();
+        expiry.setDate(expiry.getDate() + 30);
+        expiry = expiry.toISOString();
+      }
+      let success = await toggleRole(userId, planKey, true, expiry);
       if (success) {
         alert('✅ تم قبول الطلب وتفعيل الرتبة بنجاح.');
       } else {
