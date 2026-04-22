@@ -61,12 +61,24 @@
     .ticker-scroll {
       flex: 1;
       overflow: hidden;
-      position: relative;
       height: 32px;
+      display: flex;
+      align-items: center;
     }
-    @keyframes ticker-move{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-    .ticker-track{display:inline-flex;white-space:nowrap;align-items:center;animation:ticker-move 35s linear infinite;will-change:transform;}
-    .ticker-track:hover{animation-play-state:paused}
+    @keyframes ticker-move {
+      0%   { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .ticker-track {
+      display: flex;
+      white-space: nowrap;
+      align-items: center;
+      flex-shrink: 0;
+      animation: ticker-move 40s linear infinite;
+      will-change: transform;
+      gap: 0;
+    }
+    .ticker-track:hover { animation-play-state: paused; }
     .ticker-item {
       display: inline-flex;
       align-items: center;
@@ -202,6 +214,9 @@
     .filter-btn:hover,.filter-btn.active{background:#e01010;color:#000;border-color:#e01010}
     .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
     .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s;display:flex;flex-direction:column;position:relative}
+    .post-card.vip-channel-card{border-color:#ff6600;box-shadow:0 0 12px rgba(255,102,0,0.25);}
+    .post-card.vip-channel-card:hover{border-color:#ff8800;box-shadow:0 0 20px rgba(255,102,0,0.4);}
+    .vip-channel-badge{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#ff6600,#e01010);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;}
     .post-card:hover{border-color:#e01010}
     .post-card-img{width:100%;height:auto;max-height:420px;min-height:100px;object-fit:contain;background:#0a0000;display:block}
     .post-card-img.img-landscape{object-fit:cover;height:210px;max-height:210px}
@@ -1667,7 +1682,19 @@ async function loadPage(room) {
   if (!el) return;
   el.innerHTML = `<div class="loading-state">${window.t('جاري التحميل...','Loading...')}</div>`;
   try {
-    const { data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+    let data, error;
+    // في live و yt-videos: قنوات youtuber_vip تأخذ الأولوية
+    if (room === 'live' || room === 'yt-videos') {
+      // جلب فيديوهات القنوات المضافة (tag يبدأ بـ auto:)
+      const [vipRes, normalRes] = await Promise.all([
+        db.from('posts').select('*').eq('room', room).like('tag', 'auto:%').order('id', {ascending:false}).limit(20),
+        db.from('posts').select('*').eq('room', room).not('tag','like','auto:%').order('id', {ascending:false}).limit(30)
+      ]);
+      data = [...(vipRes.data||[]), ...(normalRes.data||[])];
+      error = vipRes.error || normalRes.error;
+    } else {
+      ({ data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false }));
+    }
     if (error) throw error;
     allPosts[room] = data || [];
     renderCards(allPosts[room], `grid-${room}`, room);
@@ -1794,6 +1821,12 @@ function renderCards(posts, gridId, room) {
     const deleteBtn = isOwner
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
       : '';
+    // تمييز فيديوهات قنوات YT VIP
+    const isVipChannelPost = p.tag && p.tag.startsWith('auto:');
+    const vipBadgeHtml = isVipChannelPost
+      ? '<div class="vip-channel-badge">🔥 YT VIP</div>' : '';
+    const cardClass = isVipChannelPost ? 'post-card vip-channel-card' : 'post-card';
+
     let dateLabel = '';
     if (p.created_at) {
       const isEN = window._siteLanguage === 'en';
@@ -1811,7 +1844,7 @@ function renderCards(posts, gridId, room) {
       }
       dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
     }
-    return `<div class="post-card">${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardClass}">${vipBadgeHtml}${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -2145,8 +2178,8 @@ function buildTickerTrack() {
   if (!track) return;
   track.innerHTML = '';
   if (!tickerItems.length) return;
-  // نضع العناصر مرتين — CSS animation تتحرك من 0 إلى -50%
-  [...tickerItems, ...tickerItems].forEach(item => {
+  // نضع العناصر 4 مرات لضمان الاستمرارية
+  [...tickerItems,...tickerItems,...tickerItems,...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
     if (item.url) {
@@ -2159,12 +2192,11 @@ function buildTickerTrack() {
     }
     track.appendChild(span);
   });
-  // ضبط المدة حسب عدد العناصر
-  const dur = Math.max(20, tickerItems.length * 5);
+  const dur = Math.max(25, tickerItems.length * 6);
   track.style.animationDuration = dur + 's';
 }
 
-function startTickerAnimation() { /* CSS animation */ }
+function startTickerAnimation() { /* CSS */ }
 
 window.deletePost = deletePost;
 
