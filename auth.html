@@ -89,7 +89,16 @@
 <script>
 const SB_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-const db = window.supabase.createClient(SB_URL, SB_KEY);
+const db = window.supabase.createClient(SB_URL, SB_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'virtux-auth-v2',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: window.localStorage
+  }
+});
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -133,14 +142,31 @@ async function doRegister() {
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
   const btn = document.getElementById('btn-register');
   btn.disabled = true; btn.textContent = 'Creating account...';
-  const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
+  const { data, error } = await db.auth.signUp({ 
+    email, 
+    password, 
+    options: { 
+      data: { username },
+      emailRedirectTo: window.location.origin + window.location.pathname
+    } 
+  });
   if (error) {
     showMsg('❌ ' + error.message, 'err');
     btn.disabled = false; btn.textContent = 'Create Account';
   } else {
     // Create profile
     if (data.user) {
-      await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user' });
+      const expiry = new Date();
+      expiry.setHours(expiry.getHours() + 24);
+      await db.from('profiles').insert({ 
+        id: data.user.id, 
+        username, 
+        email, 
+        role: 'guest',
+        roles: ['guest', 'user'],
+        expiry_date: expiry.toISOString(),
+        created_at: new Date().toISOString()
+      });
     }
     if (data.session) {
       showMsg('✅ Account created! Redirecting...', 'ok');

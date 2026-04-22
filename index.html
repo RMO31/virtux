@@ -1203,9 +1203,9 @@ async function checkRoleExpiration(profile) {
   const now = new Date();
   if (expiry < now) {
     const roles = normalizeRoles(profile);
-    const paidRoles = ['vip', 'member', 'youtuber_vip'];
-    const hasPaidRole = roles.some(r => paidRoles.includes(r));
-    if (hasPaidRole) {
+    const paidRoles = ['vip', 'member', 'youtuber_vip', 'guest'];
+    const hasExpiredRole = roles.some(r => paidRoles.includes(r));
+    if (hasExpiredRole) {
       const newRoles = roles.filter(r => !paidRoles.includes(r));
       if (!newRoles.includes('user')) newRoles.push('user');
       const { error } = await db.from('profiles').update({ 
@@ -1214,7 +1214,11 @@ async function checkRoleExpiration(profile) {
         expiry_date: null 
       }).eq('id', window.currentUserId);
       if (!error) {
-        alert(window.t('انتهت مدة اشتراكك، تم تحويل حسابك لرتبة عادي.', 'Your subscription has expired, your account has been reverted to a normal user.'));
+        if (roles.includes('guest')) {
+          alert(window.t('انتهت مدة رتبة GUEST، تم تحويل حسابك لرتبة User.', 'Your GUEST rank has expired, you are now a User.'));
+        } else {
+          alert(window.t('انتهت مدة اشتراكك، تم تحويل حسابك لرتبة عادي.', 'Your subscription has expired, your account has been reverted to a normal user.'));
+        }
         location.reload();
       }
     }
@@ -2097,6 +2101,7 @@ async function updateUIAfterAuth(sessionOverride) {
           vip:          {bg:'#1a0000', fg:'#e01010', label:'👑 VIP'},
           member:       {bg:'#0d0000', fg:'#cc2222', label:'⭐ MEMBER'},
           donor:        {bg:'#001a22', fg:'#00ccff', label:'💎 DONOR'},
+          guest:        {bg:'#1a1a1a', fg:'#aaa',    label:'🛡️ GUEST'},
           user:         {bg:'#111',    fg:'#888',    label:'USER'}
         };
         roleBadge.innerHTML = roles.map(r => {
@@ -2287,7 +2292,17 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
       try {
         const { data: existing2 } = await db.from('profiles').select('id').eq('id', uid).maybeSingle();
         if (!existing2) {
-          await db.from('profiles').insert({ id: uid, username, email, role: 'user', created_at: new Date().toISOString() });
+          const expiry = new Date();
+          expiry.setHours(expiry.getHours() + 24);
+          await db.from('profiles').insert({ 
+            id: uid, 
+            username, 
+            email, 
+            role: 'guest', 
+            roles: ['guest', 'user'],
+            expiry_date: expiry.toISOString(),
+            created_at: new Date().toISOString() 
+          });
         }
       } catch (profileErr) {
         console.error('Error creating profile during signup:', profileErr);
@@ -3043,6 +3058,7 @@ function rebuildFilterBar(room) {
       <button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button>
       <button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button>
       <button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button>
+      <button class="filter-btn" onclick="window.filterSubscribers('guest',this)">Guest</button>
       <button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button>
     </div>`;
   }

@@ -253,6 +253,7 @@ async function loadDashboard() {
     let modCount       = users.filter(u => hasRole(u,'moderator')).length;
     let youtuberCount  = users.filter(u => hasRole(u,'youtuber')).length;
     let ytVipCount     = users.filter(u => hasRole(u,'youtuber_vip')).length;
+    let guestCount     = users.filter(u => hasRole(u,'guest')).length;
     let userCount      = users.filter(u => { let r=getRoles(u); return r.length===0||(r.length===1&&r[0]==='user'); }).length;
 
     let statsHtml = `<div class="stats-grid">
@@ -262,6 +263,7 @@ async function loadDashboard() {
       <div class="stat-card"><div class="stat-number" style="color:#ff9800">${modCount}</div><div class="stat-label">🛡️ Mod</div></div>
       <div class="stat-card"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
       <div class="stat-card"><div class="stat-number" style="color:#ff6b35">${ytVipCount}</div><div class="stat-label">🔥 Youtuber VIP</div></div>
+      <div class="stat-card"><div class="stat-number" style="color:#aaa">${guestCount}</div><div class="stat-label">🛡️ GUEST</div></div>
       <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">👤 عادي</div></div>
     </div>`;
 
@@ -341,6 +343,7 @@ async function loadDashboard() {
       moderator:    { label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f' },
       youtuber:     { label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f' },
       youtuber_vip: { label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f' },
+      guest:        { label:'🛡️ Guest',        color:'#aaa',    bg:'#222' },
       user:         { label:'👤 User',           color:'#aabbcc', bg:'#0f1e55' },
     };
     window._ROLE_META = ROLE_META;
@@ -430,7 +433,15 @@ async function searchUsersForRole(query) {
       .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
     if (error) throw error;
     if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
-    const RM = window._ROLE_META || { vip:{label:'👑 VIP',color:'#d4e800',bg:'#2a2000'}, member:{label:'⭐ Member',color:'#4caf90',bg:'#0f3d2e'}, moderator:{label:'🛡️ Mod',color:'#ff9800',bg:'#3d2e0f'}, youtuber:{label:'🎬 Youtuber',color:'#ff4444',bg:'#3d0f0f'}, youtuber_vip:{label:'🔥 Youtuber VIP',color:'#ff6b35',bg:'#3d1a0f'}, user:{label:'👤 User',color:'#aabbcc',bg:'#0f1e55'} };
+    const RM = window._ROLE_META || { 
+      vip:          {label:'👑 VIP',          color:'#d4e800', bg:'#2a2000'}, 
+      member:       {label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e'}, 
+      moderator:    {label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f'}, 
+      youtuber:     {label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f'}, 
+      youtuber_vip: {label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f'}, 
+      guest:        {label:'🛡️ Guest',        color:'#aaa',    bg:'#222'},
+      user:         {label:'👤 User',           color:'#aabbcc', bg:'#0f1e55'} 
+    };
     resultsDiv.innerHTML = users.map(u => {
       const id = u.id;
       const uRoles = Array.isArray(u.roles) && u.roles.length ? u.roles : (u.role ? [u.role] : ['user']);
