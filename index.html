@@ -2161,11 +2161,13 @@ let tickerHalfWidth = 0;
 const TICKER_SPEED = 1.2;
 async function loadTicker() {
   try {
-    const [liveRes, vidRes] = await Promise.all([
+    const [newsRes, liveRes, vidRes] = await Promise.all([
+      db.from('posts').select('title,url').eq('room','ticker').order('id',{ascending:false}).limit(10),
       db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
       db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8)
     ]);
     let items = [];
+    for (const p of (newsRes.data||[])) items.push({ text: '📢 ' + (p.title||''), url: p.url });
     for (const p of (liveRes.data||[])) {
       const t = (p.tag||'').toLowerCase();
       const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? '⏰ قريباً' : '📡';
