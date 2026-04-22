@@ -119,18 +119,31 @@ function hideMsg() {
 }
 
 async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
+  const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!email || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  if (!identifier || !password) { showMsg('Please fill all fields!', 'err'); return; }
   const btn = document.getElementById('btn-login');
   btn.disabled = true; btn.textContent = 'Logging in...';
-  const { data, error } = await db.auth.signInWithPassword({ email, password });
-  if (error) {
-    showMsg('❌ ' + error.message, 'err');
-    btn.disabled = false; btn.textContent = 'Login';
-  } else {
+
+  try {
+    let email = identifier;
+    if (!email.includes('@')) {
+      const { data, error: profileError } = await db.from('profiles').select('email').ilike('username', email).maybeSingle();
+      if (profileError) throw profileError;
+      if (!data || !data.email) {
+        throw new Error('Account not found. Please check your username.');
+      }
+      email = data.email;
+    }
+
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
     showMsg('✅ Welcome back! Redirecting...', 'ok');
     setTimeout(() => window.location.href = 'index.html', 1500);
+  } catch (err) {
+    showMsg('❌ ' + err.message, 'err');
+    btn.disabled = false; btn.textContent = 'Login';
   }
 }
 

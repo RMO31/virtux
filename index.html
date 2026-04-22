@@ -2200,7 +2200,12 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   const password = document.getElementById('loginPassword').value;
   const isEN = window._siteLanguage === 'en';
   const errEl = document.getElementById('loginError');
-  if(!identifier || !password) { errEl.innerText = isEN ? 'Please fill all fields' : 'يرجى ملء جميع الحقول'; return; }
+  errEl.innerText = '';
+  
+  if(!identifier || !password) { 
+    errEl.innerText = isEN ? 'Please fill all fields' : 'يرجى ملء جميع الحقول'; 
+    return; 
+  }
   
   const btn = document.getElementById('doLoginBtn');
   btn.disabled = true;
@@ -2208,37 +2213,48 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   
   try {
     let email = identifier;
-    if (!email.includes('@')) {
-      const { data, error: profileError } = await db.from('profiles').select('email').ilike('username', email).maybeSingle();
-      if (profileError) throw profileError;
-      if (!data || !data.email) {
-        throw new Error(isEN ? 'Account not found. Please check your username.' : 'الحساب غير موجود. يرجى التأكد من اسم المستخدم.');
+    // إذا لم يكن المدخل بريداً إلكترونياً، نبحث عنه في البروفايلات
+    if (!identifier.includes('@')) {
+      const { data, error: profileError } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
+      if (profileError) {
+        console.error('Profile lookup error:', profileError);
       }
-      email = data.email;
+      if (data && data.email) {
+        email = data.email;
+      }
     }
-    const { data: authData, error: loginError } = await db.auth.signInWithPassword({email, password});
+
+    const { data: authData, error: loginError } = await db.auth.signInWithPassword({ email, password });
     if (loginError) throw loginError;
 
     // "Self-healing": التأكد من وجود بروفايل بعد الدخول الناجح
     if (authData.user) {
-      const { data: prof } = await db.from('profiles').select('id').eq('id', authData.user.id).maybeSingle();
-      if (!prof) {
-        // إذا كان البروفايل مفقوداً، نقوم بإنشائه الآن
-        const fallbackUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
-        await db.from('profiles').insert({
-          id: authData.user.id,
-          username: fallbackUsername,
-          email: authData.user.email,
-          role: 'user',
-          created_at: new Date().toISOString()
-        });
+      try {
+        const { data: prof } = await db.from('profiles').select('id').eq('id', authData.user.id).maybeSingle();
+        if (!prof) {
+          const fallbackUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
+          const expiry = new Date();
+          expiry.setHours(expiry.getHours() + 24);
+          await db.from('profiles').insert({
+            id: authData.user.id,
+            username: fallbackUsername,
+            email: authData.user.email,
+            role: 'guest',
+            roles: ['guest', 'user'],
+            expiry_date: expiry.toISOString(),
+            created_at: new Date().toISOString()
+          });
+        }
+      } catch (innerErr) {
+        console.error('Self-healing profile error:', innerErr);
       }
     }
 
     closeModal();
     await updateUIAfterAuth();
   } catch(e) { 
-    errEl.innerText = e.message; 
+    console.error('Login error:', e);
+    errEl.innerText = e.message || (isEN ? 'Invalid login' : 'خطأ في الدخول'); 
     errEl.style.color = '#f55';
   } finally {
     btn.disabled = false;
