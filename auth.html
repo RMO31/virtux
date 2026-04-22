@@ -205,11 +205,30 @@ function showHtmlMsg(html, type) {
   el.style.display = 'block';
 }
 
+let resendTimer = null;
 async function resendConfirmation(email) {
+  if (resendTimer) return;
   try {
     const { error } = await db.auth.resend({ type: 'signup', email });
     if (error) throw error;
     showMsg('✅ Confirmation email sent again!', 'ok');
+    
+    // Start countdown
+    let seconds = 120;
+    const btn = document.querySelector('button[onclick*="resendConfirmation"]');
+    if (btn) {
+      btn.disabled = true;
+      resendTimer = setInterval(() => {
+        seconds--;
+        btn.textContent = `Wait ${seconds}s to resend`;
+        if (seconds <= 0) {
+          clearInterval(resendTimer);
+          resendTimer = null;
+          btn.disabled = false;
+          btn.textContent = "Didn't get it? Resend";
+        }
+      }, 1000);
+    }
   } catch(e) {
     showMsg('❌ Error: ' + e.message, 'err');
   }

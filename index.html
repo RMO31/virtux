@@ -2160,6 +2160,7 @@ async function updateUIAfterAuth(sessionOverride) {
 
 async function checkAuth() { await updateUIAfterAuth(); }
 
+
 db.auth.onAuthStateChange((event, session) => {
   authReady = true;
   setTimeout(() => {
@@ -2262,15 +2263,35 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   }
 });
 
+let resendTimer = null;
 window.resendConfirmation = async function(email) {
+  if (resendTimer) return;
   const isEN = window._siteLanguage === 'en';
-  const errEl = document.getElementById('signupError');
   try {
     const { error } = await db.auth.resend({ type: 'signup', email });
     if (error) throw error;
+    const errEl = document.getElementById('signupError');
     errEl.style.color = '#4f4';
     errEl.innerText = isEN ? '✅ Confirmation email sent again!' : '✅ تم إعادة إرسال بريد التأكيد!';
+    
+    // Start countdown
+    let seconds = 120;
+    const btn = document.querySelector('button[onclick*="resendConfirmation"]');
+    if (btn) {
+      btn.disabled = true;
+      resendTimer = setInterval(() => {
+        seconds--;
+        btn.textContent = isEN ? `Wait ${seconds}s` : `انتظر ${seconds} ثانية`;
+        if (seconds <= 0) {
+          clearInterval(resendTimer);
+          resendTimer = null;
+          btn.disabled = false;
+          btn.textContent = isEN ? "Resend Email" : "إعادة الإرسال";
+        }
+      }, 1000);
+    }
   } catch(e) {
+    const errEl = document.getElementById('signupError');
     errEl.style.color = '#f55';
     errEl.innerText = isEN ? '❌ Error: ' + e.message : '❌ خطأ: ' + e.message;
   }
