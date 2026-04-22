@@ -164,7 +164,11 @@ async function doRegister() {
     } 
   });
   if (error) {
-    showMsg('❌ ' + error.message, 'err');
+    let msg = '❌ ' + error.message;
+    if (error.message.includes('rate limit')) {
+      msg = '❌ Email limit reached. Please use Google Login to bypass email verification!';
+    }
+    showMsg(msg, 'err');
     btn.disabled = false; btn.textContent = 'Create Account';
   } else {
     // Create profile

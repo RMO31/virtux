@@ -2344,8 +2344,14 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     document.getElementById('signupEmail').value = '';
     document.getElementById('signupPassword').value = '';
   } catch(e) {
+    let msg = e.message || (isEN ? 'Registration failed.' : 'فشل التسجيل.');
+    if (msg.includes('rate limit')) {
+      msg = isEN 
+        ? '❌ Email limit reached. Please try again later or use Google Login to skip email verification!'
+        : '❌ تم تجاوز حد إرسال الرسائل. يرجى المحاولة لاحقاً أو استخدام "الدخول عبر Google" لتجاوز التحقق من البريد!';
+    }
     errEl.style.color = '#f55';
-    errEl.innerText = e.message || (isEN ? 'Registration failed.' : 'فشل التسجيل.');
+    errEl.innerText = msg;
   } finally {
     btn.disabled = false;
     btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
