@@ -2142,18 +2142,61 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   } catch(e) { document.getElementById('loginError').innerText = e.message; }
 });
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
+  const isEN = window._siteLanguage === 'en';
   const username = document.getElementById('signupUsername').value.trim();
-  const email = document.getElementById('signupEmail').value.trim();
+  const email    = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
-  if(!username || !email || !password) { document.getElementById('signupError').innerText = 'يرجى ملء جميع الحقول'; return; }
+  const errEl    = document.getElementById('signupError');
+  errEl.innerText = '';
+
+  if (!username || username.length < 3) { errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.'; return; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.innerText = isEN ? 'Please enter a valid email.' : 'أدخل بريداً إلكترونياً صحيحاً.'; return; }
+  if (!password || password.length < 6) { errEl.innerText = isEN ? 'Password must be at least 6 characters.' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
+
+  const btn = document.getElementById('doSignupBtn');
+  btn.disabled = true;
+  btn.textContent = isEN ? '⏳ Creating...' : '⏳ جاري الإنشاء...';
+
   try {
-    const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
+    // تحقق من أن اسم المستخدم غير مأخوذ
+    const { data: existing } = await db.from('profiles').select('id').eq('username', username).maybeSingle();
+    if (existing) { errEl.innerText = isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ.'; return; }
+
+    const { data, error } = await db.auth.signUp({
+      email, password,
+      options: { data: { username }, emailRedirectTo: window.location.href }
+    });
     if (error) throw error;
-    await db.from('profiles').insert({ id: data.user.id, username, email, role: 'user', created_at: new Date().toISOString() });
-    alert('تم إنشاء الحساب بنجاح! يرجى تأكيد بريدك الإلكتروني إذا تطلب الأمر، ثم تسجيل الدخول.');
-    document.getElementById('switchToLogin').click();
-    document.getElementById('loginIdentifier').value = username;
-  } catch(e) { document.getElementById('signupError').innerText = e.message; }
+
+    // إذا تأكد فوراً نضيف profile
+    const uid = data?.user?.id;
+    if (uid) {
+      const { data: existing2 } = await db.from('profiles').select('id').eq('id', uid).maybeSingle();
+      if (!existing2) {
+        await db.from('profiles').insert({ id: uid, username, email, role: 'user', created_at: new Date().toISOString() });
+      }
+    }
+
+    const needsConfirm = !data?.session;
+    if (needsConfirm) {
+      errEl.style.color = '#4f4';
+      errEl.innerText = isEN
+        ? '✅ Account created! Check your email to confirm, then log in.'
+        : '✅ تم إنشاء الحساب! تحقق من بريدك الإلكتروني لتأكيده ثم سجّل دخول.';
+    } else {
+      await updateUIAfterAuth();
+      closeModal();
+    }
+    document.getElementById('signupUsername').value = '';
+    document.getElementById('signupEmail').value = '';
+    document.getElementById('signupPassword').value = '';
+  } catch(e) {
+    errEl.style.color = '#f55';
+    errEl.innerText = e.message || (isEN ? 'Registration failed.' : 'فشل التسجيل.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
+  }
 });
 document.getElementById('googleBtn')?.addEventListener('click', async () => { await startGoogleAuth('loginError'); });
 document.getElementById('googleSignupBtn')?.addEventListener('click', async () => { await startGoogleAuth('signupError'); });
@@ -2751,6 +2794,37 @@ window.t = function(ar, en) {
   return window._siteLanguage === 'en' ? en : ar;
 };
 
+// ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
+window._titleCache = {};
+window.tTitle = function(title) {
+  if (!title) return title;
+  if (window._siteLanguage !== 'en') return title;
+  // إذا العنوان يحتوي عربي، حاول ترجمته عبر API
+  const hasArabic = /[؀-ۿ]/.test(title);
+  if (!hasArabic) return title; // إنجليزي أصلاً
+  if (window._titleCache[title]) return window._titleCache[title];
+  // أرجع العنوان الأصلي فوراً، وابدأ الترجمة في الخلفية
+  window._translateTitleBg(title);
+  return title;
+};
+
+window._translateTitleBg = async function(title) {
+  if (window._titleCache[title]) return;
+  try {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=' + encodeURIComponent(title);
+    const r = await fetch(url);
+    const j = await r.json();
+    const translated = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('') || title;
+    window._titleCache[title] = translated;
+    // تحديث العناوين في الصفحة إذا لا تزال إنجليزية
+    if (window._siteLanguage === 'en') {
+      document.querySelectorAll('.post-card-title, .hc-info-title').forEach(el => {
+        if (el.textContent === title) el.textContent = translated;
+      });
+    }
+  } catch(e) {}
+};
+
 window.tTitle = function(title) {
   if (!title) return '';
   if (window._siteLanguage === 'ar') return title;
@@ -2851,6 +2925,48 @@ function rebuildFilterBar(room) {
 
 function applyTranslations() {
   const isEN = window._siteLanguage === 'en';
+
+  // ترجمة نموذج تسجيل الدخول
+  const loginModal = document.getElementById('modal-login');
+  if (loginModal) {
+    loginModal.querySelector('h3').textContent = isEN ? '🔐 Login' : '🔐 تسجيل الدخول';
+    const labels = loginModal.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = isEN ? 'Email or Username' : 'البريد الإلكتروني أو اسم المستخدم';
+    if (labels[1]) labels[1].textContent = isEN ? 'Password' : 'كلمة المرور';
+    const loginId = document.getElementById('loginIdentifier');
+    if (loginId) loginId.placeholder = isEN ? 'example@domain.com or username' : 'example@domain.com أو username';
+    const doLogin = document.getElementById('doLoginBtn');
+    if (doLogin) doLogin.textContent = isEN ? 'Login' : 'دخول';
+    const gBtn = document.getElementById('googleBtn');
+    if (gBtn) gBtn.textContent = isEN ? '🔵 Sign in with Google' : '🔵 تسجيل دخول عن طريق غوغل';
+    const sw = loginModal.querySelector('.auth-switch');
+    if (sw) sw.innerHTML = (isEN ? "Don't have an account? " : 'ليس لديك حساب؟ ') + '<a id="switchToSignup">' + (isEN ? 'Create account' : 'إنشاء حساب جديد') + '</a>';
+    document.getElementById('switchToSignup')?.addEventListener('click', () => {
+      document.getElementById('modal-login').style.display='none';
+      document.getElementById('modal-signup').style.display='block';
+    });
+  }
+  // ترجمة نموذج التسجيل
+  const signupModal = document.getElementById('modal-signup');
+  if (signupModal) {
+    signupModal.querySelector('h3').textContent = isEN ? '📝 Create Account' : '📝 إنشاء حساب جديد';
+    const labels = signupModal.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = isEN ? 'Username' : 'اسم المستخدم';
+    if (labels[1]) labels[1].textContent = isEN ? 'Email' : 'البريد الإلكتروني';
+    if (labels[2]) labels[2].textContent = isEN ? 'Password' : 'كلمة المرور';
+    const suUser = document.getElementById('signupUsername');
+    if (suUser) suUser.placeholder = isEN ? 'Username' : 'اسم المستخدم';
+    const doSignup = document.getElementById('doSignupBtn');
+    if (doSignup && !doSignup.disabled) doSignup.textContent = isEN ? 'Sign Up' : 'تسجيل';
+    const gBtn2 = document.getElementById('googleSignupBtn');
+    if (gBtn2) gBtn2.textContent = isEN ? '🔵 Sign up with Google' : '🔵 تسجيل عبر Google';
+    const sw2 = signupModal.querySelector('.auth-switch');
+    if (sw2) sw2.innerHTML = (isEN ? 'Already have an account? ' : 'لديك حساب بالفعل؟ ') + '<a id="switchToLogin">' + (isEN ? 'Login' : 'تسجيل الدخول') + '</a>';
+    document.getElementById('switchToLogin')?.addEventListener('click', () => {
+      document.getElementById('modal-signup').style.display='none';
+      document.getElementById('modal-login').style.display='block';
+    });
+  }
 
   // ترجمة كل عنصر يحمل data-ar و data-en
   document.querySelectorAll('[data-ar][data-en]').forEach(el => {
