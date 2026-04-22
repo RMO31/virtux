@@ -591,6 +591,7 @@
     .hc-slide{min-width:100%;box-sizing:border-box;padding:11px 12px 46px;}
     .hc-slide a{text-decoration:none;color:inherit;display:block;}
     .hc-thumb-wrap{position:relative;border-radius:9px;overflow:hidden;background:#050000;}
+    .hc-thumb-wrap.vip-ch{border:2px solid #ff6600;box-shadow:0 0 12px rgba(255,102,0,0.4);}
     .hc-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;}
     .hc-thumb-placeholder{width:100%;aspect-ratio:16/9;background:#0a0000;display:flex;align-items:center;justify-content:center;font-size:38px;}
     .hc-badge-live{position:absolute;top:7px;right:8px;background:#c00;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;animation:hc-blink 1.3s infinite;}
@@ -2235,32 +2236,50 @@ window.deletePost = deletePost;
   function renderLive(p){
     const vid=ytId(p.url); const tag=(p.tag||'').toLowerCase();
     const isLive=tag.includes('live'); const isSoon=tag.includes('pre')||tag.includes('upcoming');
+    const isVip = p.tag && p.tag.startsWith('auto:');
+    const vipBadgeHtml = isVip ? `<div style="position:absolute;top:7px;left:8px;background:linear-gradient(135deg,#ff6600,#cc3300);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;">🔥 YT VIP</div>` : '';
     const thumbEl=vid?`<img class="hc-thumb" src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:`<div class="hc-thumb-placeholder">🔴</div>`;
     const badge=isLive?`<span class="hc-badge-live">🔴 LIVE</span>`:isSoon?`<span class="hc-badge-soon">⏰ قريباً</span>`:'';
     const isTwitch=p.url&&p.url.includes('twitch.tv');
     const twitchMatch=isTwitch&&p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
     if(vid){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap">${thumbEl}${badge}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     } else if(twitchMatch){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://player.twitch.tv/?channel=${twitchMatch[1]}&parent='+location.hostname+'\\' allow=\\'autoplay; fullscreen\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap">${thumbEl}${badge}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://player.twitch.tv/?channel=${twitchMatch[1]}&parent='+location.hostname+'\\' allow=\\'autoplay; fullscreen\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     }
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}${badge}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||'بث مباشر'}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
   }
   function renderVideo(p){
     const vid=ytId(p.url);
+    const isVip = p.tag && p.tag.startsWith('auto:');
+    const vipBadgeHtml = isVip ? `<div style="position:absolute;top:7px;left:8px;background:linear-gradient(135deg,#ff6600,#cc3300);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;">🔥 YT VIP</div>` : '';
     const thumbEl=vid?`<img class="hc-thumb" src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
     if(vid){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap">${thumbEl}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     }
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap">${thumbEl}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||''}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
   }
   async function loadHomePanel(){
     const liveEl=document.getElementById('hc-live');
     const videosEl=document.getElementById('hc-videos');
     if(!liveEl&&!videosEl) return;
     try{
-      if(liveEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').order('id',{ascending:false}).limit(10); buildCarousel(liveEl,data||[],renderLive); }
-      if(videosEl){ const {data}=await db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').order('id',{ascending:false}).limit(12); buildCarousel(videosEl,data||[],renderVideo); }
+      if(liveEl){ 
+        const [vipRes, normalRes] = await Promise.all([
+          db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').like('tag','auto:%').order('id',{ascending:false}).limit(6),
+          db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').not('tag','like','auto:%').order('id',{ascending:false}).limit(6)
+        ]);
+        const data = [...(vipRes.data||[]), ...(normalRes.data||[])];
+        buildCarousel(liveEl,data,renderLive); 
+      }
+      if(videosEl){ 
+        const [vipRes, normalRes] = await Promise.all([
+          db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').like('tag','auto:%').order('id',{ascending:false}).limit(8),
+          db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').not('tag','like','auto:%').order('id',{ascending:false}).limit(8)
+        ]);
+        const data = [...(vipRes.data||[]), ...(normalRes.data||[])];
+        buildCarousel(videosEl,data,renderVideo); 
+      }
     }catch(e){
       if(liveEl) liveEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
       if(videosEl) videosEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
@@ -3385,6 +3404,7 @@ window.fixThumb = function(img, vid) {
 
 initializeAuth();
 showPage('home');
+loadTicker();
 </script>
 </body>
 </html>
