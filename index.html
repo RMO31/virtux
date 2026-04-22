@@ -754,10 +754,6 @@
         <input type="text" id="signupUsername" placeholder="اسم المستخدم">
       </div>
       <div class="form-group">
-        <label>البريد الإلكتروني</label>
-        <input type="email" id="signupEmail" placeholder="example@domain.com">
-      </div>
-      <div class="form-group">
         <label>كلمة المرور</label>
         <input type="password" id="signupPassword" placeholder="********">
       </div>
@@ -2230,19 +2226,24 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   
   try {
     let email = identifier;
-    // إذا لم يكن المدخل بريداً إلكترونياً، نبحث عنه في البروفايلات
     if (!identifier.includes('@')) {
-      const { data, error: profileError } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
-      if (profileError) {
-        console.error('Profile lookup error:', profileError);
-      }
-      if (data && data.email) {
-        email = data.email;
-      }
+      // محاولة تسجيل الدخول بالبريد الوهمي المرتبط باسم المستخدم
+      email = identifier.toLowerCase().trim() + '@virtux.v';
     }
-
     const { data: authData, error: loginError } = await db.auth.signInWithPassword({ email, password });
-    if (loginError) throw loginError;
+    
+    // إذا فشل بالبريد الوهمي، قد يكون حساباً قديماً ببريد حقيقي، نبحث عنه
+    if (loginError && !identifier.includes('@')) {
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
+      if (p && p.email) {
+        const { data: retryData, error: retryError } = await db.auth.signInWithPassword({ email: p.email, password });
+        if (retryError) throw retryError;
+      } else {
+        throw loginError;
+      }
+    } else if (loginError) {
+      throw loginError;
+    }
 
     // "Self-healing": التأكد من وجود بروفايل بعد الدخول الناجح
     if (authData.user) {
@@ -2347,14 +2348,12 @@ window.resendConfirmation = async function(email) {
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
   const username = document.getElementById('signupUsername').value.trim();
-  const email    = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
   const errEl    = document.getElementById('signupError');
   errEl.innerText = '';
 
   if (!username || username.length < 3) { errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.'; return; }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.innerText = isEN ? 'Please enter a valid email.' : 'أدخل بريداً إلكترونياً صحيحاً.'; return; }
-  if (!isRealEmail(email)) { errEl.innerText = isEN ? 'Disposable emails are not allowed. Use a real email.' : 'غير مسموح باستخدام الإيميلات الوهمية. استخدم إيميلاً حقيقياً.'; return; }
+  const dummyEmail = username.toLowerCase() + '@virtux.v';
   if (!password || password.length < 6) { errEl.innerText = isEN ? 'Password must be at least 6 characters.' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
 
   const btn = document.getElementById('doSignupBtn');
@@ -2362,58 +2361,33 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   btn.textContent = isEN ? '⏳ Creating...' : '⏳ جاري الإنشاء...';
 
   try {
-    // تحقق من أن اسم المستخدم غير مأخوذ
     const { data: existing } = await db.from('profiles').select('id').eq('username', username).maybeSingle();
     if (existing) { errEl.innerText = isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ.'; return; }
 
     const { data, error } = await db.auth.signUp({
-      email, password,
+      email: dummyEmail, 
+      password,
       options: { data: { username }, emailRedirectTo: window.location.href }
     });
     if (error) throw error;
 
-    // محاولة إنشاء البروفايل فوراً
     const uid = data?.user?.id;
     if (uid) {
-      try {
-        const { data: existing2 } = await db.from('profiles').select('id').eq('id', uid).maybeSingle();
-        if (!existing2) {
-          const expiry = new Date();
-          expiry.setHours(expiry.getHours() + 24);
-          await db.from('profiles').insert({ 
-            id: uid, 
-            username, 
-            email, 
-            role: 'guest', 
-            roles: ['guest', 'user'],
-            expiry_date: expiry.toISOString(),
-            created_at: new Date().toISOString() 
-          });
-        }
-      } catch (profileErr) {
-        console.error('Error creating profile during signup:', profileErr);
-        // لا نفشل التسجيل الكلي إذا فشل البروفايل، لكن يفضل التنبيه
-      }
+      const expiry = new Date();
+      expiry.setHours(expiry.getHours() + 24);
+      await db.from('profiles').insert({ 
+        id: uid, username, email: dummyEmail, 
+        role: 'guest', roles: ['guest', 'user'],
+        expiry_date: expiry.toISOString(),
+        created_at: new Date().toISOString() 
+      });
     }
 
-    const needsConfirm = !data?.session;
-    if (needsConfirm) {
-      errEl.style.color = '#4f4';
-      errEl.innerHTML = isEN
-        ? `✅ Account created! Please check your email (and Spam folder) to confirm.<br>
-           <button onclick="resendConfirmation('${email}')" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:11px;margin-top:5px;">Didn't get it? Resend Email</button><br>
-           <div style="margin-top:10px;color:#aaa;font-size:11px;">💡 Pro tip: You can use <b>Google Login</b> to bypass email verification!</div>`
-        : `✅ تم إنشاء الحساب! يرجى مراجعة بريدك (والرسائل المزعجة Spam) لتأكيده.<br>
-           <button onclick="resendConfirmation('${email}')" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:11px;margin-top:5px;">لم تصلك الرسالة؟ إعادة الإرسال</button><br>
-           <div style="margin-top:10px;color:#aaa;font-size:11px;">💡 نصيحة: يمكنك استخدام <b>الدخول عبر Google</b> لتجنب الحاجة لتأكيد البريد!</div>`;
-    } else {
-      await updateUIAfterAuth(data.session);
-      closeModal();
-    }
-    document.getElementById('signupUsername').value = '';
-    document.getElementById('signupEmail').value = '';
-    document.getElementById('signupPassword').value = '';
+    await updateUIAfterAuth(data.session);
+    closeModal();
   } catch(e) {
+    document.getElementById('signupUsername').value = '';
+    document.getElementById('signupPassword').value = '';
     let msg = e.message || (isEN ? 'Registration failed.' : 'فشل التسجيل.');
     if (msg.includes('rate limit')) {
       msg = isEN 

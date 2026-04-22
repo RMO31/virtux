@@ -66,15 +66,10 @@
         <button class="btn-auth" onclick="doLogin()" id="btn-login">Login</button>
       </div>
 
-      <!-- REGISTER -->
       <div class="form-panel" id="panel-register">
         <div class="form-group">
           <label>Username</label>
           <input type="text" id="reg-username" placeholder="GamerName123">
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="reg-email" placeholder="your@email.com">
         </div>
         <div class="form-group">
           <label>Password</label>
@@ -127,16 +122,21 @@ async function doLogin() {
 
   try {
     let email = identifier;
-    if (!email.includes('@')) {
-      const { data, error: profileError } = await db.from('profiles').select('email').ilike('username', email).maybeSingle();
-      if (profileError) throw profileError;
-      if (!data || !data.email) {
-        throw new Error('Account not found. Please check your username.');
-      }
-      email = data.email;
+    if (!identifier.includes('@')) {
+      email = identifier.toLowerCase().trim() + '@virtux.v';
     }
 
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    let { data, error } = await db.auth.signInWithPassword({ email, password });
+    
+    // Fallback for old real-email accounts
+    if (error && !identifier.includes('@')) {
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
+      if (p && p.email) {
+        const res = await db.auth.signInWithPassword({ email: p.email, password });
+        data = res.data;
+        error = res.error;
+      }
+    }
     if (error) throw error;
 
     showMsg('✅ Welcome back! Redirecting...', 'ok');
@@ -167,16 +167,14 @@ async function doForgotPassword() {
 
 async function doRegister() {
   const username = document.getElementById('reg-username').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
-  if (!username || !email || !password) { showMsg('Please fill all fields!', 'err'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('Please enter a valid email.', 'err'); return; }
-  if (!isRealEmail(email)) { showMsg('Disposable emails are not allowed. Use a real email.', 'err'); return; }
+  if (!username || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  const dummyEmail = username.toLowerCase() + '@virtux.v';
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
   const btn = document.getElementById('btn-register');
   btn.disabled = true; btn.textContent = 'Creating account...';
   const { data, error } = await db.auth.signUp({ 
-    email, 
+    email: dummyEmail, 
     password, 
     options: { 
       data: { username },
@@ -186,7 +184,7 @@ async function doRegister() {
   if (error) {
     let msg = '❌ ' + error.message;
     if (error.message.includes('rate limit')) {
-      msg = '❌ Email limit reached. Please use Google Login to bypass email verification!';
+      msg = '❌ Email limit reached. Please try later.';
     }
     showMsg(msg, 'err');
     btn.disabled = false; btn.textContent = 'Create Account';
@@ -198,7 +196,7 @@ async function doRegister() {
       await db.from('profiles').insert({ 
         id: data.user.id, 
         username, 
-        email, 
+        email: dummyEmail, 
         role: 'guest',
         roles: ['guest', 'user'],
         expiry_date: expiry.toISOString(),
@@ -206,14 +204,12 @@ async function doRegister() {
       });
     }
     if (data.session) {
-      showMsg('✅ Account created! Redirecting...', 'ok');
+      showMsg('✅ Welcome back! Redirecting...', 'ok');
       setTimeout(() => window.location.href = 'index.html', 1500);
     } else {
-      const msg = `✅ Account created! Please check your email (and Spam folder).<br>
-        <button onclick="resendConfirmation('${email}')" style="background:none;border:none;color:#9fb000;text-decoration:underline;cursor:pointer;font-size:11px;">Didn't get it? Resend</button>`;
-      showHtmlMsg(msg, 'ok');
+      showMsg('✅ Account created successfully!', 'ok');
       btn.disabled = false; btn.textContent = 'Create Account';
-      setTimeout(() => switchTab('login'), 6000);
+      setTimeout(() => switchTab('login'), 2000);
     }
   }
 }
