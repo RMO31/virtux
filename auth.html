@@ -59,11 +59,8 @@
           <label>Email</label>
           <input type="email" id="login-email" placeholder="your@email.com">
         </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-          <div style="text-align:right; margin-top:5px;">
-            <a href="javascript:void(0)" onclick="doForgotPassword()" style="color:#9fb000; font-size:11px; text-decoration:underline;">Forgot Password?</a>
+          <div style="text-align:center; margin-top:10px; margin-bottom:10px;">
+            <a href="javascript:void(0)" onclick="doForgotPassword()" style="color:#9fb000; font-size:12px; text-decoration:underline;">Forgot Password?</a>
           </div>
         </div>
         <button class="btn-auth" onclick="doLogin()" id="btn-login">Login</button>
@@ -145,7 +142,11 @@ async function doLogin() {
     showMsg('✅ Welcome back! Redirecting...', 'ok');
     setTimeout(() => window.location.href = 'index.html', 1500);
   } catch (err) {
-    showMsg('❌ ' + err.message, 'err');
+    let msg = err.message || '';
+    if (msg.includes('Invalid login credentials')) {
+      msg = 'Invalid email/username or password.';
+    }
+    showMsg('❌ ' + msg, 'err');
     btn.disabled = false; btn.textContent = 'Login';
   }
 }

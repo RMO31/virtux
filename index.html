@@ -740,8 +740,8 @@
         <input type="password" id="loginPassword" placeholder="********">
       </div>
       <div id="loginError" class="error-msg"></div>
-      <div style="text-align:left; margin-bottom:10px;">
-        <a id="forgotPasswordLink" style="color:#e01010; font-size:11px; cursor:pointer; text-decoration:underline;" data-ar="هل نسيت كلمة المرور؟" data-en="Forgot Password?">هل نسيت كلمة المرور؟</a>
+      <div style="text-align:center; margin-bottom:15px;">
+        <a id="forgotPasswordLink" style="color:#e01010; font-size:12px; cursor:pointer; text-decoration:underline; display:block;" data-ar="هل نسيت كلمة المرور؟" data-en="Forgot Password?">هل نسيت كلمة المرور؟</a>
       </div>
       <button class="btn-submit" id="doLoginBtn">دخول</button>
       <button class="btn-submit google-btn-modal" id="googleBtn">🔵 تسجيل دخول عن طريق غوغل</button>
@@ -2271,7 +2271,13 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     await updateUIAfterAuth();
   } catch(e) { 
     console.error('Login error:', e);
-    errEl.innerText = e.message || (isEN ? 'Invalid login' : 'خطأ في الدخول'); 
+    let msg = e.message || '';
+    if (msg.includes('Invalid login credentials')) {
+      msg = isEN ? 'Invalid email/username or password.' : 'خطأ في البريد/اسم المستخدم أو كلمة المرور.';
+    } else if (!msg) {
+      msg = isEN ? 'Login failed.' : 'فشل تسجيل الدخول.';
+    }
+    errEl.innerText = msg;
     errEl.style.color = '#f55';
   } finally {
     btn.disabled = false;
