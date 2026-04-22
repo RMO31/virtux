@@ -146,10 +146,29 @@ async function doRegister() {
       showMsg('✅ Account created! Redirecting...', 'ok');
       setTimeout(() => window.location.href = 'index.html', 1500);
     } else {
-      showMsg('✅ Account created! Please check your email (and Spam folder) to confirm, then you can login.', 'ok');
+      const msg = `✅ Account created! Please check your email (and Spam folder).<br>
+        <button onclick="resendConfirmation('${email}')" style="background:none;border:none;color:#9fb000;text-decoration:underline;cursor:pointer;font-size:11px;">Didn't get it? Resend</button>`;
+      showHtmlMsg(msg, 'ok');
       btn.disabled = false; btn.textContent = 'Create Account';
-      setTimeout(() => switchTab('login'), 4000);
+      setTimeout(() => switchTab('login'), 6000);
     }
+  }
+}
+
+function showHtmlMsg(html, type) {
+  const el = document.getElementById('authMsg');
+  el.innerHTML = html;
+  el.className = 'msg ' + type;
+  el.style.display = 'block';
+}
+
+async function resendConfirmation(email) {
+  try {
+    const { error } = await db.auth.resend({ type: 'signup', email });
+    if (error) throw error;
+    showMsg('✅ Confirmation email sent again!', 'ok');
+  } catch(e) {
+    showMsg('❌ Error: ' + e.message, 'err');
   }
 }
 

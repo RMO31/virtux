@@ -2230,6 +2230,20 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     btn.textContent = isEN ? 'Login' : 'دخول';
   }
 });
+
+window.resendConfirmation = async function(email) {
+  const isEN = window._siteLanguage === 'en';
+  const errEl = document.getElementById('signupError');
+  try {
+    const { error } = await db.auth.resend({ type: 'signup', email });
+    if (error) throw error;
+    errEl.style.color = '#4f4';
+    errEl.innerText = isEN ? '✅ Confirmation email sent again!' : '✅ تم إعادة إرسال بريد التأكيد!';
+  } catch(e) {
+    errEl.style.color = '#f55';
+    errEl.innerText = isEN ? '❌ Error: ' + e.message : '❌ خطأ: ' + e.message;
+  }
+};
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
   const username = document.getElementById('signupUsername').value.trim();
@@ -2274,9 +2288,13 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     const needsConfirm = !data?.session;
     if (needsConfirm) {
       errEl.style.color = '#4f4';
-      errEl.innerText = isEN
-        ? '✅ Account created! Please check your email (and Spam folder) to confirm your account, then you can log in.'
-        : '✅ تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني (وتفقد صندوق الرسائل المزعجة Spam) لتأكيد حسابك، ثم يمكنك تسجيل الدخول.';
+      errEl.innerHTML = isEN
+        ? `✅ Account created! Please check your email (and Spam folder) to confirm.<br>
+           <button onclick="resendConfirmation('${email}')" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:11px;margin-top:5px;">Didn't get it? Resend Email</button><br>
+           <div style="margin-top:10px;color:#aaa;font-size:11px;">💡 Pro tip: You can use <b>Google Login</b> to bypass email verification!</div>`
+        : `✅ تم إنشاء الحساب! يرجى مراجعة بريدك (والرسائل المزعجة Spam) لتأكيده.<br>
+           <button onclick="resendConfirmation('${email}')" style="background:none;border:none;color:#fff;text-decoration:underline;cursor:pointer;font-size:11px;margin-top:5px;">لم تصلك الرسالة؟ إعادة الإرسال</button><br>
+           <div style="margin-top:10px;color:#aaa;font-size:11px;">💡 نصيحة: يمكنك استخدام <b>الدخول عبر Google</b> لتجنب الحاجة لتأكيد البريد!</div>`;
     } else {
       await updateUIAfterAuth(data.session);
       closeModal();
