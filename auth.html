@@ -62,6 +62,9 @@
         <div class="form-group">
           <label>Password</label>
           <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+          <div style="text-align:right; margin-top:5px;">
+            <a href="javascript:void(0)" onclick="doForgotPassword()" style="color:#9fb000; font-size:11px; text-decoration:underline;">Forgot Password?</a>
+          </div>
         </div>
         <button class="btn-auth" onclick="doLogin()" id="btn-login">Login</button>
       </div>
@@ -144,6 +147,20 @@ async function doLogin() {
   } catch (err) {
     showMsg('❌ ' + err.message, 'err');
     btn.disabled = false; btn.textContent = 'Login';
+  }
+}
+
+async function doForgotPassword() {
+  const email = prompt('Enter your email to receive a reset link:');
+  if (!email) return;
+  try {
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname + '#reset_password=true',
+    });
+    if (error) throw error;
+    alert('Reset link sent! Please check your email.');
+  } catch (e) {
+    alert('Error: ' + e.message);
   }
 }
 

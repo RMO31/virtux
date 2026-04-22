@@ -740,6 +740,9 @@
         <input type="password" id="loginPassword" placeholder="********">
       </div>
       <div id="loginError" class="error-msg"></div>
+      <div style="text-align:left; margin-bottom:10px;">
+        <a id="forgotPasswordLink" style="color:#e01010; font-size:11px; cursor:pointer; text-decoration:underline;" data-ar="هل نسيت كلمة المرور؟" data-en="Forgot Password?">هل نسيت كلمة المرور؟</a>
+      </div>
       <button class="btn-submit" id="doLoginBtn">دخول</button>
       <button class="btn-submit google-btn-modal" id="googleBtn">🔵 تسجيل دخول عن طريق غوغل</button>
       <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
@@ -2170,6 +2173,19 @@ db.auth.onAuthStateChange((event, session) => {
 maybePromptForGoogle(session.user).catch(err=>console.error('usernamemodalerror:',err));
       if (hasAuthCallbackParams()) setTimeout(cleanupAuthCallbackUrl, 1500);
     }
+
+    if (event === 'PASSWORD_RECOVERY') {
+      const isEN = window._siteLanguage === 'en';
+      const newPass = prompt(isEN ? 'Enter your new password:' : 'أدخل كلمة المرور الجديدة:');
+      if (newPass && newPass.length >= 6) {
+        db.auth.updateUser({ password: newPass }).then(({ error }) => {
+          if (error) alert(isEN ? 'Error: ' + error.message : 'خطأ: ' + error.message);
+          else alert(isEN ? 'Password updated successfully!' : 'تم تحديث كلمة المرور بنجاح!');
+        });
+      } else if (newPass) {
+        alert(isEN ? 'Password must be at least 6 characters.' : 'يجب أن تكون كلمة المرور 6 أحرف على الأقل.');
+      }
+    }
   }, 0);
 });
 
@@ -2260,6 +2276,22 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   } finally {
     btn.disabled = false;
     btn.textContent = isEN ? 'Login' : 'دخول';
+  }
+});
+
+document.getElementById('forgotPasswordLink')?.addEventListener('click', async () => {
+  const isEN = window._siteLanguage === 'en';
+  const email = prompt(isEN ? 'Enter your email to receive a reset link:' : 'أدخل بريدك الإلكتروني لتلقي رابط إعادة تعيين كلمة المرور:');
+  if (!email) return;
+  
+  try {
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname + '#reset_password=true',
+    });
+    if (error) throw error;
+    alert(isEN ? 'Reset link sent! Please check your email.' : 'تم إرسال رابط إعادة التعيين! يرجى مراجعة بريدك الإلكتروني.');
+  } catch (e) {
+    alert(isEN ? 'Error: ' + e.message : 'خطأ: ' + e.message);
   }
 });
 
