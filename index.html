@@ -64,16 +64,7 @@
       position: relative;
       height: 32px;
     }
-    .ticker-track {
-      display: inline-flex;
-      white-space: nowrap;
-      height: 32px;
-      align-items: center;
-      position: absolute;
-      left: 0;
-      top: 0;
-      will-change: transform;
-    }
+    .ticker-track{display:flex;white-space:nowrap;will-change:transform;align-items:center;}
     .ticker-item {
       display: inline-flex;
       align-items: center;
@@ -2153,41 +2144,53 @@ function buildTickerTrack() {
   if (tickerAnimationIdLocal) { cancelAnimationFrame(tickerAnimationIdLocal); tickerAnimationIdLocal = null; }
   track.innerHTML = '';
   if (!tickerItems.length) return;
-  [...tickerItems, ...tickerItems, ...tickerItems].forEach(item => {
+
+  // نبني النصوص مرتين للحلقة اللانهائية
+  const allItems = [...tickerItems, ...tickerItems];
+  allItems.forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
     if (item.url) {
-      const a = document.createElement('a'); a.href = item.url; a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = item.text; span.appendChild(a);
-    } else { span.textContent = item.text; }
+      const a = document.createElement('a');
+      a.href = item.url; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = item.text;
+      span.appendChild(a);
+    } else {
+      span.textContent = item.text;
+    }
     track.appendChild(span);
   });
+
+  // نبدأ الحركة بعد رسم DOM
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       const scrollDiv = document.getElementById('tickerScroll');
-      tickerContainerWidth = scrollDiv ? scrollDiv.clientWidth : 800;
-      const children = Array.from(track.children);
-      const third = Math.ceil(children.length / 3);
+      tickerContainerWidth = scrollDiv ? scrollDiv.offsetWidth : 900;
+      // عرض نصف الـ track (نصف العناصر)
+      const half = Math.ceil(track.children.length / 2);
       let w = 0;
-      for (let i = 0; i < third; i++) w += children[i] ? children[i].getBoundingClientRect().width : 0;
-      tickerHalfWidth = w > 10 ? w : 800;
+      Array.from(track.children).slice(0, half).forEach(el => { w += el.offsetWidth; });
+      tickerHalfWidth = w > 50 ? w : 1200;
       tickerPosition = tickerContainerWidth;
       track.style.transform = 'translateX(' + tickerPosition + 'px)';
       startTickerAnimation();
     });
   });
 }
+
 function startTickerAnimation() {
   if (tickerAnimationIdLocal) { cancelAnimationFrame(tickerAnimationIdLocal); tickerAnimationIdLocal = null; }
   const track = document.getElementById('tickerTrack');
-  if (!track || tickerHalfWidth <= 0) return;
+  if (!track) return;
   function animate() {
     tickerPosition -= TICKER_SPEED;
-    if (tickerPosition <= -tickerHalfWidth) tickerPosition += tickerHalfWidth;
+    if (tickerPosition <= -tickerHalfWidth) {
+      tickerPosition += tickerHalfWidth;
+    }
     track.style.transform = 'translateX(' + tickerPosition + 'px)';
     tickerAnimationIdLocal = requestAnimationFrame(animate);
   }
-  animate();
+  tickerAnimationIdLocal = requestAnimationFrame(animate);
 }
 
 window.deletePost = deletePost;
@@ -2716,15 +2719,9 @@ window.setLang = function(lang) {
   const arBtn = document.getElementById('lang-ar-btn');
   const enBtn = document.getElementById('lang-en-btn');
   if (lang === 'ar') {
-    document.documentElement.lang = 'ar';
-    document.documentElement.dir = 'rtl';
-    document.body.style.direction = 'rtl';
     if (arBtn) { arBtn.style.background='#e01010'; arBtn.style.color='#000'; }
     if (enBtn) { enBtn.style.background='transparent'; enBtn.style.color='#e01010'; }
   } else {
-    document.documentElement.lang = 'en';
-    document.documentElement.dir = 'ltr';
-    document.body.style.direction = 'ltr';
     if (enBtn) { enBtn.style.background='#e01010'; enBtn.style.color='#000'; }
     if (arBtn) { arBtn.style.background='transparent'; arBtn.style.color='#e01010'; }
   }
