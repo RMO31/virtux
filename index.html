@@ -1320,6 +1320,7 @@ async function addUser(room, title, desc, url, tag, content, mediaUrl) {
 // ==================== نماذج النشر مع معاينة ورفع ====================
 let currentRoomFor = null;
 let currentMediaFile = null;
+let currentThumbFile = null;
 let currentPreviewDataUrl = null;
 
 function clearMediaForRoom(room) {
@@ -1377,7 +1378,6 @@ function autofillFromFile(room, file, mediaInfo) {
     descEl.value = buildMediaDescription(file, mediaInfo);
   }
 }
-
 function handleMediaFile(room, file) {
   if (!file) return;
   currentMediaFile = file;
@@ -1425,6 +1425,23 @@ function handleMediaFile(room, file) {
       if (previewText) previewText.style.display = 'none';
       if (iconEl) iconEl.value = '🎥';
     }
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleThumbFile(room, file) {
+  if (!file) return;
+  currentThumbFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const previewImg = document.getElementById(`preview-img-${room}`);
+    if (previewImg) {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
+      previewImg.style.border = '2px solid #e01010';
+    }
+    const previewText = document.getElementById(`preview-text-${room}`);
+    if (previewText) previewText.style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
@@ -1510,13 +1527,14 @@ window.openUserModal = function(room) {
         <div style="margin-top:12px;"><label>Description</label><input id="desc-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>URL (optional)</label><input id="url-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Tag</label><input id="tag-${room}" style="${inputStyle}"></div>
-        ${fileInputHtml('image/*,video/*', 'رفع ملف', 'media')}
+        ${fileInputHtml('video/*', 'رفع فيديو', 'media')}
+        ${fileInputHtml('image/*', 'رفع صورة مصغرة (اختياري)', 'thumb')}
         <input type="hidden" id="icon-${room}">
       </div>
       <div class="preview-panel">
         <h4 style="color:#e01010;">معاينة</h4>
-        <img id="preview-img-${room}" class="preview-media" style="display:none;">
         <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+        <img id="preview-img-${room}" class="preview-media" style="display:none; border: 1px solid #e01010;">
         <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط</div>
         <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
       </div>
@@ -1545,6 +1563,17 @@ window.openUserModal = function(room) {
   // جلب معلومات live تلقائياً — live
   if (room === 'live') {
     bindLiveUrlAutofill();
+  }
+
+  // معاينة صورة مصغرة للفيديو (Highlights)
+  if (room === 'highlights') {
+    const thumbInput = document.getElementById(`file-${room}-thumb`);
+    if (thumbInput) {
+      thumbInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleThumbFile(room, file);
+      });
+    }
   }
 
   document.getElementById('upm-submit').onclick = () => submitUser(room);
@@ -1603,14 +1632,23 @@ async function submitUser(room) {
 
   try {
     var mediaUrl = null;
+    var thumbUrl = null;
     if (currentMediaFile) {
       if (btn)  btn.textContent = 'رفع الملف...';
       mediaUrl = await uploadMediaFile(currentMediaFile, window.currentUserId);
+    }
+    if (currentThumbFile) {
+      if (btn)  btn.textContent = 'رفع الصورة المصغرة...';
+      thumbUrl = await uploadMediaFile(currentThumbFile, window.currentUserId);
     }
     var finalUrl = mediaUrl || url || null;
     var isYT  = finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'));
     var isImg = pickedIcon === '🖼️' || fileIsImage || (finalUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(finalUrl));
     var isVid = pickedIcon === '🎥' || fileIsVideo || (finalUrl && /\.(mp4|webm|ogg|mov)(\?|$)/i.test(finalUrl));
+    
+    // استخدام الصورة المصغرة المرفوعة إذا وجدت، وإلا نستخدم emoji
+    var finalIcon = thumbUrl || (isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))));
+
     // إذا كان الرابط يوتيوب ولم تُملأ الخانات نأخذ البيانات من API قبل النشر
     if ((!title || !desc) && (room === 'live' || room === 'yt-videos') && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
       try {
@@ -1624,11 +1662,12 @@ async function submitUser(room) {
     var row = {
       title:       title || url || window.t('منشور', 'Post'),
       description: desc  || null,
-      icon:        isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))),
+      icon:        finalIcon,
       url:         finalUrl,
       tag:         tag,
       room:        room,
-      content:     null
+      content:     null,
+      user_id:     window.currentUserId || null
     };
     var dbr = currentEditPost
       ? await db.from('posts').update(row).eq('id', currentEditPost.id)
@@ -1762,7 +1801,8 @@ function renderCards(posts, gridId, room) {
         media = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
       }
       else if (isLocalVideo) {
-        media = `<div class="post-card-video"><video src="${p.url}" controls preload="none" style="width:100%;height:100%;background:#000;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video><div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;color:#f55;font-size:12px;background:#0a0000;">❌ تعذر تحميل الفيديو</div></div>`;
+        const poster = (p.icon && p.icon.startsWith('http')) ? `poster="${p.icon}"` : '';
+        media = `<div class="post-card-video"><video src="${p.url}" ${poster} controls preload="metadata" style="width:100%;height:100%;background:#000;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video><div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;color:#f55;font-size:12px;background:#0a0000;">❌ تعذر تحميل الفيديو</div></div>`;
       }
       else if (isYouTube) {
         const videoId = extractYouTubeId(p.url);
@@ -2127,19 +2167,42 @@ document.getElementById('switchToLogin')?.addEventListener('click', () => { sign
 document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   const identifier = document.getElementById('loginIdentifier').value.trim();
   const password = document.getElementById('loginPassword').value;
-  if(!identifier || !password) { document.getElementById('loginError').innerText = 'يرجى ملء جميع الحقول'; return; }
+  const isEN = window._siteLanguage === 'en';
+  const errEl = document.getElementById('loginError');
+  if(!identifier || !password) { errEl.innerText = isEN ? 'Please fill all fields' : 'يرجى ملء جميع الحقول'; return; }
+  
+  const btn = document.getElementById('doLoginBtn');
+  btn.disabled = true;
+  btn.textContent = isEN ? '⏳ Logging in...' : '⏳ جاري الدخول...';
+  
   try {
     let email = identifier;
     if (!email.includes('@')) {
-      const { data } = await db.from('profiles').select('email').ilike('username', email).maybeSingle();
-      if (!data || !data.email) throw new Error(window.t('اسم المستخدم غير موجود', 'Username not found'));
+      const { data, error: profileError } = await db.from('profiles').select('email').ilike('username', email).maybeSingle();
+      if (profileError) throw profileError;
+      if (!data || !data.email) {
+        throw new Error(isEN ? 'Account not found. Please check your username.' : 'الحساب غير موجود. يرجى التأكد من اسم المستخدم.');
+      }
       email = data.email;
     }
     const { error } = await db.auth.signInWithPassword({email, password});
-    if (error) throw new Error(window.t('بيانات الدخول غير صحيحة', 'Incorrect login credentials'));
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        throw new Error(isEN ? 'Incorrect password or email.' : 'كلمة المرور أو البريد غير صحيح.');
+      } else if (error.message.includes('Email not confirmed')) {
+        throw new Error(isEN ? 'Please confirm your email first.' : 'يرجى تأكيد بريدك الإلكتروني أولاً.');
+      }
+      throw error;
+    }
     closeModal();
     await updateUIAfterAuth();
-  } catch(e) { document.getElementById('loginError').innerText = e.message; }
+  } catch(e) { 
+    errEl.innerText = e.message; 
+    errEl.style.color = '#f55';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isEN ? 'Login' : 'دخول';
+  }
 });
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
@@ -2168,12 +2231,17 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     });
     if (error) throw error;
 
-    // إذا تأكد فوراً نضيف profile
+    // محاولة إنشاء البروفايل فوراً
     const uid = data?.user?.id;
     if (uid) {
-      const { data: existing2 } = await db.from('profiles').select('id').eq('id', uid).maybeSingle();
-      if (!existing2) {
-        await db.from('profiles').insert({ id: uid, username, email, role: 'user', created_at: new Date().toISOString() });
+      try {
+        const { data: existing2 } = await db.from('profiles').select('id').eq('id', uid).maybeSingle();
+        if (!existing2) {
+          await db.from('profiles').insert({ id: uid, username, email, role: 'user', created_at: new Date().toISOString() });
+        }
+      } catch (profileErr) {
+        console.error('Error creating profile during signup:', profileErr);
+        // لا نفشل التسجيل الكلي إذا فشل البروفايل، لكن يفضل التنبيه
       }
     }
 
@@ -2181,10 +2249,10 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     if (needsConfirm) {
       errEl.style.color = '#4f4';
       errEl.innerText = isEN
-        ? '✅ Account created! Check your email to confirm, then log in.'
-        : '✅ تم إنشاء الحساب! تحقق من بريدك الإلكتروني لتأكيده ثم سجّل دخول.';
+        ? '✅ Account created! Please check your email to confirm, then log in.'
+        : '✅ تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك لتأكيده، ثم سجل دخولك.';
     } else {
-      await updateUIAfterAuth();
+      await updateUIAfterAuth(data.session);
       closeModal();
     }
     document.getElementById('signupUsername').value = '';
@@ -2796,13 +2864,29 @@ window.t = function(ar, en) {
 
 // ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
 window._titleCache = {};
+// ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
+window._titleCache = {};
 window.tTitle = function(title) {
-  if (!title) return title;
+  if (!title) return '';
   if (window._siteLanguage !== 'en') return title;
-  // إذا العنوان يحتوي عربي، حاول ترجمته عبر API
+  
+  // 1. ترجمات يدوية سريعة
+  let t = title;
+  t = t.replace(/بث مباشر/g, 'Live Stream');
+  t = t.replace(/مباشر على Twitch/g, 'Live on Twitch');
+  t = t.replace(/Facebook مباشر/g, 'Facebook Live');
+  t = t.replace(/TikTok مباشر/g, 'TikTok Live');
+  t = t.replace(/منشور/g, 'Post');
+  t = t.replace(/فيديو/g, 'Video');
+  
+  if (t !== title) return t; // تم ترجمتها يدوياً
+
+  // 2. إذا العنوان يحتوي عربي، حاول ترجمته عبر API في الخلفية
   const hasArabic = /[؀-ۿ]/.test(title);
   if (!hasArabic) return title; // إنجليزي أصلاً
+  
   if (window._titleCache[title]) return window._titleCache[title];
+  
   // أرجع العنوان الأصلي فوراً، وابدأ الترجمة في الخلفية
   window._translateTitleBg(title);
   return title;
@@ -2816,26 +2900,14 @@ window._translateTitleBg = async function(title) {
     const j = await r.json();
     const translated = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('') || title;
     window._titleCache[title] = translated;
+    
     // تحديث العناوين في الصفحة إذا لا تزال إنجليزية
     if (window._siteLanguage === 'en') {
-      document.querySelectorAll('.post-card-title, .hc-info-title').forEach(el => {
+      document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title').forEach(el => {
         if (el.textContent === title) el.textContent = translated;
       });
     }
   } catch(e) {}
-};
-
-window.tTitle = function(title) {
-  if (!title) return '';
-  if (window._siteLanguage === 'ar') return title;
-  let t = title;
-  t = t.replace(/بث مباشر/g, 'Live Stream');
-  t = t.replace(/مباشر على Twitch/g, 'Live on Twitch');
-  t = t.replace(/Facebook مباشر/g, 'Facebook Live');
-  t = t.replace(/TikTok مباشر/g, 'TikTok Live');
-  t = t.replace(/منشور/g, 'Post');
-  t = t.replace(/فيديو/g, 'Video');
-  return t;
 };
 
 window.setLang = function(lang) {
