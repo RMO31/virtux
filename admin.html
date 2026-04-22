@@ -286,6 +286,36 @@ async function loadDashboard() {
     }
     recentMembersHtml += `</div>`;
 
+    let { data: payReqs, error: payErr } = await supabaseClient
+      .from('payment_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    
+    let payReqsHtml = `<div class="card"><h3>💳 طلبات الدفع المعلقة (Paysera)</h3>`;
+    if (!payErr && payReqs && payReqs.length > 0) {
+      payReqsHtml += `<div class="posts-list">`;
+      payReqs.forEach(req => {
+        let date = new Date(req.created_at).toLocaleString('ar-EG');
+        payReqsHtml += `<div class="pi">
+          <div class="pi-icon">💰</div>
+          <div class="pi-info" style="flex:1;">
+            <div class="pi-title">${escapeHtml(req.username)} <span style="color:#aaa;font-weight:normal;">(صاحب الحساب: ${escapeHtml(req.bank_name)})</span></div>
+            <div class="pi-meta">${escapeHtml(req.plan_name)} • ${req.price ? '$'+req.price : 'تبرع'} • ${date}</div>
+            <span class="pi-tag">ID: ${req.user_id || 'غير معروف'}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-pub" style="background:#4caf90;padding:5px 12px;font-size:11px;" onclick="approvePayment(${req.id}, '${req.user_id}', '${req.plan_key}')">✅ قبول وتفعيل</button>
+            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="rejectPayment(${req.id})">❌ رفض</button>
+          </div>
+        </div>`;
+      });
+      payReqsHtml += `</div>`;
+    } else {
+      payReqsHtml += `<div class="empty">لا توجد طلبات دفع معلقة.</div>`;
+    }
+    payReqsHtml += `</div>`;
+
     let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
       <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
       <div id="roleSearchResults" class="role-search-results"></div>
@@ -341,7 +371,7 @@ async function loadDashboard() {
       </div>`;
     }).join('') + `</div></div>`;
 
-    container.innerHTML = statsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
+    container.innerHTML = statsHtml + payReqsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
     loadNewsList();
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
@@ -475,6 +505,39 @@ async function deleteUser(userId) {
     alert('✅ تم حذف المستخدم');
     await loadDashboard();
   } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
+}
+
+async function approvePayment(reqId, userId, planKey) {
+  if (!confirm('هل تأكدت من وصول المبلغ في حسابك البنكي Paysera؟')) return;
+  try {
+    let { error: err1 } = await supabaseClient.from('payment_requests').update({ status: 'approved' }).eq('id', reqId);
+    if (err1) throw err1;
+    if (userId && userId !== 'null' && planKey) {
+      let success = await toggleRole(userId, planKey, true);
+      if (success) {
+        alert('✅ تم قبول الطلب وتفعيل الرتبة بنجاح.');
+      } else {
+        alert('⚠️ تم قبول الطلب ولكن فشل تفعيل الرتبة. قم بتفعيلها يدوياً.');
+      }
+    } else {
+      alert('✅ تم قبول الطلب بنجاح (لا يوجد User ID).');
+    }
+    loadDashboard();
+  } catch(e) {
+    alert('❌ حدث خطأ: ' + e.message);
+  }
+}
+
+async function rejectPayment(reqId) {
+  if (!confirm('هل تريد رفض هذا الطلب؟')) return;
+  try {
+    let { error } = await supabaseClient.from('payment_requests').update({ status: 'rejected' }).eq('id', reqId);
+    if (error) throw error;
+    alert('✅ تم رفض الطلب.');
+    loadDashboard();
+  } catch(e) {
+    alert('❌ حدث خطأ: ' + e.message);
+  }
 }
 
 // ==================== تحميل صفحة المحتوى ====================
@@ -1206,7 +1269,7 @@ async function addUserSubscriber() { let userId = document.getElementById('sub-u
 
 // ربط الدوال
 window.startAutoCheck = startAutoCheck; window.autoCheckAllChannels = autoCheckAllChannels;
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList; window.approvePayment = approvePayment; window.rejectPayment = rejectPayment;
 </script>
 
 <script>
