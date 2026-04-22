@@ -2263,6 +2263,16 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   }
 });
 
+const DISPOSABLE_DOMAINS = [
+  'temp-mail.org', 'mailinator.com', '10minutemail.com', 'guerrillamail.com', 'sharklasers.com',
+  'dispostable.com', 'getnada.com', 'maildrop.cc', 'moakt.com', 'yopmail.com', 'trashmail.com'
+];
+function isRealEmail(email) {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@')[1].toLowerCase();
+  return !DISPOSABLE_DOMAINS.includes(domain);
+}
+
 let resendTimer = null;
 window.resendConfirmation = async function(email) {
   if (resendTimer) return;
@@ -2306,6 +2316,7 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
 
   if (!username || username.length < 3) { errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.'; return; }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.innerText = isEN ? 'Please enter a valid email.' : 'أدخل بريداً إلكترونياً صحيحاً.'; return; }
+  if (!isRealEmail(email)) { errEl.innerText = isEN ? 'Disposable emails are not allowed. Use a real email.' : 'غير مسموح باستخدام الإيميلات الوهمية. استخدم إيميلاً حقيقياً.'; return; }
   if (!password || password.length < 6) { errEl.innerText = isEN ? 'Password must be at least 6 characters.' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
 
   const btn = document.getElementById('doSignupBtn');

@@ -152,6 +152,8 @@ async function doRegister() {
   const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
   if (!username || !email || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('Please enter a valid email.', 'err'); return; }
+  if (!isRealEmail(email)) { showMsg('Disposable emails are not allowed. Use a real email.', 'err'); return; }
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
   const btn = document.getElementById('btn-register');
   btn.disabled = true; btn.textContent = 'Creating account...';
@@ -203,6 +205,16 @@ function showHtmlMsg(html, type) {
   el.innerHTML = html;
   el.className = 'msg ' + type;
   el.style.display = 'block';
+}
+
+const DISPOSABLE_DOMAINS = [
+  'temp-mail.org', 'mailinator.com', '10minutemail.com', 'guerrillamail.com', 'sharklasers.com',
+  'dispostable.com', 'getnada.com', 'maildrop.cc', 'moakt.com', 'yopmail.com', 'trashmail.com'
+];
+function isRealEmail(email) {
+  if (!email || !email.includes('@')) return false;
+  const domain = email.split('@')[1].toLowerCase();
+  return !DISPOSABLE_DOMAINS.includes(domain);
 }
 
 let resendTimer = null;
