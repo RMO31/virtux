@@ -2211,15 +2211,25 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       }
       email = data.email;
     }
-    const { error } = await db.auth.signInWithPassword({email, password});
-    if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        throw new Error(isEN ? 'Incorrect password or email.' : 'كلمة المرور أو البريد غير صحيح.');
-      } else if (error.message.includes('Email not confirmed')) {
-        throw new Error(isEN ? 'Please confirm your email first.' : 'يرجى تأكيد بريدك الإلكتروني أولاً.');
+    const { data: authData, error: loginError } = await db.auth.signInWithPassword({email, password});
+    if (loginError) throw loginError;
+
+    // "Self-healing": التأكد من وجود بروفايل بعد الدخول الناجح
+    if (authData.user) {
+      const { data: prof } = await db.from('profiles').select('id').eq('id', authData.user.id).maybeSingle();
+      if (!prof) {
+        // إذا كان البروفايل مفقوداً، نقوم بإنشائه الآن
+        const fallbackUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
+        await db.from('profiles').insert({
+          id: authData.user.id,
+          username: fallbackUsername,
+          email: authData.user.email,
+          role: 'user',
+          created_at: new Date().toISOString()
+        });
       }
-      throw error;
     }
+
     closeModal();
     await updateUIAfterAuth();
   } catch(e) { 
