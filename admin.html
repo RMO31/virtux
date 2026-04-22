@@ -128,6 +128,7 @@
       <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
       <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
       <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
+      <button class="sb-btn" id="sb-ranks" onclick="showPage('ranks')">💎 الميزات والرتب</button>
       <div class="sb-sec">أخبار</div>
       <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
       <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
@@ -195,7 +196,7 @@ function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
   // removed 'yt-lives' from rooms list
-  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact'];
+  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact', 'ranks'];
   rooms.forEach(room => {
     let div = document.createElement('div');
     div.className = 'ap';
@@ -209,7 +210,7 @@ function getRoomTitle(room) {
     dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
     'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
-    projects:'🌐 Collaboration', contact:'📞 Contact'
+    projects:'🌐 Collaboration', contact:'📞 Contact', ranks:'💎 الميزات والرتب'
   };
   return titles[room] || room;
 }
@@ -222,6 +223,7 @@ function showPage(id) {
   if (btn) btn.classList.add('active');
   if (id === 'dashboard') loadDashboard();
   else if (id === 'contact') loadContact();
+  else if (id === 'ranks') loadRanks();
   else loadContentPage(id);
 }
 function loadContact() {
@@ -522,7 +524,9 @@ async function approvePayment(reqId, userId, planKey) {
     } else {
       alert('✅ تم قبول الطلب بنجاح (لا يوجد User ID).');
     }
-    loadDashboard();
+    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
+    if (currentPage === 'ranks') loadRanks();
+    else loadDashboard();
   } catch(e) {
     alert('❌ حدث خطأ: ' + e.message);
   }
@@ -534,10 +538,70 @@ async function rejectPayment(reqId) {
     let { error } = await supabaseClient.from('payment_requests').update({ status: 'rejected' }).eq('id', reqId);
     if (error) throw error;
     alert('✅ تم رفض الطلب.');
-    loadDashboard();
+    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
+    if (currentPage === 'ranks') loadRanks();
+    else loadDashboard();
   } catch(e) {
     alert('❌ حدث خطأ: ' + e.message);
   }
+}
+
+async function loadRanks() {
+  let container = document.getElementById('content-ranks');
+  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+  try {
+    let { data: reqs, error } = await supabaseClient
+      .from('payment_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    
+    let html = `<div class="card"><h3>💎 سجل الميزات والرتب</h3>`;
+    if (reqs && reqs.length) {
+      html += `<div class="posts-list">`;
+      reqs.forEach(req => {
+        let date = new Date(req.created_at).toLocaleString('ar-EG');
+        let statusBadge = '';
+        if (req.status === 'approved') statusBadge = `<span style="background:#0f3d2e;color:#4caf90;padding:2px 8px;border-radius:4px;font-size:11px;">مفعلة تلقائياً / مقبولة</span>`;
+        else if (req.status === 'pending') statusBadge = `<span style="background:#3d2e0f;color:#ff9800;padding:2px 8px;border-radius:4px;font-size:11px;">قيد الانتظار</span>`;
+        else statusBadge = `<span style="background:#3d0f0f;color:#f55;padding:2px 8px;border-radius:4px;font-size:11px;">مرفوضة</span>`;
+        
+        html += `<div class="pi">
+          <div class="pi-icon">💎</div>
+          <div class="pi-info" style="flex:1;">
+            <div class="pi-title">${escapeHtml(req.username)} <span style="color:#aaa;font-weight:normal;">(الجهة: ${escapeHtml(req.bank_name)})</span></div>
+            <div class="pi-meta">${escapeHtml(req.plan_name)} • ${req.price ? '$'+req.price : 'تبرع'} • ${date}</div>
+            <div style="margin-top:4px;">${statusBadge} <span class="pi-tag">ID: ${req.user_id || 'غير معروف'}</span></div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            ${req.status === 'pending' ? `<button class="btn-pub" style="background:#4caf90;padding:5px 12px;font-size:11px;" onclick="approvePayment(${req.id}, '${req.user_id}', '${req.plan_key}')">✅ قبول وتفعيل</button>
+            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="rejectPayment(${req.id})">❌ رفض</button>` : ''}
+            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="deletePaymentReq(${req.id})">🗑️ حذف السجل</button>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<div class="empty">لا يوجد سجل للميزات والرتب حتى الآن.</div>`;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = `<div class="empty">خطأ في التحميل</div>`;
+    console.error(e);
+  }
+}
+
+async function deletePaymentReq(reqId) {
+  if (!confirm('حذف هذا السجل نهائياً؟')) return;
+  try {
+    let { error } = await supabaseClient.from('payment_requests').delete().eq('id', reqId);
+    if (error) throw error;
+    alert('✅ تم حذف السجل.');
+    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
+    if (currentPage === 'ranks') loadRanks();
+    else loadDashboard();
+  } catch(e) { alert('❌ حدث خطأ: ' + e.message); }
 }
 
 // ==================== تحميل صفحة المحتوى ====================
