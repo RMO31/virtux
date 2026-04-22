@@ -64,7 +64,7 @@
       position: relative;
       height: 32px;
     }
-    @keyframes ticker-move{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    @keyframes ticker-move{from{transform:translateX(0)}to{transform:translateX(-50%)}}
     .ticker-track{display:inline-flex;white-space:nowrap;align-items:center;animation:ticker-move 35s linear infinite;will-change:transform;}
     .ticker-track:hover{animation-play-state:paused}
     .ticker-item {
@@ -2123,39 +2123,29 @@ let tickerHalfWidth = 0;
 const TICKER_SPEED = 1.2;
 async function loadTicker() {
   try {
-    const [liveRes, vidRes, newsRes] = await Promise.all([
+    const [liveRes, vidRes] = await Promise.all([
       db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
-      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8),
-      db.from('posts').select('title,url').eq('room','gaming-news').order('id',{ascending:false}).limit(6)
+      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8)
     ]);
     let items = [];
     for (const p of (liveRes.data||[])) {
       const t = (p.tag||'').toLowerCase();
-      const icon = t.includes('live') ? '🔴' : t.includes('pre') ? '⏰' : '📡';
-      items.push({ text: icon + ' ' + (p.title||''), url: p.url });
+      const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? '⏰ قريباً' : '📡';
+      items.push({ text: icon + ': ' + (p.title||''), url: p.url });
     }
     for (const p of (vidRes.data||[])) items.push({ text: '🎬 ' + (p.title||''), url: p.url });
-    for (const p of (newsRes.data||[])) items.push({ text: '📰 ' + (p.title||''), url: p.url });
-    tickerItems = items.length ? items : [
-      { text: '🎮 مرحباً في Virtux — منصة الألعاب والمجتمع', url: null },
-      { text: '🏆 بطولات حصرية للمشتركين VIP', url: null },
-      { text: '🔴 تابع البث المباشر مع أفضل اللاعبين', url: null },
-    ];
+    tickerItems = items.length ? items : [{ text: '🎮 مرحباً في Virtux', url: null }];
   } catch(e) {
-    tickerItems = [
-      { text: '🎮 مرحباً في Virtux', url: null },
-      { text: '🏆 بطولات وفعاليات حصرية', url: null },
-    ];
+    tickerItems = [{ text: '🎮 مرحباً في Virtux', url: null }];
   }
   buildTickerTrack();
 }
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
-  track.style.animation = 'none';
   track.innerHTML = '';
   if (!tickerItems.length) return;
-  // نضع العناصر مرتين لحلقة لانهائية سلسة
+  // نضع العناصر مرتين — CSS animation تتحرك من 0 إلى -50%
   [...tickerItems, ...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
@@ -2169,13 +2159,12 @@ function buildTickerTrack() {
     }
     track.appendChild(span);
   });
-  // ضبط مدة الـ animation حسب عدد العناصر
+  // ضبط المدة حسب عدد العناصر
   const dur = Math.max(20, tickerItems.length * 5);
-  track.style.animation = '';
   track.style.animationDuration = dur + 's';
 }
 
-function startTickerAnimation() { /* CSS handles it */ }
+function startTickerAnimation() { /* CSS animation */ }
 
 window.deletePost = deletePost;
 
@@ -3281,27 +3270,22 @@ function applyTranslations() {
 
       try {
         // جرب عدة proxies
-        let xmlText = null;
+        let resp = null;
         const proxies = [
-          { url: 'https://corsproxy.io/?' + encodeURIComponent(feedUrl), json: false },
-          { url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(feedUrl), json: true },
-          { url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl), json: false },
+          'https://corsproxy.io/?' + encodeURIComponent(feedUrl),
+          'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl),
+          'https://api.allorigins.win/get?url=' + encodeURIComponent(feedUrl),
         ];
-        for (const px of proxies) {
+        for (const proxyUrl of proxies) {
           try {
-            const r = await fetch(px.url);
-            if (!r.ok) continue;
-            const txt = await r.text();
-            if (px.json) {
-              try { const j = JSON.parse(txt); if (j.contents) { xmlText = j.contents; break; } } catch(e) {}
-            } else {
-              if (txt && txt.includes('<feed')) { xmlText = txt; break; }
-            }
+            const r = await fetch(proxyUrl);
+            if (r.ok) { resp = r; break; }
           } catch(e) {}
         }
-        if (!xmlText) continue;
+        if (!resp) continue;
         if (!resp.ok) continue;
-        const xml = xmlText;
+        let xml = await resp.text();
+        try { const j = JSON.parse(xml); if (j.contents) xml = j.contents; } catch(e) {}
         const parser = new DOMParser();
         const doc = parser.parseFromString(xml, 'application/xml');
         const entries = Array.from(doc.querySelectorAll('entry')).slice(0, 5);
