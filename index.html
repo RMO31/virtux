@@ -1856,7 +1856,7 @@ function renderCards(posts, gridId, room) {
       }
       dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
     }
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(p.title)}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -2252,11 +2252,11 @@ window.deletePost = deletePost;
     const isTwitch=p.url&&p.url.includes('twitch.tv');
     const twitchMatch=isTwitch&&p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
     if(vid){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||window.t('بث مباشر','Live Stream')}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     } else if(twitchMatch){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://player.twitch.tv/?channel=${twitchMatch[1]}&parent='+location.hostname+'\\' allow=\\'autoplay; fullscreen\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||window.t('بث مباشر','Live Stream')}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://player.twitch.tv/?channel=${twitchMatch[1]}&parent='+location.hostname+'\\' allow=\\'autoplay; fullscreen\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     }
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||window.t('بث مباشر','Live Stream')}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
   }
   function renderVideo(p){
     const vid=ytId(p.url);
@@ -2264,9 +2264,9 @@ window.deletePost = deletePost;
     const vipBadgeHtml = isVip ? `<div style="position:absolute;top:7px;left:8px;background:linear-gradient(135deg,#ff6600,#cc3300);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;">🔥 YT VIP</div>` : '';
     const thumbEl=vid?`<img class="hc-thumb" src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
     if(vid){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||window.t('فيديو','Video')}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('فيديو','Video'))}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     }
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${p.title||window.t('فيديو','Video')}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('فيديو','Video'))}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
   }
   async function loadHomePanel(){
     const liveEl=document.getElementById('hc-live');
@@ -2751,6 +2751,19 @@ window.t = function(ar, en) {
   return window._siteLanguage === 'en' ? en : ar;
 };
 
+window.tTitle = function(title) {
+  if (!title) return '';
+  if (window._siteLanguage === 'ar') return title;
+  let t = title;
+  t = t.replace(/بث مباشر/g, 'Live Stream');
+  t = t.replace(/مباشر على Twitch/g, 'Live on Twitch');
+  t = t.replace(/Facebook مباشر/g, 'Facebook Live');
+  t = t.replace(/TikTok مباشر/g, 'TikTok Live');
+  t = t.replace(/منشور/g, 'Post');
+  t = t.replace(/فيديو/g, 'Video');
+  return t;
+};
+
 window.setLang = function(lang) {
   if (window._siteLanguage === lang) return;
   window._siteLanguage = lang;
@@ -2780,6 +2793,8 @@ window.setLang = function(lang) {
       document.querySelectorAll('.vx-page').forEach(page => {
         rebuildFilterBar(page.id.replace('page-',''));
       });
+      if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
+      if (typeof window.loadTicker === 'function') window.loadTicker();
     }, 50);
   }
 };
