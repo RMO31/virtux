@@ -2252,61 +2252,45 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // محاولات متعددة لتسجيل الدخول لضمان التوافق مع الحسابات القديمة والجديدة
-      const attempts = [
-        getDummyEmail(identifier), // 1. Hex الحديث
-        identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v', // 2. مدمج صغير
-        identifier.toLowerCase().trim().replace(/\s+/g, '_') + '@virtux.v', // 3. شرطة سفلية
-        identifier.trim() + '@virtux.v', // 4. الحالة الأصلية كما هي
-        identifier.trim().replace(/\s+/g, '') + '@virtux.v' // 5. الحالة الأصلية مدمجة
-      ];
+      // 1. Look up the email associated with this username in the profiles table
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+      
+      let emailToTry = p?.email || getDummyEmail(identifier);
+      
+      console.log('Attempting login with:', emailToTry);
+      const { data, error } = await db.auth.signInWithPassword({ email: emailToTry, password });
+      loginError = error;
 
-      // محاولة البحث في قاعدة البيانات أولاً كخيار مفضل (إذا كان RLS مفعلاً)
-      const { data: profile } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-      if (profile?.email) attempts.unshift(profile.email);
-
-      let lastError = null;
-      for (const email of attempts) {
-        console.log('Trying login with:', email);
-        const { data, error } = await db.auth.signInWithPassword({ email, password });
-        if (!error) {
-          loginError = null;
-          lastError = null;
-          break;
+      // 2. Fallback: Only if the first attempt fails and it's NOT a rate limit, try one common old pattern
+      if (loginError && loginError.status !== 429 && !p?.email) {
+        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
+        if (fallback !== emailToTry) {
+          console.log('Trying fallback pattern:', fallback);
+          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
+          if (!retryError) loginError = null;
+          else loginError = retryError;
         }
-        lastError = error;
       }
-      loginError = lastError;
     }
 
     if (loginError) {
       const isEN = window._siteLanguage === 'en';
       let msg = loginError.message;
-      if (msg === 'Invalid login credentials' || loginError.status === 400) {
-        msg = isEN ? 'Invalid username or password. Try using your email if this is an old account.' : 'اسم المستخدم أو كلمة المرور غير صحيحة. جرب الدخول بالإيميل إذا كان حسابك قديماً.';
-      }
-      throw new Error(msg);
-    }
-    
-    if (loginError) {
-      const isEN = window._siteLanguage === 'en';
-      const msg = (loginError.message === 'Invalid login credentials' || loginError.status === 400)
-        ? (isEN ? 'Invalid username or password. If you have an old account, try your email.' : 'اسم المستخدم أو كلمة المرور غير صحيحة. إذا كان حسابك قديماً، جرب الدخول بالإيميل.')
-        : loginError.message;
-      throw new Error(msg);
-    }
-
-    if (loginError) {
-      let msg = loginError.message || '';
-      if (msg.includes('Invalid login') || msg.includes('invalid')) {
-        msg = isEN ? 'Wrong password or account not found.' : 'كلمة المرور خاطئة أو الحساب غير موجود.';
+      
+      if (loginError.status === 429) {
+        msg = isEN 
+          ? '⚠️ Too many attempts. Please wait a few minutes or use Sign in with Google.' 
+          : '⚠️ محاولات كثيرة جداً. يرجى الانتظار بضع دقائق أو استخدام الدخول عبر Google.';
+      } else if (msg === 'Invalid login credentials' || loginError.status === 400) {
+        msg = isEN 
+          ? 'Invalid username or password. Try your email if this is an old account.' 
+          : 'اسم المستخدم أو كلمة المرور غير صحيحة. جرب الدخول بالإيميل إذا كان حسابك قديماً.';
       } else if (msg.includes('Email not confirmed')) {
         msg = isEN
-          ? 'Email not confirmed. Check your inbox or try again.'
-          : 'البريد الإلكتروني لم يُؤكَّد. تحقق من صندوقك أو حاول مجدداً.';
-      } else if (!msg) {
-        msg = isEN ? 'Login failed.' : 'فشل تسجيل الدخول.';
+          ? 'Email not confirmed. Please check your inbox.'
+          : 'البريد الإلكتروني لم يُؤكَّد. تحقق من صندوق الوارد الخاص بك.';
       }
+      
       errEl.innerText = msg;
       errEl.style.color = '#f55';
       return;

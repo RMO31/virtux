@@ -145,31 +145,34 @@ async function doLogin() {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      const attempts = [
-        getDummyEmail(identifier),
-        identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v',
-        identifier.toLowerCase().trim().replace(/\s+/g, '_') + '@virtux.v',
-        identifier.trim() + '@virtux.v',
-        identifier.trim().replace(/\s+/g, '') + '@virtux.v'
-      ];
-      
+      // 1. Look up the email associated with this username in the profiles table
       const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-      if (p?.email) attempts.unshift(p.email);
+      
+      let emailToTry = p?.email || getDummyEmail(identifier);
+      
+      console.log('Attempting login with:', emailToTry);
+      const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
+      loginError = error;
 
-      let lastErr = null;
-      for (const email of attempts) {
-        console.log('Trying login with:', email);
-        const { error } = await db.auth.signInWithPassword({ email, password });
-        if (!error) { lastErr = null; break; }
-        lastErr = error;
+      // 2. Fallback: Only if the first attempt fails and it's NOT a rate limit, try one common old pattern
+      if (loginError && loginError.status !== 429 && !p?.email) {
+        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
+        if (fallback !== emailToTry) {
+          console.log('Trying fallback pattern:', fallback);
+          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
+          if (!retryError) loginError = null;
+          else loginError = retryError;
+        }
       }
-      loginError = lastErr;
     }
 
     if (loginError) {
-      const msg = (loginError.message === 'Invalid login credentials' || loginError.status === 400)
-        ? 'اسم المستخدم أو كلمة المرور غير صحيحة. جرب الدخول بالإيميل إذا كان حسابك قديماً.'
-        : loginError.message;
+      let msg = loginError.message;
+      if (loginError.status === 429) {
+        msg = '⚠️ محاولات كثيرة جداً. يرجى الانتظار بضع دقائق قبل المحاولة مرة أخرى، أو استخدم الدخول عبر Google.';
+      } else if (loginError.message === 'Invalid login credentials' || loginError.status === 400) {
+        msg = 'اسم المستخدم أو كلمة المرور غير صحيحة. جرب الدخول بالإيميل إذا كان حسابك قديماً.';
+      }
       throw new Error(msg);
     }
     if (loginError) throw loginError;
