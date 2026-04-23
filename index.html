@@ -750,12 +750,16 @@
     <div id="modal-signup" style="display:none;">
       <h3>📝 إنشاء حساب جديد</h3>
       <div class="form-group">
-        <label>اسم المستخدم</label>
-        <input type="text" id="signupUsername" placeholder="اسم المستخدم">
+        <label id="su-label-username">اسم المستخدم</label>
+        <input type="text" id="signupUsername" placeholder="اسم المستخدم" autocomplete="username">
       </div>
       <div class="form-group">
-        <label>كلمة المرور</label>
-        <input type="password" id="signupPassword" placeholder="********">
+        <label id="su-label-email">البريد الإلكتروني</label>
+        <input type="email" id="signupEmail" placeholder="example@gmail.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label id="su-label-password">كلمة المرور</label>
+        <input type="password" id="signupPassword" placeholder="6 أحرف على الأقل" autocomplete="new-password">
       </div>
       <div id="signupError" class="error-msg"></div>
       <button class="btn-submit" id="doSignupBtn">تسجيل</button>
@@ -2229,34 +2233,20 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     let loginError = null;
 
     if (identifier.includes('@')) {
-      // دخول ببريد إلكتروني حقيقي
+      // دخول ببريد إلكتروني
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // دخول باسم المستخدم — ابحث عن الـ email المرتبط به
+      // دخول باسم المستخدم — ابحث عن الـ email
       const { data: profile } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
       if (profile?.email) {
         const { error } = await db.auth.signInWithPassword({ email: profile.email, password });
         loginError = error;
       } else {
-        // جرب الـ dummy emails القديمة والجديدة
-        const tries = [
-          identifier.toLowerCase().replace(/[^a-z0-9]/g,'') + '@virtux.gaming',
-          identifier.toLowerCase() + '@virtux.v',
-          identifier.toLowerCase() + '@virtux.gaming',
-        ];
-        let success = false;
-        for (const e of tries) {
-          const { error } = await db.auth.signInWithPassword({ email: e, password });
-          if (!error) { success = true; loginError = null; break; }
-          loginError = error;
-        }
-        if (!success) {
-          errEl.innerText = isEN
-            ? 'Account not found. Check your username or create a new account.'
-            : 'الحساب غير موجود. تحقق من اسم المستخدم أو أنشئ حساباً جديداً.';
-          return;
-        }
+        errEl.innerText = isEN
+          ? 'Account not found. Check your username or use your email.'
+          : 'الحساب غير موجود. تحقق من اسم المستخدم أو استخدم بريدك الإلكتروني.';
+        return;
       }
     }
 
@@ -2349,17 +2339,23 @@ window.resendConfirmation = async function(email) {
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
   const username = document.getElementById('signupUsername').value.trim();
+  const email    = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
   const errEl    = document.getElementById('signupError');
   errEl.innerText = '';
   errEl.style.color = '#f55';
 
+  // تحقق من الحقول
   if (!username || username.length < 3) {
     errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.';
     return;
   }
-  if (!/^[a-zA-Z0-9_\u0600-\u06FF]+$/.test(username)) {
+  if (!/^[a-zA-Z0-9_؀-ۿ]+$/.test(username)) {
     errEl.innerText = isEN ? 'Username: letters, numbers and _ only.' : 'اسم المستخدم: حروف وأرقام و _ فقط.';
+    return;
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.innerText = isEN ? 'Please enter a valid email address.' : 'أدخل بريداً إلكترونياً صحيحاً.';
     return;
   }
   if (!password || password.length < 6) {
@@ -2373,75 +2369,66 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
 
   try {
     // تحقق من أن اسم المستخدم غير مأخوذ
-    const { data: existing } = await db.from('profiles').select('id').eq('username', username).maybeSingle();
-    if (existing) {
+    const { data: existingUser } = await db.from('profiles').select('id').eq('username', username).maybeSingle();
+    if (existingUser) {
       errEl.innerText = isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ، جرب اسماً آخر.';
       return;
     }
 
-    // نستخدم dummy email حتى لا يحتاج تأكيد بريد
-    const dummyEmail = username.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now() + '@virtux.gaming';
-
+    // تسجيل بالإيميل الحقيقي
     const { data, error } = await db.auth.signUp({
-      email: dummyEmail,
+      email,
       password,
-      options: { data: { username } }
+      options: {
+        data: { username },
+        emailRedirectTo: window.location.href
+      }
     });
 
     if (error) {
-      // معالجة rate limit
       if (error.message?.toLowerCase().includes('rate') || error.status === 429) {
         errEl.innerText = isEN
-          ? '⚠️ Too many attempts. Please wait a few minutes and try again, or use Google Login.'
-          : '⚠️ محاولات كثيرة. انتظر دقائق وأعد المحاولة، أو استخدم الدخول عبر Google.';
+          ? '⚠️ Too many attempts. Please wait a few minutes or use Google Login.'
+          : '⚠️ محاولات كثيرة. انتظر دقائق وأعد المحاولة أو استخدم الدخول عبر Google.';
+        return;
+      }
+      if (error.message?.includes('already registered') || error.message?.includes('already been registered')) {
+        errEl.innerText = isEN ? 'This email is already registered. Try logging in.' : 'هذا البريد مسجّل بالفعل. جرّب تسجيل الدخول.';
         return;
       }
       throw error;
     }
 
     const uid = data?.user?.id;
-    if (!uid) throw new Error(isEN ? 'Registration failed, please try again.' : 'فشل التسجيل، حاول مجدداً.');
+    if (uid) {
+      await db.from('profiles').upsert({
+        id: uid,
+        username,
+        email,
+        role: 'user',
+        roles: ['user'],
+        created_at: new Date().toISOString()
+      });
+    }
 
-    // حفظ الـ profile
-    await db.from('profiles').upsert({
-      id: uid,
-      username,
-      email: dummyEmail,
-      role: 'user',
-      roles: ['user'],
-      created_at: new Date().toISOString()
-    });
-
-    // تسجيل دخول مباشر
-    if (data.session) {
+    // إذا session موجود مباشرة (تأكيد إيميل مطفأ في Supabase)
+    if (data?.session) {
       await updateUIAfterAuth();
       closeModal();
     } else {
-      // محاولة تسجيل دخول مباشر
-      const { data: loginData, error: loginErr } = await db.auth.signInWithPassword({
-        email: dummyEmail, password
-      });
-      if (!loginErr && loginData.session) {
-        await updateUIAfterAuth();
-        closeModal();
-      } else {
-        errEl.style.color = '#4f4';
-        errEl.innerText = isEN
-          ? '✅ Account created! Please log in with your username and password.'
-          : '✅ تم إنشاء الحساب! سجّل دخولك الآن باسم المستخدم وكلمة المرور.';
-        // الانتقال لصفحة الدخول وتعبئة اسم المستخدم
-        document.getElementById('switchToLogin').click();
-        document.getElementById('loginIdentifier').value = username;
-      }
+      // يحتاج تأكيد إيميل
+      errEl.style.color = '#4f4';
+      errEl.innerHTML = isEN
+        ? '✅ Account created! Check your email <strong>' + email + '</strong> and click the confirmation link, then log in.'
+        : '✅ تم إنشاء الحساب! تحقق من بريدك <strong>' + email + '</strong> واضغط رابط التأكيد ثم سجّل دخولك.';
+      document.getElementById('signupUsername').value = '';
+      document.getElementById('signupEmail').value = '';
+      document.getElementById('signupPassword').value = '';
     }
   } catch(e) {
     let msg = e.message || (isEN ? 'Registration failed.' : 'فشل التسجيل.');
     if (msg.includes('rate') || msg.includes('429')) {
-      msg = isEN
-        ? '⚠️ Too many attempts. Please wait a few minutes.'
-        : '⚠️ محاولات كثيرة. انتظر دقائق وأعد المحاولة.';
-    } else if (msg.includes('already')) {
-      msg = isEN ? 'Account already exists.' : 'الحساب موجود بالفعل.';
+      msg = isEN ? '⚠️ Too many attempts. Please wait.' : '⚠️ محاولات كثيرة. انتظر قليلاً.';
     }
     errEl.style.color = '#f55';
     errEl.innerText = msg;
@@ -3207,12 +3194,16 @@ function applyTranslations() {
   const signupModal = document.getElementById('modal-signup');
   if (signupModal) {
     signupModal.querySelector('h3').textContent = isEN ? '📝 Create Account' : '📝 إنشاء حساب جديد';
-    const labels = signupModal.querySelectorAll('label');
-    if (labels[0]) labels[0].textContent = isEN ? 'Username' : 'اسم المستخدم';
-    if (labels[1]) labels[1].textContent = isEN ? 'Email' : 'البريد الإلكتروني';
-    if (labels[2]) labels[2].textContent = isEN ? 'Password' : 'كلمة المرور';
+    const suL1 = document.getElementById('su-label-username');
+    const suL2 = document.getElementById('su-label-email');
+    const suL3 = document.getElementById('su-label-password');
+    if (suL1) suL1.textContent = isEN ? 'Username' : 'اسم المستخدم';
+    if (suL2) suL2.textContent = isEN ? 'Email' : 'البريد الإلكتروني';
+    if (suL3) suL3.textContent = isEN ? 'Password' : 'كلمة المرور';
     const suUser = document.getElementById('signupUsername');
     if (suUser) suUser.placeholder = isEN ? 'Username' : 'اسم المستخدم';
+    const suEmail = document.getElementById('signupEmail');
+    if (suEmail) suEmail.placeholder = isEN ? 'example@gmail.com' : 'example@gmail.com';
     const doSignup = document.getElementById('doSignupBtn');
     if (doSignup && !doSignup.disabled) doSignup.textContent = isEN ? 'Sign Up' : 'تسجيل';
     const gBtn2 = document.getElementById('googleSignupBtn');
