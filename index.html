@@ -1081,6 +1081,21 @@ function bindYouTubeVideoUrlAutofill(room) {
   urlInput.dataset.ytBound = 'true';
 }
 
+function getDummyEmail(username) {
+  if (!username) return '';
+  const clean = username.trim().toLowerCase();
+  // تحويل الاسم إلى hex ليكون ASCII آمن تماماً (يدعم العربي والمسافات)
+  try {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(clean);
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `ux_${hex}@virtux.v`;
+  } catch(e) {
+    // fallback في حال فشل الـ encoding
+    return clean.replace(/[^a-z0-9]/g, '') + '@virtux.v';
+  }
+}
+
 function bindLiveUrlAutofill() {
   const urlInput = document.getElementById('url-live');
   if (!urlInput || urlInput.dataset.liveBound === 'true') return;
@@ -2067,10 +2082,12 @@ async function updateUIAfterAuth(sessionOverride) {
       
       let displayName = profile?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name;
       
+      // حفظ الاسم في المتغير العالمي فوراً لضمان الثبات
+      if (displayName) window.currentUsername = displayName;
+
       // إذا لم ينجح جلب الاسم من البروفايل أو الميتا، نستخدم الإيميل كحل أخير جداً
       if (!displayName && session.user.email) {
-        if (session.user.email.endsWith('@virtux.v')) {
-           // للبريد الوهمي، لا نعرض الجزء الوهمي
+        if (session.user.email.includes('@virtux.v')) {
            displayName = window.currentUsername || 'User';
         } else {
            displayName = session.user.email.split('@')[0];
@@ -2220,24 +2237,27 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     let loginError = null;
 
     if (identifier.includes('@')) {
-      // دخول ببريد إلكتروني
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // دخول باسم المستخدم - البحث دائماً في قاعدة البيانات أولاً لضمان الدقة
-      const { data: profile, error: pErr } = await db.from('profiles')
-        .select('email')
-        .ilike('username', identifier.trim())
-        .maybeSingle();
-
-      if (profile?.email) {
-        const { error: err2 } = await db.auth.signInWithPassword({ email: profile.email, password });
-        loginError = err2;
+      // محاولة 1: التنسيق الجديد (Hex) - deterministic و آمن
+      const dummyHex = getDummyEmail(identifier);
+      const { data: d1, error: errHex } = await db.auth.signInWithPassword({ email: dummyHex, password });
+      
+      if (errHex) {
+        // محاولة 2: البحث في قاعدة البيانات
+        const { data: profile } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+        if (profile?.email) {
+          const { error: errDB } = await db.auth.signInWithPassword({ email: profile.email, password });
+          loginError = errDB;
+        } else {
+          // محاولة 3: التنسيق القديم (Stripped)
+          const dummyOld = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
+          const { error: errOld } = await db.auth.signInWithPassword({ email: dummyOld, password });
+          loginError = errOld;
+        }
       } else {
-        // محاولة البريد الوهمي القديم كخيار أخير
-        const dummyEmail = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
-        const { error: err1 } = await db.auth.signInWithPassword({ email: dummyEmail, password });
-        loginError = err1;
+        loginError = null;
       }
     }
 
@@ -2361,9 +2381,8 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
       return;
     }
 
-    // نستخدم dummy email آمن (ASCII فقط) لتجنب مشاكل الحروف العربية في الـ signUp
-    const randomId = Math.random().toString(36).substring(2, 10);
-    const dummyEmail = `u_${randomId}_${Date.now()}@virtux.v`;
+    // نستخدم التنسيق الجديد Deterministic Hex
+    const dummyEmail = getDummyEmail(username);
 
     const { data, error } = await db.auth.signUp({
       email: dummyEmail,
@@ -2925,6 +2944,10 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
     }
 
     document.getElementById('usernameFeedback').innerText = '';
+    
+    // تحديث الواجهة فوراً
+    await updateUIAfterAuth();
+
     alert('✅ تم حفظ التغييرات بنجاح');
     document.getElementById('profileModal').classList.remove('active');
   } catch(e) {
@@ -3274,7 +3297,7 @@ function applyTranslations() {
   if (tickerLabel) tickerLabel.textContent = isEN ? 'LIVE' : 'مباشر';
 
   // Profile modal
-  const saveBtn = document.getElementById('save Btn');
+  const saveBtn = document.getElementById('saveProfileBtn');
   if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
   const closeBtn = document.getElementById('close Btn');
   if (closeBtn) closeBtn.textContent = isEN ? 'Close' : 'إغلاق';

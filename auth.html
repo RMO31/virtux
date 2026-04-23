@@ -113,6 +113,19 @@ function hideMsg() {
   document.getElementById('authMsg').style.display = 'none';
 }
 
+function getDummyEmail(username) {
+  if (!username) return '';
+  const clean = username.trim().toLowerCase();
+  try {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(clean);
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `ux_${hex}@virtux.v`;
+  } catch(e) {
+    return clean.replace(/[^a-z0-9]/g, '') + '@virtux.v';
+  }
+}
+
 async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -128,16 +141,24 @@ async function doLogin() {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // البحث في قاعدة البيانات أولاً لضمان الدقة
-      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-      if (p && p.email) {
-        const { error: err2 } = await db.auth.signInWithPassword({ email: p.email, password });
-        loginError = err2;
+      // محاولة 1: التنسيق الجديد Hex
+      const dummyHex = getDummyEmail(identifier);
+      const { error: errHex } = await db.auth.signInWithPassword({ email: dummyHex, password });
+      
+      if (errHex) {
+        // محاولة 2: البحث في قاعدة البيانات
+        const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+        if (p && p.email) {
+          const { error: errDB } = await db.auth.signInWithPassword({ email: p.email, password });
+          loginError = errDB;
+        } else {
+          // محاولة 3: التنسيق القديم
+          const dummyOld = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
+          const { error: errOld } = await db.auth.signInWithPassword({ email: dummyOld, password });
+          loginError = errOld;
+        }
       } else {
-        // محاولة البريد الوهمي الموحد القديم
-        const dummyEmail = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
-        const { error: err1 } = await db.auth.signInWithPassword({ email: dummyEmail, password });
-        loginError = err1;
+        loginError = null;
       }
     }
     if (loginError) throw loginError;
@@ -178,9 +199,8 @@ async function doRegister() {
     return;
   }
 
-  // نستخدم dummy email آمن (ASCII فقط)
-  const randomId = Math.random().toString(36).substring(2, 10);
-  const dummyEmail = `u_${randomId}_${Date.now()}@virtux.v`;
+  // نستخدم التنسيق الجديد Deterministic Hex
+  const dummyEmail = getDummyEmail(username);
 
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
   const btn = document.getElementById('btn-register');
