@@ -1316,12 +1316,23 @@ async function uploadMediaFile(file, userId) {
 }
 
 async function uploadAvatar(file, userId) {
-  const ext = file.name.split('.').pop();
+  if (!file || !userId) throw new Error('الملف أو معرف المستخدم مفقود');
+  const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `${userId}-${Date.now()}.${ext}`;
-  // الرفع مباشرة إلى الـ bucket
-  const { error } = await db.storage.from('avatars').upload(fileName, file);
-  if (error) throw error;
-  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(fileName);
+  const bucket = 'avatars';
+
+  // الرفع مباشرة إلى الـ bucket مع خاصية الـ upsert
+  const { data, error } = await db.storage.from(bucket).upload(fileName, file, {
+    cacheControl: '3600',
+    upsert: true
+  });
+  
+  if (error) {
+    console.error('Upload error:', error);
+    throw new Error(error.message || 'فشل رفع الملف إلى Storage');
+  }
+
+  const { data: { publicUrl } } = db.storage.from(bucket).getPublicUrl(fileName);
   return publicUrl;
 }
 
@@ -2889,8 +2900,14 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
       favorite_game: document.getElementById('profileFavoriteGame').value.trim() || null
     };
 
-    const { error } = await db.from('profiles').update(updates).eq('id', window.currentUserId);
-    if (error) throw error;
+    const { error: profileError } = await db.from('profiles').update(updates).eq('id', window.currentUserId);
+    if (profileError) throw profileError;
+
+    // تحديث بيانات المستخدم في Supabase Auth أيضاً لضمان المزامنة
+    const { error: authError } = await db.auth.updateUser({
+      data: { username: newUsername }
+    });
+    if (authError) console.warn('Auth metadata update failed:', authError);
 
     // تحديث البيانات المحلية فوراً
     if (currentProfileData) {
@@ -2900,10 +2917,18 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
     window.currentUsername = newUsername;
     const userNameSpan = document.getElementById('user-name');
     if (userNameSpan) userNameSpan.textContent = '👋 ' + newUsername;
+    
+    // تحديث الاسم في الميتا داتا للجلسة الحالية يدوياً
+    const { data: { session } } = await db.auth.getSession();
+    if (session?.user) {
+      session.user.user_metadata.username = newUsername;
+    }
+
     document.getElementById('usernameFeedback').innerText = '';
     alert('✅ تم حفظ التغييرات بنجاح');
     document.getElementById('profileModal').classList.remove('active');
   } catch(e) {
+    console.error('Save profile error:', e);
     alert('❌ خطأ في حفظ البيانات: ' + (e.message || e));
   } finally {
     btn.disabled = false;
