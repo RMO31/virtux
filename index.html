@@ -1241,7 +1241,8 @@ async function checkRoleExpiration(profile) {
 
 async function getProfileById(userId, retry = true) {
   if (!userId) return null;
-  let { data, error } = await db.from('profiles').select('username,role,roles,avatar_url,email').eq('id', userId).maybeSingle();
+  let { data, error } = await db.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) console.error('getProfileById error:', error);
   
   if (error && error.message.includes('roles')) {
     // fallback لو عمود roles غير موجود
@@ -2922,14 +2923,17 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
     }
 
     const updates = {
+      id: window.currentUserId,
       username: newUsername,
+      email: currentProfileData?.email || null, // الحفاظ على الإيميل
       birthdate: document.getElementById('profileBirthdate').value || null,
       birth_place: document.getElementById('profileBirthPlace').value.trim() || null,
       country: document.getElementById('profileCountry').value.trim() || null,
       favorite_game: document.getElementById('profileFavoriteGame').value.trim() || null
     };
 
-    const { error: profileError } = await db.from('profiles').update(updates).eq('id', window.currentUserId);
+    // استخدام upsert بدلاً من update لضمان وجود السطر في قاعدة البيانات
+    const { error: profileError } = await db.from('profiles').upsert(updates);
     if (profileError) throw profileError;
 
     // تحديث بيانات المستخدم في Supabase Auth أيضاً لضمان المزامنة
@@ -2986,7 +2990,7 @@ document.getElementById('avatarUpload')?.addEventListener('change', async (e) =>
 
   try {
     const publicUrl = await uploadAvatar(file, window.currentUserId);
-    await db.from('profiles').update({ avatar_url: publicUrl }).eq('id', window.currentUserId);
+    await db.from('profiles').upsert({ id: window.currentUserId, avatar_url: publicUrl });
 
     const avatarImg = document.getElementById('profileAvatarImg');
     const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
