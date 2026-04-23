@@ -2266,14 +2266,30 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
           const { error: errDB } = await db.auth.signInWithPassword({ email: profile.email, password });
           loginError = errDB;
         } else {
-          // محاولة 3: التنسيق القديم (Stripped)
-          const dummyOld = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
-          const { error: errOld } = await db.auth.signInWithPassword({ email: dummyOld, password });
-          loginError = errOld;
+          // محاولة 3: التنسيق المدمج (بدون مسافات)
+          const dummyStripped = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
+          const { error: errOld1 } = await db.auth.signInWithPassword({ email: dummyStripped, password });
+          
+          if (errOld1) {
+            // محاولة 4: التنسيق بـ Underscore (تبديل المسافات بـ _)
+            const dummyUnderscore = identifier.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
+            const { error: errOld2 } = await db.auth.signInWithPassword({ email: dummyUnderscore, password });
+            loginError = errOld2;
+          } else {
+            loginError = null;
+          }
         }
       } else {
         loginError = null;
       }
+    }
+    
+    if (loginError) {
+      const isEN = window._siteLanguage === 'en';
+      const msg = (loginError.message === 'Invalid login credentials' || loginError.status === 400)
+        ? (isEN ? 'Invalid username or password. If you have an old account, try your email.' : 'اسم المستخدم أو كلمة المرور غير صحيحة. إذا كان حسابك قديماً، جرب الدخول بالإيميل.')
+        : loginError.message;
+      throw new Error(msg);
     }
 
     if (loginError) {
