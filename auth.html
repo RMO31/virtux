@@ -72,6 +72,10 @@
           <input type="text" id="reg-username" placeholder="GamerName123">
         </div>
         <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" placeholder="example@domain.com">
+        </div>
+        <div class="form-group">
           <label>Password</label>
           <input type="password" id="reg-password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doRegister()">
         </div>
@@ -198,22 +202,21 @@ async function doForgotPassword() {
 
 async function doRegister() {
   const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
-  if (!username || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  if (!username || !email || !password) { showMsg('Please fill all fields!', 'err'); return; }
   
   if (!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)) {
     showMsg('Username contains invalid characters.', 'err');
     return;
   }
 
-  // نستخدم التنسيق الجديد Deterministic Hex
-  const dummyEmail = getDummyEmail(username);
-
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
   const btn = document.getElementById('btn-register');
   btn.disabled = true; btn.textContent = 'Creating account...';
+  
   const { data, error } = await db.auth.signUp({ 
-    email: dummyEmail, 
+    email: email, 
     password, 
     options: { 
       data: { username },
@@ -233,7 +236,7 @@ async function doRegister() {
       await db.from('profiles').upsert({ 
         id: data.user.id, 
         username, 
-        email: dummyEmail, 
+        email: email, 
         role: 'user',
         roles: ['user'],
         created_at: new Date().toISOString()

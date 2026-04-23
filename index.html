@@ -754,6 +754,10 @@
         <input type="text" id="signupUsername" placeholder="اسم المستخدم">
       </div>
       <div class="form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="signupEmail" placeholder="example@domain.com">
+      </div>
+      <div class="form-group">
         <label>كلمة المرور</label>
         <input type="password" id="signupPassword" placeholder="********">
       </div>
@@ -2381,6 +2385,7 @@ window.resendConfirmation = async function(email) {
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
   const username = document.getElementById('signupUsername').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
   const password = document.getElementById('signupPassword').value;
   const errEl    = document.getElementById('signupError');
   errEl.innerText = '';
@@ -2388,6 +2393,10 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
 
   if (!username || username.length < 3) {
     errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.';
+    return;
+  }
+  if (!email || !email.includes('@')) {
+    errEl.innerText = isEN ? 'Please enter a valid email.' : 'يرجى إدخال بريد إلكتروني صالح.';
     return;
   }
   // السماح بالمسافات والحروف العربية والإنجليزية
@@ -2412,11 +2421,8 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
       return;
     }
 
-    // نستخدم التنسيق الجديد Deterministic Hex
-    const dummyEmail = getDummyEmail(username);
-
     const { data, error } = await db.auth.signUp({
-      email: dummyEmail,
+      email,
       password,
       options: { data: { username } }
     });
