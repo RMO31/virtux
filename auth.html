@@ -141,34 +141,25 @@ async function doLogin() {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // محاولة 1: التنسيق الجديد Hex
-      const dummyHex = getDummyEmail(identifier);
-      const { error: errHex } = await db.auth.signInWithPassword({ email: dummyHex, password });
+      const attempts = [
+        getDummyEmail(identifier),
+        identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v',
+        identifier.toLowerCase().trim().replace(/\s+/g, '_') + '@virtux.v',
+        identifier.trim() + '@virtux.v',
+        identifier.trim().replace(/\s+/g, '') + '@virtux.v'
+      ];
       
-      if (errHex) {
-        // محاولة 2: البحث في قاعدة البيانات
-        const { data: p, error: pErr } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-        
-        if (p && p.email) {
-          const { error: errDB } = await db.auth.signInWithPassword({ email: p.email, password });
-          loginError = errDB;
-        } else {
-          // محاولة 3: التنسيق المدمج (بدون مسافات)
-          const dummyStripped = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
-          const { error: errOld1 } = await db.auth.signInWithPassword({ email: dummyStripped, password });
-          
-          if (errOld1) {
-            // محاولة 4: التنسيق بـ Underscore
-            const dummyUnderscore = identifier.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
-            const { error: errOld2 } = await db.auth.signInWithPassword({ email: dummyUnderscore, password });
-            loginError = errOld2;
-          } else {
-            loginError = null;
-          }
-        }
-      } else {
-        loginError = null;
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+      if (p?.email) attempts.unshift(p.email);
+
+      let lastErr = null;
+      for (const email of attempts) {
+        console.log('Trying login with:', email);
+        const { error } = await db.auth.signInWithPassword({ email, password });
+        if (!error) { lastErr = null; break; }
+        lastErr = error;
       }
+      loginError = lastErr;
     }
 
     if (loginError) {
