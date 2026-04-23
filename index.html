@@ -2214,71 +2214,72 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
   const errEl = document.getElementById('loginError');
   errEl.innerText = '';
-  
-  if(!identifier || !password) { 
-    errEl.innerText = isEN ? 'Please fill all fields' : 'يرجى ملء جميع الحقول'; 
-    return; 
+
+  if (!identifier || !password) {
+    errEl.innerText = isEN ? 'Please fill all fields.' : 'يرجى ملء جميع الحقول.';
+    return;
   }
-  
+
   const btn = document.getElementById('doLoginBtn');
   btn.disabled = true;
   btn.textContent = isEN ? '⏳ Logging in...' : '⏳ جاري الدخول...';
-  
+
   try {
     let email = identifier;
-    if (!identifier.includes('@')) {
-      // محاولة تسجيل الدخول بالبريد الوهمي المرتبط باسم المستخدم
-      email = identifier.toLowerCase().trim() + '@virtux.v';
-    }
-    const { data: authData, error: loginError } = await db.auth.signInWithPassword({ email, password });
-    
-    // إذا فشل بالبريد الوهمي، قد يكون حساباً قديماً ببريد حقيقي، نبحث عنه
-    if (loginError && !identifier.includes('@')) {
-      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
-      if (p && p.email) {
-        const { data: retryData, error: retryError } = await db.auth.signInWithPassword({ email: p.email, password });
-        if (retryError) throw retryError;
+    let loginError = null;
+
+    if (identifier.includes('@')) {
+      // دخول ببريد إلكتروني حقيقي
+      const { error } = await db.auth.signInWithPassword({ email: identifier, password });
+      loginError = error;
+    } else {
+      // دخول باسم المستخدم — ابحث عن الـ email المرتبط به
+      const { data: profile } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
+      if (profile?.email) {
+        const { error } = await db.auth.signInWithPassword({ email: profile.email, password });
+        loginError = error;
       } else {
-        throw loginError;
+        // جرب الـ dummy emails القديمة والجديدة
+        const tries = [
+          identifier.toLowerCase().replace(/[^a-z0-9]/g,'') + '@virtux.gaming',
+          identifier.toLowerCase() + '@virtux.v',
+          identifier.toLowerCase() + '@virtux.gaming',
+        ];
+        let success = false;
+        for (const e of tries) {
+          const { error } = await db.auth.signInWithPassword({ email: e, password });
+          if (!error) { success = true; loginError = null; break; }
+          loginError = error;
+        }
+        if (!success) {
+          errEl.innerText = isEN
+            ? 'Account not found. Check your username or create a new account.'
+            : 'الحساب غير موجود. تحقق من اسم المستخدم أو أنشئ حساباً جديداً.';
+          return;
+        }
       }
-    } else if (loginError) {
-      throw loginError;
     }
 
-    // "Self-healing": التأكد من وجود بروفايل بعد الدخول الناجح
-    if (authData.user) {
-      try {
-        const { data: prof } = await db.from('profiles').select('id').eq('id', authData.user.id).maybeSingle();
-        if (!prof) {
-          const fallbackUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
-          const expiry = new Date();
-          expiry.setHours(expiry.getHours() + 24);
-          await db.from('profiles').insert({
-            id: authData.user.id,
-            username: fallbackUsername,
-            email: authData.user.email,
-            role: 'guest',
-            roles: ['guest', 'user'],
-            expiry_date: expiry.toISOString(),
-            created_at: new Date().toISOString()
-          });
-        }
-      } catch (innerErr) {
-        console.error('Self-healing profile error:', innerErr);
+    if (loginError) {
+      let msg = loginError.message || '';
+      if (msg.includes('Invalid login') || msg.includes('invalid')) {
+        msg = isEN ? 'Wrong password or account not found.' : 'كلمة المرور خاطئة أو الحساب غير موجود.';
+      } else if (msg.includes('Email not confirmed')) {
+        msg = isEN
+          ? 'Email not confirmed. Check your inbox or try again.'
+          : 'البريد الإلكتروني لم يُؤكَّد. تحقق من صندوقك أو حاول مجدداً.';
+      } else if (!msg) {
+        msg = isEN ? 'Login failed.' : 'فشل تسجيل الدخول.';
       }
+      errEl.innerText = msg;
+      errEl.style.color = '#f55';
+      return;
     }
 
     closeModal();
     await updateUIAfterAuth();
-  } catch(e) { 
-    console.error('Login error:', e);
-    let msg = e.message || '';
-    if (msg.includes('Invalid login credentials')) {
-      msg = isEN ? 'Invalid email/username or password.' : 'خطأ في البريد/اسم المستخدم أو كلمة المرور.';
-    } else if (!msg) {
-      msg = isEN ? 'Login failed.' : 'فشل تسجيل الدخول.';
-    }
-    errEl.innerText = msg;
+  } catch(e) {
+    errEl.innerText = e.message || (isEN ? 'Login failed.' : 'فشل تسجيل الدخول.');
     errEl.style.color = '#f55';
   } finally {
     btn.disabled = false;
@@ -2351,48 +2352,96 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const password = document.getElementById('signupPassword').value;
   const errEl    = document.getElementById('signupError');
   errEl.innerText = '';
+  errEl.style.color = '#f55';
 
-  if (!username || username.length < 3) { errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.'; return; }
-  const dummyEmail = username.toLowerCase() + '@virtux.v';
-  if (!password || password.length < 6) { errEl.innerText = isEN ? 'Password must be at least 6 characters.' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.'; return; }
+  if (!username || username.length < 3) {
+    errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.';
+    return;
+  }
+  if (!/^[a-zA-Z0-9_\u0600-\u06FF]+$/.test(username)) {
+    errEl.innerText = isEN ? 'Username: letters, numbers and _ only.' : 'اسم المستخدم: حروف وأرقام و _ فقط.';
+    return;
+  }
+  if (!password || password.length < 6) {
+    errEl.innerText = isEN ? 'Password must be at least 6 characters.' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.';
+    return;
+  }
 
   const btn = document.getElementById('doSignupBtn');
   btn.disabled = true;
   btn.textContent = isEN ? '⏳ Creating...' : '⏳ جاري الإنشاء...';
 
   try {
+    // تحقق من أن اسم المستخدم غير مأخوذ
     const { data: existing } = await db.from('profiles').select('id').eq('username', username).maybeSingle();
-    if (existing) { errEl.innerText = isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ.'; return; }
-
-    const { data, error } = await db.auth.signUp({
-      email: dummyEmail, 
-      password,
-      options: { data: { username }, emailRedirectTo: window.location.href }
-    });
-    if (error) throw error;
-
-    const uid = data?.user?.id;
-    if (uid) {
-      const expiry = new Date();
-      expiry.setHours(expiry.getHours() + 24);
-      await db.from('profiles').insert({ 
-        id: uid, username, email: dummyEmail, 
-        role: 'guest', roles: ['guest', 'user'],
-        expiry_date: expiry.toISOString(),
-        created_at: new Date().toISOString() 
-      });
+    if (existing) {
+      errEl.innerText = isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ، جرب اسماً آخر.';
+      return;
     }
 
-    await updateUIAfterAuth(data.session);
-    closeModal();
+    // نستخدم dummy email حتى لا يحتاج تأكيد بريد
+    const dummyEmail = username.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now() + '@virtux.gaming';
+
+    const { data, error } = await db.auth.signUp({
+      email: dummyEmail,
+      password,
+      options: { data: { username } }
+    });
+
+    if (error) {
+      // معالجة rate limit
+      if (error.message?.toLowerCase().includes('rate') || error.status === 429) {
+        errEl.innerText = isEN
+          ? '⚠️ Too many attempts. Please wait a few minutes and try again, or use Google Login.'
+          : '⚠️ محاولات كثيرة. انتظر دقائق وأعد المحاولة، أو استخدم الدخول عبر Google.';
+        return;
+      }
+      throw error;
+    }
+
+    const uid = data?.user?.id;
+    if (!uid) throw new Error(isEN ? 'Registration failed, please try again.' : 'فشل التسجيل، حاول مجدداً.');
+
+    // حفظ الـ profile
+    await db.from('profiles').upsert({
+      id: uid,
+      username,
+      email: dummyEmail,
+      role: 'user',
+      roles: ['user'],
+      created_at: new Date().toISOString()
+    });
+
+    // تسجيل دخول مباشر
+    if (data.session) {
+      await updateUIAfterAuth();
+      closeModal();
+    } else {
+      // محاولة تسجيل دخول مباشر
+      const { data: loginData, error: loginErr } = await db.auth.signInWithPassword({
+        email: dummyEmail, password
+      });
+      if (!loginErr && loginData.session) {
+        await updateUIAfterAuth();
+        closeModal();
+      } else {
+        errEl.style.color = '#4f4';
+        errEl.innerText = isEN
+          ? '✅ Account created! Please log in with your username and password.'
+          : '✅ تم إنشاء الحساب! سجّل دخولك الآن باسم المستخدم وكلمة المرور.';
+        // الانتقال لصفحة الدخول وتعبئة اسم المستخدم
+        document.getElementById('switchToLogin').click();
+        document.getElementById('loginIdentifier').value = username;
+      }
+    }
   } catch(e) {
-    document.getElementById('signupUsername').value = '';
-    document.getElementById('signupPassword').value = '';
     let msg = e.message || (isEN ? 'Registration failed.' : 'فشل التسجيل.');
-    if (msg.includes('rate limit')) {
-      msg = isEN 
-        ? '❌ Registration limit reached. Please try again later or use Google Login!'
-        : '❌ تم تجاوز حد التسجيل. يرجى المحاولة لاحقاً أو استخدام "الدخول عبر Google"!';
+    if (msg.includes('rate') || msg.includes('429')) {
+      msg = isEN
+        ? '⚠️ Too many attempts. Please wait a few minutes.'
+        : '⚠️ محاولات كثيرة. انتظر دقائق وأعد المحاولة.';
+    } else if (msg.includes('already')) {
+      msg = isEN ? 'Account already exists.' : 'الحساب موجود بالفعل.';
     }
     errEl.style.color = '#f55';
     errEl.innerText = msg;
