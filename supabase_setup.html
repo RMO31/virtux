@@ -183,9 +183,20 @@ do $$ begin
   if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Users can update own profile.') then
     create policy "Users can update own profile." on profiles for update using (auth.uid() = id);
   end if;
+  if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Users can delete own profile.') then
+    create policy "Users can delete own profile." on profiles for delete using (auth.uid() = id);
+  end if;
 end $$;
 
--- 2. ترجر إنشاء البروفايل تلقائياً (حل مشكلة التسجيل)
+-- 2. وظيفة حذف الحساب نهائياً من الـ Auth
+create or replace function public.delete_user_account()
+returns void as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$ language plpgsql security definer;
+
+-- 3. ترجر إنشاء البروفايل تلقائياً (حل مشكلة التسجيل)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin

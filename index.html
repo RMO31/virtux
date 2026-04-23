@@ -3080,9 +3080,16 @@ window.confirmDeleteAccount = async function() {
   try {
     const btn = document.getElementById('deleteAccountBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الحذف...'; }
-    // حذف البيانات من جدول profiles
+    // 1. حذف البيانات من جدول profiles (اختياري لأن الـ RPC سيحذف المستخدم بالكامل)
     await db.from('profiles').delete().eq('id', window.currentUserId);
-    // تسجيل الخروج
+    
+    // 2. حذف الحساب نهائياً من نظام Auth عبر الـ RPC
+    const { error: deleteError } = await db.rpc('delete_user_account');
+    if (deleteError) {
+      console.warn('RPC delete failed, trying fallback signout:', deleteError);
+    }
+
+    // 3. تسجيل الخروج النهائي
     await db.auth.signOut();
     alert('✅ تم حذف حسابك بنجاح.');
     document.getElementById('profileModal')?.classList.remove('active');
