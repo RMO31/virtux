@@ -122,22 +122,25 @@ async function doLogin() {
 
   try {
     let email = identifier;
-    if (!identifier.includes('@')) {
-      email = identifier.toLowerCase().trim() + '@virtux.v';
-    }
+    let loginError = null;
 
-    let { data, error } = await db.auth.signInWithPassword({ email, password });
-    
-    // Fallback for old real-email accounts
-    if (error && !identifier.includes('@')) {
-      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier).maybeSingle();
+    if (identifier.includes('@')) {
+      const { error } = await db.auth.signInWithPassword({ email: identifier, password });
+      loginError = error;
+    } else {
+      // البحث في قاعدة البيانات أولاً لضمان الدقة
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
       if (p && p.email) {
-        const res = await db.auth.signInWithPassword({ email: p.email, password });
-        data = res.data;
-        error = res.error;
+        const { error: err2 } = await db.auth.signInWithPassword({ email: p.email, password });
+        loginError = err2;
+      } else {
+        // محاولة البريد الوهمي الموحد القديم
+        const dummyEmail = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
+        const { error: err1 } = await db.auth.signInWithPassword({ email: dummyEmail, password });
+        loginError = err1;
       }
     }
-    if (error) throw error;
+    if (loginError) throw loginError;
 
     showMsg('✅ Welcome back! Redirecting...', 'ok');
     setTimeout(() => window.location.href = 'index.html', 1500);
@@ -169,7 +172,16 @@ async function doRegister() {
   const username = document.getElementById('reg-username').value.trim();
   const password = document.getElementById('reg-password').value;
   if (!username || !password) { showMsg('Please fill all fields!', 'err'); return; }
-  const dummyEmail = username.toLowerCase() + '@virtux.v';
+  
+  if (!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)) {
+    showMsg('Username contains invalid characters.', 'err');
+    return;
+  }
+
+  // نستخدم dummy email آمن (ASCII فقط)
+  const randomId = Math.random().toString(36).substring(2, 10);
+  const dummyEmail = `u_${randomId}_${Date.now()}@virtux.v`;
+
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
   const btn = document.getElementById('btn-register');
   btn.disabled = true; btn.textContent = 'Creating account...';
@@ -189,17 +201,14 @@ async function doRegister() {
     showMsg(msg, 'err');
     btn.disabled = false; btn.textContent = 'Create Account';
   } else {
-    // Create profile
+    // Create/Update profile
     if (data.user) {
-      const expiry = new Date();
-      expiry.setHours(expiry.getHours() + 24);
-      await db.from('profiles').insert({ 
+      await db.from('profiles').upsert({ 
         id: data.user.id, 
         username, 
         email: dummyEmail, 
-        role: 'guest',
-        roles: ['guest', 'user'],
-        expiry_date: expiry.toISOString(),
+        role: 'user',
+        roles: ['user'],
         created_at: new Date().toISOString()
       });
     }

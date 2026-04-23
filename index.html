@@ -1224,15 +1224,20 @@ async function checkRoleExpiration(profile) {
   }
 }
 
-async function getProfileById(userId) {
+async function getProfileById(userId, retry = true) {
   if (!userId) return null;
-  // نحاول جلب roles (مصفوفة) + role (للتوافق مع القديم)
   let { data, error } = await db.from('profiles').select('username,role,roles,avatar_url,email').eq('id', userId).maybeSingle();
-  if (error) {
+  
+  if (error && error.message.includes('roles')) {
     // fallback لو عمود roles غير موجود
     const fb = await db.from('profiles').select('username,role,avatar_url,email').eq('id', userId).maybeSingle();
-    if (fb.error) { console.error('profile lookup error:', fb.error); return null; }
     data = fb.data;
+  }
+
+  if (!data && retry) {
+    // محاولة ثانية بعد ثانية (لحالات تأخر الـ replication)
+    await new Promise(r => setTimeout(r, 1000));
+    return getProfileById(userId, false);
   }
   return data || null;
 }
@@ -1311,17 +1316,12 @@ async function uploadMediaFile(file, userId) {
 }
 
 async function uploadAvatar(file, userId) {
-  try {
-    const { data: buckets } = await db.storage.listBuckets();
-    const bucketExists = buckets?.some(b => b.name === 'avatars');
-    if (!bucketExists) throw new Error('Bucket "avatars" غير موجود.');
-  } catch(e) { throw new Error('فشل التحقق من bucket: ' + e.message); }
   const ext = file.name.split('.').pop();
   const fileName = `${userId}-${Date.now()}.${ext}`;
-  const filePath = `avatars/${fileName}`;
-  const { error } = await db.storage.from('avatars').upload(filePath, file);
+  // الرفع مباشرة إلى الـ bucket
+  const { error } = await db.storage.from('avatars').upload(fileName, file);
   if (error) throw error;
-  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(filePath);
+  const { data: { publicUrl } } = db.storage.from('avatars').getPublicUrl(fileName);
   return publicUrl;
 }
 
@@ -2012,38 +2012,6 @@ window.filterSubscribers = function(roleKey, btn) {
   }
   const el = document.getElementById('grid-subscribers');
   if (!el) return;
-  loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
-};
-
-window.filterSubscribers = function(roleKey, btn) {
-  if (btn && btn.closest('.filter-bar')) {
-    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  const el = document.getElementById('grid-subscribers');
-  if (!el) return;
-  window._subscribersRoleFilter = roleKey || '';
-  loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
-};
-
-window.filterSubscribers = function(roleKey, btn) {
-  if (btn && btn.closest('.filter-bar')) {
-    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  const el = document.getElementById('grid-subscribers');
-  if (!el) return;
-  window._subscribersRoleFilter = roleKey || '';
-  loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
-};
-
-window.filterSubscribers = function(roleKey, btn) {
-  if (btn && btn.closest('.filter-bar')) {
-    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  const el = document.getElementById('grid-subscribers');
-  if (!el) return;
   window._subscribersRoleFilter = roleKey || '';
   loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
 };
@@ -2085,7 +2053,19 @@ async function updateUIAfterAuth(sessionOverride) {
 
       const profile = authReady ? await getProfileById(session.user.id) : null;
       if (profile) await checkRoleExpiration(profile);
-      const displayName = profile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User';
+      
+      let displayName = profile?.username || session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+      
+      // إذا لم ينجح جلب الاسم من البروفايل أو الميتا، نستخدم الإيميل كحل أخير جداً
+      if (!displayName && session.user.email) {
+        if (session.user.email.endsWith('@virtux.v')) {
+           // للبريد الوهمي، لا نعرض الجزء الوهمي
+           displayName = window.currentUsername || 'User';
+        } else {
+           displayName = session.user.email.split('@')[0];
+        }
+      }
+      if (!displayName) displayName = 'User';
 
       userNameSpan.textContent = '👋 ' + displayName;
 
@@ -2233,21 +2213,20 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // دخول باسم المستخدم — ابحث عن الـ email في profiles
-      const { data: profile } = await db.from('profiles')
+      // دخول باسم المستخدم - البحث دائماً في قاعدة البيانات أولاً لضمان الدقة
+      const { data: profile, error: pErr } = await db.from('profiles')
         .select('email')
         .ilike('username', identifier.trim())
         .maybeSingle();
 
       if (profile?.email) {
-        const { error } = await db.auth.signInWithPassword({ email: profile.email, password });
-        loginError = error;
+        const { error: err2 } = await db.auth.signInWithPassword({ email: profile.email, password });
+        loginError = err2;
       } else {
-        errEl.style.color = '#f55';
-        errEl.innerText = isEN
-          ? 'Username not found. Check spelling or use your email to log in.'
-          : 'اسم المستخدم غير موجود. تحقق من الكتابة أو استخدم بريدك الإلكتروني.';
-        return;
+        // محاولة البريد الوهمي القديم كخيار أخير
+        const dummyEmail = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
+        const { error: err1 } = await db.auth.signInWithPassword({ email: dummyEmail, password });
+        loginError = err1;
       }
     }
 
@@ -2349,8 +2328,9 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     errEl.innerText = isEN ? 'Username must be at least 3 characters.' : 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل.';
     return;
   }
-  if (!/^[a-zA-Z0-9_\u0600-\u06FF]+$/.test(username)) {
-    errEl.innerText = isEN ? 'Username: letters, numbers and _ only.' : 'اسم المستخدم: حروف وأرقام و _ فقط.';
+  // السماح بالمسافات والحروف العربية والإنجليزية
+  if (!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)) {
+    errEl.innerText = isEN ? 'Username contains invalid characters.' : 'اسم المستخدم يحتوي على رموز غير مسموحة.';
     return;
   }
   if (!password || password.length < 6) {
@@ -2370,8 +2350,9 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
       return;
     }
 
-    // نستخدم dummy email حتى لا يحتاج تأكيد بريد
-    const dummyEmail = username.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now() + '@virtux.gaming';
+    // نستخدم dummy email آمن (ASCII فقط) لتجنب مشاكل الحروف العربية في الـ signUp
+    const randomId = Math.random().toString(36).substring(2, 10);
+    const dummyEmail = `u_${randomId}_${Date.now()}@virtux.v`;
 
     const { data, error } = await db.auth.signUp({
       email: dummyEmail,
@@ -2910,6 +2891,11 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
 
     const { error } = await db.from('profiles').update(updates).eq('id', window.currentUserId);
     if (error) throw error;
+
+    // تحديث البيانات المحلية فوراً
+    if (currentProfileData) {
+      Object.assign(currentProfileData, updates);
+    }
 
     window.currentUsername = newUsername;
     const userNameSpan = document.getElementById('user-name');
