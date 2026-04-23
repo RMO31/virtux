@@ -2408,7 +2408,10 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     const { data, error } = await db.auth.signUp({
       email,
       password,
-      options: { data: { username } }
+      options: { 
+        data: { username },
+        emailRedirectTo: SITE_URL
+      }
     });
 
     if (error) {
@@ -2426,7 +2429,7 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     if (!uid) throw new Error(isEN ? 'Registration failed, please try again.' : 'فشل التسجيل، حاول مجدداً.');
 
     // حفظ الـ profile
-    await db.from('profiles').upsert({
+    const { error: profileError } = await db.from('profiles').upsert({
       id: uid,
       username,
       email: email,
@@ -2435,6 +2438,10 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
       created_at: new Date().toISOString()
     });
 
+    if (profileError) {
+      console.warn('Profile creation failed (possibly due to RLS if email not confirmed):', profileError);
+    }
+
     // تسجيل دخول مباشر
     if (data.session) {
       await updateUIAfterAuth();
@@ -2442,7 +2449,7 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     } else {
       // محاولة تسجيل دخول مباشر
       const { data: loginData, error: loginErr } = await db.auth.signInWithPassword({
-        email: dummyEmail, password
+        email: email, password
       });
       if (!loginErr && loginData.session) {
         await updateUIAfterAuth();
