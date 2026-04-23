@@ -3086,7 +3086,8 @@ window.confirmDeleteAccount = async function() {
     // 2. حذف الحساب نهائياً من نظام Auth عبر الـ RPC
     const { error: deleteError } = await db.rpc('delete_user_account');
     if (deleteError) {
-      console.warn('RPC delete failed, trying fallback signout:', deleteError);
+      console.error('Account deletion RPC failed:', deleteError);
+      throw new Error('فشل حذف الحساب من الخادم: ' + deleteError.message);
     }
 
     // 3. تسجيل الخروج النهائي
