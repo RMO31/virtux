@@ -2240,19 +2240,29 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // محاولة 1: التنسيق الجديد (Hex) - deterministic و آمن
+      // محاولة 1: التنسيق الجديد (Hex)
       const dummyHex = getDummyEmail(identifier);
+      console.log('Trying hex login:', dummyHex);
       const { data: d1, error: errHex } = await db.auth.signInWithPassword({ email: dummyHex, password });
       
       if (errHex) {
+        console.warn('Hex login failed, trying DB lookup...', errHex.message);
         // محاولة 2: البحث في قاعدة البيانات
-        const { data: profile } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+        const { data: profile, error: pErr } = await db.from('profiles')
+          .select('email')
+          .ilike('username', identifier.trim())
+          .maybeSingle();
+        
+        if (pErr) console.error('DB Profile lookup error (check RLS):', pErr);
+
         if (profile?.email) {
+          console.log('Found email from DB:', profile.email);
           const { error: errDB } = await db.auth.signInWithPassword({ email: profile.email, password });
           loginError = errDB;
         } else {
           // محاولة 3: التنسيق القديم (Stripped)
           const dummyOld = identifier.toLowerCase().replace(/[^a-z0-9_\u0600-\u06FF]/g, '') + '@virtux.v';
+          console.log('Trying old format login:', dummyOld);
           const { error: errOld } = await db.auth.signInWithPassword({ email: dummyOld, password });
           loginError = errOld;
         }
@@ -2952,7 +2962,9 @@ document.getElementById('saveProfileBtn')?.addEventListener('click', async () =>
     document.getElementById('profileModal').classList.remove('active');
   } catch(e) {
     console.error('Save profile error:', e);
-    alert('❌ خطأ في حفظ البيانات: ' + (e.message || e));
+    let msg = e.message || e;
+    if (msg.includes('policy')) msg = 'فشل الحفظ بسبب قيود الحماية (RLS). يرجى تشغيل ملف supabase_setup.html لإصلاح الصلاحيات.';
+    alert('❌ خطأ في حفظ البيانات: ' + msg);
   } finally {
     btn.disabled = false;
     btn.textContent = originalText;
