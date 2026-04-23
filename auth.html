@@ -3,65 +3,255 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux — Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Virtux - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh;display:flex;flex-direction:column}
-    .topbar{display:flex;align-items:center;padding:12px 20px;background:#000718;border-bottom:1px solid #9fb000}
-    .logo{font-size:20px;font-weight:700;color:#d4e800;letter-spacing:2px;text-decoration:none}
-    .logo span{color:#fff;font-weight:400}
-    .back{margin-left:auto;font-size:13px;color:#9fb000;text-decoration:none;border:1px solid #9fb000;padding:4px 12px;border-radius:5px}
-    .back:hover{background:#9fb000;color:#000}
-    .container{flex:1;display:flex;align-items:center;justify-content:center;padding:20px}
-    .auth-box{background:#050e30;border:1px solid #9fb000;border-radius:16px;padding:36px 32px;width:100%;max-width:400px}
-    .auth-box h1{color:#d4e800;font-size:22px;margin-bottom:6px;text-align:center}
-    .auth-box p{color:#667;font-size:13px;margin-bottom:24px;text-align:center}
-    .tabs{display:flex;gap:0;margin-bottom:24px;border:1px solid #1e2d6b;border-radius:8px;overflow:hidden}
-    .tab{flex:1;padding:10px;text-align:center;font-size:13px;cursor:pointer;background:#0a1540;color:#aab;border:none;font-family:'Poppins',sans-serif;transition:all 0.2s}
-    .tab.active{background:#9fb000;color:#000;font-weight:600}
-    .form-group{margin-bottom:14px}
-    .form-group label{display:block;font-size:12px;color:#9fb000;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
-    .form-group input{width:100%;padding:10px 14px;border-radius:7px;border:1px solid #1e2d6b;background:#0a1540;color:#fff;font-size:14px;font-family:'Poppins',sans-serif}
-    .form-group input:focus{outline:none;border-color:#9fb000}
-    .btn-auth{width:100%;padding:11px;background:#9fb000;color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;margin-top:6px;transition:background 0.2s}
-    .btn-auth:hover{background:#d4e800}
-    .btn-auth:disabled{background:#445;color:#778;cursor:not-allowed}
-    .msg{padding:10px 14px;border-radius:7px;font-size:13px;margin-bottom:14px;display:none}
-    .msg.ok{background:#0f3d2e;border:1px solid #0f6e56;color:#4caf90}
-    .msg.err{background:#3d0f0f;border:1px solid #6e0f0f;color:#f55}
-    .divider{text-align:center;color:#445;font-size:12px;margin:16px 0}
+    :root{
+      --bg:#07111f;
+      --panel:rgba(7,16,30,0.84);
+      --line:rgba(120,244,255,0.18);
+      --line-strong:rgba(120,244,255,0.42);
+      --text:#f4f8ff;
+      --muted:#97a6bf;
+      --accent:#78f4ff;
+      --accent-2:#8dff9a;
+    }
+    body{
+      font-family:'Tajawal',sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(120,244,255,0.16), transparent 30%),
+        radial-gradient(circle at left center, rgba(141,255,154,0.12), transparent 25%),
+        linear-gradient(135deg, #040915 0%, #091221 50%, #050912 100%);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      position:relative;
+      overflow:hidden;
+    }
+    body::before,
+    body::after{
+      content:"";
+      position:fixed;
+      width:38vw;
+      height:38vw;
+      border-radius:50%;
+      pointer-events:none;
+      filter:blur(70px);
+      opacity:.28;
+      z-index:0;
+    }
+    body::before{top:-12vw;right:-8vw;background:#00d9ff;}
+    body::after{bottom:-18vw;left:-10vw;background:#4dff88;}
+    .topbar,.container{position:relative;z-index:1}
+    .topbar{
+      display:flex;
+      align-items:center;
+      padding:18px 26px;
+      background:rgba(4,11,22,0.68);
+      border-bottom:1px solid var(--line);
+      backdrop-filter:blur(18px);
+    }
+    .logo{
+      font-family:'Orbitron',sans-serif;
+      font-size:22px;
+      font-weight:700;
+      color:var(--accent);
+      letter-spacing:3px;
+      text-decoration:none;
+      text-shadow:0 0 16px rgba(120,244,255,0.25);
+    }
+    .logo span{color:#fff;font-weight:600}
+    .back{
+      margin-left:auto;
+      font-size:13px;
+      color:var(--accent);
+      text-decoration:none;
+      border:1px solid var(--line-strong);
+      padding:8px 14px;
+      border-radius:999px;
+      background:rgba(120,244,255,0.06);
+      transition:.2s ease;
+    }
+    .back:hover{background:var(--accent);color:#02111d}
+    .container{
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:40px 20px;
+    }
+    .auth-box{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:38px 32px 30px;
+      width:100%;
+      max-width:470px;
+      backdrop-filter:blur(22px);
+      box-shadow:0 24px 70px rgba(0,0,0,0.45);
+      position:relative;
+      overflow:hidden;
+    }
+    .auth-box::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(125deg, rgba(120,244,255,0.12), transparent 28%),
+        linear-gradient(320deg, rgba(141,255,154,0.10), transparent 30%);
+      pointer-events:none;
+    }
+    .auth-box > *{position:relative;z-index:1}
+    .auth-box h1{
+      color:#fff;
+      font-size:30px;
+      margin-bottom:8px;
+      text-align:center;
+      line-height:1.2;
+      font-weight:800;
+    }
+    .auth-box p{
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:26px;
+      text-align:center;
+    }
+    .tabs{
+      display:flex;
+      gap:8px;
+      margin-bottom:24px;
+      padding:6px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      overflow:hidden;
+      background:rgba(255,255,255,0.03);
+    }
+    .tab{
+      flex:1;
+      padding:12px 10px;
+      text-align:center;
+      font-size:14px;
+      cursor:pointer;
+      background:transparent;
+      color:var(--muted);
+      border:none;
+      border-radius:12px;
+      font-family:'Tajawal',sans-serif;
+      font-weight:700;
+      transition:.2s ease;
+    }
+    .tab.active{
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#04111d;
+      font-weight:800;
+      box-shadow:0 10px 24px rgba(120,244,255,0.2);
+    }
+    .form-group{margin-bottom:16px}
+    .form-group label{
+      display:block;
+      font-size:12px;
+      color:var(--accent);
+      margin-bottom:7px;
+      text-transform:uppercase;
+      letter-spacing:1px;
+      font-weight:700;
+    }
+    .form-group input{
+      width:100%;
+      padding:14px 16px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:rgba(255,255,255,0.05);
+      color:#fff;
+      font-size:15px;
+      font-family:'Tajawal',sans-serif;
+      transition:.2s ease;
+    }
+    .form-group input:focus{
+      outline:none;
+      border-color:var(--line-strong);
+      box-shadow:0 0 0 4px rgba(120,244,255,0.08);
+      background:rgba(255,255,255,0.08);
+    }
+    .btn-auth{
+      width:100%;
+      padding:14px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#04111d;
+      border:none;
+      border-radius:16px;
+      font-size:16px;
+      font-weight:800;
+      cursor:pointer;
+      font-family:'Tajawal',sans-serif;
+      margin-top:8px;
+      transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+      box-shadow:0 18px 34px rgba(120,244,255,0.18);
+    }
+    .btn-auth:hover{transform:translateY(-1px)}
+    .btn-auth:disabled{background:#445;color:#778;cursor:not-allowed;box-shadow:none}
+    .msg{
+      padding:12px 14px;
+      border-radius:14px;
+      font-size:13px;
+      margin-bottom:16px;
+      display:none;
+    }
+    .msg.ok{background:#0f3d2e;border:1px solid #0f6e56;color:#84f4bf}
+    .msg.err{background:#3d0f0f;border:1px solid #6e0f0f;color:#ff9090}
     .form-panel{display:none}
     .form-panel.active{display:block}
+    .auth-meta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:14px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .auth-meta a{color:var(--accent);text-decoration:none}
+    .auth-meta a:hover{text-decoration:underline}
+    @media (max-width:640px){
+      .topbar{padding:16px}
+      .auth-box{padding:30px 20px 24px;border-radius:22px}
+      .auth-box h1{font-size:24px}
+      .auth-meta{flex-direction:column;align-items:flex-start}
+    }
   </style>
 </head>
 <body>
   <div class="topbar">
     <a href="index.html" class="logo">VIRT<span>UX</span></a>
-    <a href="index.html" class="back">← Back to Site</a>
+    <a href="index.html" class="back">Back to Site</a>
   </div>
   <div class="container">
     <div class="auth-box">
-      <h1>🎮 Welcome to Virtux</h1>
-      <p>Join the gaming community</p>
+      <h1>Welcome to Virtux</h1>
+      <p>Modern access for gamers, creators, and community members.</p>
 
       <div class="tabs">
-        <button class="tab active" onclick="switchTab('login')">Login</button>
-        <button class="tab" onclick="switchTab('register')">Register</button>
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="tab" id="tab-register" onclick="switchTab('register')">Register</button>
       </div>
 
       <div class="msg" id="authMsg"></div>
 
-      <!-- LOGIN -->
       <div class="form-panel active" id="panel-login">
         <div class="form-group">
           <label>Email or Username</label>
           <input type="text" id="login-email" placeholder="example@domain.com or username">
         </div>
-          <div style="text-align:center; margin-top:10px; margin-bottom:10px;">
-            <a href="javascript:void(0)" onclick="doForgotPassword()" style="color:#9fb000; font-size:12px; text-decoration:underline;">Forgot Password?</a>
-          </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div class="auth-meta">
+          <span>Secure access for gamers and creators</span>
+          <a href="javascript:void(0)" onclick="doForgotPassword()">Forgot Password?</a>
         </div>
         <button class="btn-auth" onclick="doLogin()" id="btn-login">Login</button>
       </div>
@@ -81,7 +271,6 @@
         </div>
         <button class="btn-auth" onclick="doRegister()" id="btn-register">Create Account</button>
       </div>
-
     </div>
   </div>
 
@@ -102,17 +291,18 @@ const db = window.supabase.createClient(SB_URL, SB_KEY, {
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
-  document.querySelector(`.tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('panel-' + tab).classList.add('active');
   hideMsg();
 }
 
 function showMsg(text, type) {
   const el = document.getElementById('authMsg');
-  el.textContent = text;
+  el.innerHTML = text;
   el.className = 'msg ' + type;
   el.style.display = 'block';
 }
+
 function hideMsg() {
   document.getElementById('authMsg').style.display = 'none';
 }
@@ -134,58 +324,48 @@ async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   if (!identifier || !password) { showMsg('Please fill all fields!', 'err'); return; }
+
   const btn = document.getElementById('btn-login');
-  btn.disabled = true; btn.textContent = 'Logging in...';
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
 
   try {
-    let email = identifier;
     let loginError = null;
 
     if (identifier.includes('@')) {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // 1. Look up the email associated with this username in the profiles table
       const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-      
       let emailToTry = p?.email || getDummyEmail(identifier);
-      
-      console.log('Attempting login with:', emailToTry);
       const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
 
-      // 2. Fallback: Only if the first attempt fails and it's NOT a rate limit, try one common old pattern
       if (loginError && loginError.status !== 429 && !p?.email) {
         const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
         if (fallback !== emailToTry) {
-          console.log('Trying fallback pattern:', fallback);
           const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
-          if (!retryError) loginError = null;
-          else loginError = retryError;
+          loginError = retryError || null;
         }
       }
     }
 
     if (loginError) {
-      let msg = loginError.message;
+      let msg = loginError.message || 'Login failed.';
       if (loginError.status === 429) {
-        msg = '⚠️ محاولات كثيرة جداً. يرجى الانتظار بضع دقائق قبل المحاولة مرة أخرى، أو استخدم الدخول عبر Google.';
+        msg = 'Too many attempts. Please wait a few minutes and try again.';
       } else if (loginError.message === 'Invalid login credentials' || loginError.status === 400) {
-        msg = 'اسم المستخدم أو كلمة المرور غير صحيحة. جرب الدخول بالإيميل إذا كان حسابك قديماً.';
+        msg = 'Invalid email/username or password.';
       }
       throw new Error(msg);
     }
-    if (loginError) throw loginError;
 
     showMsg('✅ Welcome back! Redirecting...', 'ok');
     setTimeout(() => window.location.href = 'index.html', 1500);
   } catch (err) {
-    let msg = err.message || '';
-    if (msg.includes('Invalid login credentials')) {
-      msg = 'Invalid email/username or password.';
-    }
-    showMsg('❌ ' + msg, 'err');
-    btn.disabled = false; btn.textContent = 'Login';
+    showMsg('❌ ' + (err.message || 'Login failed.'), 'err');
+    btn.disabled = false;
+    btn.textContent = 'Login';
   }
 }
 
@@ -208,101 +388,61 @@ async function doRegister() {
   const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
   if (!username || !email || !password) { showMsg('Please fill all fields!', 'err'); return; }
-  
+
   if (!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)) {
     showMsg('Username contains invalid characters.', 'err');
     return;
   }
 
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
+
   const btn = document.getElementById('btn-register');
-  btn.disabled = true; btn.textContent = 'Creating account...';
-  
-  const { data, error } = await db.auth.signUp({ 
-    email: email, 
-    password, 
-    options: { 
-      data: { username },
-      emailRedirectTo: window.location.origin + window.location.pathname
-    } 
-  });
-  if (error) {
-    let msg = '❌ ' + error.message;
-    if (error.message.includes('rate limit')) {
-      msg = '❌ Registration limit reached. Please try later.';
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+
+  try {
+    const { data, error } = await db.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username },
+        emailRedirectTo: window.location.origin + window.location.pathname
+      }
+    });
+
+    if (error) {
+      let msg = error.message || 'Registration failed.';
+      if (msg.includes('rate limit')) msg = 'Registration limit reached. Please try later.';
+      throw new Error(msg);
     }
-    showMsg(msg, 'err');
-    btn.disabled = false; btn.textContent = 'Create Account';
-  } else {
-    // Create/Update profile
+
     if (data.user) {
-      await db.from('profiles').upsert({ 
-        id: data.user.id, 
-        username, 
-        email: email, 
+      await db.from('profiles').upsert({
+        id: data.user.id,
+        username,
+        email,
         role: 'user',
         roles: ['user'],
         created_at: new Date().toISOString()
       });
     }
+
     if (data.session) {
-      showMsg('✅ Welcome back! Redirecting...', 'ok');
+      showMsg('✅ Welcome! Redirecting...', 'ok');
       setTimeout(() => window.location.href = 'index.html', 1500);
     } else {
-      showMsg('✅ Account created! IMPORTANT: If you cannot login, please disable "Confirm Email" in your Supabase Dashboard settings.', 'ok');
-      btn.disabled = false; btn.textContent = 'Create Account';
-      setTimeout(() => switchTab('login'), 4000);
+      showMsg('✅ Account created! If email confirmation is enabled, please check your inbox.', 'ok');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+      setTimeout(() => switchTab('login'), 2500);
     }
+  } catch (e) {
+    showMsg('❌ ' + (e.message || 'Registration failed.'), 'err');
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
   }
 }
 
-function showHtmlMsg(html, type) {
-  const el = document.getElementById('authMsg');
-  el.innerHTML = html;
-  el.className = 'msg ' + type;
-  el.style.display = 'block';
-}
-
-const DISPOSABLE_DOMAINS = [
-  'temp-mail.org', 'mailinator.com', '10minutemail.com', 'guerrillamail.com', 'sharklasers.com',
-  'dispostable.com', 'getnada.com', 'maildrop.cc', 'moakt.com', 'yopmail.com', 'trashmail.com'
-];
-function isRealEmail(email) {
-  if (!email || !email.includes('@')) return false;
-  const domain = email.split('@')[1].toLowerCase();
-  return !DISPOSABLE_DOMAINS.includes(domain);
-}
-
-let resendTimer = null;
-async function resendConfirmation(email) {
-  if (resendTimer) return;
-  try {
-    const { error } = await db.auth.resend({ type: 'signup', email });
-    if (error) throw error;
-    showMsg('✅ Confirmation email sent again!', 'ok');
-    
-    // Start countdown
-    let seconds = 120;
-    const btn = document.querySelector('button[onclick*="resendConfirmation"]');
-    if (btn) {
-      btn.disabled = true;
-      resendTimer = setInterval(() => {
-        seconds--;
-        btn.textContent = `Wait ${seconds}s to resend`;
-        if (seconds <= 0) {
-          clearInterval(resendTimer);
-          resendTimer = null;
-          btn.disabled = false;
-          btn.textContent = "Didn't get it? Resend";
-        }
-      }, 1000);
-    }
-  } catch(e) {
-    showMsg('❌ Error: ' + e.message, 'err');
-  }
-}
-
-// Check if already logged in
 db.auth.getSession().then(({ data: { session } }) => {
   if (session) window.location.href = 'index.html';
 });

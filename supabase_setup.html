@@ -3,64 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Virtux — Database Setup</title>
+<title>Virtux - Database Setup</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Tahoma,sans-serif;background:#01042e;color:#fff;min-height:100vh;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center}
+body{font-family:'Tajawal',sans-serif;background:radial-gradient(circle at top right, rgba(224,16,16,0.16), transparent 28%),radial-gradient(circle at left bottom, rgba(255,145,0,0.12), transparent 26%),linear-gradient(160deg,#09070d 0%,#12060a 50%,#0a0d12 100%);color:#fff;min-height:100vh;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center}
 .wrap{width:100%;max-width:620px}
 .logo{text-align:center;margin-bottom:28px}
-.logo h1{font-size:26px;color:#e01010;letter-spacing:2px}
-.logo p{color:#667;font-size:12px;margin-top:4px}
-.card{background:#050e30;border:1px solid #1e2d6b;border-radius:16px;padding:24px 22px;margin-bottom:16px}
-.card-title{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.logo h1{font-size:30px;color:#fff;letter-spacing:3px;font-family:'Orbitron',sans-serif;text-shadow:0 0 18px rgba(224,16,16,.25)}
+.logo p{color:#9fa8b8;font-size:13px;margin-top:6px}
+.card{background:rgba(12,12,20,.82);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:24px 22px;margin-bottom:16px;backdrop-filter:blur(16px);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.card-title{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:#fff}
 .card-title span{font-size:18px}
 .steps{display:flex;flex-direction:column;gap:10px}
-.step{background:#0a1540;border:1px solid #1e2d6b;border-radius:10px;padding:13px 15px;display:flex;align-items:center;gap:12px;transition:border-color .3s,background .3s}
-.step.running{border-color:#fa0;background:#1a1200}
-.step.ok{border-color:#2f2;background:#001a00}
-.step.err{border-color:#f55;background:#1a0000}
+.step{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 15px;display:flex;align-items:center;gap:12px;transition:border-color .3s,background .3s,transform .2s}
+.step:hover{transform:translateY(-1px)}
+.step.running{border-color:#ffae42;background:rgba(255,174,66,.08)}
+.step.ok{border-color:#4fff9c;background:rgba(79,255,156,.08)}
+.step.err{border-color:#ff7373;background:rgba(255,115,115,.08)}
 .step-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0}
 .step-body{flex:1}
-.step-name{font-size:13px;font-weight:600;color:#ddd}
-.step-msg{font-size:11px;color:#777;margin-top:3px;word-break:break-word}
-.step.ok .step-name{color:#4f4}
-.step.err .step-name{color:#f88}
-.step.running .step-name{color:#fa0}
-.progress-wrap{background:#0a1540;border-radius:8px;height:6px;margin:14px 0 4px;overflow:hidden}
-.progress-bar{height:6px;background:linear-gradient(90deg,#e01010,#ff6600);border-radius:8px;transition:width .4s;width:0}
-.progress-label{font-size:11px;color:#667;text-align:left;direction:ltr}
-.btn{width:100%;padding:14px;background:#e01010;color:#000;font-weight:800;font-size:15px;border:none;border-radius:12px;cursor:pointer;transition:opacity .2s,transform .1s;letter-spacing:.5px}
+.step-name{font-size:13px;font-weight:700;color:#eaf0ff}
+.step-msg{font-size:11px;color:#8d95a6;margin-top:3px;word-break:break-word}
+.step.ok .step-name{color:#74ffb1}
+.step.err .step-name{color:#ff9f9f}
+.step.running .step-name{color:#ffc368}
+.progress-wrap{background:rgba(255,255,255,.05);border-radius:999px;height:8px;margin:14px 0 4px;overflow:hidden}
+.progress-bar{height:8px;background:linear-gradient(90deg,#e01010,#ff7b00,#ffcc55);border-radius:999px;transition:width .4s;width:0}
+.progress-label{font-size:11px;color:#98a0ae;text-align:left;direction:ltr}
+.btn{width:100%;padding:15px;background:linear-gradient(135deg,#ff5a36,#ffb547);color:#160b06;font-weight:900;font-size:15px;border:none;border-radius:16px;cursor:pointer;transition:opacity .2s,transform .1s;letter-spacing:.5px;box-shadow:0 16px 34px rgba(255,90,54,.24)}
 .btn:hover{opacity:.85}
 .btn:active{transform:scale(.98)}
 .btn:disabled{background:#333;color:#666;cursor:not-allowed}
-.sql-box{background:#000;border:1px solid #333;border-radius:10px;padding:14px;font-size:11px;font-family:monospace;color:#4f4;white-space:pre-wrap;max-height:260px;overflow-y:auto;margin-top:12px;line-height:1.6}
-.copy-btn{background:#1a1a2e;border:1px solid #444;color:#aaa;border-radius:6px;padding:5px 14px;font-size:11px;cursor:pointer;margin-top:8px;transition:background .2s}
-.copy-btn:hover{background:#2a2a3e}
-.banner{border-radius:10px;padding:14px 16px;font-size:13px;font-weight:600;text-align:center;margin-top:4px;display:none}
-.banner.success{background:#001a00;border:1px solid #2f2;color:#4f4}
-.banner.warn{background:#1a1000;border:1px solid #fa0;color:#fa0}
+.sql-box{background:#050507;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;font-size:11px;font-family:monospace;color:#85ffa9;white-space:pre-wrap;max-height:260px;overflow-y:auto;margin-top:12px;line-height:1.6}
+.copy-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#e9edf6;border-radius:10px;padding:8px 14px;font-size:11px;cursor:pointer;margin-top:8px;transition:background .2s}
+.copy-btn:hover{background:rgba(255,255,255,.08)}
+.banner{border-radius:16px;padding:14px 16px;font-size:13px;font-weight:700;text-align:center;margin-top:8px;display:none}
+.banner.success{background:rgba(0,26,0,.72);border:1px solid #2f2;color:#86ff86}
+.banner.warn{background:rgba(26,16,0,.78);border:1px solid #fa0;color:#ffc368}
 </style>
 </head>
 <body>
 <div class="wrap">
-
   <div class="logo">
-    <h1>⚙️ VIRTUX</h1>
-    <p>Database Setup — payment_requests</p>
+    <h1>VIRTUX</h1>
+    <p>Database Setup - payment_requests</p>
   </div>
 
   <div class="card">
     <div class="card-title"><span>📋</span> ما سيتم إنشاؤه</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#aaa">
-      <span style="background:#0a1540;border:1px solid #1e2d6b;padding:4px 10px;border-radius:6px;">🗄️ جدول payment_requests</span>
-      <span style="background:#0a1540;border:1px solid #1e2d6b;padding:4px 10px;border-radius:6px;">🔒 سياسات RLS</span>
-      <span style="background:#0a1540;border:1px solid #1e2d6b;padding:4px 10px;border-radius:6px;">⚡ Function auto_grant_rank</span>
-      <span style="background:#0a1540;border:1px solid #1e2d6b;padding:4px 10px;border-radius:6px;">🔔 Trigger on_payment_approved</span>
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">🗄️ جدول payment_requests</span>
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">🔒 سياسات RLS</span>
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">⚡ Function auto_grant_rank</span>
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">🔔 Trigger on_payment_approved</span>
     </div>
-    <div style="margin-top:12px;font-size:12px;color:#667;background:#0a1540;border-radius:8px;padding:10px 12px;border:1px solid #1e2d6b">
-      ⚠️ <strong style="color:#fa0">ملاحظة:</strong> إذا فشل التشغيل التلقائي، سيظهر SQL كامل انسخه وشغّله في
-      <strong style="color:#adf">Supabase → SQL Editor → Run</strong>
+    <div style="margin-top:12px;font-size:12px;color:#9fa8b8;background:rgba(255,255,255,.03);border-radius:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.08)">
+      إذا فشل التشغيل التلقائي، سيظهر SQL كامل لنسخه وتشغيله من داخل Supabase SQL Editor.
     </div>
   </div>
 
@@ -76,11 +76,10 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:#01042e;color:#fff;min-
 
   <div class="card" id="sql-card" style="display:none;margin-top:16px">
     <div class="card-title"><span>📄</span> SQL للتنفيذ اليدوي</div>
-    <div style="font-size:12px;color:#aaa;margin-bottom:6px">انسخ هذا في <strong style="color:#adf">Supabase → SQL Editor → Run</strong></div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:6px">انسخ هذا الكود وشغله في Supabase SQL Editor</div>
     <div class="sql-box" id="sql-content"></div>
     <button class="copy-btn" onclick="copySql()">📋 نسخ SQL</button>
   </div>
-
 </div>
 <script>
 const SUPABASE_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
@@ -88,8 +87,7 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const STEPS=[
-  {id:'table',icon:'🗄️',name:'إنشاء جدول payment_requests',
-   sql:`create table if not exists payment_requests (
+  {id:'table',icon:'🗄️',name:'إنشاء جدول payment_requests',sql:`create table if not exists payment_requests (
   id          bigserial primary key,
   user_id     uuid references auth.users(id) on delete set null,
   username    text not null,
@@ -100,28 +98,22 @@ const STEPS=[
   status      text default 'pending',
   created_at  timestamptz default now()
 );`},
-  {id:'rls',icon:'🔒',name:'تفعيل Row Level Security',
-   sql:`alter table payment_requests enable row level security;`},
-  {id:'p1',icon:'📝',name:'Policy: المستخدم يُدرج طلباته',
-   sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='users can insert own requests') then create policy "users can insert own requests" on payment_requests for insert with check (auth.uid() = user_id or user_id is null); end if; end $$;`},
-  {id:'p2',icon:'👁️',name:'Policy: المستخدم يرى طلباته فقط',
-   sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='users can view own requests') then create policy "users can view own requests" on payment_requests for select using (auth.uid() = user_id); end if; end $$;`},
-  {id:'p3',icon:'👑',name:'Policy: الأدمن يرى كل الطلبات',
-   sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='admin can view all') then create policy "admin can view all" on payment_requests for select using (exists (select 1 from profiles where profiles.id = auth.uid() and (profiles.role = 'admin' or profiles.roles @> '["admin"]'))); end if; end $$;`},
-  {id:'p4',icon:'✏️',name:'Policy: الأدمن يعدّل الطلبات',
-   sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='admin can update') then create policy "admin can update" on payment_requests for update using (exists (select 1 from profiles where profiles.id = auth.uid() and (profiles.role = 'admin' or profiles.roles @> '["admin"]'))); end if; end $$;`},
-  {id:'fn',icon:'⚡',name:'Function: auto_grant_rank',
-   sql:`create or replace function auto_grant_rank() returns trigger language plpgsql security definer as $$ begin if new.status = 'approved' and old.status = 'pending' and new.user_id is not null then update profiles set role = new.plan_key where id = new.user_id; end if; return new; end; $$;`},
-  {id:'trig',icon:'🔔',name:'Trigger: on_payment_approved',
-   sql:`drop trigger if exists on_payment_approved on payment_requests; create trigger on_payment_approved after update on payment_requests for each row execute function auto_grant_rank();`},
+  {id:'rls',icon:'🔒',name:'تفعيل Row Level Security',sql:`alter table payment_requests enable row level security;`},
+  {id:'p1',icon:'📝',name:'Policy: المستخدم يدرج طلباته',sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='users can insert own requests') then create policy "users can insert own requests" on payment_requests for insert with check (auth.uid() = user_id or user_id is null); end if; end $$;`},
+  {id:'p2',icon:'👁️',name:'Policy: المستخدم يرى طلباته فقط',sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='users can view own requests') then create policy "users can view own requests" on payment_requests for select using (auth.uid() = user_id); end if; end $$;`},
+  {id:'p3',icon:'👑',name:'Policy: الأدمن يرى كل الطلبات',sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='admin can view all') then create policy "admin can view all" on payment_requests for select using (exists (select 1 from profiles where profiles.id = auth.uid() and (profiles.role = 'admin' or profiles.roles @> '["admin"]'))); end if; end $$;`},
+  {id:'p4',icon:'✏️',name:'Policy: الأدمن يعدل الطلبات',sql:`do $$ begin if not exists (select 1 from pg_policies where tablename='payment_requests' and policyname='admin can update') then create policy "admin can update" on payment_requests for update using (exists (select 1 from profiles where profiles.id = auth.uid() and (profiles.role = 'admin' or profiles.roles @> '["admin"]'))); end if; end $$;`},
+  {id:'fn',icon:'⚡',name:'Function: auto_grant_rank',sql:`create or replace function auto_grant_rank() returns trigger language plpgsql security definer as $$ begin if new.status = 'approved' and old.status = 'pending' and new.user_id is not null then update profiles set role = new.plan_key where id = new.user_id; end if; return new; end; $$;`},
+  {id:'trig',icon:'🔔',name:'Trigger: on_payment_approved',sql:`drop trigger if exists on_payment_approved on payment_requests; create trigger on_payment_approved after update on payment_requests for each row execute function auto_grant_rank();`},
 ];
 
 const FULL_SQL=STEPS.map(s=>s.sql).join('\n\n');
-
 const list=document.getElementById('steps-list');
+
 STEPS.forEach(s=>{
   const d=document.createElement('div');
-  d.className='step'; d.id='step-'+s.id;
+  d.className='step';
+  d.id='step-'+s.id;
   d.innerHTML=`<div class="step-icon">${s.icon}</div><div class="step-body"><div class="step-name">${s.name}</div><div class="step-msg" id="msg-${s.id}">في الانتظار...</div></div>`;
   list.appendChild(d);
 });
@@ -134,13 +126,15 @@ function setStep(id,state,msg){
   el.querySelector('.step-icon').textContent=icons[state]||STEPS.find(s=>s.id===id).icon;
   m.textContent=state==='running'?'جاري التنفيذ...':(msg||(state==='ok'?'تم بنجاح':'فشل'));
 }
+
 function setProgress(d,t){
   document.getElementById('prog').style.width=(d/t*100)+'%';
   document.getElementById('prog-label').textContent=d+' / '+t;
 }
+
 async function trySQL(sql){
   try{
-    const {error}=await db.rpc('exec_sql',{query:sql});
+    const { error } = await db.rpc('exec_sql',{query:sql});
     if(!error) return {ok:true};
   }catch(e){}
   try{
@@ -153,10 +147,9 @@ async function trySQL(sql){
     return {ok:false,msg:(await r.text()).slice(0,180)};
   }catch(e){return {ok:false,msg:e.message};}
 }
+
 async function runSetup(){
-  // أضفنا خطوات جديدة لإصلاح البروفايلات والـ Storage
   const FIX_SQL = `
--- 1. التأكد من جدول البروفايلات وسياسات RLS
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   username text unique,
@@ -183,23 +176,8 @@ do $$ begin
   if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Users can update own profile.') then
     create policy "Users can update own profile." on profiles for update using (auth.uid() = id);
   end if;
-  if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Users can delete own profile.') then
-    create policy "Users can delete own profile." on profiles for delete using (auth.uid() = id);
-  end if;
 end $$;
 
--- 2. وظيفة حذف الحساب نهائياً من الـ Auth
-create or replace function public.delete_user_account()
-returns void as $$
-begin
-  delete from auth.users where id = auth.uid();
-end;
-$$ language plpgsql security definer set search_path = public, auth;
-
-grant execute on function public.delete_user_account() to authenticated;
-grant execute on function public.delete_user_account() to service_role;
-
--- 3. ترجر إنشاء البروفايل تلقائياً (حل مشكلة التسجيل)
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
@@ -221,54 +199,45 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- 3. إعداد الـ Storage وصلاحياته
 insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
-do $$ begin
-  if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Avatar images are publicly accessible.') then
-    create policy "Avatar images are publicly accessible." on storage.objects for select using (bucket_id = 'avatars');
-  end if;
-  if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Anyone can upload an avatar.') then
-    create policy "Anyone can upload an avatar." on storage.objects for insert with check (bucket_id = 'avatars');
-  end if;
-  if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Anyone can update an avatar.') then
-    create policy "Anyone can update an avatar." on storage.objects for update using (bucket_id = 'avatars');
-  end if;
-end $$;
-  `;
-  
+`;
+
   const btn=document.getElementById('runBtn');
-  btn.disabled=true; btn.textContent='⏳ جاري الإعداد...';
+  btn.disabled=true;
+  btn.textContent='⏳ جاري الإعداد...';
   document.getElementById('banner').style.display='none';
   document.getElementById('sql-card').style.display='none';
   let done=0,failed=0;
-  setProgress(0, STEPS.length + 1);
-  
-  // الخطوة 0: إصلاح البروفايلات والـ Storage (SQL إضافي)
-  setStep('table', 'running', 'جاري إصلاح الجداول والصلاحيات...');
-  await trySQL(FIX_SQL); 
+  setProgress(0,STEPS.length);
+
+  await trySQL(FIX_SQL);
 
   for(const s of STEPS){
     setStep(s.id,'running');
     const r=await trySQL(s.sql);
-    done++; setProgress(done,STEPS.length);
+    done++;
+    setProgress(done,STEPS.length);
     if(r.ok) setStep(s.id,'ok');
     else { setStep(s.id,'err',r.msg); failed++; }
-    await new Promise(r=>setTimeout(r,180));
+    await new Promise(resolve=>setTimeout(resolve,180));
   }
+
   const b=document.getElementById('banner');
   b.style.display='block';
   if(!failed){
     b.className='banner success';
-    b.innerHTML='🎉 الإعداد اكتمل بنجاح! جدول payment_requests جاهز تماماً.';
+    b.innerHTML='تم الإعداد بنجاح. جدول payment_requests أصبح جاهزًا.';
     btn.textContent='✅ تم الإعداد';
   } else {
     b.className='banner warn';
-    b.innerHTML=`⚠️ ${failed} خطوة فشلت — انسخ SQL أدناه وشغّله يدوياً في Supabase`;
+    b.innerHTML=`فشل ${failed} من الخطوات. انسخ SQL أدناه وشغله يدويًا في Supabase.`;
     document.getElementById('sql-card').style.display='block';
     document.getElementById('sql-content').textContent=FULL_SQL;
-    btn.disabled=false; btn.textContent='🔄 إعادة المحاولة';
+    btn.disabled=false;
+    btn.textContent='🔄 إعادة المحاولة';
   }
 }
+
 function copySql(){
   navigator.clipboard.writeText(FULL_SQL).then(()=>{
     const b=document.querySelector('.copy-btn');

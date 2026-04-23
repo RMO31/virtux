@@ -3,35 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux — قراءة المقال</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Virtux - Article</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#01042e;color:#fff;min-height:100vh;padding:20px}
-    .container{max-width:800px;margin:0 auto;background:#050e30;border-radius:16px;border:1px solid #9fb000;overflow:hidden}
-    .header{background:#000718;padding:16px 20px;border-bottom:1px solid #9fb000}
-    .header h1{color:#d4e800;font-size:22px}
-    .back-link{display:inline-block;margin-bottom:20px;color:#9fb000;text-decoration:none;font-size:14px}
-    .back-link:hover{color:#d4e800}
-    .article-img{width:100%;max-height:300px;object-fit:cover;display:block}
-    .article-emoji{font-size:80px;text-align:center;padding:20px;background:#0a1540}
-    .content{padding:24px}
-    .title{font-size:24px;color:#d4e800;margin-bottom:12px}
-    .meta{color:#667;font-size:13px;margin-bottom:20px;border-bottom:1px solid #1e2d6b;padding-bottom:12px}
-    .article-body{line-height:1.8;color:#ddd;font-size:15px}
-    .article-body p{margin-bottom:16px}
-    .footer{margin-top:30px;text-align:center;padding:16px;border-top:1px solid #1e2d6b;font-size:12px;color:#667}
-    .loading{text-align:center;padding:50px;color:#9fb000}
-    .error{text-align:center;padding:50px;color:#f55}
-    iframe, video{max-width:100%;border-radius:8px;margin:10px 0}
+    body{font-family:'Tajawal',sans-serif;background:radial-gradient(circle at top right, rgba(255,87,34,0.16), transparent 28%),radial-gradient(circle at left bottom, rgba(0,217,255,0.12), transparent 30%),linear-gradient(160deg, #060912 0%, #0d1422 48%, #070b12 100%);color:#fff;min-height:100vh;padding:24px}
+    .container{max-width:940px;margin:0 auto;background:rgba(7,13,23,0.88);border-radius:28px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;box-shadow:0 28px 70px rgba(0,0,0,0.35);backdrop-filter:blur(18px)}
+    .header{background:linear-gradient(135deg, rgba(0,217,255,0.14), transparent 45%),linear-gradient(135deg, rgba(255,87,34,0.18), rgba(0,0,0,0.2));padding:24px 28px;border-bottom:1px solid rgba(255,255,255,0.08)}
+    .header h1{color:#fff;font-size:28px;font-family:'Orbitron',sans-serif;letter-spacing:1px}
+    .back-link{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;color:#7de9ff;text-decoration:none;font-size:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(125,233,255,0.25);padding:9px 14px;border-radius:999px}
+    .back-link:hover{background:#7de9ff;color:#04111d}
+    .article-img{width:100%;max-height:420px;object-fit:cover;display:block}
+    .article-emoji{font-size:92px;text-align:center;padding:34px 20px;background:linear-gradient(135deg, rgba(255,87,34,0.18), rgba(0,217,255,0.12))}
+    .content{padding:30px}
+    .title{font-size:32px;color:#fff;margin-bottom:14px;line-height:1.25;font-weight:800}
+    .meta{color:#95a3be;font-size:14px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:16px}
+    .article-body{line-height:2;color:#dbe4f5;font-size:17px}
+    .article-body p{margin-bottom:18px}
+    .footer{margin-top:12px;text-align:center;padding:18px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px;color:#7e8ba3;background:rgba(255,255,255,0.02)}
+    .loading{text-align:center;padding:60px;color:#7de9ff}
+    .error{text-align:center;padding:60px;color:#ff8d8d}
+    iframe, video{max-width:100%;border-radius:18px;margin:14px 0;border:1px solid rgba(255,255,255,0.08);background:#000}
+    @media (max-width:640px){body{padding:14px}.header{padding:20px}.header h1{font-size:22px}.content{padding:20px}.title{font-size:24px}.article-body{font-size:15px}}
   </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
     <a href="javascript:history.back()" class="back-link">← العودة</a>
-    <h1>📄 قراءة المقال</h1>
+    <h1>قراءة المقال</h1>
   </div>
   <div id="article-content">
     <div class="loading">جاري تحميل المقال...</div>
@@ -40,59 +41,64 @@
 </div>
 
 <script>
-// Supabase configuration
 const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
 
 async function loadArticle() {
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get('id');
   if (!id) {
-    document.getElementById('article-content').innerHTML = '<div class="error">❌ No article ID provided.</div>';
+    document.getElementById('article-content').innerHTML = '<div class="error">No article ID provided.</div>';
     return;
   }
   try {
-    const { data, error } = await db
-      .from('posts')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await db.from('posts').select('*').eq('id', id).single();
     if (error) throw error;
     if (!data) throw new Error('Article not found');
+
     const post = data;
-    
-    // تحديد نوع الوسائط (صورة أو فيديو أو رمز)
     let mediaHtml = '';
+
     if (post.url && (post.url.match(/\.(mp4|webm)$/i) || post.url.includes('/storage/v1/object/public/videos/'))) {
-      mediaHtml = `<div style="text-align:center; margin:10px 0;"><video src="${post.url}" controls style="max-width:100%; border-radius:8px;"></video></div>`;
+      mediaHtml = `<div style="text-align:center; margin:10px 0;"><video src="${post.url}" controls style="max-width:100%; border-radius:18px;"></video></div>`;
     } else if (post.url && (post.url.includes('youtube.com/watch') || post.url.includes('youtu.be'))) {
       const videoId = post.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
       if (videoId) {
-        mediaHtml = `<div style="text-align:center; margin:10px 0;"><iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId[1]}" frameborder="0" allowfullscreen></iframe></div>`;
-      } else {
-        mediaHtml = `<img class="article-img" src="${post.icon || ''}" alt="${escapeHtml(post.title)}">`;
+        mediaHtml = `<div style="text-align:center; margin:10px 0;"><iframe width="100%" height="420" src="https://www.youtube.com/embed/${videoId[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+      } else if (post.icon) {
+        mediaHtml = `<img class="article-img" src="${post.icon}" alt="${escapeHtml(post.title)}">`;
       }
     } else if (post.icon && (post.icon.startsWith('data:') || post.icon.startsWith('http'))) {
       mediaHtml = `<img class="article-img" src="${post.icon}" alt="${escapeHtml(post.title)}">`;
     } else {
       mediaHtml = `<div class="article-emoji">${post.icon || '📄'}</div>`;
     }
-    
-    const contentHtml = post.content ? post.content.replace(/\n/g, '<br>') : (post.description || 'لا يوجد محتوى.');
+
+    const contentHtml = post.content ? escapeHtml(post.content).replace(/\n/g, '<br>') : escapeHtml(post.description || 'لا يوجد محتوى.');
     const metaHtml = `
       <div class="meta">
-        🏷️ ${escapeHtml(post.tag || post.room)} &nbsp;|&nbsp;
-        📅 ${new Date(post.created_at || Date.now()).toLocaleDateString()}
+        🏷️ ${escapeHtml(post.tag || post.room || 'post')} &nbsp;|&nbsp;
+        📅 ${new Date(post.created_at || Date.now()).toLocaleDateString('ar-EG')}
         ${post.user_email ? ` &nbsp;|&nbsp; ✍️ ${escapeHtml(post.user_email)}` : ''}
       </div>
     `;
-    
+
     let extraLink = '';
-    if (post.url && !post.url.includes('youtube.com') && !post.url.match(/\.(mp4|webm)$/i)) {
-      extraLink = `<div style="margin-top:20px; text-align:center;"><a href="${post.url}" target="_blank" style="background:#9fb000;color:#000;padding:8px 16px;border-radius:8px;text-decoration:none;">🔗 رابط إضافي</a></div>`;
+    if (post.url && !post.url.includes('youtube.com') && !post.url.includes('youtu.be') && !post.url.match(/\.(mp4|webm)$/i)) {
+      extraLink = `<div style="margin-top:20px; text-align:center;"><a href="${post.url}" target="_blank" style="background:#7de9ff;color:#04111d;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700;">رابط إضافي</a></div>`;
     }
-    
+
     document.getElementById('article-content').innerHTML = `
       ${mediaHtml}
       <div class="content">
@@ -104,18 +110,8 @@ async function loadArticle() {
     `;
   } catch (err) {
     console.error(err);
-    document.getElementById('article-content').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+    document.getElementById('article-content').innerHTML = `<div class="error">${escapeHtml(err.message || 'Unknown error')}</div>`;
   }
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
 }
 
 loadArticle();
