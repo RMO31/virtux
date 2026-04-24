@@ -2540,6 +2540,23 @@ let tickerPosition = 0;
 let tickerContainerWidth = 0;
 let tickerHalfWidth = 0;
 const TICKER_SPEED = 1.2;
+// حفظ البيانات الخام للـ ticker لإعادة البناء عند تغيير اللغة
+window._tickerRawData = { news: [], live: [], videos: [] };
+
+function buildTickerItems() {
+  const isEN = window._siteLanguage === 'en';
+  const { news, live, videos } = window._tickerRawData;
+  let items = [];
+  for (const p of news)   items.push({ text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
+  for (const p of live) {
+    const t = (p.tag||'').toLowerCase();
+    const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? (isEN ? '⏰ Soon' : '⏰ قريباً') : '📡';
+    items.push({ text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
+  }
+  for (const p of videos) items.push({ text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
+  tickerItems = items.length ? items : [{ text: isEN ? '🎮 Welcome to Virtux' : '🎮 مرحباً في Virtux', url: null }];
+}
+
 async function loadTicker() {
   try {
     const [newsRes, liveRes, vidRes] = await Promise.all([
@@ -2547,20 +2564,19 @@ async function loadTicker() {
       db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
       db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8)
     ]);
-    let items = [];
-    for (const p of (newsRes.data||[])) items.push({ text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
-    for (const p of (liveRes.data||[])) {
-      const t = (p.tag||'').toLowerCase();
-      const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? '⏰ قريباً' : '📡';
-      items.push({ text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
-    }
-    for (const p of (vidRes.data||[])) items.push({ text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
-    tickerItems = items.length ? items : [{ text: '🎮 مرحباً في Virtux', url: null }];
+    window._tickerRawData = {
+      news:   newsRes.data  || [],
+      live:   liveRes.data  || [],
+      videos: vidRes.data   || []
+    };
   } catch(e) {
-    tickerItems = [{ text: '🎮 مرحباً في Virtux', url: null }];
+    window._tickerRawData = { news: [], live: [], videos: [] };
   }
+  buildTickerItems();
   buildTickerTrack();
 }
+window.loadTicker = loadTicker;
+window.rebuildTicker = function() { buildTickerItems(); buildTickerTrack(); };
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
@@ -3230,6 +3246,7 @@ window.setLang = function(lang) {
     if (arBtn) { arBtn.style.background='transparent'; arBtn.style.color='#e01010'; }
   }
   applyTranslations();
+  if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
   if (window.allPosts) {
     Object.keys(window.allPosts).forEach(room => {
       const el = document.getElementById('grid-' + room);
