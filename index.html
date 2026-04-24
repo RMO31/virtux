@@ -2968,16 +2968,16 @@ function buildTickerItems() {
   const { news, live, videos } = window._tickerRaw;
   let items = [];
   for (const p of news)
-    items.push({ text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
+    items.push({ prefix: '📢 ', rawTitle: (p.title || ''), text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
   for (const p of live) {
     const t = (p.tag||'').toLowerCase();
     const icon = t.includes('live') ? '🔴 LIVE'
                : t.includes('pre')  ? (isEN ? '⏰ Soon' : '⏰ قريباً')
                : '📡';
-    items.push({ text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
+    items.push({ prefix: icon + ': ', rawTitle: (p.title || ''), text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
   }
   for (const p of videos)
-    items.push({ text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
+    items.push({ prefix: '🎬 ', rawTitle: (p.title || ''), text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
   tickerItems = items.length
     ? items
     : [{ text: isEN ? '🎮 Welcome to Virtux' : '🎮 مرحباً في Virtux', url: null }];
@@ -3012,10 +3012,18 @@ function buildTickerTrack() {
   [...tickerItems, ...tickerItems].forEach(item => {
     const span = document.createElement('span');
     span.className = 'ticker-item';
+    if (item.rawTitle) {
+      span.dataset.rawTitle = item.rawTitle;
+      span.dataset.prefix = item.prefix || '';
+    }
     if (item.url) {
       const a = document.createElement('a');
       a.href = item.url; a.target = '_blank'; a.rel = 'noopener';
       a.textContent = item.text;
+      if (item.rawTitle) {
+        a.dataset.rawTitle = item.rawTitle;
+        a.dataset.prefix = item.prefix || '';
+      }
       span.appendChild(a);
     } else {
       span.textContent = item.text;
@@ -3645,7 +3653,11 @@ window._translateTitleBg = async function(title) {
     // تحديث العناوين في الصفحة إذا لا تزال إنجليزية
     if (window._siteLanguage === 'en') {
       document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title, .ticker-item, .ticker-item a').forEach(el => {
-        if (el.textContent === title) el.textContent = translated;
+        if (el.dataset?.rawTitle === title) {
+          el.textContent = (el.dataset.prefix || '') + translated;
+        } else if (el.textContent === title) {
+          el.textContent = translated;
+        }
       });
     }
   } catch(e) {}
