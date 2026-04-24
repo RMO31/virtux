@@ -2078,6 +2078,7 @@ window.openUserModal = function(room) {
     </div>`;
   } else {
     // generic
+    formHtml = `<div class="form-with-preview">
       <div>
         <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Description</label><input id="desc-${room}" style="${inputStyle}"></div>
@@ -2646,7 +2647,8 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
   try {
     let { data: vipUsers, error } = await db.from('profiles')
       .select('username, avatar_url, role, roles')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
     if (error) {
       console.warn('[Subscribers] خطأ بالاستعلام مع roles، تجريب بدونه:', error);
       const fb = await db.from('profiles').select('username, avatar_url, role').order('created_at',{ascending:false});
@@ -3859,7 +3861,7 @@ window.setLang = function(lang) {
       const el = document.getElementById('grid-' + room);
       if (el && window.allPosts[room]?.length) {
         el.innerHTML = '';
-        if (room === 'subscribers' || room === 'yt-channels') {
+        if (room === 'subscribers') {
           loadSubscribersWithVIP(el, window.allPosts[room] || [], window._subscribersRoleFilter || '');
         } else {
           renderRoomPosts(room);
@@ -4452,9 +4454,14 @@ function applyTranslations() {
       .not('url', 'is', null);
     if (!channels || !channels.length) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    // Shuffle and pick 3 random channels to process each load to avoid performance impact
+    const selected = channels.sort(() => 0.5 - Math.random()).slice(0, 3);
+    
+    // Delay the process slightly to not block initial render
+    setTimeout(async () => {
+      const today = new Date().toISOString().split('T')[0];
 
-    for (const ch of channels) {
+      for (const ch of selected) {
       if (!ch.url || !ch.url.includes('youtube.com/channel') && !ch.url.includes('youtube.com/@') && !ch.url.includes('youtube.com/c/')) continue;
 
       // تحقق من آخر fetch
@@ -4522,7 +4529,8 @@ function applyTranslations() {
           });
         }
       } catch(e) { /* قناة لا يمكن جلبها */ }
-    }
+      }
+    }, 3000);
   } catch(e) { /* خطأ عام */ }
 })();
 
