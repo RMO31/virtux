@@ -2132,6 +2132,30 @@ async function submitUser(room) {
         }
       } catch(e) {}
     }
+
+    // في highlights: لو العنوان ما زال فارغاً، نجرب استخراجه من Media URL قبل الحفظ
+    if ((!title || !desc) && room === 'highlights' && url) {
+      try {
+        var _meta = await fetchUrlMetadata(url);
+        if (_meta) {
+          if (!title && _meta.title) {
+            title = _meta.title;
+            if (titleEl) {
+              titleEl.value = _meta.title;
+              titleEl.dataset.autoFilled = 'true';
+            }
+          }
+          if (!desc && _meta.description) {
+            desc = _meta.description;
+            if (descEl) {
+              descEl.value = _meta.description;
+              descEl.dataset.autoFilled = 'true';
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
     var row = {
       title:       title || url || window.t('منشور', 'Post'),
       description: desc  || null,
