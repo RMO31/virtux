@@ -1574,6 +1574,7 @@ window.openUserModal = function(room) {
         <div style="margin-top:12px;"><label>Player / Game</label><input id="desc-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
         <div style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="url-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label style="color:#aaa;font-size:12px;">🔗 رابط خارجي (ريلز، يوتيوب، تيك توك، إنستغرام...)</label><input id="social-url-${room}" style="${inputStyle}" placeholder="https://youtube.com/shorts/... أو instagram.com/reel/..."></div>
         ${fileInputHtml('image/*,video/*', 'أو ارفع ملف من الحاسوب (صورة أو فيديو)', 'media')}
         <input type="hidden" id="icon-${room}">
       </div>
@@ -1725,6 +1726,11 @@ async function submitUser(room) {
         }
       } catch(e) {}
     }
+    var socialUrl = null;
+    if (room === 'highlights') {
+      var socialUrlEl = document.getElementById('social-url-' + room);
+      socialUrl = socialUrlEl ? (socialUrlEl.value.trim() || null) : null;
+    }
     var row = {
       title:       title || url || window.t('منشور', 'Post'),
       description: desc  || null,
@@ -1732,7 +1738,7 @@ async function submitUser(room) {
       url:         finalUrl,
       tag:         tag,
       room:        room,
-      content:     null,
+      content:     socialUrl || null,
       user_id:     window.currentUserId || null
     };
     var dbr = currentEditPost
@@ -1800,8 +1806,8 @@ async function loadPage(room) {
     if (room === 'live' || room === 'yt-videos') {
       // جلب فيديوهات القنوات المضافة (tag يبدأ بـ auto:)
       const [vipRes, normalRes] = await Promise.all([
-        db.from('posts').select('*').eq('room', room).like('tag', 'auto:%').order('id', {ascending:false}).limit(20),
-        db.from('posts').select('*').eq('room', room).not('tag','like','auto:%').order('id', {ascending:false}).limit(30)
+        db.from('posts').select('*').eq('room', room).like('tag', 'auto:%').order('id', {ascending:false}).limit(50),
+        db.from('posts').select('*').eq('room', room).not('tag','like','auto:%').order('id', {ascending:false}).limit(100)
       ]);
       data = [...(vipRes.data||[]), ...(normalRes.data||[])];
       error = vipRes.error || normalRes.error;
@@ -1810,6 +1816,15 @@ async function loadPage(room) {
     }
     if (error) throw error;
     allPosts[room] = data || [];
+    // في غرفة highlights نجلب بيانات أصحاب المنشورات
+    if (room === 'highlights' && data && data.length) {
+      const uids = [...new Set(data.filter(p => p.user_id).map(p => p.user_id))];
+      if (uids.length) {
+        const { data: profiles } = await db.from('profiles').select('id, username, avatar_url').in('id', uids);
+        window._highlightsProfiles = {};
+        (profiles || []).forEach(pr => { window._highlightsProfiles[pr.id] = pr; });
+      }
+    }
     renderCards(allPosts[room], `grid-${room}`, room);
   } catch(e) { el.innerHTML = '<div class="empty-state">فشل التحميل</div>'; }
 }
@@ -1962,7 +1977,29 @@ function renderCards(posts, gridId, room) {
       }
       dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
     }
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body"><div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;">${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+    // معلومات صاحب المنشور للـ highlights
+    let authorHtml = '';
+    if (room === 'highlights' && p.user_id) {
+      const pr = (window._highlightsProfiles || {})[p.user_id];
+      const authorName = pr?.username || '';
+      const authorAvatar = pr?.avatar_url || '';
+      if (authorName || authorAvatar) {
+        const avatarEl = authorAvatar
+          ? `<img src="${authorAvatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`
+          : `<span style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">👤</span>`;
+        authorHtml = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">${avatarEl}<span style="font-size:11px;color:#888;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">@${escapeHtml(authorName)}</span></div>`;
+      }
+    }
+    // زر الرابط الاجتماعي في highlights
+    let socialLinkBtn = '';
+    if (room === 'highlights' && p.content && (p.content.startsWith('http://') || p.content.startsWith('https://'))) {
+      const socialDomain = (() => {
+        try { const u = new URL(p.content); return u.hostname.replace('www.',''); } catch(e) { return ''; }
+      })();
+      const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
+      socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
+    }
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
