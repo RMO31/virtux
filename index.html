@@ -2188,6 +2188,8 @@ function showUPMError(msg) {
 // سأقوم بإدراج الاختصارات الضرورية للسياق
 
 const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
+const ROOM_PAGE_SIZE = { 'yt-videos': 40 };
+window.roomViewState = window.roomViewState || {};
 const roomLabels = {
   live: '🔴 مباشر Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
   'gaming-news': '📰 أخبار الألعاب', 'youtube-news': '▶️ أخبار يوتيوب', 'yt-channels': '📺 Youtube Channels',
@@ -2212,7 +2214,7 @@ rooms.forEach(room => {
   else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">تسجيل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">عالمي</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
   else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
   else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">الكل</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button></div>`;
-  pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${buttonsHtml}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
+  pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${buttonsHtml}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div><div id="pagination-${room}" style="margin-top:18px;display:none;"></div>`;
   mainContainer.appendChild(pageDiv);
 });
 const contactPage = document.createElement('div');
@@ -2250,7 +2252,7 @@ async function loadPage(room) {
         (profiles || []).forEach(pr => { window._highlightsProfiles[pr.id] = pr; });
       }
     }
-    renderCards(allPosts[room], `grid-${room}`, room);
+    renderRoomPosts(room);
   } catch(e) { el.innerHTML = '<div class="empty-state">فشل التحميل</div>'; }
 }
 
@@ -2267,13 +2269,19 @@ async function deletePost(id, room) {
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
+  const paginationEl = document.getElementById(`pagination-${room}`);
   // ⚠️ غرفة Subscribers تُحمّل المستخدمين من جدول profiles حتى لو لم توجد منشورات
   if (room === 'subscribers') {
     el.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">⏳ جارٍ تحميل المشتركين...</div>';
+    if (paginationEl) { paginationEl.innerHTML = ''; paginationEl.style.display = 'none'; }
     loadSubscribersWithVIP(el, posts || []);
     return;
   }
-  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
+  if (!posts || !posts.length) {
+    el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>';
+    if (paginationEl) { paginationEl.innerHTML = ''; paginationEl.style.display = 'none'; }
+    return;
+  }
   if (room === 'yt-channels') {
     el.innerHTML = `<div class="channels-grid">${posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
@@ -2283,10 +2291,24 @@ function renderCards(posts, gridId, room) {
       if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
       return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div></div>${link}</div>`;
     }).join('')}</div>`;
+    if (paginationEl) { paginationEl.innerHTML = ''; paginationEl.style.display = 'none'; }
     return;
   }
+  const pageSize = ROOM_PAGE_SIZE[room] || 0;
+  let visiblePosts = posts;
+  if (pageSize > 0) {
+    const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
+    const currentPage = Math.min(Math.max(window.roomViewState[room]?.page || 1, 1), totalPages);
+    window.roomViewState[room] = { ...(window.roomViewState[room] || {}), page: currentPage };
+    const startIndex = (currentPage - 1) * pageSize;
+    visiblePosts = posts.slice(startIndex, startIndex + pageSize);
+    renderRoomPagination(room, posts.length, currentPage, totalPages);
+  } else if (paginationEl) {
+    paginationEl.innerHTML = '';
+    paginationEl.style.display = 'none';
+  }
   const canViewVIP = userHasAnyRole(['vip','member','admin','moderator','youtuber_vip']);
-  el.innerHTML = posts.map(p => {
+  el.innerHTML = visiblePosts.map(p => {
     let media = '';
     const isRestricted = isVIP(p) && !canViewVIP;
     if (isRestricted) {
@@ -2428,6 +2450,62 @@ function renderCards(posts, gridId, room) {
   }).join('');
 }
 
+function getFilteredPostsForRoom(room) {
+  const all = window.allPosts?.[room] || [];
+  const filterTag = window.roomViewState?.[room]?.filterTag || '';
+  return filterTag ? all.filter(p => p.tag === filterTag) : all;
+}
+
+function renderRoomPosts(room) {
+  renderCards(getFilteredPostsForRoom(room), `grid-${room}`, room);
+}
+
+function renderRoomPagination(room, totalItems, currentPage, totalPages) {
+  const el = document.getElementById(`pagination-${room}`);
+  if (!el) return;
+  if (!ROOM_PAGE_SIZE[room] || totalItems <= ROOM_PAGE_SIZE[room]) {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
+
+  const isEN = window._siteLanguage === 'en';
+  const startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, startPage + 4);
+  let buttons = '';
+
+  for (let i = startPage; i <= endPage; i++) {
+    const activeStyle = i === currentPage
+      ? 'background:#e01010;color:#000;border-color:#e01010;font-weight:800;'
+      : 'background:transparent;color:#ddd;border-color:#444;';
+    buttons += `<button type="button" onclick="window.changeRoomPage('${room}', ${i})" style="min-width:36px;padding:6px 10px;border:1px solid ${i === currentPage ? '#e01010' : '#444'};border-radius:8px;cursor:pointer;${activeStyle}">${i}</button>`;
+  }
+
+  el.style.display = 'flex';
+  el.style.justifyContent = 'center';
+  el.style.alignItems = 'center';
+  el.style.gap = '8px';
+  el.style.flexWrap = 'wrap';
+  el.innerHTML = `
+    <button type="button" onclick="window.changeRoomPage('${room}', ${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''} style="padding:6px 12px;border:1px solid #444;border-radius:8px;background:transparent;color:${currentPage <= 1 ? '#666' : '#ddd'};cursor:${currentPage <= 1 ? 'default' : 'pointer'};">${isEN ? 'Prev' : 'السابق'}</button>
+    ${buttons}
+    <button type="button" onclick="window.changeRoomPage('${room}', ${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''} style="padding:6px 12px;border:1px solid #444;border-radius:8px;background:transparent;color:${currentPage >= totalPages ? '#666' : '#ddd'};cursor:${currentPage >= totalPages ? 'default' : 'pointer'};">${isEN ? 'Next' : 'التالي'}</button>
+    <span style="font-size:12px;color:#888;margin-inline-start:8px;">${isEN ? `Page ${currentPage} of ${totalPages}` : `الصفحة ${currentPage} من ${totalPages}`}</span>
+  `;
+}
+
+window.changeRoomPage = function(room, page) {
+  const pageSize = ROOM_PAGE_SIZE[room];
+  if (!pageSize) return;
+  const posts = getFilteredPostsForRoom(room);
+  const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
+  const nextPage = Math.min(Math.max(page, 1), totalPages);
+  window.roomViewState[room] = { ...(window.roomViewState[room] || {}), page: nextPage };
+  renderRoomPosts(room);
+  const pageEl = document.getElementById(`page-${room}`);
+  if (pageEl) pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 async function loadSubscribersWithVIP(el, posts, roleFilter) {
   let groupedHtml = '';
   try {
@@ -2516,7 +2594,14 @@ window.filterSubscribers = function(roleKey, btn) {
   loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
 };
 
-function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
+function filterPosts(room, tag, btn) {
+  if(btn && btn.closest('.filter-bar')){
+    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  window.roomViewState[room] = { ...(window.roomViewState[room] || {}), filterTag: tag || '', page: 1 };
+  renderRoomPosts(room);
+}
 window._currentPage = 'home';
 function showPage(id) {
   document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
@@ -3692,7 +3777,7 @@ window.setLang = function(lang) {
         if (room === 'subscribers' || room === 'yt-channels') {
           loadSubscribersWithVIP(el, window.allPosts[room] || [], window._subscribersRoleFilter || '');
         } else {
-          renderCards(window.allPosts[room], 'grid-' + room, room);
+          renderRoomPosts(room);
         }
       }
     });
