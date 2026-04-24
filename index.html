@@ -1364,6 +1364,54 @@ function renderLiveYouTubePreview(info, errorMessage) {
   thumb.innerHTML = `${info.thumbnail ? `<img src="${info.thumbnail}" style="max-width:100%;border-radius:7px;margin-bottom:5px;">` : ''}<div style="font-size:12px;color:#e01010;">${escapeHtml(info.title || '')}</div>${previewDesc ? `<div style="font-size:11px;color:#aaa;margin-top:4px;line-height:1.4;">${previewDesc}</div>` : ''}`;
 }
 
+async function fetchUrlMetadata(url) {
+  const cleaned = cleanUrl(url);
+  if (!cleaned) return null;
+
+  if (isValidYouTubeUrl(cleaned)) {
+    const info = await fetchYouTubeVideoInfo(cleaned);
+    if (!info) return null;
+    return {
+      title: info.title || '',
+      description: getYouTubeDescription(info),
+      source: 'youtube',
+      thumbnail: info.thumbnail || ''
+    };
+  }
+
+  try {
+    const normalizedUrl = /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(normalizedUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const html = data.contents || '';
+    if (!html) return null;
+
+    const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"]+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"]+)["'][^>]+property=["']og:title["']/i);
+    const twitterTitle = html.match(/<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"]+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"]+)["'][^>]+name=["']twitter:title["']/i);
+    const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const rawTitle = ogTitle?.[1] || twitterTitle?.[1] || titleTag?.[1] || '';
+    const rawDescription = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"]+)["']/i)?.[1]
+      || html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"]+)["']/i)?.[1]
+      || '';
+    const title = rawTitle.trim().replace(/\s+/g, ' ');
+    const description = rawDescription.trim().replace(/\s+/g, ' ');
+
+    if (!title) return null;
+    return {
+      title,
+      description,
+      source: 'generic'
+    };
+  } catch(e) {
+    return null;
+  }
+}
+
 function scheduleRoomTask(room, fn) {
   clearTimeout(ytAutofillTimers[room]);
   ytAutofillTimers[room] = setTimeout(fn, 350);
@@ -1399,6 +1447,50 @@ function bindYouTubeVideoUrlAutofill(room) {
   ['input', 'change', 'blur'].forEach(evt => urlInput.addEventListener(evt, schedule));
   urlInput.addEventListener('paste', () => setTimeout(schedule, 0));
   urlInput.dataset.ytBound = 'true';
+}
+
+function bindHighlightsMediaUrlAutofill(room) {
+  const urlInput = document.getElementById(`url-${room}`);
+  const titleInput = document.getElementById(`title-${room}`);
+  const descInput = document.getElementById(`desc-${room}`);
+  const statusEl = document.getElementById(`fetch-status-${room}`);
+  if (!urlInput || urlInput.dataset.metaBound === 'true') return;
+
+  bindAutofillAwareInput(titleInput);
+  bindAutofillAwareInput(descInput);
+
+  const fetchAndApply = async () => {
+    const url = cleanUrl(urlInput.value);
+    if (!statusEl) return;
+    if (!url) {
+      statusEl.textContent = '';
+      return;
+    }
+    if (!/^https?:\/\//i.test(url) && !/^[\w.-]+\.[a-z]{2,}/i.test(url)) {
+      statusEl.textContent = '';
+      return;
+    }
+
+    statusEl.textContent = '⏳ جاري قراءة الرابط...';
+    statusEl.style.color = '#aaa';
+
+    const meta = await fetchUrlMetadata(url);
+    if (!meta) {
+      statusEl.textContent = '⚠️ تعذر استخراج عنوان من الرابط';
+      statusEl.style.color = '#ff6b6b';
+      return;
+    }
+
+    setInputValueFromYouTube(titleInput, meta.title || '');
+    if (meta.description) setInputValueFromYouTube(descInput, meta.description);
+    statusEl.textContent = meta.source === 'youtube' ? '✅ تم جلب عنوان الفيديو من Media URL' : '✅ تم جلب عنوان الرابط من Media URL';
+    statusEl.style.color = '#4ade80';
+  };
+
+  const schedule = () => scheduleRoomTask(room, fetchAndApply);
+  ['input', 'change', 'blur'].forEach(evt => urlInput.addEventListener(evt, schedule));
+  urlInput.addEventListener('paste', () => setTimeout(schedule, 0));
+  urlInput.dataset.metaBound = 'true';
 }
 
 function getDummyEmail(username) {
@@ -1879,17 +1971,11 @@ window.openUserModal = function(room) {
   } else if (room === 'highlights') {
     formHtml = `<div class="form-with-preview">
       <div>
-        <div style="margin-bottom:4px;"><label style="color:#aaa;font-size:12px;">🔗 رابط خارجي (يوتيوب، إنستغرام، تيك توك...)</label>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input id="social-url-${room}" style="${inputStyle};flex:1;" placeholder="https://youtube.com/shorts/... أو reel/...">
-            <button type="button" id="fetch-title-btn-${room}" style="background:#e01010;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;">⬇️ جلب العنوان</button>
-          </div>
-          <div id="fetch-status-${room}" style="font-size:11px;color:#aaa;margin-top:3px;min-height:16px;"></div>
-        </div>
         <div style="margin-top:10px;"><label>Title</label><input id="title-${room}" style="${inputStyle}" placeholder="أو اكتب العنوان يدوياً"></div>
         <div style="margin-top:12px;"><label>Player / Game</label><input id="desc-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
         <div style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="url-${room}" style="${inputStyle}"></div>
+        <div id="fetch-status-${room}" style="font-size:11px;color:#aaa;margin-top:4px;min-height:16px;"></div>
         ${fileInputHtml('image/*,video/*', 'أو ارفع ملف من الحاسوب (صورة أو فيديو)', 'media')}
         <input type="hidden" id="icon-${room}">
       </div>
@@ -1947,56 +2033,9 @@ window.openUserModal = function(room) {
     bindLiveUrlAutofill();
   }
 
-  // جلب عنوان الفيديو من رابط يوتيوب/تيك توك/إنستغرام في Highlights
+  // جلب عنوان الرابط تلقائياً من Media URL في Highlights
   if (room === 'highlights') {
-    const fetchBtn = document.getElementById(`fetch-title-btn-${room}`);
-    const socialInput = document.getElementById(`social-url-${room}`);
-    const statusEl = document.getElementById(`fetch-status-${room}`);
-    const titleInput = document.getElementById(`title-${room}`);
-    if (fetchBtn && socialInput) {
-      fetchBtn.addEventListener('click', async () => {
-        const url = socialInput.value.trim();
-        if (!url) { statusEl.textContent = '⚠️ أدخل رابطاً أولاً'; return; }
-        fetchBtn.disabled = true;
-        fetchBtn.textContent = '⏳ جاري الجلب...';
-        statusEl.textContent = '';
-        try {
-          // نستخرج YouTube video ID ونجلب العنوان عبر oEmbed
-          const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})/);
-          if (ytMatch) {
-            const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytMatch[1]}&format=json`;
-            const res = await fetch(oembedUrl);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.title) {
-                titleInput.value = data.title;
-                statusEl.textContent = '✅ تم جلب العنوان من يوتيوب';
-                statusEl.style.color = '#4ade80';
-              }
-            } else throw new Error('YouTube oEmbed failed');
-          } else {
-            // محاولة جلب عنوان من meta tags عبر allorigins proxy
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-            const res = await fetch(proxyUrl);
-            if (res.ok) {
-              const data = await res.json();
-              const titleMatch = data.contents?.match(/<title[^>]*>([^<]+)<\/title>/i);
-              if (titleMatch) {
-                titleInput.value = titleMatch[1].trim().replace(/\s+/g, ' ');
-                statusEl.textContent = '✅ تم جلب العنوان';
-                statusEl.style.color = '#4ade80';
-              } else throw new Error('No title found');
-            } else throw new Error('Proxy failed');
-          }
-        } catch(e) {
-          statusEl.textContent = '❌ تعذر جلب العنوان — اكتبه يدوياً';
-          statusEl.style.color = '#ff6b6b';
-        } finally {
-          fetchBtn.disabled = false;
-          fetchBtn.textContent = '⬇️ جلب العنوان';
-        }
-      });
-    }
+    bindHighlightsMediaUrlAutofill(room);
   }
 
   // معاينة صورة مصغرة للفيديو (Highlights)
@@ -2093,11 +2132,6 @@ async function submitUser(room) {
         }
       } catch(e) {}
     }
-    var socialUrl = null;
-    if (room === 'highlights') {
-      var socialUrlEl = document.getElementById('social-url-' + room);
-      socialUrl = socialUrlEl ? (socialUrlEl.value.trim() || null) : null;
-    }
     var row = {
       title:       title || url || window.t('منشور', 'Post'),
       description: desc  || null,
@@ -2105,7 +2139,7 @@ async function submitUser(room) {
       url:         finalUrl,
       tag:         tag,
       room:        room,
-      content:     socialUrl || null,
+      content:     null,
       user_id:     window.currentUserId || null
     };
     var dbr = currentEditPost
