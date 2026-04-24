@@ -557,9 +557,10 @@
     .subscriber-card .channel-avatar { width:76px; height:76px; margin-bottom:10px; }
     .subscriber-card .channel-name { font-size: 20px; line-height:1.2; margin-bottom:6px; word-break:break-word; }
     .subscriber-badge {
-      font-size: 9px; border-radius: 50px; padding: 2px 10px;
-      font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
-      display: inline-flex; align-items: center; justify-content: center; min-height: 20px;
+      font-size: 10px; border-radius: 999px; padding: 4px 10px;
+      font-weight: 800; letter-spacing: .35px; text-transform: uppercase;
+      display: inline-flex; align-items: center; justify-content: center; min-height: 24px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 22px rgba(0,0,0,.18);
     }
     .channel-avatar {
       width: 78px; height: 78px;
@@ -950,7 +951,7 @@
         <div style="display:flex; align-items:center; gap:8px;">
           <img id="user-avatar-img" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#2a2a3a; display:none;">
           <span id="user-name" style="font-size:13px;color:#e01010;"></span>
-          <span id="user-role-badge" style="display:none;align-items:center;gap:3px;flex-wrap:nowrap;max-width:200px;overflow:hidden;"></span>
+<span id="user-role-badge" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;max-width:420px;overflow:visible;"></span>
         </div>
         <button id="profileButton" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
         <button id="logoutButton" onclick="window.doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
@@ -1623,6 +1624,73 @@ window.userHasRole = userHasRole;
 window.userHasAnyRole = userHasAnyRole;
 window.normalizeRoles = normalizeRoles;
 
+const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','donor','guest','user'];
+const ROLE_BADGE_META = {
+  admin:        { icon:'🛡️', short:'ADMIN',      fg:'#ffb4b4', bg:'linear-gradient(135deg,#4a0808,#190202)', border:'#ff4d4d' },
+  moderator:    { icon:'🛠️', short:'MOD',        fg:'#ffd5b1', bg:'linear-gradient(135deg,#4a1808,#1d0902)', border:'#ff7a2f' },
+  youtuber_vip: { icon:'🔥', short:'YT VIP',     fg:'#ffd2a8', bg:'linear-gradient(135deg,#4a1400,#241006)', border:'#ff8a2a' },
+  youtuber:     { icon:'📺', short:'YT',         fg:'#ffd6d6', bg:'linear-gradient(135deg,#3d0f0f,#160505)', border:'#ff5555' },
+  vip:          { icon:'👑', short:'VIP',        fg:'#ffe6a6', bg:'linear-gradient(135deg,#4a3008,#1f1202)', border:'#ffb300' },
+  member:       { icon:'⭐', short:'MEMBER',     fg:'#fff0c7', bg:'linear-gradient(135deg,#4a2508,#1a0c02)', border:'#ffc14d' },
+  donor:        { icon:'💎', short:'DONOR',      fg:'#b9f4ff', bg:'linear-gradient(135deg,#062a34,#031319)', border:'#34d8ff' },
+  guest:        { icon:'🎫', short:'GUEST',      fg:'#ddd',    bg:'linear-gradient(135deg,#303030,#151515)', border:'#7d7d7d' },
+  user:         { icon:'👤', short:'USER',       fg:'#bbb',    bg:'linear-gradient(135deg,#242424,#101010)', border:'#555' }
+};
+
+function sortRolesForDisplay(roles) {
+  return [...(roles || [])].sort((a, b) => {
+    const ai = ROLE_PRIORITY.indexOf(a);
+    const bi = ROLE_PRIORITY.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+}
+
+function canModeratePosts() {
+  return userHasAnyRole(['admin', 'moderator']);
+}
+
+function canEditPostItem(post) {
+  const currentUid = window.currentUserId;
+  return canModeratePosts() || (!!currentUid && !!post?.user_id && post.user_id === currentUid);
+}
+
+function normalizeTagValue(tag) {
+  const raw = String(tag || '').trim();
+  const normalized = raw.toLowerCase();
+  if (!raw) return '';
+  if (normalized === 'vip') return 'vip';
+  if (normalized === 'video') return 'video';
+  if (normalized === 'photo') return 'photo';
+  if (normalized === 'pro') return 'pro';
+  if (normalized === 'tournament') return 'tournament';
+  if (normalized === 'register' || raw === 'تسجيل') return 'register';
+  if (normalized === 'global' || raw === 'عالمي') return 'global';
+  if (normalized === 'live now' || raw === 'مباشر Now') return 'live_now';
+  if (normalized === 'pre s' || normalized === 'soon') return 'soon';
+  return normalized;
+}
+
+function postMatchesFilter(post, filterTag) {
+  if (!filterTag) return true;
+  return normalizeTagValue(post?.tag) === normalizeTagValue(filterTag);
+}
+
+function translatePostTag(tag) {
+  const key = normalizeTagValue(tag);
+  const map = {
+    vip: 'VIP',
+    video: 'Video',
+    photo: 'Photo',
+    pro: 'Pro',
+    tournament: 'Tournament',
+    register: 'Register',
+    global: 'Global',
+    live_now: 'Live Now',
+    soon: 'Soon'
+  };
+  return map[key] || String(tag || '');
+}
+
 async function checkRoleExpiration(profile) {
   if (!profile || !profile.expiry_date || !window.currentUserId) return;
   const expiry = new Date(profile.expiry_date);
@@ -1923,6 +1991,7 @@ window.openUserModal = function(room) {
   currentEditRoom = room;
   currentRoomFor = room;
   currentMediaFile = null;
+  currentThumbFile = null;
   currentPreviewDataUrl = null;
   const roomTitles = { 
     live: window.t('🔴 مباشر', '🔴 Live'), 
@@ -2053,6 +2122,38 @@ window.openUserModal = function(room) {
   document.getElementById('upm-modal').classList.add('active');
 };
 
+window.openEditPostModal = function(postId, room) {
+  const post = (window.allPosts?.[room] || []).find(p => String(p.id) === String(postId));
+  if (!post) return;
+  if (!canEditPostItem(post)) {
+    alert(window.t('⛔ لا تملك صلاحية تعديل هذا المنشور', '⛔ You do not have permission to edit this post'));
+    return;
+  }
+
+  window.openUserModal(room);
+  currentEditPost = post;
+  currentEditRoom = room;
+
+  setTimeout(() => {
+    const titleEl = document.getElementById(`title-${room}`);
+    const descEl = document.getElementById(`desc-${room}`);
+    const urlEl = document.getElementById(`url-${room}`);
+    const tagEl = document.getElementById(`tag-${room}`);
+    if (titleEl) titleEl.value = post.title || '';
+    if (descEl) descEl.value = post.description || '';
+    if (urlEl) urlEl.value = post.url || '';
+    if (tagEl && post.tag && !String(post.tag).startsWith('auto:')) tagEl.value = post.tag;
+
+    const okEl = document.getElementById('upm-ok');
+    const errEl = document.getElementById('upm-err');
+    if (okEl) okEl.style.display = 'none';
+    if (errEl) errEl.style.display = 'none';
+
+    const submitBtn = document.getElementById('upm-submit');
+    if (submitBtn) submitBtn.textContent = window.t('💾 حفظ التعديل', '💾 Save Changes');
+  }, 0);
+};
+
 async function submitUser(room) {
   var titleEl = document.getElementById('title-' + room);
   var descEl  = document.getElementById('desc-'  + room);
@@ -2088,9 +2189,9 @@ async function submitUser(room) {
   if (errEl) errEl.style.display = 'none';
 
   function done(ok, msg) {
-    if (btn) { btn.disabled = false;  btn.textContent = '➕ Publish'; }
+    if (btn) { btn.disabled = false;  btn.textContent = currentEditPost ? window.t('💾 حفظ التعديل', '💾 Save Changes') : '➕ Publish'; }
     if (ok) {
-      if (okEl) { okEl.textContent = '✅ تم النشر!'; okEl.style.display = 'block'; }
+      if (okEl) { okEl.textContent = currentEditPost ? window.t('✅ تم تحديث المنشور!', '✅ Post updated!') : '✅ تم النشر!'; okEl.style.display = 'block'; }
       currentEditPost = null;
       loadPage(room);
       setTimeout(function() {
@@ -2180,7 +2281,7 @@ function showUPMError(msg) {
   const errEl = document.getElementById('upm-err');
   if (errEl) { errEl.textContent = '❌ ' + msg; errEl.style.display = 'block'; }
   const btn = document.getElementById('upm-submit');
-  if (btn) { btn.disabled = false;  btn.textContent = '➕ Publish'; }
+  if (btn) { btn.disabled = false;  btn.textContent = currentEditPost ? window.t('💾 حفظ التعديل', '💾 Save Changes') : '➕ Publish'; }
 }
 
 // ==================== باقي دوال الموقع (التكرار، تحميل المنشورات، المصادقة، إلخ) ====================
@@ -2259,6 +2360,11 @@ async function loadPage(room) {
 function isVIP(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
 
 async function deletePost(id, room) {
+  const post = (window.allPosts?.[room] || []).find(p => String(p.id) === String(id));
+  if (post && !canEditPostItem(post)) {
+    alert(window.t('⛔ لا تملك صلاحية حذف هذا المنشور', '⛔ You do not have permission to delete this post'));
+    return;
+  }
   if (!confirm('حذف هذا المنشور نهائياً؟')) return;
   try {
     const { error } = await db.from('posts').delete().eq('id', id);
@@ -2391,10 +2497,14 @@ function renderCards(posts, gridId, room) {
         registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
       }
     }
-    // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
+    const canManageThisPost = canEditPostItem(p);
+    const editBtn = canManageThisPost
+      ? `<button onclick="window.openEditPostModal(${p.id},'${room}')" style="background:transparent;border:1px solid #e01010;color:#e01010;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" title="edit">✏️</button>`
+      : '';
+    // زر الحذف — يظهر لصاحب المنشور أو المشرف أو الأدمن
     const currentUid = window.currentUserId;
     const isOwner = currentUid && p.user_id && p.user_id === currentUid;
-    const deleteBtn = isOwner
+    const deleteBtn = (isOwner || canModeratePosts())
       ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
       : '';
     // تمييز فيديوهات قنوات YT VIP
@@ -2446,14 +2556,14 @@ function renderCards(posts, gridId, room) {
       const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
       socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
     }
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(window._siteLanguage === 'en' ? translatePostTag(p.tag) : (p.tag || ''))}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
 function getFilteredPostsForRoom(room) {
   const all = window.allPosts?.[room] || [];
   const filterTag = window.roomViewState?.[room]?.filterTag || '';
-  return filterTag ? all.filter(p => p.tag === filterTag) : all;
+  return filterTag ? all.filter(p => postMatchesFilter(p, filterTag)) : all;
 }
 
 function renderRoomPosts(room) {
@@ -2542,10 +2652,11 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
           ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
           : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
         // شارة واحدة فقط = الرتبة الأعلى للمستخدم
-        const badge = topRoleDef
-          ? `<span class="subscriber-badge" style="background:${topRoleDef.bg};color:${topRoleDef.color};border:1px solid ${topRoleDef.color};">${topRoleDef.short}</span>`
-          : '';
-        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
+        const badges = sortRolesForDisplay(normalizeRoles(u).filter(r => r !== 'user')).map(r => {
+          const meta = ROLE_BADGE_META[r] || { icon:'🏷️', short:r.toUpperCase(), fg:'#eee', bg:'linear-gradient(135deg,#2c2c2c,#121212)', border:'#666' };
+          return `<span class="subscriber-badge" style="display:inline-flex;align-items:center;gap:5px;background:${meta.bg};color:${meta.fg};border:1px solid ${meta.border};padding:4px 8px;border-radius:999px;"><span>${meta.icon}</span><span>${meta.short}</span></span>`;
+        }).join('');
+        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">${badges}</div></div></div>`;
       };
       ROLE_DEFS.forEach(def => {
         if (roleFilter && def.key !== roleFilter) return;
@@ -2657,22 +2768,11 @@ async function updateUIAfterAuth(sessionOverride) {
       userNameSpan.textContent = '👋 ' + displayName;
 
       // عرض كل الرولات كشارات متعددة
-      const roles = normalizeRoles(profile).filter(r => r !== 'user');
+      const roles = sortRolesForDisplay(normalizeRoles(profile).filter(r => r !== 'user'));
       if (roles.length) {
-        const colors = {
-          admin:        {bg:'#3d0f0f', fg:'#f55',    label:'ADMIN'},
-          moderator:    {bg:'#2a0000', fg:'#ff2222', label:'🛡️ MOD'},
-          youtuber_vip: {bg:'#1a0010', fg:'#ff6600', label:'🔥 YT VIP'},
-          youtuber:     {bg:'#3d0f0f', fg:'#f55',    label:'📺 YT'},
-          vip:          {bg:'#1a0000', fg:'#e01010', label:'👑 VIP'},
-          member:       {bg:'#0d0000', fg:'#cc2222', label:'⭐ MEMBER'},
-          donor:        {bg:'#001a22', fg:'#00ccff', label:'💎 DONOR'},
-          guest:        {bg:'#1a1a1a', fg:'#aaa',    label:'🛡️ GUEST'},
-          user:         {bg:'#111',    fg:'#888',    label:'USER'}
-        };
         roleBadge.innerHTML = roles.map(r => {
-          const c = colors[r] || {bg:'#2a2a3a', fg:'#e01010', label:r.toUpperCase()};
-          return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:2px 6px;margin-right:3px;font-size:11px;">${c.label}</span>`;
+          const c = ROLE_BADGE_META[r] || { icon:'🏷️', short:r.toUpperCase(), fg:'#ffd0d0', bg:'linear-gradient(135deg,#351414,#140707)', border:'#b44' };
+          return `<span style="display:inline-flex;align-items:center;gap:6px;background:${c.bg};color:${c.fg};border:1px solid ${c.border};border-radius:999px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 18px rgba(0,0,0,.18);font-size:11px;font-weight:800;letter-spacing:.3px;white-space:nowrap;"><span style="font-size:12px;line-height:1;">${c.icon}</span><span>${c.short}</span></span>`;
         }).join('');
         roleBadge.style.display = 'flex';
         roleBadge.style.background = 'transparent';
@@ -2799,17 +2899,16 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   btn.textContent = isEN ? '⏳ Logging in...' : '⏳ جاري الدخول...';
 
   try {
-    let email = identifier;
     let loginError = null;
 
     if (identifier.includes('@')) {
-      const { error } = await db.auth.signInWithPassword({ email: identifier, password });
+      const { error } = await db.auth.signInWithPassword({ email: identifier.toLowerCase(), password });
       loginError = error;
     } else {
       // 1. Look up the email associated with this username in the profiles table
       const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
       
-      let emailToTry = p?.email || getDummyEmail(identifier);
+      let emailToTry = (p?.email || getDummyEmail(identifier) || '').toLowerCase();
       
       console.log('Attempting login with:', emailToTry);
       const { data, error } = await db.auth.signInWithPassword({ email: emailToTry, password });
@@ -2923,7 +3022,7 @@ window.resendConfirmation = async function(email) {
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
   const username = document.getElementById('signupUsername').value.trim();
-  const email = document.getElementById('signupEmail').value.trim();
+  const email = document.getElementById('signupEmail').value.trim().toLowerCase();
   const password = document.getElementById('signupPassword').value;
   const errEl    = document.getElementById('signupError');
   errEl.innerText = '';
@@ -3015,7 +3114,7 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
           : '✅ تم إنشاء الحساب! سجّل دخولك الآن باسم المستخدم وكلمة المرور.';
         // الانتقال لصفحة الدخول وتعبئة اسم المستخدم
         document.getElementById('switchToLogin').click();
-        document.getElementById('loginIdentifier').value = username;
+        document.getElementById('loginIdentifier').value = email;
       }
     }
   } catch(e) {
@@ -3949,10 +4048,10 @@ function applyTranslations() {
     'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
   };
   const roomLabelsAR = {
-    live:'🔴 مباشر Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
-    subscribers:'👥 Subscribers', 'gaming-news':'📰 أخبار الألعاب',
-    'youtube-news':'▶️ أخبار يوتيوب', 'yt-channels':'📺 Youtube Channels',
-    'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
+    live:'🔴 مباشر Streams', tournaments:'🏆 البطولات', highlights:'🎬 أبرز اللحظات',
+    subscribers:'👥 المشتركون', 'gaming-news':'📰 أخبار الألعاب',
+    'youtube-news':'▶️ أخبار يوتيوب', 'yt-channels':'📺 قنوات يوتيوب',
+    'yt-videos':'🎬 فيديوهات يوتيوب', projects:'🌐 التعاون'
   };
   document.querySelectorAll('.vx-page').forEach(page => {
     const room = page.id.replace('page-','');

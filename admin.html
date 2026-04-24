@@ -637,6 +637,38 @@ async function deleteUser(userId) {
   } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
 }
 
+async function deleteUser(userId) {
+  if (!confirm('Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„ØªØ±Ø§Ø¬Ø¹')) return;
+  try {
+    let rpcError = null;
+    try {
+      const { error } = await supabaseClient.rpc('delete_user_by_admin', { target_user_id: userId });
+      rpcError = error || null;
+    } catch(e) {
+      rpcError = e;
+    }
+
+    if (rpcError) {
+      console.warn('delete_user_by_admin RPC failed, falling back to profiles delete only:', rpcError);
+      const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
+      if (error) {
+        alert('âŒ ÙØ´Ù„ Ø§Ù„Ø­Ø°Ù: ' + error.message + '\n\nØ´ØºÙ„ delete_user_by_admin Ù…Ù† supabase_setup Ù„ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø­Ø°Ù Ø§Ù„ÙƒØ§Ù…Ù„ Ù…Ù† Supabase Auth.');
+        console.error(error);
+        return;
+      }
+      alert('âœ… ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù…Ù† Ø¬Ø¯ÙˆÙ„ profiles ÙÙ‚Ø·. Ù„ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø­Ø°Ù Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ Ø´ØºÙ„ delete_user_by_admin Ù…Ù† supabase_setup.');
+      await loadDashboard();
+      return;
+    }
+
+    alert('âœ… ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ Ù…Ù† Supabase');
+    await loadDashboard();
+  } catch(e) {
+    alert('âŒ Ø®Ø·Ø£: ' + e.message);
+    console.error(e);
+  }
+}
+
 async function approvePayment(reqId, userId, planKey) {
   if (!confirm('هل تأكدت من وصول المبلغ في حسابك البنكي Paysera؟')) return;
   try {
