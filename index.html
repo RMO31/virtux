@@ -617,6 +617,12 @@
     /* subscribers groups */
     .sub-role-section{margin:20px 0 10px;}
     .sub-role-header{padding:10px 16px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    @keyframes lang-pulse {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.18); box-shadow: 0 0 10px #e01010; }
+      100% { transform: scale(1); }
+    }
+    .lang-switching { animation: lang-pulse 0.35s ease forwards; }
     </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1574,7 +1580,6 @@ window.openUserModal = function(room) {
         <div style="margin-top:12px;"><label>Player / Game</label><input id="desc-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
         <div style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="url-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label style="color:#aaa;font-size:12px;">🔗 رابط خارجي (ريلز، يوتيوب، تيك توك، إنستغرام...)</label><input id="social-url-${room}" style="${inputStyle}" placeholder="https://youtube.com/shorts/... أو instagram.com/reel/..."></div>
         ${fileInputHtml('image/*,video/*', 'أو ارفع ملف من الحاسوب (صورة أو فيديو)', 'media')}
         <input type="hidden" id="icon-${room}">
       </div>
@@ -3149,7 +3154,7 @@ window.confirmDeleteAccount = async function() {
 };
 
 // ==================== نظام الترجمة EN/AR ====================
-window._siteLanguage = 'ar';
+window._siteLanguage = window._siteLanguage || 'ar';
 
 // دالة مساعدة تُرجع النص حسب اللغة الحالية
 window.t = function(ar, en) {
@@ -3209,6 +3214,14 @@ window.setLang = function(lang) {
   window._siteLanguage = lang;
   const arBtn = document.getElementById('lang-ar-btn');
   const enBtn = document.getElementById('lang-en-btn');
+  // أنيميشن على الزر النشط
+  const activeBtn = lang === 'en' ? enBtn : arBtn;
+  if (activeBtn) {
+    activeBtn.classList.remove('lang-switching');
+    void activeBtn.offsetWidth; // reset animation
+    activeBtn.classList.add('lang-switching');
+    setTimeout(() => activeBtn.classList.remove('lang-switching'), 400);
+  }
   if (lang === 'ar') {
     if (arBtn) { arBtn.style.background='#e01010'; arBtn.style.color='#000'; }
     if (enBtn) { enBtn.style.background='transparent'; enBtn.style.color='#e01010'; }
@@ -3921,6 +3934,8 @@ window.fixThumb = function(img, vid) {
 initializeAuth();
 showPage('home');
 loadTicker();
+// تهيئة الترجمة عند تحميل الصفحة
+if (typeof applyTranslations === 'function') applyTranslations();
 </script>
 </body>
 </html>
