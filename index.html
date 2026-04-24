@@ -1879,7 +1879,14 @@ window.openUserModal = function(room) {
   } else if (room === 'highlights') {
     formHtml = `<div class="form-with-preview">
       <div>
-        <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
+        <div style="margin-bottom:4px;"><label style="color:#aaa;font-size:12px;">🔗 رابط خارجي (يوتيوب، إنستغرام، تيك توك...)</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input id="social-url-${room}" style="${inputStyle};flex:1;" placeholder="https://youtube.com/shorts/... أو reel/...">
+            <button type="button" id="fetch-title-btn-${room}" style="background:#e01010;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;">⬇️ جلب العنوان</button>
+          </div>
+          <div id="fetch-status-${room}" style="font-size:11px;color:#aaa;margin-top:3px;min-height:16px;"></div>
+        </div>
+        <div style="margin-top:10px;"><label>Title</label><input id="title-${room}" style="${inputStyle}" placeholder="أو اكتب العنوان يدوياً"></div>
         <div style="margin-top:12px;"><label>Player / Game</label><input id="desc-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
         <div style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="url-${room}" style="${inputStyle}"></div>
@@ -1938,6 +1945,58 @@ window.openUserModal = function(room) {
   // جلب معلومات live تلقائياً — live
   if (room === 'live') {
     bindLiveUrlAutofill();
+  }
+
+  // جلب عنوان الفيديو من رابط يوتيوب/تيك توك/إنستغرام في Highlights
+  if (room === 'highlights') {
+    const fetchBtn = document.getElementById(`fetch-title-btn-${room}`);
+    const socialInput = document.getElementById(`social-url-${room}`);
+    const statusEl = document.getElementById(`fetch-status-${room}`);
+    const titleInput = document.getElementById(`title-${room}`);
+    if (fetchBtn && socialInput) {
+      fetchBtn.addEventListener('click', async () => {
+        const url = socialInput.value.trim();
+        if (!url) { statusEl.textContent = '⚠️ أدخل رابطاً أولاً'; return; }
+        fetchBtn.disabled = true;
+        fetchBtn.textContent = '⏳ جاري الجلب...';
+        statusEl.textContent = '';
+        try {
+          // نستخرج YouTube video ID ونجلب العنوان عبر oEmbed
+          const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})/);
+          if (ytMatch) {
+            const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytMatch[1]}&format=json`;
+            const res = await fetch(oembedUrl);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.title) {
+                titleInput.value = data.title;
+                statusEl.textContent = '✅ تم جلب العنوان من يوتيوب';
+                statusEl.style.color = '#4ade80';
+              }
+            } else throw new Error('YouTube oEmbed failed');
+          } else {
+            // محاولة جلب عنوان من meta tags عبر allorigins proxy
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+            const res = await fetch(proxyUrl);
+            if (res.ok) {
+              const data = await res.json();
+              const titleMatch = data.contents?.match(/<title[^>]*>([^<]+)<\/title>/i);
+              if (titleMatch) {
+                titleInput.value = titleMatch[1].trim().replace(/\s+/g, ' ');
+                statusEl.textContent = '✅ تم جلب العنوان';
+                statusEl.style.color = '#4ade80';
+              } else throw new Error('No title found');
+            } else throw new Error('Proxy failed');
+          }
+        } catch(e) {
+          statusEl.textContent = '❌ تعذر جلب العنوان — اكتبه يدوياً';
+          statusEl.style.color = '#ff6b6b';
+        } finally {
+          fetchBtn.disabled = false;
+          fetchBtn.textContent = '⬇️ جلب العنوان';
+        }
+      });
+    }
   }
 
   // معاينة صورة مصغرة للفيديو (Highlights)
@@ -2843,6 +2902,29 @@ let tickerPosition = 0;
 let tickerContainerWidth = 0;
 let tickerHalfWidth = 0;
 const TICKER_SPEED = 1.2;
+// بيانات خام للـ ticker — تُجلب مرة وتُعاد بناؤها عند تغيير اللغة
+window._tickerRaw = { news: [], live: [], videos: [] };
+
+function buildTickerItems() {
+  const isEN = window._siteLanguage === 'en';
+  const { news, live, videos } = window._tickerRaw;
+  let items = [];
+  for (const p of news)
+    items.push({ text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
+  for (const p of live) {
+    const t = (p.tag||'').toLowerCase();
+    const icon = t.includes('live') ? '🔴 LIVE'
+               : t.includes('pre')  ? (isEN ? '⏰ Soon' : '⏰ قريباً')
+               : '📡';
+    items.push({ text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
+  }
+  for (const p of videos)
+    items.push({ text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
+  tickerItems = items.length
+    ? items
+    : [{ text: isEN ? '🎮 Welcome to Virtux' : '🎮 مرحباً في Virtux', url: null }];
+}
+
 async function loadTicker() {
   try {
     const [newsRes, liveRes, vidRes] = await Promise.all([
@@ -2850,20 +2932,19 @@ async function loadTicker() {
       db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
       db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8)
     ]);
-    let items = [];
-    for (const p of (newsRes.data||[])) items.push({ text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
-    for (const p of (liveRes.data||[])) {
-      const t = (p.tag||'').toLowerCase();
-      const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? '⏰ قريباً' : '📡';
-      items.push({ text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
-    }
-    for (const p of (vidRes.data||[])) items.push({ text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
-    tickerItems = items.length ? items : [{ text: '🎮 مرحباً في Virtux', url: null }];
+    window._tickerRaw = {
+      news:   newsRes.data  || [],
+      live:   liveRes.data  || [],
+      videos: vidRes.data   || []
+    };
   } catch(e) {
-    tickerItems = [{ text: '🎮 مرحباً في Virtux', url: null }];
+    window._tickerRaw = { news: [], live: [], videos: [] };
   }
+  buildTickerItems();
   buildTickerTrack();
 }
+// تُستدعى عند تغيير اللغة فقط — بدون إعادة جلب من Supabase
+window.rebuildTicker = function() { buildTickerItems(); buildTickerTrack(); };
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
@@ -3550,7 +3631,7 @@ window.setLang = function(lang) {
         rebuildFilterBar(page.id.replace('page-',''));
       });
       if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
-      if (typeof window.loadTicker === 'function') window.loadTicker();
+      if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
     }, 50);
   }
 };
