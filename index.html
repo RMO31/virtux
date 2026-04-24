@@ -528,16 +528,9 @@
       gap: 16px; padding: 18px;
     }
     .channels-grid.subscribers-grid {
-      display: flex;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      gap: 16px;
-      padding: 10px 4px;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      align-items: start; gap: 16px;
     }
-    .channels-grid.subscribers-grid::-webkit-scrollbar { height: 4px; }
-    .channels-grid.subscribers-grid::-webkit-scrollbar-thumb { background: var(--border-red); border-radius: 4px; }
     .channel-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -2708,35 +2701,17 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
       };
       if (!roleFilter) {
         // تجميع المستخدمين حسب الرتبة وعرض كل رتبة في سطر أفقي
-        ROLE_PRIORITY.forEach(roleKey => {
-          const roleDef = ROLE_DEFS.find(d => d.key === roleKey);
-          const usersInRole = vipUsers.filter(u => getTopRole(u) === roleKey);
-          if (usersInRole.length) {
-            const displayTitle = window._siteLanguage === 'en' ? roleDef.title_en : roleDef.title_ar;
-            groupedHtml += `
-              <div style="margin:20px 0 10px 18px; padding-bottom:5px; border-bottom:1px solid ${roleDef.color}33; display:flex; align-items:center; gap:10px;">
-                <span style="font-size:18px;">${displayTitle.split(' ')[0]}</span>
-                <h3 style="color:${roleDef.color}; margin:0; font-size:16px; font-weight:700;">${displayTitle}</h3>
-                <span style="margin-left:auto; font-size:11px; color:var(--text-3); background:var(--bg-card2); padding:2px 8px; border-radius:50px; border:1px solid var(--border);">${usersInRole.length}</span>
-              </div>
-              <div class="channels-grid subscribers-grid">
-                ${usersInRole.map(u => userCard(u, roleDef.color, roleDef)).join('')}
-              </div>`;
-          }
-        });
+        groupedHtml += `<div class="channels-grid subscribers-grid">${vipUsers.map(u => {
+          const topRole = getTopRole(u);
+          const topDef = ROLE_DEFS.find(d => d.key === topRole) || ROLE_DEFS[ROLE_DEFS.length - 1];
+          return userCard(u, topDef.color, topDef);
+        }).join('')}</div>`;
       } else {
         const def = ROLE_DEFS.find(d => d.key === roleFilter);
         if (def) {
           const usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(def.key));
           if (usersInRole.length) {
-            const displayTitle = window._siteLanguage === 'en' ? def.title_en : def.title_ar;
-            groupedHtml += `
-              <div style="margin:20px 0 10px 18px; display:flex; align-items:center; gap:10px;">
-                <h3 style="color:${def.color}; margin:0; font-size:16px; font-weight:700;">${displayTitle}</h3>
-              </div>
-              <div class="channels-grid subscribers-grid">
-                ${usersInRole.map(u => userCard(u, def.color, def)).join('')}
-              </div>`;
+            groupedHtml += `<div class="channels-grid subscribers-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
           }
         }
       }
@@ -3223,18 +3198,22 @@ function buildTickerItems() {
   const isEN = window._siteLanguage === 'en';
   const { news, live, videos } = window._tickerRaw;
   let items = [];
-  for (const p of news)
-    items.push({ prefix: isEN ? '📢 News: ' : '📢 أخبار: ', rawTitle: (p.title || ''), text: (isEN ? '📢 News: ' : '📢 أخبار: ') + (window.tTitle(p.title||'')), url: p.url });
+  for (const p of news) {
+    const pref = isEN ? '📢 News: ' : '📢 أخبار: ';
+    items.push({ prefix: pref, rawTitle: (p.title || ''), text: pref + (window.tTitle(p.title||'')), url: p.url });
+  }
   for (const p of live) {
     const t = (p.tag||'').toLowerCase();
     let prefix = '';
     if (t.includes('live')) prefix = isEN ? '🔴 LIVE: ' : '🔴 مباشر: ';
     else if (t.includes('pre')) prefix = isEN ? '⏰ Soon: ' : '⏰ قريباً: ';
-    else prefix = '📡 ';
+    else prefix = isEN ? '📡 Live: ' : '📡 مباشر: ';
     items.push({ prefix: prefix, rawTitle: (p.title || ''), text: prefix + (window.tTitle(p.title||'')), url: p.url });
   }
-  for (const p of videos)
-    items.push({ prefix: isEN ? '🎬 Video: ' : '🎬 فيديو: ', rawTitle: (p.title || ''), text: (isEN ? '🎬 Video: ' : '🎬 فيديو: ') + (window.tTitle(p.title||'')), url: p.url });
+  for (const p of videos) {
+    const pref = isEN ? '🎬 Video: ' : '🎬 فيديو: ';
+    items.push({ prefix: pref, rawTitle: (p.title || ''), text: pref + (window.tTitle(p.title||'')), url: p.url });
+  }
   tickerItems = items.length
     ? items
     : [{ text: isEN ? '🎮 Welcome to Virtux' : '🎮 مرحباً في Virtux', url: null }];
@@ -3882,7 +3861,14 @@ window.t = function(ar, en) {
 };
 
 window.tTitle = function(title) {
-  return title || '';
+  if (!title) return '';
+  const isEN = window._siteLanguage === 'en';
+  // دعم التراجم المزدوجة في العنوان باستخدام الفاصل |
+  if (title.includes('|')) {
+    const parts = title.split('|');
+    return isEN ? parts[0].trim() : parts[1].trim();
+  }
+  return title;
 };
 
 window.setLang = function(lang) {
@@ -4093,11 +4079,11 @@ function applyTranslations() {
   const roomLabelsEN = {
     live:'🔴 Live Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News',
-    'youtube-news':'▶️ YouTube News', 'yt-channels':'📺 Youtube Channels',
-    'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
+    'youtube-news':'▶️ YouTube News', 'yt-channels':'📺 YouTube Channels',
+    'yt-videos':'🎬 YouTube Videos', projects:'🌐 Collaboration'
   };
   const roomLabelsAR = {
-    live:'🔴 مباشر Streams', tournaments:'🏆 البطولات', highlights:'🎬 أبرز اللحظات',
+    live:'🔴 بث مباشر', tournaments:'🏆 البطولات', highlights:'🎬 أبرز اللحظات',
     subscribers:'👥 المشتركون', 'gaming-news':'📰 أخبار الألعاب',
     'youtube-news':'▶️ أخبار يوتيوب', 'yt-channels':'📺 قنوات يوتيوب',
     'yt-videos':'🎬 فيديوهات يوتيوب', projects:'🌐 التعاون'
