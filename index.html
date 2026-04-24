@@ -1806,8 +1806,8 @@ async function loadPage(room) {
     if (room === 'live' || room === 'yt-videos') {
       // جلب فيديوهات القنوات المضافة (tag يبدأ بـ auto:)
       const [vipRes, normalRes] = await Promise.all([
-        db.from('posts').select('*').eq('room', room).like('tag', 'auto:%').order('id', {ascending:false}).limit(50),
-        db.from('posts').select('*').eq('room', room).not('tag','like','auto:%').order('id', {ascending:false}).limit(100)
+        db.from('posts').select('*').eq('room', room).like('tag', 'auto:%').order('id', {ascending:false}),
+        db.from('posts').select('*').eq('room', room).not('tag','like','auto:%').order('id', {ascending:false})
       ]);
       data = [...(vipRes.data||[]), ...(normalRes.data||[])];
       error = vipRes.error || normalRes.error;
