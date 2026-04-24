@@ -433,12 +433,13 @@
       letter-spacing: 0.5px;
     }
     .post-card-img {
-      width: 100%; height: auto; max-height: 420px; min-height: 100px;
-      object-fit: contain; background: #050508; display: block;
+      width: 100%; height: auto; max-height: 600px;
+      object-fit: contain; display: block; background: transparent;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
     }
-    .post-card-img.img-landscape { object-fit:cover; height:200px; max-height:200px; }
-    .post-card-img.img-square    { object-fit:cover; height:220px; max-height:220px; }
-    .post-card-img.img-portrait  { object-fit:contain; max-height:400px; }
+    .post-card-img.img-landscape { object-fit:contain; height:auto; max-height:none; }
+    .post-card-img.img-square    { object-fit:contain; height:auto; max-height:none; }
+    .post-card-img.img-portrait  { object-fit:contain; height:auto; max-height:500px; }
     .post-card-emoji {
       width: 100%; height: 120px;
       background: linear-gradient(135deg, var(--bg-card2), var(--bg-card));
@@ -478,7 +479,7 @@
     }
     .post-card-body { padding: 14px 16px; flex:1; display:flex; flex-direction:column; }
     .post-card-title { font-size: 14px; font-weight: 600; color: var(--text-1); margin-bottom: 5px; line-height: 1.4; }
-    .post-card-summary { font-size: 12px; color: var(--text-2); margin-bottom: 12px; line-height: 1.6; }
+    .post-card-summary { display: none; font-size: 12px; color: var(--text-2); margin-bottom: 12px; line-height: 1.6; }
     .post-card-footer {
       display: flex; align-items: center; justify-content: space-between;
       flex-wrap: wrap; gap: 6px; margin-top: auto;
@@ -2056,9 +2057,27 @@ window.openUserModal = function(room) {
         <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
       </div>
     </div>`;
+  } else if (room === 'tournaments') {
+    formHtml = `<div class="form-with-preview">
+      <div>
+        <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Description</label><input id="desc-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>URL (optional)</label><input id="url-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="تسجيل">تسجيل</option><option value="عالمي">عالمي</option><option value="VIP">VIP</option></select></div>
+        ${fileInputHtml('video/*', 'رفع فيديو', 'media')}
+        ${fileInputHtml('image/*', 'رفع صورة مصغرة (اختياري)', 'thumb')}
+        <input type="hidden" id="icon-${room}">
+      </div>
+      <div class="preview-panel">
+        <h4 style="color:#e01010;">معاينة</h4>
+        <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+        <img id="preview-img-${room}" class="preview-media" style="display:none; border: 1px solid #e01010;">
+        <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط</div>
+        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
+      </div>
+    </div>`;
   } else {
     // generic
-    formHtml = `<div class="form-with-preview">
       <div>
         <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Description</label><input id="desc-${room}" style="${inputStyle}"></div>
@@ -2323,6 +2342,12 @@ contactPage.className = 'vx-page';
 contactPage.id = 'page-contact';
 contactPage.innerHTML = `<div class="page-header"><h2>📞 ${window.t("التواصل","Contact")} Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card" onclick="window.open('https://discord.gg/45fJNmww6D','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/45fJNmww6D</div></div><div class="contact-card" onclick="window.location.href='mailto:menouer.rayane310201@gmail.com'"><div class="cc-icon">📧</div><div class="cc-name">${window.t("البريد الإلكتروني","Email")}</div><div class="cc-handle" style="font-size:10px;word-break:break-all;">menouer.rayane310201@gmail.com</div></div></div></div>`;
 mainContainer.appendChild(contactPage);
+
+// Add Copyright Footer
+const footerDiv = document.createElement('footer');
+footerDiv.style.cssText = 'text-align:center; padding:24px 20px; color:var(--text-3); font-size:12px; border-top:1px solid var(--border); margin-top:40px; letter-spacing:0.5px; width:100%;';
+footerDiv.innerHTML = 'جميع الحقوق محفوظة &copy; 2026 Virtux - مطبوعة حقوق نشر وملكية';
+mainContainer.appendChild(footerDiv);
 
 async function loadPage(room) {
   const el = document.getElementById(`grid-${room}`);
@@ -2658,16 +2683,25 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
         }).join('');
         return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">${badges}</div></div></div>`;
       };
-      ROLE_DEFS.forEach(def => {
-        if (roleFilter && def.key !== roleFilter) return;
-        const usersInRole = vipUsers.filter(u => {
-          const rs = normalizeRoles(u);
-          if (def.key === 'user') return rs.includes('user');
-          return rs.includes(def.key);
-        });
-        if (!usersInRole.length) return;
-        groupedHtml += `<div class="channels-grid subscribers-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
-      });
+      if (!roleFilter) {
+        groupedHtml += `<div class="channels-grid subscribers-grid">${vipUsers.map(u => {
+          const topRole = getTopRole(u);
+          const topDef = ROLE_DEFS.find(d => d.key === topRole) || ROLE_DEFS[ROLE_DEFS.length - 1];
+          return userCard(u, topDef.color, topDef);
+        }).join('')}</div>`;
+      } else {
+        const def = ROLE_DEFS.find(d => d.key === roleFilter);
+        if (def) {
+          const usersInRole = vipUsers.filter(u => {
+            const rs = normalizeRoles(u);
+            if (def.key === 'user') return rs.includes('user');
+            return rs.includes(def.key);
+          });
+          if (usersInRole.length) {
+            groupedHtml += `<div class="channels-grid subscribers-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
+          }
+        }
+      }
     }
   } catch(e) { console.error(e); }
 
@@ -3795,56 +3829,8 @@ window.t = function(ar, en) {
   return window._siteLanguage === 'en' ? en : ar;
 };
 
-// ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
-window._titleCache = {};
-// ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
-window._titleCache = {};
 window.tTitle = function(title) {
-  if (!title) return '';
-  if (window._siteLanguage !== 'en') return title;
-  
-  // 1. ترجمات يدوية سريعة
-  let t = title;
-  t = t.replace(/بث مباشر/g, 'Live Stream');
-  t = t.replace(/مباشر على Twitch/g, 'Live on Twitch');
-  t = t.replace(/Facebook مباشر/g, 'Facebook Live');
-  t = t.replace(/TikTok مباشر/g, 'TikTok Live');
-  t = t.replace(/منشور/g, 'Post');
-  t = t.replace(/فيديو/g, 'Video');
-  
-  if (t !== title) return t; // تم ترجمتها يدوياً
-
-  // 2. إذا العنوان يحتوي عربي، حاول ترجمته عبر API في الخلفية
-  const hasArabic = /[؀-ۿ]/.test(title);
-  if (!hasArabic) return title; // إنجليزي أصلاً
-  
-  if (window._titleCache[title]) return window._titleCache[title];
-  
-  // أرجع العنوان الأصلي فوراً، وابدأ الترجمة في الخلفية
-  window._translateTitleBg(title);
-  return title;
-};
-
-window._translateTitleBg = async function(title) {
-  if (window._titleCache[title]) return;
-  try {
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=' + encodeURIComponent(title);
-    const r = await fetch(url);
-    const j = await r.json();
-    const translated = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('') || title;
-    window._titleCache[title] = translated;
-    
-    // تحديث العناوين في الصفحة إذا لا تزال إنجليزية
-    if (window._siteLanguage === 'en') {
-      document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title, .ticker-item, .ticker-item a').forEach(el => {
-        if (el.dataset?.rawTitle === title) {
-          el.textContent = (el.dataset.prefix || '') + translated;
-        } else if (el.textContent === title) {
-          el.textContent = translated;
-        }
-      });
-    }
-  } catch(e) {}
+  return title || '';
 };
 
 window.setLang = function(lang) {
@@ -3901,41 +3887,44 @@ function rebuildFilterBar(room) {
   const existing = page.querySelector('.filter-bar');
   if (!existing) return;
   const isEN = window._siteLanguage === 'en';
+  const cTag = window.roomViewState?.[room]?.filterTag || '';
+  const getAct = (tag) => cTag === tag ? ' active' : '';
+
   let newBar = '';
   if (room === 'live') {
     newBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="window.filterPosts('live','',this)">${isEN?'All':'الكل'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button>
-      <button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button>
+      <button class="filter-btn${getAct('')}" onclick="window.filterPosts('live','',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn${getAct('مباشر Now')}" onclick="window.filterPosts('live','مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button>
+      <button class="filter-btn${getAct('Pre s')}" onclick="window.filterPosts('live','Pre s',this)">Pre s</button>
+      <button class="filter-btn${getAct('VIP')}" onclick="window.filterPosts('live','VIP',this)">VIP</button>
     </div>`;
   } else if (room === 'tournaments') {
     newBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">${isEN?'All':'الكل'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">${isEN?'Register':'تسجيل'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">${isEN?'Global':'عالمي'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button>
+      <button class="filter-btn${getAct('')}" onclick="window.filterPosts('tournaments','',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn${getAct('تسجيل')}" onclick="window.filterPosts('tournaments','تسجيل',this)">${isEN?'Register':'تسجيل'}</button>
+      <button class="filter-btn${getAct('عالمي')}" onclick="window.filterPosts('tournaments','عالمي',this)">${isEN?'Global':'عالمي'}</button>
+      <button class="filter-btn${getAct('VIP')}" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button>
     </div>`;
   } else if (room === 'highlights') {
     newBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">${isEN?'All':'الكل'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button>
-      <button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button>
-      <button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button>
-      <button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button>
+      <button class="filter-btn${getAct('')}" onclick="window.filterPosts('highlights','',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn${getAct('Pro')}" onclick="window.filterPosts('highlights','Pro',this)">Pro</button>
+      <button class="filter-btn${getAct('Tournament')}" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button>
+      <button class="filter-btn${getAct('Video')}" onclick="window.filterPosts('highlights','Video',this)">Video</button>
+      <button class="filter-btn${getAct('Photo')}" onclick="window.filterPosts('highlights','Photo',this)">Photo</button>
     </div>`;
   } else if (room === 'subscribers') {
     newBar = `<div class="filter-bar">
-      <button class="filter-btn active" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('guest',this)">Guest</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button>
+      <button class="filter-btn${getAct('')}" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button>
+      <button class="filter-btn${getAct('admin')}" onclick="window.filterSubscribers('admin',this)">Admin</button>
+      <button class="filter-btn${getAct('moderator')}" onclick="window.filterSubscribers('moderator',this)">Mod</button>
+      <button class="filter-btn${getAct('youtuber_vip')}" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button>
+      <button class="filter-btn${getAct('youtuber')}" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button>
+      <button class="filter-btn${getAct('vip')}" onclick="window.filterSubscribers('vip',this)">VIP</button>
+      <button class="filter-btn${getAct('donor')}" onclick="window.filterSubscribers('donor',this)">Donors</button>
+      <button class="filter-btn${getAct('member')}" onclick="window.filterSubscribers('member',this)">Member</button>
+      <button class="filter-btn${getAct('guest')}" onclick="window.filterSubscribers('guest',this)">Guest</button>
+      <button class="filter-btn${getAct('user')}" onclick="window.filterSubscribers('user',this)">User</button>
     </div>`;
   }
   if (newBar) existing.outerHTML = newBar;
