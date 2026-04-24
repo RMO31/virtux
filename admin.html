@@ -607,8 +607,10 @@ async function toggleRole(userId, role, add, expiryDate = null) {
     const primaryRole = currentRoles[0];
     console.log('New roles:', currentRoles, 'Primary:', primaryRole);
 
+    const updatePayload = { roles: currentRoles, role: primaryRole };
+
     const { data: updateData, error } = await supabaseClient.from('profiles')
-      .update({ roles: currentRoles, role: primaryRole, expiry_date: add ? expiryDate : null })
+      .update(updatePayload)
       .eq('id', userId)
       .select();
     if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error('Update error:', error); return false; }
