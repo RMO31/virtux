@@ -3553,50 +3553,88 @@ window.t = function(ar, en) {
 
 // ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
 window._titleCache = {};
-// ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
-window._titleCache = {};
+window._titleTranslatePending = {};
+window._manualTitlePairs = [
+  ['بث مباشر', 'Live Stream'],
+  ['مباشر على Twitch', 'Live on Twitch'],
+  ['Facebook مباشر', 'Facebook Live'],
+  ['TikTok مباشر', 'TikTok Live'],
+  ['منشور', 'Post'],
+  ['فيديو', 'Video']
+];
+
+window._applyManualTitleTranslation = function(title, targetLang) {
+  let translated = title || '';
+  window._manualTitlePairs.forEach(([ar, en]) => {
+    translated = translated.replaceAll(targetLang === 'en' ? ar : en, targetLang === 'en' ? en : ar);
+  });
+  return translated;
+};
+
+window._refreshTranslatedTitles = function() {
+  if (window.allPosts) {
+    Object.keys(window.allPosts).forEach(room => {
+      const el = document.getElementById('grid-' + room);
+      if (el && window.allPosts[room]?.length) {
+        el.innerHTML = '';
+        if (room === 'subscribers' || room === 'yt-channels') {
+          loadSubscribersWithVIP(el, window.allPosts[room] || [], window._subscribersRoleFilter || '');
+        } else {
+          renderCards(window.allPosts[room], 'grid-' + room, room);
+        }
+      }
+    });
+    setTimeout(() => {
+      document.querySelectorAll('.vx-page').forEach(page => {
+        rebuildFilterBar(page.id.replace('page-',''));
+      });
+      if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
+      if (typeof window.loadTicker === 'function') window.loadTicker();
+    }, 50);
+    return;
+  }
+  if (typeof window.loadTicker === 'function') window.loadTicker();
+};
+
 window.tTitle = function(title) {
   if (!title) return '';
-  if (window._siteLanguage !== 'en') return title;
-  
-  // 1. ترجمات يدوية سريعة
-  let t = title;
-  t = t.replace(/بث مباشر/g, 'Live Stream');
-  t = t.replace(/مباشر على Twitch/g, 'Live on Twitch');
-  t = t.replace(/Facebook مباشر/g, 'Facebook Live');
-  t = t.replace(/TikTok مباشر/g, 'TikTok Live');
-  t = t.replace(/منشور/g, 'Post');
-  t = t.replace(/فيديو/g, 'Video');
-  
-  if (t !== title) return t; // تم ترجمتها يدوياً
+  if (typeof title === 'object') return window._siteLanguage === 'en' ? (title.en || title.ar) : (title.ar || title.en);
+  if (title.includes(' | ')) {
+    const parts = title.split(' | ');
+    return window._siteLanguage === 'en' ? (parts[1] || parts[0]) : parts[0];
+  }
 
-  // 2. إذا العنوان يحتوي عربي، حاول ترجمته عبر API في الخلفية
-  const hasArabic = /[؀-ۿ]/.test(title);
-  if (!hasArabic) return title; // إنجليزي أصلاً
-  
-  if (window._titleCache[title]) return window._titleCache[title];
-  
-  // أرجع العنوان الأصلي فوراً، وابدأ الترجمة في الخلفية
-  window._translateTitleBg(title);
+  const targetLang = window._siteLanguage === 'en' ? 'en' : 'ar';
+  const manuallyTranslated = window._applyManualTitleTranslation(title, targetLang);
+  if (manuallyTranslated !== title) return manuallyTranslated;
+
+  const hasArabic = /[\u0600-\u06FF]/.test(title);
+  const hasEnglish = /[A-Za-z]/.test(title);
+  const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
+  if (!sourceLang || sourceLang === targetLang) return title;
+
+  const cacheKey = sourceLang + '|' + targetLang + '|' + title;
+  if (window._titleCache[cacheKey]) return window._titleCache[cacheKey];
+
+  window._translateTitleBg(title, sourceLang, targetLang);
   return title;
 };
 
-window._translateTitleBg = async function(title) {
-  if (window._titleCache[title]) return;
+window._translateTitleBg = async function(title, sourceLang, targetLang) {
+  const cacheKey = sourceLang + '|' + targetLang + '|' + title;
+  if (window._titleCache[cacheKey] || window._titleTranslatePending[cacheKey]) return;
+  window._titleTranslatePending[cacheKey] = true;
   try {
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=' + encodeURIComponent(title);
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sourceLang + '&tl=' + targetLang + '&dt=t&q=' + encodeURIComponent(title);
     const r = await fetch(url);
     const j = await r.json();
-    const translated = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('') || title;
-    window._titleCache[title] = translated;
-    
-    // تحديث العناوين في الصفحة إذا لا تزال إنجليزية
-    if (window._siteLanguage === 'en') {
-      document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title, .ticker-item, .ticker-item a').forEach(el => {
-        if (el.textContent === title) el.textContent = translated;
-      });
-    }
-  } catch(e) {}
+    const translated = j?.[0]?.map(x => x?.[0]).filter(Boolean).join('') || title;
+    window._titleCache[cacheKey] = translated;
+    if (window._siteLanguage === targetLang) window._refreshTranslatedTitles();
+  } catch(e) {
+  } finally {
+    delete window._titleTranslatePending[cacheKey];
+  }
 };
 
 window.setLang = function(lang) {
