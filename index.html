@@ -1037,6 +1037,15 @@ window.tTitle = function(t) {
     const parts = t.split(' | ');
     return window._siteLanguage === 'en' ? (parts[1] || parts[0]) : parts[0];
   }
+  // Check cache
+  const targetLang = window._siteLanguage === 'en' ? 'en' : 'ar';
+  const hasArabic = /[\u0600-\u06FF]/.test(t);
+  const hasEnglish = /[A-Za-z]/.test(t);
+  const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
+  if (sourceLang && sourceLang !== targetLang && window._titleCache) {
+    const cacheKey = sourceLang + '|' + targetLang + '|' + t;
+    if (window._titleCache[cacheKey]) return window._titleCache[cacheKey];
+  }
   return t;
 };
 
@@ -2142,10 +2151,26 @@ function renderCards(posts, gridId, room) {
     if (room === 'live') {
       const tag = window._liveTag || '';
       if (tag) {
+        // Normalize tag for comparison — handle Arabic/English equivalents
+        const isNowFilter = tag === 'مباشر Now' || tag === 'Live Now';
+        const isPreFilter = tag === 'Pre s' || tag === 'Pre' || tag.toLowerCase().includes('pre');
+        const isVipFilter = tag === 'VIP';
         displayPosts = finalPosts.filter(p => {
           if (!p.tag) return false;
           const ptag = String(p.tag).trim();
-          return ptag === tag || ptag.toLowerCase() === tag.toLowerCase();
+          const ptagL = ptag.toLowerCase();
+          if (isNowFilter) {
+            // Match: "مباشر Now", "Live Now", or anything containing "now" or "live" but not "pre"
+            return ptag === 'مباشر Now' || ptag === 'Live Now' || ptagL === 'live now' || ptagL === 'مباشر now'
+              || (ptagL.includes('live') && !ptagL.includes('pre') && !ptagL.includes('auto'));
+          }
+          if (isPreFilter) {
+            return ptag === 'Pre s' || ptagL.includes('pre') || ptagL.includes('قريب') || ptagL.includes('soon');
+          }
+          if (isVipFilter) {
+            return ptag === 'VIP' || ptagL === 'vip';
+          }
+          return ptag === tag || ptagL === tag.toLowerCase();
         });
       }
     }
@@ -3019,42 +3044,74 @@ let tickerContainerWidth = 0;
 let tickerHalfWidth = 0;
 const TICKER_SPEED = 1.2;
 // حفظ البيانات الخام للـ ticker لإعادة البناء عند تغيير اللغة
-window._tickerRawData = { news: [], live: [], videos: [] };
+window._tickerRawData = { news: [], gamingnews: [], youtubenews: [], live: [], videos: [] };
 
 function buildTickerItems() {
   const isEN = window._siteLanguage === 'en';
-  const { news, live, videos } = window._tickerRawData;
+  const { news, gamingnews, youtubenews, live, videos } = window._tickerRawData;
   let items = [];
-  for (const p of news)   items.push({ text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
-  for (const p of live) {
-    const t = (p.tag||'').toLowerCase();
-    const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? (isEN ? '⏰ Soon' : '⏰ قريباً') : '📡';
-    items.push({ text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
+
+  // Site news (ticker room) — manual posts from admin
+  for (const p of (news||[])) {
+    const titleText = window.tTitle(p.title || '');
+    items.push({ text: '📢 ' + titleText, url: p.url });
   }
-  for (const p of videos) items.push({ text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
-  tickerItems = items.length ? items : [{ text: isEN ? '🎮 Welcome to Virtux' : '🎮 مرحباً في Virtux', url: null }];
+  // Gaming news
+  for (const p of (gamingnews||[])) {
+    const titleText = window.tTitle(p.title || '');
+    items.push({ text: (isEN ? '🎮 Gaming: ' : '🎮 ألعاب: ') + titleText, url: p.url });
+  }
+  // YouTube news
+  for (const p of (youtubenews||[])) {
+    const titleText = window.tTitle(p.title || '');
+    items.push({ text: (isEN ? '▶️ YouTube: ' : '▶️ يوتيوب: ') + titleText, url: p.url });
+  }
+  // Live streams
+  for (const p of (live||[])) {
+    const t = (p.tag||'').toLowerCase();
+    const icon = (t.includes('live') || t.includes('now')) ? '🔴 LIVE' : t.includes('pre') ? (isEN ? '⏰ Soon' : '⏰ قريباً') : '📡';
+    const titleText = window.tTitle(p.title || '');
+    items.push({ text: icon + ': ' + titleText, url: p.url });
+  }
+  // Latest videos
+  for (const p of (videos||[])) {
+    const titleText = window.tTitle(p.title || '');
+    items.push({ text: '🎬 ' + titleText, url: p.url });
+  }
+
+  tickerItems = items.length ? items : [{ text: isEN ? '🎮 Welcome to Virtux — Gaming Community' : '🎮 مرحباً في Virtux — مجتمع الألعاب', url: null }];
 }
 
 async function loadTicker() {
   try {
-    const [newsRes, liveRes, vidRes] = await Promise.all([
-      db.from('posts').select('title,url').eq('room','ticker').order('id',{ascending:false}).limit(10),
+    const [tickerRes, gamingRes, ytNewsRes, liveRes, vidRes] = await Promise.all([
+      db.from('posts').select('title,url').eq('room','ticker').order('id',{ascending:false}).limit(8),
+      db.from('posts').select('title,url').eq('room','gaming-news').order('id',{ascending:false}).limit(5),
+      db.from('posts').select('title,url').eq('room','youtube-news').order('id',{ascending:false}).limit(4),
       db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
-      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8)
+      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(6)
     ]);
     window._tickerRawData = {
-      news:   newsRes.data  || [],
-      live:   liveRes.data  || [],
-      videos: vidRes.data   || []
+      news:        tickerRes.data  || [],
+      gamingnews:  gamingRes.data  || [],
+      youtubenews: ytNewsRes.data  || [],
+      live:        liveRes.data    || [],
+      videos:      vidRes.data     || []
     };
   } catch(e) {
-    window._tickerRawData = { news: [], live: [], videos: [] };
+    window._tickerRawData = { news: [], gamingnews: [], youtubenews: [], live: [], videos: [] };
   }
   buildTickerItems();
   buildTickerTrack();
 }
 window.loadTicker = loadTicker;
-window.rebuildTicker = function() { buildTickerItems(); buildTickerTrack(); };
+window.rebuildTicker = function() {
+  if (!window._tickerRawData) {
+    window._tickerRawData = { news: [], gamingnews: [], youtubenews: [], live: [], videos: [] };
+  }
+  buildTickerItems();
+  buildTickerTrack();
+};
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
@@ -3677,12 +3734,32 @@ window.t = function(ar, en) {
 window._titleCache = {};
 window._titleTranslatePending = {};
 window._manualTitlePairs = [
+  // AR → EN
   ['بث مباشر', 'Live Stream'],
   ['مباشر على Twitch', 'Live on Twitch'],
   ['Facebook مباشر', 'Facebook Live'],
   ['TikTok مباشر', 'TikTok Live'],
   ['منشور', 'Post'],
-  ['فيديو', 'Video']
+  ['فيديو', 'Video'],
+  ['بطولة', 'Tournament'],
+  ['أبرز اللحظات', 'Highlights'],
+  ['أخبار', 'News'],
+  ['ألعاب', 'Games'],
+  ['لاعب', 'Player'],
+  ['مباراة', 'Match'],
+  ['فوز', 'Win'],
+  ['خسارة', 'Loss'],
+  ['جديد', 'New'],
+  // EN → AR (common gaming/streaming terms)
+  ['Live Stream', 'بث مباشر'],
+  ['Highlights', 'أبرز اللحظات'],
+  ['Tournament', 'بطولة'],
+  ['Gaming News', 'أخبار الألعاب'],
+  ['YouTube News', 'أخبار يوتيوب'],
+  ['New Video', 'فيديو جديد'],
+  ['Latest Video', 'أحدث فيديو'],
+  ['Top Plays', 'أفضل اللقطات'],
+  ['Collaboration', 'تعاون'],
 ];
 
 window._applyManualTitleTranslation = function(title, targetLang) {
@@ -3732,14 +3809,18 @@ window.tTitle = function(title) {
 
   const hasArabic = /[\u0600-\u06FF]/.test(title);
   const hasEnglish = /[A-Za-z]/.test(title);
+
+  // If title is purely English and we want Arabic, translate it
+  // If title is purely Arabic and we want English, translate it
   const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
   if (!sourceLang || sourceLang === targetLang) return title;
 
   const cacheKey = sourceLang + '|' + targetLang + '|' + title;
   if (window._titleCache[cacheKey]) return window._titleCache[cacheKey];
 
+  // Start background translation
   window._translateTitleBg(title, sourceLang, targetLang);
-  return title;
+  return title; // Return original while translating
 };
 
 window._translateTitleBg = async function(title, sourceLang, targetLang) {
