@@ -14,9 +14,10 @@
     .header h1{color:#fff;font-size:28px;font-family:'Orbitron',sans-serif;letter-spacing:1px}
     .back-link{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;color:#7de9ff;text-decoration:none;font-size:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(125,233,255,0.25);padding:9px 14px;border-radius:999px}
     .back-link:hover{background:#7de9ff;color:#04111d}
-    .article-img{width:100%;max-height:none;object-fit:contain;display:block;background:rgba(0,0,0,0.2);border-radius:12px;margin:0 auto}
+    .article-img{max-width:100%;max-height:500px;object-fit:contain;display:block;border-radius:12px;margin:0 auto;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.1)}
+    .article-media-wrap{background:rgba(255,255,255,0.03);padding:20px;border-radius:24px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.05);display:flex;justify-content:center;align-items:center;min-height:300px}
+    .article-emoji{font-size:80px;text-align:center}
 
-    .article-emoji{font-size:92px;text-align:center;padding:34px 20px;background:linear-gradient(135deg, rgba(255,87,34,0.18), rgba(0,217,255,0.12))}
     .content{padding:30px}
     .title{font-size:32px;color:#fff;margin-bottom:14px;line-height:1.25;font-weight:800}
     .meta{color:#95a3be;font-size:14px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:16px}
@@ -109,14 +110,15 @@ async function loadArticle() {
     }
 
     document.getElementById('article-content').innerHTML = `
-      ${mediaHtml}
       <div class="content">
+        <div class="article-media-wrap">${mediaHtml}</div>
         <h1 class="title">${escapeHtml(post.title)}</h1>
         ${metaHtml}
         <div class="article-body">${contentHtml}</div>
         ${extraLink}
       </div>
     `;
+
   } catch (err) {
     console.error(err);
     document.getElementById('article-content').innerHTML = `<div class="error">${escapeHtml(err.message || 'Unknown error')}</div>`;
