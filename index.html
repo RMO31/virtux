@@ -241,7 +241,8 @@
     
     .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;padding:14px 16px}
     .channels-grid.subscribers-grid{display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start;gap:14px;padding:16px 18px;}
-    .subscriber-card{width:160px;min-height:auto;flex-shrink:0;}
+    .subscriber-card{width:160px;min-width:150px;min-height:auto;flex-shrink:0;}
+    .subscribers-flex-wrap{display:flex;flex-direction:row;flex-wrap:wrap;gap:12px;padding:16px 18px;align-items:flex-start;}
     .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#e01010}
     .subscriber-card{position:relative;min-height:176px;padding:14px 12px 16px;justify-content:flex-start;overflow:hidden;isolation:isolate}
@@ -1671,6 +1672,61 @@ window.openUserModal = function(room) {
   document.getElementById('upm-modal').classList.add('active');
 };
 
+// فتح نافذة تعديل منشور موجود
+window.openEditPostModal = function(postId, room) {
+  const post = (window.allPosts?.[room] || []).find(p => String(p.id) === String(postId));
+  if (!post) { alert(window.t('لم يُعثر على المنشور', 'Post not found')); return; }
+  // افتح نافذة النشر لنفس الغرفة
+  window.openUserModal(room);
+  // بعد بناء الفورم، انتظر لحظة ثم اعبئ البيانات
+  setTimeout(() => {
+    const titleEl = document.getElementById('title-' + room);
+    const descEl  = document.getElementById('desc-'  + room);
+    const urlEl   = document.getElementById('url-'   + room);
+    const tagEl   = document.getElementById('tag-'   + room);
+    if (titleEl) titleEl.value = post.title || '';
+    if (descEl)  descEl.value  = post.description || '';
+    if (urlEl)   urlEl.value   = post.url || '';
+    if (tagEl)   tagEl.value   = post.tag || '';
+    // تغيير زر النشر
+    const submitBtn = document.getElementById('upm-submit');
+    if (submitBtn) submitBtn.textContent = window.t('💾 حفظ التعديل', '💾 Save Edit');
+    // تحديث دالة الإرسال لتعديل بدل نشر
+    submitBtn.onclick = async () => {
+      const newTitle = titleEl ? titleEl.value.trim() : '';
+      const newDesc  = descEl  ? descEl.value.trim()  : '';
+      const newUrl   = urlEl   ? urlEl.value.trim()   : '';
+      const newTag   = tagEl   ? tagEl.value           : post.tag;
+      if (!newTitle && !newUrl) { 
+        const errEl = document.getElementById('upm-err');
+        if (errEl) { errEl.textContent = window.t('❌ أدخل عنواناً على الأقل','❌ Enter at least a title'); errEl.style.display='block'; }
+        return; 
+      }
+      submitBtn.disabled = true; submitBtn.textContent = window.t('⏳ جاري الحفظ...','⏳ Saving...');
+      try {
+        const { error } = await db.from('posts').update({
+          title: newTitle || post.title,
+          description: newDesc || post.description,
+          url: newUrl || post.url,
+          tag: newTag
+        }).eq('id', post.id);
+        if (error) throw error;
+        const okEl = document.getElementById('upm-ok');
+        if (okEl) { okEl.textContent = window.t('✅ تم تحديث المنشور!','✅ Post updated!'); okEl.style.display='block'; }
+        loadPage(room);
+        setTimeout(() => { document.getElementById('upm-modal')?.classList.remove('active'); }, 1200);
+      } catch(e) {
+        const errEl = document.getElementById('upm-err');
+        if (errEl) { errEl.textContent = '❌ ' + (e.message||e); errEl.style.display='block'; }
+        submitBtn.disabled = false; submitBtn.textContent = window.t('💾 حفظ التعديل','💾 Save Edit');
+      }
+    };
+    // عنوان النافذة
+    const titleSpan = document.getElementById('upm-room-title');
+    if (titleSpan) titleSpan.textContent = window.t('تعديل المنشور','Edit Post');
+  }, 80);
+};
+
 async function submitUser(room) {
   var titleEl = document.getElementById('title-' + room);
   var descEl  = document.getElementById('desc-'  + room);
@@ -1979,11 +2035,16 @@ function renderCards(posts, gridId, room) {
         }
       }
     }
-    // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
+    // زر الحذف والتعديل — يظهر فقط لصاحب المنشور أو الادمن
     const currentUid = window.currentUserId;
     const isOwner = currentUid && p.user_id && p.user_id === currentUid;
-    const deleteBtn = isOwner
-      ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
+    const canAdmin = userHasAnyRole(['admin','moderator']);
+    const canManage = isOwner || canAdmin;
+    const editBtn = canManage
+      ? `<button onclick="window.openEditPostModal(${p.id},'${room}')" style="background:transparent;border:1px solid #e01010;color:#e01010;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" title="${window.t('تعديل','Edit')}">✏️</button>`
+      : '';
+    const deleteBtn = canManage
+      ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:2px;" title="${window.t('حذف','Delete')}">🗑️</button>`
       : '';
     // تمييز فيديوهات قنوات YT VIP
     const isVipChannelPost = p.tag && p.tag.startsWith('auto:');
@@ -2035,7 +2096,7 @@ function renderCards(posts, gridId, room) {
       const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
       socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
     }
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -2070,26 +2131,48 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
         const found = ROLE_PRIORITY.find(r => rs.includes(r));
         return found || 'user';
       };
-      const userCard = (u, accentColor, topRoleDef) => {
+      // بناء بطاقة واحدة لكل مستخدم تحتوي كل رتبه
+      const userCard = (u) => {
+        const rs = normalizeRoles(u).filter(r => r !== 'user');
+        const topRole = ROLE_PRIORITY.find(r => rs.includes(r)) || 'user';
+        const topDef = ROLE_DEFS.find(d => d.key === topRole) || ROLE_DEFS[ROLE_DEFS.length-1];
+        const accentColor = topDef.color;
         const avatar = u.avatar_url
-          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
-          : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
-        // شارة واحدة فقط = الرتبة الأعلى للمستخدم
-        const badge = topRoleDef
-          ? `<span class="subscriber-badge" style="background:${topRoleDef.bg};color:${topRoleDef.color};border:1px solid ${topRoleDef.color};">${topRoleDef.short}</span>`
-          : '';
-        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
+          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
+          : `<div class="channel-avatar" style="width:76px;height:76px;border:2px solid ${accentColor};font-size:28px;">👤</div>`;
+        // كل الرتب في نفس البطاقة
+        const allBadges = rs.map(r => {
+          const def = ROLE_DEFS.find(d => d.key === r);
+          if (!def) return '';
+          return `<span class="subscriber-badge" style="background:${def.bg};color:${def.color};border:1px solid ${def.color};font-size:9px;padding:2px 7px;">${def.short}</span>`;
+        }).join('');
+        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};width:150px;min-width:150px;">${avatar}<div class="channel-info"><div class="channel-name" style="font-size:13px;">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:5px;display:flex;gap:3px;flex-wrap:wrap;justify-content:center;">${allBadges}</div></div></div>`;
       };
-      ROLE_DEFS.forEach(def => {
-        if (roleFilter && def.key !== roleFilter) return;
-        const usersInRole = vipUsers.filter(u => {
+
+      // إزالة التكرار: كل مستخدم مرة واحدة فقط
+      const seen = new Set();
+      let filteredUsers = [];
+      if (roleFilter) {
+        filteredUsers = vipUsers.filter(u => {
           const rs = normalizeRoles(u);
+          const def = ROLE_DEFS.find(d => d.key === roleFilter);
+          if (!def) return false;
           if (def.key === 'user') return rs.includes('user');
           return rs.includes(def.key);
         });
-        if (!usersInRole.length) return;
-        groupedHtml += `<div class="channels-grid subscribers-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
+      } else {
+        filteredUsers = vipUsers;
+      }
+      // إزالة التكرار بحسب username
+      const uniqueUsers = filteredUsers.filter(u => {
+        const key = u.username || Math.random();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
+      if (uniqueUsers.length) {
+        groupedHtml += `<div class="subscribers-flex-wrap">${uniqueUsers.map(u => userCard(u)).join('')}</div>`;
+      }
     }
   } catch(e) { console.error(e); }
 
@@ -2127,7 +2210,20 @@ window.filterSubscribers = function(roleKey, btn) {
   loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
 };
 
-function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
+function filterPosts(room, tag, btn) {
+  if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  const posts = allPosts[room]||[];
+  const filtered = tag ? posts.filter(p => {
+    if (!p.tag) return false;
+    const ptag = String(p.tag).trim();
+    // مطابقة مرنة للبطولات
+    if (room === 'tournaments' && (tag === 'تسجيل' || tag === 'Register')) {
+      return ptag === 'تسجيل' || ptag === 'Register' || ptag.toLowerCase() === 'register' || ptag === 'تسجيل';
+    }
+    return ptag === tag || ptag.toLowerCase() === tag.toLowerCase();
+  }) : posts;
+  renderCards(filtered, `grid-${room}`, room);
+}
 window._currentPage = 'home';
 function showPage(id) {
   document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
@@ -3438,10 +3534,6 @@ function applyTranslations() {
   const welcome = document.querySelector('.home-welcome');
   if (welcome) welcome.textContent = isEN ? 'Welcome to Virtux' : 'مرحباً بك في Virtux';
 
-  // Ticker
-  const tickerLabel = document.querySelector('.ticker-label');
-  if (tickerLabel) tickerLabel.textContent = isEN ? 'LIVE' : 'مباشر';
-
   // Profile modal
   const saveBtn = document.getElementById('saveProfileBtn');
   if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
@@ -3484,6 +3576,21 @@ function applyTranslations() {
   document.querySelectorAll('.loading-state').forEach(el => {
     el.textContent = isEN ? 'Loading...' : 'جاري التحميل...';
   });
+
+  // ترجمة عناوين الإطار المتحرك في الصفحة الرئيسية
+  document.querySelectorAll('.hcp-half-head[data-ar][data-en], .hcp-title[data-ar][data-en]').forEach(el => {
+    el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
+  });
+  // ترجمة ticker label
+  const tickerLbl = document.querySelector('.ticker-label');
+  if (tickerLbl) tickerLbl.textContent = isEN ? 'LIVE' : 'مباشر';
+  // إعادة بناء الإطار المتحرك
+  if (typeof window.loadHomePanel === 'function') {
+    setTimeout(() => window.loadHomePanel(), 0);
+  }
+  if (typeof window.loadTicker === 'function') {
+    setTimeout(() => window.loadTicker(), 0);
+  }
 }
 
 // ==================== صفحة الميزات والرتب ====================
