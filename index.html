@@ -239,16 +239,17 @@
     .read-more{font-size:12px;background:#e01010;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
     .read-more:hover{background:#e6c300}
     
-    .channels-grid.subscribers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;padding:16px 18px;}
-    .subscribers-flex-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;padding:16px 18px;width:100%;}
+    .channels-grid.subscribers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:16px 18px;}
+    .subscribers-flex-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:16px 18px;width:100%;grid-column:1 / -1;}
     .subscriber-card{width:100%;min-width:0;min-height:auto;flex-shrink:0;}
-    .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
+    .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#e01010}
-    .subscriber-card{position:relative;min-height:176px;padding:14px 12px 16px;justify-content:flex-start;overflow:hidden;isolation:isolate}
+    .subscriber-card{position:relative;min-height:150px;padding:12px 10px;justify-content:flex-start;overflow:hidden;isolation:isolate}
     .subscriber-card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:conic-gradient(from 0deg, transparent 0deg, var(--sub-accent, rgba(224,16,16,.85)) 90deg, transparent 170deg, transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.7;animation:subscriber-spin 4.5s linear infinite;pointer-events:none}
-    .subscriber-card .channel-avatar{width:78px;height:78px;margin-bottom:10px}
-    .subscriber-card .channel-name{font-size:13px;line-height:1.2;margin-bottom:6px;word-break:break-word}
-    .subscriber-badge{font-size:10px;border-radius:6px;padding:2px 8px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;min-height:20px}
+    .subscriber-card .channel-avatar{width:64px;height:64px;margin-bottom:8px}
+    .subscriber-card .channel-name{font-size:12px;line-height:1.2;margin-bottom:4px;word-break:break-word;font-weight:700;}
+    .subscriber-badge{font-size:9px;border-radius:5px;padding:1px 6px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;min-height:18px}
+
     
     /* Pagination & Search */
     .sub-search-wrap { padding: 10px 18px; border-bottom: 1px solid #333; display: flex; gap: 10px; align-items: center; }
@@ -2140,13 +2141,14 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
         const topDef = ROLE_DEFS.find(d => d.key === topRole) || ROLE_DEFS[ROLE_DEFS.length-1];
         const accentColor = topDef.color;
         const avatar = u.avatar_url
-          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
-          : `<div class="channel-avatar" style="width:76px;height:76px;border:2px solid ${accentColor};font-size:28px;">👤</div>`;
+          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
+          : `<div class="channel-avatar" style="width:64px;height:64px;border:2px solid ${accentColor};font-size:24px;">👤</div>`;
         const allBadges = rs.map(r => {
           const def = ROLE_DEFS.find(d => d.key === r);
           if (!def) return '';
-          return `<span class="subscriber-badge" style="background:${def.bg};color:${def.color};border:1px solid ${def.color};font-size:9px;padding:2px 7px;">${def.short}</span>`;
+          return `<span class="subscriber-badge" style="background:${def.bg};color:${def.color};border:1px solid ${def.color};font-size:8px;padding:1px 5px;">${def.short}</span>`;
         }).join('');
+
         return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:5px;display:flex;gap:3px;flex-wrap:wrap;justify-content:center;">${allBadges}</div></div></div>`;
       };
 
@@ -2190,13 +2192,14 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
         // Pagination Controls
         if (totalPages > 1) {
           groupedHtml += `
-            <div class="pagination-wrap">
+            <div class="pagination-wrap" style="grid-column: 1 / -1;">
               <button class="pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="window.changeSubPage(${page - 1})">${isEN ? 'Previous' : 'السابق'}</button>
               <div class="pagination-info">${isEN ? 'Page' : 'صفحة'} ${page} ${isEN ? 'of' : 'من'} ${totalPages}</div>
               <button class="pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="window.changeSubPage(${page + 1})">${isEN ? 'Next' : 'التالي'}</button>
             </div>
           `;
         }
+
       }
     }
   } catch(e) { console.error(e); }
