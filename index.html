@@ -3048,38 +3048,66 @@ window._tickerRawData = { news: [], gamingnews: [], youtubenews: [], live: [], v
 
 function buildTickerItems() {
   const isEN = window._siteLanguage === 'en';
+  const targetLang = isEN ? 'en' : 'ar';
   const { news, gamingnews, youtubenews, live, videos } = window._tickerRawData;
   let items = [];
+  let needsTranslation = false;
+
+  function getTitle(rawTitle) {
+    if (!rawTitle) return '';
+    const translated = window.tTitle(rawTitle);
+    // If tTitle returns original (not yet translated), mark that we need a rebuild later
+    if (translated === rawTitle) {
+      const hasArabic = /[\u0600-\u06FF]/.test(rawTitle);
+      const hasEnglish = /[A-Za-z]/.test(rawTitle);
+      const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
+      if (sourceLang && sourceLang !== targetLang) needsTranslation = true;
+    }
+    return translated;
+  }
 
   // Site news (ticker room) — manual posts from admin
   for (const p of (news||[])) {
-    const titleText = window.tTitle(p.title || '');
-    items.push({ text: '📢 ' + titleText, url: p.url });
+    items.push({ text: '📢 ' + getTitle(p.title), url: p.url });
   }
   // Gaming news
   for (const p of (gamingnews||[])) {
-    const titleText = window.tTitle(p.title || '');
-    items.push({ text: (isEN ? '🎮 Gaming: ' : '🎮 ألعاب: ') + titleText, url: p.url });
+    items.push({ text: (isEN ? '🎮 Gaming: ' : '🎮 ألعاب: ') + getTitle(p.title), url: p.url });
   }
   // YouTube news
   for (const p of (youtubenews||[])) {
-    const titleText = window.tTitle(p.title || '');
-    items.push({ text: (isEN ? '▶️ YouTube: ' : '▶️ يوتيوب: ') + titleText, url: p.url });
+    items.push({ text: (isEN ? '▶️ YouTube: ' : '▶️ يوتيوب: ') + getTitle(p.title), url: p.url });
   }
   // Live streams
   for (const p of (live||[])) {
     const t = (p.tag||'').toLowerCase();
     const icon = (t.includes('live') || t.includes('now')) ? '🔴 LIVE' : t.includes('pre') ? (isEN ? '⏰ Soon' : '⏰ قريباً') : '📡';
-    const titleText = window.tTitle(p.title || '');
-    items.push({ text: icon + ': ' + titleText, url: p.url });
+    items.push({ text: icon + ': ' + getTitle(p.title), url: p.url });
   }
   // Latest videos
   for (const p of (videos||[])) {
-    const titleText = window.tTitle(p.title || '');
-    items.push({ text: '🎬 ' + titleText, url: p.url });
+    items.push({ text: '🎬 ' + getTitle(p.title), url: p.url });
   }
 
   tickerItems = items.length ? items : [{ text: isEN ? '🎮 Welcome to Virtux — Gaming Community' : '🎮 مرحباً في Virtux — مجتمع الألعاب', url: null }];
+
+  // If some titles need translation, rebuild ticker after translations complete
+  if (needsTranslation) {
+    // Trigger translations for all untranslated titles
+    const allItems = [...(news||[]), ...(gamingnews||[]), ...(youtubenews||[]), ...(live||[]), ...(videos||[])];
+    allItems.forEach(p => {
+      if (!p.title) return;
+      const hasArabic = /[\u0600-\u06FF]/.test(p.title);
+      const hasEnglish = /[A-Za-z]/.test(p.title);
+      const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
+      if (sourceLang && sourceLang !== targetLang) {
+        const cacheKey = sourceLang + '|' + targetLang + '|' + p.title;
+        if (!window._titleCache[cacheKey] && !window._titleTranslatePending[cacheKey]) {
+          window._translateTitleBg(p.title, sourceLang, targetLang);
+        }
+      }
+    });
+  }
 }
 
 async function loadTicker() {
@@ -3833,7 +3861,12 @@ window._translateTitleBg = async function(title, sourceLang, targetLang) {
     const j = await r.json();
     const translated = j?.[0]?.map(x => x?.[0]).filter(Boolean).join('') || title;
     window._titleCache[cacheKey] = translated;
-    if (window._siteLanguage === targetLang) window._refreshTranslatedTitles();
+    if (window._siteLanguage === targetLang) {
+      // Rebuild cards/grids
+      window._refreshTranslatedTitles();
+      // Also rebuild ticker since titles changed
+      if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
+    }
   } catch(e) {
   } finally {
     delete window._titleTranslatePending[cacheKey];
@@ -3861,7 +3894,40 @@ window.setLang = function(lang) {
     if (arBtn) { arBtn.style.background='transparent'; arBtn.style.color='#e01010'; }
   }
   applyTranslations();
-  if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
+
+  // Pre-translate all titles in the cache to new language, then rebuild everything
+  const targetLang = lang;
+  const allTitles = [];
+  // Collect all titles from loaded posts
+  if (window.allPosts) {
+    Object.values(window.allPosts).forEach(roomPosts => {
+      (roomPosts || []).forEach(p => { if (p.title) allTitles.push(p.title); });
+    });
+  }
+  // Collect titles from ticker raw data
+  if (window._tickerRawData) {
+    ['news','gamingnews','youtubenews','live','videos'].forEach(key => {
+      (window._tickerRawData[key] || []).forEach(p => { if (p.title) allTitles.push(p.title); });
+    });
+  }
+
+  // Start background translations for all titles not yet in cache
+  const translatePromises = [];
+  const seen = new Set();
+  allTitles.forEach(title => {
+    if (seen.has(title)) return;
+    seen.add(title);
+    const hasArabic = /[\u0600-\u06FF]/.test(title);
+    const hasEnglish = /[A-Za-z]/.test(title);
+    const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
+    if (!sourceLang || sourceLang === targetLang) return;
+    const cacheKey = sourceLang + '|' + targetLang + '|' + title;
+    if (!window._titleCache[cacheKey] && !window._titleTranslatePending[cacheKey]) {
+      translatePromises.push(window._translateTitleBg(title, sourceLang, targetLang));
+    }
+  });
+
+  // Immediately rebuild with whatever is cached, then rebuild again after translations
   if (window.allPosts) {
     Object.keys(window.allPosts).forEach(room => {
       const el = document.getElementById('grid-' + room);
@@ -3879,8 +3945,14 @@ window.setLang = function(lang) {
         rebuildFilterBar(page.id.replace('page-',''));
       });
       if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
-      if (typeof window.loadTicker === 'function') window.loadTicker();
     }, 50);
+  }
+
+  // Rebuild ticker immediately with cached translations, then reload fully for fresh data
+  if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
+  // Full ticker reload to get fresh translated items
+  if (typeof window.loadTicker === 'function') {
+    setTimeout(() => window.loadTicker(), 100);
   }
 };
 
