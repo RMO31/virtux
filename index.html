@@ -662,6 +662,82 @@
     .vx-copyright-bar span{color:#e01010;font-weight:700;}
     /* add padding bottom to main to avoid footer overlap */
     .vx-main{padding-bottom:28px;}
+    /* ══ VIDEO MODAL ══ */
+    .video-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 5000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .video-modal.active { display: flex; }
+    .vm-box {
+      width: 100%;
+      max-width: 1000px;
+      aspect-ratio: 16/9;
+      background: #000;
+      border: 1px solid #e01010;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 50px rgba(224,16,16,0.3);
+    }
+    .vm-close {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      color: #fff;
+      font-size: 30px;
+      cursor: pointer;
+      z-index: 5001;
+      transition: color 0.2s;
+    }
+    .vm-close:hover { color: #e01010; }
+    .vm-body { width: 100%; height: 100%; }
+    .vm-body iframe, .vm-body video { width: 100%; height: 100%; border: none; display: block; }
+
+    /* Play Overlays */
+    .play-overlay-btns {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      opacity: 0;
+      transition: opacity 0.3s, background 0.3s;
+      z-index: 5;
+      background: rgba(0,0,0,0);
+    }
+    .post-media-wrap:hover .play-overlay-btns {
+      opacity: 1;
+      background: rgba(0,0,0,0.4);
+    }
+    .po-btn {
+      width: 50px;
+      height: 50px;
+      background: rgba(224,16,16,0.9);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+      font-size: 20px;
+      border: none;
+    }
+    .po-btn:hover {
+      transform: scale(1.15);
+      background: #ff0000;
+      box-shadow: 0 0 15px rgba(255,0,0,0.5);
+    }
+    .po-btn.inline-play { background: rgba(255,255,255,0.9); color: #000; }
+    .po-btn.inline-play:hover { background: #fff; }
     </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2170,8 +2246,31 @@ function renderSingleCard(p, room) {
     const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
     socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
   }
+
+  // --- Highlights Playback Enhancements ---
+  if (room === 'highlights' && !isRestricted && p.url) {
+    const isYT = p.url.includes('youtube.com') || p.url.includes('youtu.be');
+    const isLocalVid = p.url.match(/\.(mp4|webm|mov|ogg)/i) || p.url.includes('/storage/v1/object/public/');
+    
+    if (isYT || isLocalVid) {
+      const vidId = isYT ? extractYouTubeId(p.url) : '';
+      const overlay = `
+        <div class="play-overlay-btns">
+          ${isYT ? `<button class="po-btn inline-play" title="${window.t('تشغيل هنا','Play Here')}" onclick="window.playYT(this.closest('.post-media-wrap').querySelector('[data-vid]'))">▶️</button>` : ''}
+          <button class="po-btn modal-play" title="${window.t('تكبير','Zoom')}" onclick="window.openVideoModal(${p.id}, '${room}')">🔳</button>
+        </div>
+      `;
+      // Inject overlay into media
+      media = media.replace('</div></div>', overlay + '</div></div>');
+      if (isYT) {
+        // Remove direct click to play from YT div to let overlay handle it if we want, or keep it.
+        // Actually, let's keep the direct click but maybe add the overlay for more options.
+      }
+    }
+  }
+
   const cardUrl = (room === 'yt-videos') ? '#' : `post.html?id=${p.id}`;
-  const cardOnClick = (room === 'yt-videos') ? '' : `onclick="if(!event.target.closest('button, a, .post-card-video')) window.location.href='${cardUrl}'"`;
+  const cardOnClick = (room === 'yt-videos') ? '' : `onclick="if(!event.target.closest('button, a, .post-card-video, .play-overlay-btns')) window.location.href='${cardUrl}'"`;
   const cursorStyle = (room === 'yt-videos') ? '' : 'cursor:pointer;';
   
   return `<div class="${cardCls}" ${cardOnClick} style="${cursorStyle}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
@@ -4227,6 +4326,48 @@ window.fixThumb = function(img, vid) {
   }
 };
 
+// ══ Video Modal Logic ══
+window.openVideoModal = function(postId, room) {
+  const post = (window.allPosts?.[room] || []).find(p => String(p.id) === String(postId));
+  if (!post || !post.url) return;
+
+  const modal = document.getElementById('videoPlayerModal');
+  const body = document.getElementById('vm-body');
+  if (!modal || !body) return;
+
+  let content = '';
+  const isYT = post.url.includes('youtube.com') || post.url.includes('youtu.be');
+  const isTwitch = post.url.includes('twitch.tv');
+  const videoId = isYT ? extractYouTubeId(post.url) : null;
+
+  if (isYT && videoId) {
+    content = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+  } else if (isTwitch) {
+    const match = post.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+    if (match) {
+      content = `<iframe src="https://player.twitch.tv/?channel=${match[1]}&parent=${location.hostname}&autoplay=true" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+    }
+  } else if (post.url.match(/\.(mp4|webm|mov|ogg)/i) || post.url.includes('/storage/v1/object/public/')) {
+    content = `<video src="${post.url}" controls autoplay style="width:100%;height:100%;"></video>`;
+  } else if (post.url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i)) {
+    content = `<img src="${post.url}" style="width:100%;height:100%;object-fit:contain;">`;
+  } else {
+    content = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">${window.t('لا يمكن عرض هذا النوع من الوسائط','Cannot display this media type')}</div>`;
+  }
+
+  body.innerHTML = content;
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeVideoModal = function() {
+  const modal = document.getElementById('videoPlayerModal');
+  const body = document.getElementById('vm-body');
+  if (modal) modal.classList.remove('active');
+  if (body) body.innerHTML = '';
+  document.body.style.overflow = '';
+};
+
 initializeAuth();
 showPage('home');
 loadTicker();
@@ -4241,5 +4382,13 @@ if (typeof applyTranslations === 'function') applyTranslations();
   document.body.appendChild(bar);
 })();
 </script>
+
+<div id="videoPlayerModal" class="video-modal" onclick="if(event.target===this) window.closeVideoModal()">
+  <div class="vm-box">
+    <div class="vm-close" onclick="window.closeVideoModal()">✕</div>
+    <div id="vm-body" class="vm-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
