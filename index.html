@@ -667,38 +667,69 @@
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.95);
+      background: rgba(0,0,0,0.98);
       z-index: 5000;
       justify-content: center;
       align-items: center;
       padding: 20px;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(12px);
     }
     .video-modal.active { display: flex; }
+    .vm-container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: vm-slide-up 0.4s ease;
+    }
+    @keyframes vm-slide-up {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
     .vm-box {
       width: 100%;
-      max-width: 1000px;
       aspect-ratio: 16/9;
       background: #000;
-      border: 1px solid #e01010;
+      border: 1px solid rgba(224,16,16,0.5);
       border-radius: 12px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 0 50px rgba(224,16,16,0.3);
+      box-shadow: 0 10px 60px rgba(0,0,0,0.8);
     }
     .vm-close {
       position: absolute;
-      top: -40px;
+      top: -45px;
       right: 0;
       color: #fff;
-      font-size: 30px;
+      font-size: 32px;
       cursor: pointer;
       z-index: 5001;
-      transition: color 0.2s;
+      transition: color 0.2s, transform 0.2s;
     }
-    .vm-close:hover { color: #e01010; }
+    .vm-close:hover { color: #e01010; transform: rotate(90deg); }
     .vm-body { width: 100%; height: 100%; }
     .vm-body iframe, .vm-body video { width: 100%; height: 100%; border: none; display: block; }
+    .vm-info {
+      padding: 0 10px;
+      color: #fff;
+    }
+    #vm-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    #vm-desc {
+      font-size: 14px;
+      color: #aaa;
+      line-height: 1.6;
+      max-height: 100px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    #vm-desc::-webkit-scrollbar { width: 4px; }
+    #vm-desc::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 
     /* Play Overlays */
     .play-overlay-btns {
@@ -2121,10 +2152,17 @@ function renderSingleCard(p, room) {
         + `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)"></div>`;
     }
     else if (isLocalVideo) {
-      const poster = (p.icon && p.icon.startsWith('http')) ? `poster="${p.icon}"` : '';
+      const poster = (p.icon && p.icon.startsWith('http')) ? p.icon : '';
+      const posterStyle = poster ? `style="background-image:url('${poster}')"` : '';
       media = `<div class="post-media-wrap">`
-        + (p.icon && p.icon.startsWith('http') ? `<div class="post-media-bg" style="background-image:url('${p.icon}')"></div>` : '')
-        + `<div class="post-card-video"><video src="${p.url}" ${poster} controls preload="metadata" style="width:100%;height:100%;background:transparent;"></video></div></div>`;
+        + (poster ? `<div class="post-media-bg" ${posterStyle}></div>` : '')
+        + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-postid="${p.id}" data-room="${room}">`
+        + (poster ? `<img src="${poster}" style="width:100%;height:100%;object-fit:contain;display:block;">` : `<div class="post-card-emoji">🎥</div>`)
+        + `<div class="play-overlay-btns">`
+        +   `<div class="po-btn inline-play" onclick="this.closest('.post-card-video').innerHTML='<video src=\\'${p.url}\\' controls autoplay style=\\'width:100%;height:100%\\'></video>'" title="${window.t('تشغيل في الإطار','Play Inline')}">▶️</div>`
+        +   `<div class="po-btn theater-play" onclick="window.openVideoModal(${p.id}, '${room}')" title="${window.t('وضع المسرح','Theater Mode')}">📺</div>`
+        + `</div>`
+        + `</div></div>`;
     }
     else if (isYouTube) {
       const videoId = extractYouTubeId(p.url);
@@ -2134,10 +2172,13 @@ function renderSingleCard(p, room) {
         const bgImg = (p.icon && p.icon.startsWith('http')) ? p.icon : `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
         media = `<div class="post-media-wrap">`
           + `<div class="post-media-bg" style="background-image:url('${bgImg}')"></div>`
-          + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-vid="${videoId}" onclick="window.playYT(this)">`
+          + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-vid="${videoId}" data-postid="${p.id}" data-room="${room}">`
           + `<img src="https://i.ytimg.com/vi/${videoId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:contain;display:block;" onerror="window.fixThumb(this,this.closest('[data-vid]').dataset.vid)">`
           + liveBadgeHtml
-          + `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>`
+          + `<div class="play-overlay-btns">`
+          +   `<div class="po-btn inline-play" onclick="window.playYT(this.closest('.post-card-video'))" title="${window.t('تشغيل في الإطار','Play Inline')}">▶️</div>`
+          +   `<div class="po-btn theater-play" onclick="window.openVideoModal(${p.id}, '${room}')" title="${window.t('وضع المسرح','Theater Mode')}">📺</div>`
+          + `</div>`
           + `</div></div>`;
       } else {
         media = `<div class="post-media-wrap"><div class="post-card-emoji">🎬</div></div>`;
@@ -4293,17 +4334,34 @@ function applyTranslations() {
 // ===== تشغيل يوتيوب =====
 window.playYT = function(el) {
   var vid = el.getAttribute('data-vid');
+  var postId = el.getAttribute('data-postid');
+  var room = el.getAttribute('data-room');
   if (!vid) return;
-  el.onclick = null;
+  
   el.style.cursor = 'default';
+  el.innerHTML = '';
+  
   var iframe = document.createElement('iframe');
   iframe.src = 'https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0';
   iframe.setAttribute('frameborder', '0');
   iframe.setAttribute('allowfullscreen', '');
   iframe.setAttribute('allow', 'accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
   iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:none;';
-  el.innerHTML = '';
+  
+  // Create Expand Button for Theater Mode
+  var expandBtn = document.createElement('div');
+  expandBtn.innerHTML = '📺';
+  expandBtn.style.cssText = 'position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#fff;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;z-index:10;font-size:18px;border:1px solid rgba(255,255,255,0.2);box-shadow:0 4px 10px rgba(0,0,0,0.5);transition:transform 0.2s;';
+  expandBtn.title = window.t('فتح في وضع المسرح','Open in Theater Mode');
+  expandBtn.onmouseover = function() { this.style.transform = 'scale(1.1)'; };
+  expandBtn.onmouseout = function() { this.style.transform = 'scale(1)'; };
+  expandBtn.onclick = function(e) {
+    e.stopPropagation();
+    window.openVideoModal(postId, room);
+  };
+  
   el.appendChild(iframe);
+  el.appendChild(expandBtn);
 };
 
 window.fixThumb = function(img, vid) {
@@ -4328,7 +4386,12 @@ window.openVideoModal = function(postId, room) {
 
   const modal = document.getElementById('videoPlayerModal');
   const body = document.getElementById('vm-body');
+  const titleEl = document.getElementById('vm-title');
+  const descEl = document.getElementById('vm-desc');
   if (!modal || !body) return;
+
+  if (titleEl) titleEl.textContent = window.tTitle(post.title) || '';
+  if (descEl) descEl.textContent = post.description || '';
 
   let content = '';
   const isYT = post.url.includes('youtube.com') || post.url.includes('youtu.be');
@@ -4379,9 +4442,15 @@ if (typeof applyTranslations === 'function') applyTranslations();
 </script>
 
 <div id="videoPlayerModal" class="video-modal" onclick="if(event.target===this) window.closeVideoModal()">
-  <div class="vm-box">
-    <div class="vm-close" onclick="window.closeVideoModal()">✕</div>
-    <div id="vm-body" class="vm-body"></div>
+  <div class="vm-container">
+    <div class="vm-box">
+      <div class="vm-close" onclick="window.closeVideoModal()">✕</div>
+      <div id="vm-body" class="vm-body"></div>
+    </div>
+    <div id="vm-info" class="vm-info">
+      <h2 id="vm-title"></h2>
+      <div id="vm-desc"></div>
+    </div>
   </div>
 </div>
 
