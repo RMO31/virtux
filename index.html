@@ -675,7 +675,88 @@
     .vx-copyright-bar span{color:#e01010;font-weight:700;}
     /* add padding bottom to main to avoid footer overlap */
     .vx-main{padding-bottom:28px;}
-    /* ══ VIDEO MODAL ══ */
+    /* ══ USER PROFILE POPUP ══ */
+    .user-popup-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 7000;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(4px);
+    }
+    .user-popup-overlay.active { display: flex; }
+    .user-popup-box {
+      background: linear-gradient(160deg, #0d0000, #1a0000);
+      border: 1.5px solid #e01010;
+      border-radius: 18px;
+      padding: 28px 24px 22px;
+      width: 90%;
+      max-width: 360px;
+      position: relative;
+      box-shadow: 0 0 40px rgba(220,16,16,0.25);
+      animation: popup-in 0.28s cubic-bezier(.4,0,.2,1);
+      text-align: center;
+    }
+    @keyframes popup-in {
+      from { transform: scale(0.88) translateY(20px); opacity: 0; }
+      to   { transform: scale(1) translateY(0);       opacity: 1; }
+    }
+    .user-popup-close {
+      position: absolute;
+      top: 12px; right: 14px;
+      background: transparent; border: 1px solid #444;
+      color: #aaa; width: 26px; height: 26px;
+      border-radius: 6px; cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-popup-close:hover { color: #e01010; border-color: #e01010; }
+    .user-popup-avatar {
+      width: 80px; height: 80px;
+      border-radius: 50%; object-fit: cover;
+      border: 3px solid #e01010;
+      margin: 0 auto 12px;
+      display: block;
+      background: #2a2a3a;
+    }
+    .user-popup-avatar-placeholder {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: #2a2a3a;
+      border: 3px solid #e01010;
+      margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+    }
+    .user-popup-name {
+      font-size: 18px; font-weight: 700; color: #e01010; margin-bottom: 6px;
+    }
+    .user-popup-badges {
+      display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-bottom: 14px;
+    }
+    .user-popup-games {
+      margin-top: 12px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    .user-popup-games h4 {
+      color: #e01010; font-size: 12px; margin: 0 0 8px; font-weight: 700;
+    }
+    .user-popup-games-list {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .user-popup-game-tag {
+      background: #1a0000; border: 1px solid #e01010;
+      color: #e01010; border-radius: 5px; padding: 3px 9px;
+      font-size: 11px;
+    }
+    .user-popup-no-games { color: #555; font-size: 12px; }
+
+
     .video-modal {
       display: none;
       position: fixed;
@@ -2351,7 +2432,9 @@ function renderSingleCard(p, room) {
       const avatarEl = authorAvatar
         ? `<img src="${authorAvatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`
         : `<span style="width:18px;height:18px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">👤</span>`;
-      authorHtml = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">${avatarEl}<span style="font-size:10px;color:#777;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">@${escapeHtml(authorName)}</span></div>`;
+      const uid = escapeHtml(p.user_id);
+      const uname = escapeHtml(authorName);
+      authorHtml = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;cursor:pointer;" onclick="event.stopPropagation();window.openUserPopup('${uid}','${uname}')" title="${window.t('عرض الملف الشخصي','View Profile')}">${avatarEl}<span style="font-size:10px;color:#e01010;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;text-decoration:none;transition:opacity .15s;">@${uname}</span></div>`;
     }
   }
 
@@ -2388,10 +2471,10 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
   const isEN = window._siteLanguage === 'en';
   try {
     let { data: vipUsers, error } = await db.from('profiles')
-      .select('username, avatar_url, role, roles')
+      .select('id, username, avatar_url, role, roles')
       .order('created_at', { ascending: false });
     if (error) {
-      const fb = await db.from('profiles').select('username, avatar_url, role').order('created_at',{ascending:false});
+      const fb = await db.from('profiles').select('id, username, avatar_url, role').order('created_at',{ascending:false});
       vipUsers = fb.data;
     }
 
@@ -2421,7 +2504,10 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
           return `<span class="subscriber-badge" style="background:${def.bg};color:${def.color};border:1px solid ${def.color};font-size:8px;padding:1px 5px;">${def.short}</span>`;
         }).join('');
 
-        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:5px;display:flex;gap:3px;flex-wrap:wrap;justify-content:center;">${allBadges}</div></div></div>`;
+        const uid = u.id ? escapeHtml(u.id) : '';
+        const uname = escapeHtml(u.username || '');
+        const clickAttr = uid ? `onclick="window.openUserPopup('${uid}','${uname}')" title="${window.t('عرض الملف','View Profile')}" style="--sub-accent:${accentColor};cursor:pointer;"` : `style="--sub-accent:${accentColor};"`;
+        return `<div class="channel-card subscriber-card" ${clickAttr}>${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:5px;display:flex;gap:3px;flex-wrap:wrap;justify-content:center;">${allBadges}</div></div></div>`;
       };
 
       const seen = new Set();
@@ -3964,7 +4050,10 @@ window.toggleLanguage = function() {
 function rebuildFilterBar(room) {
   const page = document.getElementById('page-' + room);
   if (!page) return;
-  const existing = page.querySelector('.filter-bar');
+  // For subscribers, the container is sub-search-wrap (merged with filter buttons)
+  const existing = room === 'subscribers'
+    ? (page.querySelector('.sub-search-wrap') || page.querySelector('.filter-bar'))
+    : page.querySelector('.filter-bar');
   if (!existing) return;
   const isEN = window._siteLanguage === 'en';
   let newBar = '';
@@ -3992,20 +4081,21 @@ function rebuildFilterBar(room) {
     </div>`;
   } else if (room === 'subscribers') {
     const searchQuery = window._subscribersSearchQuery || '';
-    newBar = `<div class="sub-search-wrap">
-      <input type="text" class="sub-search-input" placeholder="${isEN?'Search subscribers...':'بحث عن مشتركين...'}" value="${searchQuery}" oninput="window.handleSubscribersSearch(this.value)">
-    </div>
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('guest',this)">Guest</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button>
+    const activeRole = window._subscribersRoleFilter || '';
+    newBar = `<div class="sub-search-wrap" style="flex-direction:column;gap:8px;align-items:stretch;">
+      <input type="text" class="sub-search-input" placeholder="${isEN?'🔍 Search by username...':'🔍 البحث باسم المستخدم...'}" value="${searchQuery}" oninput="window.handleSubscribersSearch(this.value)" style="width:100%;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="filter-btn ${!activeRole?'active':''}" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button>
+        <button class="filter-btn ${activeRole==='admin'?'active':''}" onclick="window.filterSubscribers('admin',this)">Admin</button>
+        <button class="filter-btn ${activeRole==='moderator'?'active':''}" onclick="window.filterSubscribers('moderator',this)">Mod</button>
+        <button class="filter-btn ${activeRole==='youtuber_vip'?'active':''}" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button>
+        <button class="filter-btn ${activeRole==='youtuber'?'active':''}" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button>
+        <button class="filter-btn ${activeRole==='vip'?'active':''}" onclick="window.filterSubscribers('vip',this)">VIP</button>
+        <button class="filter-btn ${activeRole==='donor'?'active':''}" onclick="window.filterSubscribers('donor',this)">Donors</button>
+        <button class="filter-btn ${activeRole==='member'?'active':''}" onclick="window.filterSubscribers('member',this)">Member</button>
+        <button class="filter-btn ${activeRole==='guest'?'active':''}" onclick="window.filterSubscribers('guest',this)">Guest</button>
+        <button class="filter-btn ${activeRole==='user'?'active':''}" onclick="window.filterSubscribers('user',this)">User</button>
+      </div>
     </div>`;
   }
 
@@ -4745,6 +4835,100 @@ window.closeVideoModal = function() {
   document.body.style.overflow = '';
 };
 
+// ══ User Profile Popup ══
+window._userPopupCache = {};
+
+window.openUserPopup = async function(userId, username) {
+  const overlay = document.getElementById('userProfilePopup');
+  if (!overlay) return;
+  const isEN = window._siteLanguage === 'en';
+
+  // Show loading state
+  document.getElementById('up-avatar-wrap').innerHTML = '<div class="user-popup-avatar-placeholder">⏳</div>';
+  document.getElementById('up-name').textContent = '@' + (username || '...');
+  document.getElementById('up-badges').innerHTML = '';
+  document.getElementById('up-games-section').style.display = 'none';
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    // Fetch profile
+    let profile = window._userPopupCache[userId];
+    if (!profile) {
+      const { data } = await db.from('profiles')
+        .select('username, avatar_url, role, roles, favorite_game, bio')
+        .eq('id', userId)
+        .maybeSingle();
+      profile = data;
+      if (profile) window._userPopupCache[userId] = profile;
+    }
+
+    if (!profile) {
+      document.getElementById('up-name').textContent = '@' + (username || window.t('مستخدم','User'));
+      document.getElementById('up-avatar-wrap').innerHTML = '<div class="user-popup-avatar-placeholder">👤</div>';
+      return;
+    }
+
+    // Avatar
+    const avatarWrap = document.getElementById('up-avatar-wrap');
+    if (profile.avatar_url) {
+      avatarWrap.innerHTML = `<img class="user-popup-avatar" src="${profile.avatar_url}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="user-popup-avatar-placeholder" style="display:none;">👤</div>`;
+    } else {
+      avatarWrap.innerHTML = '<div class="user-popup-avatar-placeholder">👤</div>';
+    }
+
+    // Name
+    document.getElementById('up-name').textContent = '@' + (profile.username || username || window.t('مستخدم','User'));
+
+    // Badges
+    const ROLE_DEFS = {
+      admin:       { bg:'#3d0f0f', color:'#ff0000', label:'🛡️ ADMIN' },
+      moderator:   { bg:'#2a0000', color:'#ff2222', label:'🔧 MOD' },
+      youtuber_vip:{ bg:'#3d1a0f', color:'#ff6600', label:'🔥 YT VIP' },
+      youtuber:    { bg:'#2d0a0a', color:'#cc0000', label:'🎬 YOUTUBER' },
+      vip:         { bg:'#1a0000', color:'#e01010', label:'👑 VIP' },
+      member:      { bg:'#100000', color:'#cc2222', label:'⭐ MEMBER' },
+      donor:       { bg:'#001a22', color:'#00ccff', label:'💎 DONOR' },
+      guest:       { bg:'#1a1a1a', color:'#aaa',    label:'🛡️ GUEST' },
+      user:        { bg:'#111',    color:'#888',    label:'👤 USER' },
+    };
+    const roles = normalizeRoles(profile).filter(r => r !== 'user');
+    const badgesEl = document.getElementById('up-badges');
+    if (roles.length) {
+      badgesEl.innerHTML = roles.map(r => {
+        const def = ROLE_DEFS[r] || { bg:'#2a2a3a', color:'#e01010', label: r.toUpperCase() };
+        return `<span style="background:${def.bg};color:${def.color};border:1px solid ${def.color};border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;">${def.label}</span>`;
+      }).join('');
+    } else {
+      badgesEl.innerHTML = `<span style="background:#111;color:#888;border:1px solid #444;border-radius:999px;padding:2px 10px;font-size:11px;">👤 USER</span>`;
+    }
+
+    // Favorite games
+    const gamesSection = document.getElementById('up-games-section');
+    const gamesList = document.getElementById('up-games-list');
+    const gamesTitle = document.getElementById('up-games-title');
+    gamesTitle.textContent = isEN ? '🎮 Favorite Games' : '🎮 الألعاب المفضلة';
+    const favGame = profile.favorite_game;
+    if (favGame && String(favGame).trim()) {
+      // Could be comma-separated list
+      const games = String(favGame).split(',').map(g => g.trim()).filter(Boolean);
+      gamesList.innerHTML = games.map(g => `<span class="user-popup-game-tag">${escapeHtml(g)}</span>`).join('');
+      gamesSection.style.display = 'block';
+    } else {
+      gamesSection.style.display = 'none';
+    }
+
+  } catch(e) {
+    console.error('openUserPopup error:', e);
+  }
+};
+
+window.closeUserPopup = function() {
+  const overlay = document.getElementById('userProfilePopup');
+  if (overlay) overlay.classList.remove('active');
+  document.body.style.overflow = '';
+};
+
 initializeAuth();
 showPage('home');
 loadTicker();
@@ -4760,7 +4944,20 @@ if (typeof applyTranslations === 'function') applyTranslations();
 })();
 </script>
 
-<div id="videoPlayerModal" class="video-modal" onclick="if(event.target===this) window.closeVideoModal()">
+<div id="userProfilePopup" class="user-popup-overlay" onclick="if(event.target===this)window.closeUserPopup()">
+  <div class="user-popup-box">
+    <button class="user-popup-close" onclick="window.closeUserPopup()">✕</button>
+    <div id="up-avatar-wrap"></div>
+    <div class="user-popup-name" id="up-name"></div>
+    <div class="user-popup-badges" id="up-badges"></div>
+    <div class="user-popup-games" id="up-games-section" style="display:none;">
+      <h4 id="up-games-title">🎮 الألعاب المفضلة</h4>
+      <div class="user-popup-games-list" id="up-games-list"></div>
+    </div>
+  </div>
+</div>
+
+
   <div class="vm-container">
     <div class="vm-box">
       <div class="vm-close" onclick="window.closeVideoModal()">✕</div>
