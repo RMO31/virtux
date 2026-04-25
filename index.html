@@ -1705,19 +1705,20 @@ window.openUserModal = function(room) {
   } else if (room === 'highlights') {
     formHtml = `<div class="form-with-preview">
       <div>
-        <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label>Player / Game</label><input id="desc-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
-        <div style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="url-${room}" style="${inputStyle}"></div>
-        ${fileInputHtml('image/*,video/*', 'أو ارفع ملف من الحاسوب (صورة أو فيديو)', 'media')}
+        <div><label>${window.t('Title','العنوان')}</label><input id="title-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>${window.t('Player / Game','اللاعب / اللعبة')}</label><input id="desc-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>${window.t('Type','النوع')}</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 YouTube Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
+        <div style="margin-top:12px;"><label>${window.t('YouTube URL / Media URL','رابط يوتيوب / رابط وسائط')}</label><input id="url-${room}" placeholder="https://www.youtube.com/watch?v=..." style="${inputStyle}"></div>
+        <div style="margin-top:12px; font-size:11px; color:#aaa;">${window.t('To save space, please use YouTube links for videos. Files are for photos only.','لحفظ المساحة، يرجى استخدام روابط يوتيوب للفيديوهات. رفع الملفات للصور فقط.')}</div>
+        ${fileInputHtml('image/*', window.t('Or upload a Photo','أو ارفع صورة'), 'media')}
         <input type="hidden" id="icon-${room}">
       </div>
       <div class="preview-panel">
-        <h4 style="color:#e01010;">معاينة</h4>
+        <h4 style="color:#e01010;">${window.t('Preview','معاينة')}</h4>
         <img id="preview-img-${room}" class="preview-media" style="display:none;">
         <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-        <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط</div>
-        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
+        <div id="preview-text-${room}" style="color:#aaa;">${window.t('No media','لا توجد وسائط')}</div>
+        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ ${window.t('Delete','حذف')}</button>
       </div>
     </div>`;
   } else {
@@ -1861,7 +1862,11 @@ async function submitUser(room) {
   if (room === 'live'      && tag === 'مباشر Now' && !url) { showUPMError('live المباشر يحتاج رابط'); return; }
   if (room === 'yt-videos' && !url)                       { showUPMError('أدخل رابط يوتيوب'); return; }
   if (room === 'yt-videos' && !isValidYouTubeUrl(url))    { showUPMError('رابط يوتيوب غير صحيح'); return; }
-  if (room === 'highlights'&& !url && !currentMediaFile)  { showUPMError('أدخل رابط أو ارفع ملف'); return; }
+  if (room === 'highlights' && currentMediaFile && fileIsVideo) {
+    showUPMError(window.t('Video file uploads are not allowed in Highlights. Please use a YouTube link.','رفع ملفات الفيديو غير مسموح في أبرز اللحظات. يرجى استخدام رابط يوتيوب.'));
+    return;
+  }
+  if (room === 'highlights' && !url && !currentMediaFile)  { showUPMError(window.t('Please enter a YouTube link or upload a photo','أدخل رابط يوتيوب أو ارفع صورة')); return; }
 
   var btn  = document.getElementById('upm-submit');
   var okEl = document.getElementById('upm-ok');
@@ -1906,7 +1911,7 @@ async function submitUser(room) {
     var finalIcon = thumbUrl || (isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))));
 
     // إذا كان الرابط يوتيوب ولم تُملأ الخانات نأخذ البيانات من API قبل النشر
-    if ((!title || !desc) && (room === 'live' || room === 'yt-videos') && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
+    if ((!title || !desc) && (room === 'live' || room === 'yt-videos' || room === 'highlights') && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
       try {
         var _inf = await fetchYouTubeVideoInfo(finalUrl);
         if (_inf) {
@@ -2247,31 +2252,21 @@ function renderSingleCard(p, room) {
     socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
   }
 
-  // --- Highlights Playback Enhancements ---
-  if (room === 'highlights' && !isRestricted && p.url) {
-    const isYT = p.url.includes('youtube.com') || p.url.includes('youtu.be');
-    const isLocalVid = p.url.match(/\.(mp4|webm|mov|ogg)/i) || p.url.includes('/storage/v1/object/public/');
-    
-    if (isYT || isLocalVid) {
-      const vidId = isYT ? extractYouTubeId(p.url) : '';
-      const overlay = `
-        <div class="play-overlay-btns">
-          ${isYT ? `<button class="po-btn inline-play" title="${window.t('تشغيل هنا','Play Here')}" onclick="window.playYT(this.closest('.post-media-wrap').querySelector('[data-vid]'))">▶️</button>` : ''}
-          <button class="po-btn modal-play" title="${window.t('تكبير','Zoom')}" onclick="window.openVideoModal(${p.id}, '${room}')">🔳</button>
-        </div>
-      `;
-      // Inject overlay into media
-      media = media.replace('</div></div>', overlay + '</div></div>');
-      if (isYT) {
-        // Remove direct click to play from YT div to let overlay handle it if we want, or keep it.
-        // Actually, let's keep the direct click but maybe add the overlay for more options.
-      }
-    }
-  }
+  /* Playback overlay removed for cleaner YouTube integration in Highlights */
 
-  const cardUrl = (room === 'yt-videos') ? '#' : `post.html?id=${p.id}`;
-  const cardOnClick = (room === 'yt-videos') ? '' : `onclick="if(!event.target.closest('button, a, .post-card-video, .play-overlay-btns')) window.location.href='${cardUrl}'"`;
-  const cursorStyle = (room === 'yt-videos') ? '' : 'cursor:pointer;';
+  const isVideo = p.url && (
+    p.url.includes('youtube.com') || p.url.includes('youtu.be') || 
+    p.url.includes('twitch.tv') || 
+    /\.(mp4|webm|ogg|mov)/i.test(p.url) || 
+    p.url.includes('/storage/v1/object/public/videos/')
+  );
+  const shouldOpenModal = (room === 'yt-videos') || (room === 'highlights' && isVideo && !isRestricted);
+
+  const cardUrl = shouldOpenModal ? '#' : `post.html?id=${p.id}`;
+  const cardOnClick = shouldOpenModal 
+    ? `onclick="if(!event.target.closest('button, a, .post-card-video, .play-overlay-btns')) window.openVideoModal(${p.id}, '${room}')"`
+    : `onclick="if(!event.target.closest('button, a, .post-card-video, .play-overlay-btns')) window.location.href='${cardUrl}'"`;
+  const cursorStyle = 'cursor:pointer;';
   
   return `<div class="${cardCls}" ${cardOnClick} style="${cursorStyle}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
 }
