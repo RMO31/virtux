@@ -5,7 +5,13 @@
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-src https://www.youtube.com https://player.twitch.tv https://youtube.com;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux — مجتمع الألعاب</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- preconnect لتسريع الخطوط -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <!-- تحميل الخط بشكل غير متزامن لمنع تأخير العرض -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0000;color:#fff;min-height:100vh}
@@ -3949,40 +3955,14 @@ window.setLang = function(lang) {
   }
   applyTranslations();
 
-  // ── جمع كل العناوين المحتاجة للترجمة ──
   const targetLang = lang;
-  const allTitles = [];
-  if (window.allPosts) {
-    Object.values(window.allPosts).forEach(roomPosts => {
-      (roomPosts || []).forEach(p => { if (p.title) allTitles.push(p.title); });
-    });
-  }
-  if (window._tickerRawData) {
-    ['news','gamingnews','youtubenews','live','videos'].forEach(key => {
-      (window._tickerRawData[key] || []).forEach(p => { if (p.title) allTitles.push(p.title); });
-    });
-  }
 
-  // ── ترجمة جميع العناوين دفعة واحدة (batch) ثم إعادة البناء مرة واحدة ──
-  const seen = new Set();
-  const toTranslate = [];
-  allTitles.forEach(title => {
-    if (!title || seen.has(title)) return;
-    seen.add(title);
-    const hasArabic = /[\u0600-\u06FF]/.test(title);
-    const hasEnglish = /[A-Za-z]/.test(title);
-    const sourceLang = (hasArabic && !hasEnglish) ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
-    if (!sourceLang || sourceLang === targetLang) return;
-    const cacheKey = sourceLang + '|' + targetLang + '|' + title;
-    if (!window._titleCache[cacheKey]) toTranslate.push({ title, sourceLang, targetLang });
-  });
-
+  // ── دالة إعادة بناء كل الصفحات والـ ticker ──
   function doRebuildAll() {
     if (window.allPosts) {
       Object.keys(window.allPosts).forEach(room => {
         const el = document.getElementById('grid-' + room);
         if (el && window.allPosts[room]?.length) {
-          el.innerHTML = '';
           if (room === 'subscribers' || room === 'yt-channels') {
             loadSubscribersWithVIP(el, window.allPosts[room] || [], window._subscribersRoleFilter || '');
           } else {
@@ -3995,57 +3975,96 @@ window.setLang = function(lang) {
           rebuildFilterBar(page.id.replace('page-',''));
         });
         if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
-      }, 50);
+      }, 30);
     }
     if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
   }
 
-  // أولاً: بناء فوري بما هو مُخزَّن في الـ cache
+  // ── جمع كل العناوين التي تحتاج ترجمة ──
+  const seen = new Set();
+  const toTranslate = [];
+  const collectTitles = (list) => {
+    (list || []).forEach(p => {
+      if (!p || !p.title || seen.has(p.title)) return;
+      seen.add(p.title);
+      const hasAr = /[\u0600-\u06FF]/.test(p.title);
+      const hasEn = /[A-Za-z]/.test(p.title);
+      const src = (hasAr && !hasEn) ? 'ar' : (!hasAr && hasEn ? 'en' : '');
+      if (!src || src === targetLang) return;
+      const key = src + '|' + targetLang + '|' + p.title;
+      if (!window._titleCache[key]) toTranslate.push({ title: p.title, src, tgt: targetLang });
+    });
+  };
+  if (window.allPosts) Object.values(window.allPosts).forEach(collectTitles);
+  if (window._tickerRawData) {
+    ['news','gamingnews','youtubenews','live','videos'].forEach(k => collectTitles(window._tickerRawData[k]));
+  }
+
+  // ── بناء فوري بالـ cache الموجود ──
   doRebuildAll();
 
-  if (toTranslate.length === 0) return;
+  if (!toTranslate.length) return;
 
-  // ثانياً: ترجمة جماعية batch عبر API واحدة لكل مجموعة
-  // نقسّم إلى مجموعات صغيرة (10 عناوين كحد أقصى لكل طلب)
-  const CHUNK = 10;
-  async function batchTranslate(items) {
-    for (let i = 0; i < items.length; i += CHUNK) {
-      const chunk = items.slice(i, i + CHUNK);
-      const { sourceLang, targetLang: tl } = chunk[0];
-      const texts = chunk.map(c => c.title);
-      const q = texts.map(t => encodeURIComponent(t)).join('&q=');
+  // ── ترجمة فورية بـ Promise.all (طلبات متوازية) ──
+  // نستخدم multi-q API التي تدعمها Google Translate بشكل موثوق
+  async function translateBatch(items) {
+    // نقسّم إلى chunks لتفادي URL طويلة
+    const CHUNK = 8;
+    const chunks = [];
+    for (let i = 0; i < items.length; i += CHUNK) chunks.push(items.slice(i, i + CHUNK));
+
+    await Promise.all(chunks.map(async chunk => {
+      const { src, tgt } = chunk[0];
       try {
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${tl}&dt=t&q=${encodeURIComponent(texts.join('\n'))}`;
+        // نرسل كل عنوان كـ &q= منفصل — هذا هو الأسلوب الموثوق
+        const params = chunk.map(c => 'q=' + encodeURIComponent(c.title)).join('&');
+        const url = `https://translate.googleapis.com/translate_a/t?client=gtx&sl=${src}&tl=${tgt}&${params}`;
         const r = await fetch(url);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         const j = await r.json();
-        // Google returns array of arrays; extract per-sentence
-        const fullText = j?.[0]?.map(x => x?.[0]).filter(Boolean).join('') || '';
-        // Split back by newlines
-        const translated = fullText.split('\n');
-        texts.forEach((orig, idx) => {
-          const tr = (translated[idx] || '').trim() || orig;
-          const cacheKey = sourceLang + '|' + tl + '|' + orig;
-          window._titleCache[cacheKey] = tr;
+        // الـ API تعيد array من strings أو array من arrays
+        const results = Array.isArray(j) ? j : [];
+        chunk.forEach((item, idx) => {
+          let tr = '';
+          const res = results[idx];
+          if (typeof res === 'string') tr = res;
+          else if (Array.isArray(res)) tr = res[0] || '';
+          else tr = '';
+          tr = tr.trim();
+          if (tr && tr !== item.title) {
+            window._titleCache[src + '|' + tgt + '|' + item.title] = tr;
+          }
         });
       } catch(e) {
-        // fallback: translate individually
-        await Promise.all(chunk.map(c => window._translateTitleBg(c.title, c.sourceLang, c.targetLang)));
+        // fallback: طلب واحد لكل عنوان
+        await Promise.all(chunk.map(async item => {
+          try {
+            const url2 = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${item.src}&tl=${item.tgt}&dt=t&q=${encodeURIComponent(item.title)}`;
+            const r2 = await fetch(url2);
+            const j2 = await r2.json();
+            const tr = j2?.[0]?.map(x => x?.[0]).filter(Boolean).join('').trim() || '';
+            if (tr && tr !== item.title) {
+              window._titleCache[item.src + '|' + item.tgt + '|' + item.title] = tr;
+            }
+          } catch(e2) {}
+        }));
       }
-    }
+    }));
+
     // بعد انتهاء كل الترجمات: إعادة البناء مرة واحدة
     if (window._siteLanguage === targetLang) doRebuildAll();
   }
 
-  // فصل العناوين حسب الاتجاه (ar→en أو en→ar)
-  const enToAr = toTranslate.filter(x => x.sourceLang === 'en' && x.targetLang === 'ar');
-  const arToEn = toTranslate.filter(x => x.sourceLang === 'ar' && x.targetLang === 'en');
-  if (enToAr.length) batchTranslate(enToAr);
-  if (arToEn.length) batchTranslate(arToEn);
-
-  // إعادة بناء الـ ticker بعد الترجمة
-  if (typeof window.loadTicker === 'function') {
-    setTimeout(() => window.loadTicker(), 200);
-  }
+  const enToAr = toTranslate.filter(x => x.src === 'en');
+  const arToEn = toTranslate.filter(x => x.src === 'ar');
+  const allBatches = [];
+  if (enToAr.length) allBatches.push(translateBatch(enToAr));
+  if (arToEn.length) allBatches.push(translateBatch(arToEn));
+  // إعادة البناء النهائية بعد كل الترجمات
+  Promise.all(allBatches).then(() => {
+    if (window._siteLanguage === targetLang) doRebuildAll();
+    if (typeof window.loadTicker === 'function') window.loadTicker();
+  });
 };
 
 window.toggleLanguage = function() {
