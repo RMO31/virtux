@@ -209,8 +209,9 @@
     .filter-bar{display:flex;gap:6px;padding:10px 18px;flex-wrap:wrap;border-bottom:1px solid #333}
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#e01010;color:#000;border-color:#e01010}
-    .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
-    .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s;display:flex;flex-direction:column;position:relative}
+    .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px;align-items:start}
+    .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s;display:flex;flex-direction:column;position:relative;height:fit-content}
+
     .post-card.vip-ch{border-color:#ff6600;box-shadow:0 0 10px rgba(255,102,0,0.3);}
     .post-card.vip-ch:hover{box-shadow:0 0 20px rgba(255,102,0,0.5);}
     .vip-ch-badge{position:absolute;top:8px;left:8px;z-index:9;background:linear-gradient(135deg,#ff6600,#cc3300);color:#fff;font-size:9px;font-weight:900;padding:2px 8px;border-radius:4px;letter-spacing:.5px;}
@@ -218,20 +219,26 @@
     .post-card.vip-channel-card:hover{border-color:#ff8800;box-shadow:0 0 20px rgba(255,102,0,0.4);}
     .vip-channel-badge{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#ff6600,#e01010);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;}
     .post-card:hover{border-color:#e01010}
-    .post-card-img{width:100%;height:auto;max-height:420px;min-height:100px;object-fit:contain;background:#0a0000;display:block}
-    .post-card-img.img-landscape{object-fit:cover;height:210px;max-height:210px}
-    .post-card-img.img-square{object-fit:cover;height:230px;max-height:230px}
-    .post-card-img.img-portrait{object-fit:contain;max-height:420px}
+    .post-card-img{width:100%;height:auto;max-height:420px;object-fit:contain;background:#0a0000;display:block}
+    .post-card-img.img-landscape{object-fit:cover;height:180px;max-height:180px}
+    .post-card-img.img-square{object-fit:cover;height:200px;max-height:200px}
+    .post-card-img.img-portrait{object-fit:contain;max-height:380px}
+
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
     .post-card-video{width:100%;aspect-ratio:16/9;background:#000;display:block;overflow:hidden;position:relative;line-height:0;font-size:0;}
     .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;display:block;}
     .restricted-overlay{position:relative}
     .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#e01010;pointer-events:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
-    .post-card-body{padding:8px 12px 10px;flex:1;display:flex;flex-direction:column;gap:0}
-    .post-card-title{font-size:13px;font-weight:600;color:#ddd;margin:0 0 6px 0;line-height:1.35}
+    .post-card-body{padding:6px 10px 8px;display:flex;flex-direction:column;gap:2px}
+
+
+    .post-card-title{font-size:12.5px;font-weight:600;color:#eee;margin:0;line-height:1.3}
+
     .post-card-summary{display:none}
-    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:auto}
+    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:6px}
+
+
     .post-tag{font-size:11px;background:#2a2a3a;color:#e01010;border-radius:4px;padding:2px 8px}
     .post-link{font-size:12px;color:#e01010;text-decoration:none;background:#2a2a3a;border:1px solid #444;border-radius:5px;padding:4px 10px}
     .post-link:hover{background:#e01010;color:#000}
@@ -2095,7 +2102,8 @@ function renderCards(posts, gridId, room) {
         const avatarEl = authorAvatar
           ? `<img src="${authorAvatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`
           : `<span style="width:18px;height:18px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">👤</span>`;
-        authorHtml = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">${avatarEl}<span style="font-size:10px;color:#777;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">@${escapeHtml(authorName)}</span></div>`;
+        authorHtml = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">${avatarEl}<span style="font-size:10px;color:#777;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">@${escapeHtml(authorName)}</span></div>`;
+
       }
     }
     // زر الرابط الاجتماعي في highlights
