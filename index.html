@@ -223,14 +223,14 @@
     .post-card-img.img-square{object-fit:cover;height:230px;max-height:230px}
     .post-card-img.img-portrait{object-fit:contain;max-height:420px}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
-    .post-card-video{width:100%;aspect-ratio:16/9;background:#000;display:block;overflow:hidden;position:relative;}
+    .post-card-video{width:100%;aspect-ratio:16/9;background:#000;display:block;overflow:hidden;position:relative;line-height:0;font-size:0;}
     .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;display:block;}
     .restricted-overlay{position:relative}
     .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#e01010;pointer-events:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
-    .post-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column}
-    .post-card-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
-    .post-card-summary{font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.5}
+    .post-card-body{padding:8px 12px 10px;flex:1;display:flex;flex-direction:column;gap:0}
+    .post-card-title{font-size:13px;font-weight:600;color:#ddd;margin:0 0 6px 0;line-height:1.35}
+    .post-card-summary{display:none}
     .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:auto}
     .post-tag{font-size:11px;background:#2a2a3a;color:#e01010;border-radius:4px;padding:2px 8px}
     .post-link{font-size:12px;color:#e01010;text-decoration:none;background:#2a2a3a;border:1px solid #444;border-radius:5px;padding:4px 10px}
@@ -239,8 +239,9 @@
     .read-more{font-size:12px;background:#e01010;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
     .read-more:hover{background:#e6c300}
     
-    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
-    .channels-grid.subscribers-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));align-items:start;gap:18px}
+    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;padding:14px 16px}
+    .channels-grid.subscribers-grid{display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start;gap:14px;padding:16px 18px;}
+    .subscriber-card{width:160px;min-height:auto;flex-shrink:0;}
     .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#e01010}
     .subscriber-card{position:relative;min-height:176px;padding:14px 12px 16px;justify-content:flex-start;overflow:hidden;isolation:isolate}
@@ -623,6 +624,24 @@
       100% { transform: scale(1); }
     }
     .lang-switching { animation: lang-pulse 0.35s ease forwards; }
+    /* ══ FIXED COPYRIGHT FOOTER ══ */
+    .vx-copyright-bar{
+      position:fixed;
+      bottom:0;left:0;right:0;
+      z-index:200;
+      background:rgba(0,0,0,0.96);
+      border-top:1px solid #e01010;
+      text-align:center;
+      padding:5px 12px;
+      font-size:11px;
+      color:#555;
+      letter-spacing:0.4px;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    .vx-copyright-bar span{color:#e01010;font-weight:700;}
+    /* add padding bottom to main to avoid footer overlap */
+    .vx-main{padding-bottom:28px;}
     </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -647,7 +666,7 @@
         <div style="display:flex; align-items:center; gap:8px;">
           <img id="user-avatar-img" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#2a2a3a; display:none;">
           <span id="user-name" style="font-size:13px;color:#e01010;"></span>
-          <span id="user-role-badge" style="display:none;align-items:center;gap:3px;flex-wrap:nowrap;max-width:200px;overflow:hidden;"></span>
+          <span id="user-role-badge" style="display:none;align-items:center;gap:4px;flex-wrap:wrap;max-width:340px;overflow:visible;"></span>
         </div>
         <button id="profileButton" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
         <button id="logoutButton" onclick="window.doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
@@ -1821,13 +1840,16 @@ async function loadPage(room) {
     }
     if (error) throw error;
     allPosts[room] = data || [];
-    // في غرفة highlights نجلب بيانات أصحاب المنشورات
-    if (room === 'highlights' && data && data.length) {
+    // جلب بيانات أصحاب المنشورات لكل الغرف
+    if (data && data.length) {
       const uids = [...new Set(data.filter(p => p.user_id).map(p => p.user_id))];
       if (uids.length) {
         const { data: profiles } = await db.from('profiles').select('id, username, avatar_url').in('id', uids);
-        window._highlightsProfiles = {};
-        (profiles || []).forEach(pr => { window._highlightsProfiles[pr.id] = pr; });
+        window._roomProfiles = window._roomProfiles || {};
+        window._roomProfiles[room] = {};
+        (profiles || []).forEach(pr => { window._roomProfiles[room][pr.id] = pr; });
+        // للتوافق مع الكود القديم
+        if (room === 'highlights') window._highlightsProfiles = window._roomProfiles[room];
       }
     }
     renderCards(allPosts[room], `grid-${room}`, room);
@@ -1940,13 +1962,21 @@ function renderCards(posts, gridId, room) {
         actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط","Link")}</a>`;
       }
     }
-    // زر تسجيل بطولة VIP
+    // زر تسجيل بطولة - VIP أو تسجيل عادي
     let registerBtn = '';
-    if (room === 'tournaments' && isVIP(p)) {
-      if (canViewVIP) {
-        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل","🏆 Register")}</button>`;
-      } else {
-        registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
+    if (room === 'tournaments') {
+      if (isVIP(p)) {
+        if (canViewVIP) {
+          registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل","🏆 Register")}</button>`;
+        } else {
+          registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
+        }
+      } else if (p.tag === 'تسجيل') {
+        if (window.currentUserId) {
+          registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#1a6e1a,#0d4d0d);color:#fff;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("📋 تسجيل","📋 Register")}</button>`;
+        } else {
+          registerBtn = `<button onclick="openModal()" style="background:transparent;border:1px solid #e01010;color:#e01010;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("📋 تسجيل","📋 Register")}</button>`;
+        }
       }
     }
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
@@ -1982,17 +2012,18 @@ function renderCards(posts, gridId, room) {
       }
       dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
     }
-    // معلومات صاحب المنشور للـ highlights
+    // معلومات صاحب المنشور في كل الغرف
     let authorHtml = '';
-    if (room === 'highlights' && p.user_id) {
-      const pr = (window._highlightsProfiles || {})[p.user_id];
+    if (p.user_id) {
+      const roomProfiles = (window._roomProfiles && window._roomProfiles[room]) || window._highlightsProfiles || {};
+      const pr = roomProfiles[p.user_id];
       const authorName = pr?.username || '';
       const authorAvatar = pr?.avatar_url || '';
       if (authorName || authorAvatar) {
         const avatarEl = authorAvatar
-          ? `<img src="${authorAvatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`
-          : `<span style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">👤</span>`;
-        authorHtml = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">${avatarEl}<span style="font-size:11px;color:#888;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">@${escapeHtml(authorName)}</span></div>`;
+          ? `<img src="${authorAvatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`
+          : `<span style="width:18px;height:18px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">👤</span>`;
+        authorHtml = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">${avatarEl}<span style="font-size:10px;color:#777;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">@${escapeHtml(authorName)}</span></div>`;
       }
     }
     // زر الرابط الاجتماعي في highlights
@@ -2167,7 +2198,7 @@ async function updateUIAfterAuth(sessionOverride) {
         };
         roleBadge.innerHTML = roles.map(r => {
           const c = colors[r] || {bg:'#2a2a3a', fg:'#e01010', label:r.toUpperCase()};
-          return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:2px 6px;margin-right:3px;font-size:11px;">${c.label}</span>`;
+          return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:999px;padding:1px 7px;font-size:10px;font-weight:700;white-space:nowrap;line-height:18px;">${c.label}</span>`;
         }).join('');
         roleBadge.style.display = 'flex';
         roleBadge.style.background = 'transparent';
@@ -3953,6 +3984,14 @@ showPage('home');
 loadTicker();
 // تهيئة الترجمة عند تحميل الصفحة
 if (typeof applyTranslations === 'function') applyTranslations();
+
+// ══ Copyright Bar ══
+(function(){
+  const bar = document.createElement('div');
+  bar.className = 'vx-copyright-bar';
+  bar.innerHTML = '&copy; 2026 <span>Virtux</span> — جميع الحقوق محفوظة &nbsp;|&nbsp; All Rights Reserved';
+  document.body.appendChild(bar);
+})();
 </script>
 </body>
 </html>
