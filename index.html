@@ -217,13 +217,12 @@
     .post-card.vip-ch:hover{box-shadow:0 0 20px rgba(255,102,0,0.5);}
     .vip-ch-badge{position:absolute;top:8px;left:8px;z-index:9;background:linear-gradient(135deg,#ff6600,#cc3300);color:#fff;font-size:9px;font-weight:900;padding:2px 8px;border-radius:4px;letter-spacing:.5px;}
     .post-card.vip-channel-card{border-color:#ff6600;box-shadow:0 0 12px rgba(255,102,0,0.25);}
-    .post-card.vip-channel-card:hover{border-color:#ff8800;box-shadow:0 0 20px rgba(255,102,0,0.4);}
-    .vip-channel-badge{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#ff6600,#e01010);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;}
-    .post-card:hover{border-color:#e01010}
-    .post-card-img{width:100%;height:200px;object-fit:cover;background:#0a0000;display:block;cursor:pointer}
+    .post-card-img{width:100%;height:200px;object-fit:cover;background:#0a0000;display:block;cursor:pointer;transition:object-position 3s ease-in-out, transform 0.3s;}
+    .post-card:hover .post-card-img{object-position:bottom;transform:scale(1.05)}
     .post-card-img.img-landscape{height:200px}
     .post-card-img.img-square{height:200px}
     .post-card-img.img-portrait{height:200px;object-position:top}
+
 
 
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
@@ -2119,7 +2118,12 @@ function renderCards(posts, gridId, room) {
       const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
       socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
     }
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+    const cardUrl = (room === 'yt-videos') ? '#' : `post.html?id=${p.id}`;
+    const cardOnClick = (room === 'yt-videos') ? '' : `onclick="if(!event.target.closest('button, a, .post-card-video')) window.location.href='${cardUrl}'"`;
+    const cursorStyle = (room === 'yt-videos') ? '' : 'cursor:pointer;';
+    
+    return `<div class="${cardCls}" ${cardOnClick} style="${cursorStyle}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+
   }).join('');
 }
 
