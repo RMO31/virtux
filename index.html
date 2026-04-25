@@ -2048,20 +2048,30 @@ function renderCards(posts, gridId, room) {
   }
 
   let finalPosts = posts || [];
-  if (room === 'highlights') {
-    const tag = window._highlightsTag || '';
+  if (room === 'highlights' || room === 'tournaments') {
+    const isHighlights = room === 'highlights';
+    const tag = isHighlights ? (window._highlightsTag || '') : (window._tournamentsTag || '');
+    
+    // Filter by tag if applicable
     if (tag) {
       finalPosts = finalPosts.filter(p => {
         if (!p.tag) return false;
-        return String(p.tag).trim().toLowerCase() === tag.toLowerCase();
+        const ptag = String(p.tag).trim();
+        if (room === 'tournaments' && (tag === 'تسجيل' || tag === 'Register')) {
+           return ptag === 'تسجيل' || ptag === 'Register' || ptag.toLowerCase().includes('reg') || ptag === 'VIP';
+        }
+        return ptag.toLowerCase() === tag.toLowerCase();
       });
     }
+
     const total = finalPosts.length;
-    const perPage = window._highlightsPerPage || 40;
+    const perPage = isHighlights ? (window._highlightsPerPage || 40) : (window._tournamentsPerPage || 40);
     const totalPages = Math.ceil(total / perPage);
-    let page = window._highlightsCurrentPage || 1;
+    let page = isHighlights ? (window._highlightsCurrentPage || 1) : (window._tournamentsCurrentPage || 1);
+    
     if (page > totalPages && totalPages > 0) page = totalPages;
-    window._highlightsCurrentPage = page;
+    if (isHighlights) window._highlightsCurrentPage = page;
+    else window._tournamentsCurrentPage = page;
     
     const start = (page - 1) * perPage;
     const pagedPosts = finalPosts.slice(start, start + perPage);
@@ -2073,11 +2083,12 @@ function renderCards(posts, gridId, room) {
     
     let paginationHtml = '';
     if (totalPages > 1) {
+      const changePageFn = isHighlights ? 'window.changeHighlightsPage' : 'window.changeTournamentsPage';
       paginationHtml = `
         <div class="pagination-wrap" style="grid-column: 1 / -1; margin-top: 20px;">
-          <button class="pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="window.changeHighlightsPage(${page - 1})">${isEN ? 'Previous' : 'السابق'}</button>
+          <button class="pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="${changePageFn}(${page - 1})">${isEN ? 'Previous' : 'السابق'}</button>
           <div class="pagination-info">${isEN ? 'Page' : 'صفحة'} ${page} ${isEN ? 'of' : 'من'} ${totalPages}</div>
-          <button class="pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="window.changeHighlightsPage(${page + 1})">${isEN ? 'Next' : 'التالي'}</button>
+          <button class="pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="${changePageFn}(${page + 1})">${isEN ? 'Next' : 'التالي'}</button>
         </div>
       `;
     }
