@@ -731,44 +731,6 @@
     #vm-desc::-webkit-scrollbar { width: 4px; }
     #vm-desc::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 
-    /* Play Overlays */
-    .play-overlay-btns {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 15px;
-      opacity: 0;
-      transition: opacity 0.3s, background 0.3s;
-      z-index: 5;
-      background: rgba(0,0,0,0);
-    }
-    .post-media-wrap:hover .play-overlay-btns {
-      opacity: 1;
-      background: rgba(0,0,0,0.4);
-    }
-    .po-btn {
-      width: 50px;
-      height: 50px;
-      background: rgba(224,16,16,0.9);
-      color: #fff;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.2s, background 0.2s;
-      font-size: 20px;
-      border: none;
-    }
-    .po-btn:hover {
-      transform: scale(1.15);
-      background: #ff0000;
-      box-shadow: 0 0 15px rgba(255,0,0,0.5);
-    }
-    .po-btn.inline-play { background: rgba(255,255,255,0.9); color: #000; }
-    .po-btn.inline-play:hover { background: #fff; }
     </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2156,12 +2118,9 @@ function renderSingleCard(p, room) {
       const posterStyle = poster ? `style="background-image:url('${poster}')"` : '';
       media = `<div class="post-media-wrap">`
         + (poster ? `<div class="post-media-bg" ${posterStyle}></div>` : '')
-        + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-postid="${p.id}" data-room="${room}">`
+        + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-postid="${p.id}" data-room="${room}" onclick="this.innerHTML='<video src=\\'${p.url}\\' controls autoplay style=\\'width:100%;height:100%\\'></video>'; event.stopPropagation();">`
         + (poster ? `<img src="${poster}" style="width:100%;height:100%;object-fit:contain;display:block;">` : `<div class="post-card-emoji">🎥</div>`)
-        + `<div class="play-overlay-btns">`
-        +   `<div class="po-btn inline-play" onclick="this.closest('.post-card-video').innerHTML='<video src=\\'${p.url}\\' controls autoplay style=\\'width:100%;height:100%\\'></video>'" title="${window.t('تشغيل في الإطار','Play Inline')}">▶️</div>`
-        +   `<div class="po-btn theater-play" onclick="window.openVideoModal(${p.id}, '${room}')" title="${window.t('وضع المسرح','Theater Mode')}">📺</div>`
-        + `</div>`
+        + `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>`
         + `</div></div>`;
     }
     else if (isYouTube) {
@@ -2172,13 +2131,10 @@ function renderSingleCard(p, room) {
         const bgImg = (p.icon && p.icon.startsWith('http')) ? p.icon : `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
         media = `<div class="post-media-wrap">`
           + `<div class="post-media-bg" style="background-image:url('${bgImg}')"></div>`
-          + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-vid="${videoId}" data-postid="${p.id}" data-room="${room}">`
+          + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-vid="${videoId}" data-postid="${p.id}" data-room="${room}" onclick="window.playYT(this); event.stopPropagation();">`
           + `<img src="https://i.ytimg.com/vi/${videoId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:contain;display:block;" onerror="window.fixThumb(this,this.closest('[data-vid]').dataset.vid)">`
           + liveBadgeHtml
-          + `<div class="play-overlay-btns">`
-          +   `<div class="po-btn inline-play" onclick="window.playYT(this.closest('.post-card-video'))" title="${window.t('تشغيل في الإطار','Play Inline')}">▶️</div>`
-          +   `<div class="po-btn theater-play" onclick="window.openVideoModal(${p.id}, '${room}')" title="${window.t('وضع المسرح','Theater Mode')}">📺</div>`
-          + `</div>`
+          + `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>`
           + `</div></div>`;
       } else {
         media = `<div class="post-media-wrap"><div class="post-card-emoji">🎬</div></div>`;
