@@ -70,7 +70,7 @@
       height: 32px;
     }
     @keyframes ticker-scroll-anim {
-      0%   { transform: translateX(0%); }
+      0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
     .ticker-track {
@@ -859,8 +859,8 @@
         <div class="home-hero">
           <div class="home-welcome" data-ar="مرحباً بك في Virtux" data-en="Welcome to Virtux">مرحباً بك في Virtux</div>
 
-          <!-- ══ ROW: About | Rules ══ -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
+          <!-- ══ ROW: About | Channel Panel | Rules ══ -->
+          <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
 
             <!-- About يسار -->
             <div class="home-about">
@@ -879,6 +879,21 @@
               </div>
             </div>
 
+            <!-- لوحة القنوات في المنتصف -->
+            <div class="home-channel-panel" style="margin:0;">
+              <div class="hcp-title" data-ar="📡 قنوات الموقع" data-en="📡 Site Channels">📡 قنوات الموقع</div>
+              <div class="home-split">
+                <div class="hcp-half">
+                  <div class="hcp-half-head" data-ar="🔴 live المباشر وما قبل live" data-en="🔴 Live &amp; Pre-Live">🔴 live المباشر وما قبل live</div>
+                  <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+                </div>
+                <div class="hcp-half">
+                  <div class="hcp-half-head" data-ar="🎬 آخر الفيديوهات" data-en="🎬 Latest Videos">🎬 آخر الفيديوهات</div>
+                  <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+                </div>
+              </div>
+            </div>
+
             <!-- Rules يمين -->
             <div class="home-rules">
               <h3 data-ar="🛑 القواعد" data-en="🛑 Rules">🛑 القواعد</h3>
@@ -893,22 +908,6 @@
             </div>
 
           </div><!-- end grid -->
-
-          <!-- ══ لوحة القنوات — عرض كامل ══ -->
-          <div class="home-channel-panel" style="margin:24px auto 0;">
-            <div class="hcp-title" data-ar="📡 قنوات الموقع" data-en="📡 Site Channels">📡 قنوات الموقع</div>
-            <div class="home-split">
-              <div class="hcp-half">
-                <div class="hcp-half-head" data-ar="🔴 live المباشر وما قبل live" data-en="🔴 Live &amp; Pre-Live">🔴 live المباشر وما قبل live</div>
-                <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
-              </div>
-              <div class="hcp-half">
-                <div class="hcp-half-head" data-ar="🎬 آخر الفيديوهات" data-en="🎬 Latest Videos">🎬 آخر الفيديوهات</div>
-                <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
@@ -2459,13 +2458,13 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
 
     if (vipUsers && vipUsers.length) {
       const ROLE_DEFS = [
-        { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff0000', bg: '#3d0f0f', border: '#ff0000' },
-        { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff2222', bg: '#2a0000', border: '#ff2222' },
-        { key: 'youtuber_vip',title: '🔥 Youtuber VIP',     short: 'YT VIP',       color: '#ff1111', bg: '#3d1a0f', border: '#ff1111' },
-        { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
-        { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#e01010', bg: '#1a0000', border: '#e01010' },
-        { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#cc2222', bg: '#100000', border: '#cc2222' },
-        { key: 'user',         title: '👤 المستخدمون',        short: 'USER',         color: '#888888', bg: '#111111', border: '#444444' },
+        { key: 'admin',       title: isEN ? '🛡️ Admins'        : '🛡️ الإدارة',       short: 'ADMIN',    color: '#ff0000', bg: '#3d0f0f', border: '#ff0000' },
+        { key: 'moderator',   title: isEN ? '🔧 Moderators'    : '🔧 المشرفون',       short: 'MOD',      color: '#ff2222', bg: '#2a0000', border: '#ff2222' },
+        { key: 'youtuber_vip',title: '🔥 Youtuber VIP',                                short: 'YT VIP',   color: '#ff1111', bg: '#3d1a0f', border: '#ff1111' },
+        { key: 'youtuber',    title: isEN ? '🎬 Youtubers'     : '🎬 يوتيوبرز',       short: 'YOUTUBER', color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
+        { key: 'vip',         title: '👑 VIP',                                          short: 'VIP',      color: '#e01010', bg: '#1a0000', border: '#e01010' },
+        { key: 'member',      title: isEN ? '⭐ Members'       : '⭐ الأعضاء',         short: 'MEMBER',   color: '#cc2222', bg: '#100000', border: '#cc2222' },
+        { key: 'user',        title: isEN ? '👤 Users'         : '👤 المستخدمون',      short: 'USER',     color: '#888888', bg: '#111111', border: '#444444' },
       ];
       const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','user'];
       
@@ -2545,7 +2544,7 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
       const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
       let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} ${window.t('مشترك','subscribers')}`;
       const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
       return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
     }).join('');
