@@ -70,7 +70,7 @@
       height: 32px;
     }
     @keyframes ticker-scroll-anim {
-      0%   { transform: translateX(0); }
+      0%   { transform: translateX(0%); }
       100% { transform: translateX(-50%); }
     }
     .ticker-track {
@@ -859,8 +859,8 @@
         <div class="home-hero">
           <div class="home-welcome" data-ar="مرحباً بك في Virtux" data-en="Welcome to Virtux">مرحباً بك في Virtux</div>
 
-          <!-- ══ ROW: About | Channel Panel | Rules ══ -->
-          <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
+          <!-- ══ ROW: About | Rules ══ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
 
             <!-- About يسار -->
             <div class="home-about">
@@ -879,21 +879,6 @@
               </div>
             </div>
 
-            <!-- لوحة القنوات في المنتصف -->
-            <div class="home-channel-panel" style="margin:0;">
-              <div class="hcp-title" data-ar="📡 قنوات الموقع" data-en="📡 Site Channels">📡 قنوات الموقع</div>
-              <div class="home-split">
-                <div class="hcp-half">
-                  <div class="hcp-half-head" data-ar="🔴 live المباشر وما قبل live" data-en="🔴 Live &amp; Pre-Live">🔴 live المباشر وما قبل live</div>
-                  <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
-                </div>
-                <div class="hcp-half">
-                  <div class="hcp-half-head" data-ar="🎬 آخر الفيديوهات" data-en="🎬 Latest Videos">🎬 آخر الفيديوهات</div>
-                  <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
-                </div>
-              </div>
-            </div>
-
             <!-- Rules يمين -->
             <div class="home-rules">
               <h3 data-ar="🛑 القواعد" data-en="🛑 Rules">🛑 القواعد</h3>
@@ -908,6 +893,22 @@
             </div>
 
           </div><!-- end grid -->
+
+          <!-- ══ لوحة القنوات — عرض كامل ══ -->
+          <div class="home-channel-panel" style="margin:24px auto 0;">
+            <div class="hcp-title" data-ar="📡 قنوات الموقع" data-en="📡 Site Channels">📡 قنوات الموقع</div>
+            <div class="home-split">
+              <div class="hcp-half">
+                <div class="hcp-half-head" data-ar="🔴 live المباشر وما قبل live" data-en="🔴 Live &amp; Pre-Live">🔴 live المباشر وما قبل live</div>
+                <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+              </div>
+              <div class="hcp-half">
+                <div class="hcp-half-head" data-ar="🎬 آخر الفيديوهات" data-en="🎬 Latest Videos">🎬 آخر الفيديوهات</div>
+                <div class="hc-wrap" id="hc-videos"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -3313,7 +3314,7 @@ window.deletePost = deletePost;
   window.loadHomePanel=loadHomePanel;
   const _orig=window.showPage;
   window.showPage=function(room){ if(typeof _orig==='function') _orig(room); if(room==='home') setTimeout(loadHomePanel,80); };
-  document.addEventListener('DOMLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
+  document.addEventListener('DOMContentLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
   // auto-refresh disabled to prevent freezing
 })();
 
@@ -4213,7 +4214,7 @@ function applyTranslations() {
   // Profile modal
   const saveBtn = document.getElementById('saveProfileBtn');
   if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
-  const closeBtn = document.getElementById('close Btn');
+  const closeBtn = document.getElementById('closeProfileBtn');
   if (closeBtn) closeBtn.textContent = isEN ? 'Close' : 'إغلاق';
   const delBtn = document.getElementById('deleteAccountBtn');
   if (delBtn && !delBtn.disabled) delBtn.textContent = isEN ? '🗑️ Delete Account Permanently' : '🗑️ حذف الحساب نهائياً';
