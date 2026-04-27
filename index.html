@@ -5,13 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-src https://www.youtube.com https://player.twitch.tv https://youtube.com;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtux — مجتمع الألعاب</title>
-  <!-- preconnect لتسريع الخطوط -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <!-- تحميل الخط بشكل غير متزامن لمنع تأخير العرض -->
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Poppins',sans-serif;background:#0a0000;color:#fff;min-height:100vh}
@@ -68,16 +62,8 @@
       flex: 1;
       overflow: hidden;
       height: 32px;
-      direction: ltr;
     }
     @keyframes ticker-scroll-anim {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    [dir="ltr"] .ticker-track, .ticker-track.ltr-ticker {
-      animation-name: ticker-scroll-anim-ltr;
-    }
-    @keyframes ticker-scroll-anim-ltr {
       0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
@@ -88,7 +74,6 @@
       height: 32px;
       animation: ticker-scroll-anim 35s linear infinite;
       will-change: transform;
-      direction: ltr;
     }
     .ticker-track:hover { animation-play-state: paused; }
     .ticker-item {
@@ -225,49 +210,28 @@
     .filter-btn{background:#222;border:1px solid #444;color:#ddd;border-radius:5px;padding:5px 12px;font-size:12px;cursor:pointer}
     .filter-btn:hover,.filter-btn.active{background:#e01010;color:#000;border-color:#e01010}
     .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:18px}
-    .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s;display:flex;flex-direction:column;position:relative;height:auto}
-    .post-card:hover{z-index:10;box-shadow:0 12px 30px rgba(0,0,0,0.5);border-color:#e01010}
-
+    .post-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s;display:flex;flex-direction:column;position:relative}
     .post-card.vip-ch{border-color:#ff6600;box-shadow:0 0 10px rgba(255,102,0,0.3);}
     .post-card.vip-ch:hover{box-shadow:0 0 20px rgba(255,102,0,0.5);}
     .vip-ch-badge{position:absolute;top:8px;left:8px;z-index:9;background:linear-gradient(135deg,#ff6600,#cc3300);color:#fff;font-size:9px;font-weight:900;padding:2px 8px;border-radius:4px;letter-spacing:.5px;}
     .post-card.vip-channel-card{border-color:#ff6600;box-shadow:0 0 12px rgba(255,102,0,0.25);}
-    
-    .post-media-wrap{
-      width:100%;
-      aspect-ratio: 16/9;
-      position:relative;
-      overflow:hidden;
-      background:#050000;
-      display:block;
-    }
-    .post-media-bg{
-      position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center;
-      filter: blur(15px) brightness(0.6);
-      transform: scale(1.1);
-      z-index: 1;
-      display: block;
-    }
-    .post-card-img{width:100%;height:100%;object-fit:cover;position:relative;z-index:2;display:block;cursor:pointer;transition:transform 0.5s ease}
-    .post-card:hover .post-card-img{transform:scale(1.05)}
-    .post-card-emoji{width:100%;height:100%;background:linear-gradient(135deg,#1a0000,#050000);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;z-index:2}
-    .post-card-video{width:100%;height:100%;background:transparent;display:block;overflow:hidden;position:relative;z-index:2}
-    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;display:block;object-fit:cover;background:transparent}
-
-    
-    .restricted-overlay{position:relative;z-index:3}
+    .post-card.vip-channel-card:hover{border-color:#ff8800;box-shadow:0 0 20px rgba(255,102,0,0.4);}
+    .vip-channel-badge{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#ff6600,#e01010);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;}
+    .post-card:hover{border-color:#e01010}
+    .post-card-img{width:100%;height:auto;max-height:420px;min-height:100px;object-fit:contain;background:#0a0000;display:block}
+    .post-card-img.img-landscape{object-fit:cover;height:210px;max-height:210px}
+    .post-card-img.img-square{object-fit:cover;height:230px;max-height:230px}
+    .post-card-img.img-portrait{object-fit:contain;max-height:420px}
+    .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
+    .post-card-video{width:100%;aspect-ratio:16/9;background:#000;display:block;overflow:hidden;position:relative;}
+    .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;display:block;}
+    .restricted-overlay{position:relative}
     .restricted-overlay::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;background:rgba(0,0,0,0.7);padding:10px 20px;border-radius:10px;color:#e01010;pointer-events:none}
     .live-badge{position:absolute;top:8px;left:8px;background:red;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
-    .post-card-body{padding:10px 14px 12px;display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
-
-
-    .post-card-title{font-size:12.5px;font-weight:600;color:#eee;margin:0;line-height:1.3}
-    .post-card-summary{display:none!important}
-    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:auto}
-
+    .post-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column}
+    .post-card-title{font-size:14px;font-weight:600;color:#ddd;margin-bottom:4px}
+    .post-card-summary{font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.5}
+    .post-card-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:auto}
     .post-tag{font-size:11px;background:#2a2a3a;color:#e01010;border-radius:4px;padding:2px 8px}
     .post-link{font-size:12px;color:#e01010;text-decoration:none;background:#2a2a3a;border:1px solid #444;border-radius:5px;padding:4px 10px}
     .post-link:hover{background:#e01010;color:#000}
@@ -275,27 +239,15 @@
     .read-more{font-size:12px;background:#e01010;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
     .read-more:hover{background:#e6c300}
     
-    .channels-grid.subscribers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:16px 18px;}
-    .subscribers-flex-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;padding:16px 18px;width:100%;grid-column:1 / -1;}
-    .subscriber-card{width:100%;min-width:0;min-height:auto;flex-shrink:0;}
-    .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
+    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
+    .channels-grid.subscribers-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));align-items:start;gap:18px}
+    .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#e01010}
-    .subscriber-card{position:relative;min-height:150px;padding:12px 10px;justify-content:flex-start;overflow:hidden;isolation:isolate}
+    .subscriber-card{position:relative;min-height:176px;padding:14px 12px 16px;justify-content:flex-start;overflow:hidden;isolation:isolate}
     .subscriber-card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:conic-gradient(from 0deg, transparent 0deg, var(--sub-accent, rgba(224,16,16,.85)) 90deg, transparent 170deg, transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.7;animation:subscriber-spin 4.5s linear infinite;pointer-events:none}
-    .subscriber-card .channel-avatar{width:64px;height:64px;margin-bottom:8px}
-    .subscriber-card .channel-name{font-size:12px;line-height:1.2;margin-bottom:4px;word-break:break-word;font-weight:700;}
-    .subscriber-badge{font-size:9px;border-radius:5px;padding:1px 6px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;min-height:18px}
-
-    /* Pagination & Search */
-    .sub-search-wrap { padding: 10px 18px; border-bottom: 1px solid #333; display: flex; gap: 10px; align-items: center; }
-    .sub-search-input { flex: 1; background: #111; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; outline: none; }
-    .sub-search-input:focus { border-color: #e01010; }
-    .pagination-wrap { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px 18px 40px; }
-    .pagination-btn { background: #1a0000; border: 1px solid #e01010; color: #e01010; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s; }
-    .pagination-btn:hover:not(:disabled) { background: #e01010; color: #000; }
-    .pagination-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #555; color: #777; }
-    .pagination-info { font-size: 13px; color: #aaa; margin: 0 10px; }
-
+    .subscriber-card .channel-avatar{width:78px;height:78px;margin-bottom:10px}
+    .subscriber-card .channel-name{font-size:22px;line-height:1.2;margin-bottom:6px;word-break:break-word}
+    .subscriber-badge{font-size:10px;border-radius:6px;padding:2px 8px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;min-height:20px}
     @keyframes subscriber-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
     .channel-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px}
     .channel-info{width:100%}
@@ -637,13 +589,13 @@
     /* ══ HOME CHANNEL PANEL ══ */
     .home-channel-panel{width:100%;max-width:1200px;margin:36px auto;padding:0 4px;}
     .hcp-title{color:#e01010;font-size:14px;font-weight:700;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
-    .home-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;}
+    .home-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
     @media(max-width:680px){.home-split{grid-template-columns:1fr;}}
-    .hcp-half{background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);border:1px solid rgba(220,0,0,0.3);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+    .hcp-half{background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);border:1px solid rgba(220,0,0,0.3);border-radius:14px;overflow:hidden;}
     .hcp-half-head{font-size:11px;font-weight:700;color:#e01010;padding:9px 13px 8px;border-bottom:1px solid rgba(220,0,0,0.15);}
-    .hc-wrap{position:relative;overflow:hidden;min-height:210px;direction:ltr;}
-    .hc-track{display:flex;transition:transform 0.36s cubic-bezier(.4,0,.2,1);direction:ltr;}
-    .hc-slide{min-width:100%;width:100%;box-sizing:border-box;padding:11px 12px 46px;flex-shrink:0;}
+    .hc-wrap{position:relative;overflow:hidden;min-height:210px;}
+    .hc-track{display:flex;transition:transform 0.36s cubic-bezier(.4,0,.2,1);}
+    .hc-slide{min-width:100%;box-sizing:border-box;padding:11px 12px 46px;}
     .hc-slide a{text-decoration:none;color:inherit;display:block;}
     .hc-thumb-wrap{position:relative;border-radius:9px;overflow:hidden;background:#050000;}
     .hc-thumb-wrap.vip-ch{border:2px solid #ff6600;box-shadow:0 0 12px rgba(255,102,0,0.4);}
@@ -653,7 +605,6 @@
     .hc-badge-soon{position:absolute;top:7px;right:8px;background:#ff2222;color:#000;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;}
     @keyframes hc-blink{0%,100%{opacity:1}50%{opacity:.35}}
     .hc-info-title{font-size:12px;font-weight:600;color:#eee;margin-top:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-    .hc-info-desc{display:none!important;}
     .hc-info-ch{font-size:11px;color:#e01010;margin-top:3px;opacity:.8;}
     .hc-nav{position:absolute;bottom:10px;right:11px;display:flex;align-items:center;gap:7px;z-index:5;}
     .hc-dots{display:flex;gap:5px;align-items:center;}
@@ -672,147 +623,7 @@
       100% { transform: scale(1); }
     }
     .lang-switching { animation: lang-pulse 0.35s ease forwards; }
-    /* ══ FIXED COPYRIGHT FOOTER ══ */
-    .vx-copyright-bar{
-      position:fixed;
-      bottom:0;left:0;right:0;
-      z-index:200;
-      background:rgba(0,0,0,0.96);
-      border-top:1px solid #e01010;
-      text-align:center;
-      padding:5px 12px;
-      font-size:11px;
-      color:#555;
-      letter-spacing:0.4px;
-      pointer-events:none;
-      white-space:nowrap;
-    }
-    .vx-copyright-bar span{color:#e01010;font-weight:700;}
-    /* add padding bottom to main to avoid footer overlap */
-    .vx-main{padding-bottom:28px;}
-    /* ══ VIDEO MODAL ══ */
-    .video-modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.98);
-      z-index: 5000;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      backdrop-filter: blur(12px);
-    }
-    .video-modal.active { display: flex; }
-    .vm-container {
-      width: 100%;
-      max-width: 1100px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      animation: vm-slide-up 0.4s ease;
-    }
-    @keyframes vm-slide-up {
-      from { transform: translateY(30px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    .vm-box {
-      width: 100%;
-      aspect-ratio: 16/9;
-      background: #000;
-      border: 1px solid rgba(224,16,16,0.5);
-      border-radius: 12px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 10px 60px rgba(0,0,0,0.8);
-    }
-    .vm-close {
-      position: absolute;
-      top: -45px;
-      right: 0;
-      color: #fff;
-      font-size: 32px;
-      cursor: pointer;
-      z-index: 5001;
-      transition: color 0.2s, transform 0.2s;
-    }
-    .vm-close:hover { color: #e01010; transform: rotate(90deg); }
-    .vm-body { width: 100%; height: 100%; }
-    .vm-body iframe, .vm-body video { width: 100%; height: 100%; border: none; display: block; }
-    .vm-info {
-      padding: 0 10px;
-      color: #fff;
-    }
-    #vm-title {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: #fff;
-    }
-    #vm-desc {
-      font-size: 14px;
-      color: #aaa;
-      line-height: 1.6;
-      max-height: 100px;
-      overflow-y: auto;
-      padding-right: 10px;
-    }
-    #vm-desc::-webkit-scrollbar { width: 4px; }
-    #vm-desc::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-
-      /* ══ AUTHOR POPUP ══ */
-    #authorPopupOverlay {
-      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
-      z-index:8000; justify-content:center; align-items:center;
-      backdrop-filter:blur(6px);
-    }
-    #authorPopupOverlay.vx-open { display:flex; }
-    .ap-box {
-      background:linear-gradient(160deg,#0d0000,#1a0000);
-      border:1.5px solid #e01010; border-radius:18px;
-      padding:28px 22px 20px; width:90%; max-width:340px;
-      position:relative; box-shadow:0 0 50px rgba(220,16,16,0.3);
-      animation:ap-in .28s cubic-bezier(.4,0,.2,1);
-      text-align:center;
-    }
-    @keyframes ap-in {
-      from{transform:scale(.85) translateY(20px);opacity:0}
-      to{transform:scale(1) translateY(0);opacity:1}
-    }
-    .ap-close {
-      position:absolute; top:10px; right:12px;
-      background:transparent; border:1px solid #444; color:#888;
-      width:26px; height:26px; border-radius:6px; cursor:pointer;
-      font-size:14px; display:flex; align-items:center; justify-content:center;
-    }
-    .ap-close:hover{border-color:#e01010;color:#e01010;}
-    .ap-avatar {
-      width:80px; height:80px; border-radius:50%; object-fit:cover;
-      border:3px solid #e01010; margin:0 auto 10px; display:block;
-    }
-    .ap-avatar-ph {
-      width:80px; height:80px; border-radius:50%; background:#2a2a3a;
-      border:3px solid #e01010; margin:0 auto 10px;
-      display:flex; align-items:center; justify-content:center; font-size:34px;
-    }
-    .ap-name { font-size:17px; font-weight:700; color:#e01010; margin-bottom:8px; }
-    .ap-badges { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:12px; }
-    .ap-badge {
-      border-radius:999px; padding:2px 10px; font-size:11px;
-      font-weight:700; border:1px solid; white-space:nowrap;
-    }
-    .ap-games {
-      margin-top:10px; background:rgba(0,0,0,0.4);
-      border:1px solid #2a2a2a; border-radius:10px; padding:10px 12px; text-align:right;
-    }
-    .ap-games-title { color:#e01010; font-size:12px; font-weight:700; margin:0 0 7px; }
-    .ap-games-list { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; }
-    .ap-game-tag {
-      background:#1a0000; border:1px solid #e01010; color:#e01010;
-      border-radius:5px; padding:3px 9px; font-size:11px;
-    }
-    .ap-loading { color:#777; font-size:13px; padding:20px 0; }
-
-  </style>
+    </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -836,7 +647,7 @@
         <div style="display:flex; align-items:center; gap:8px;">
           <img id="user-avatar-img" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#2a2a3a; display:none;">
           <span id="user-name" style="font-size:13px;color:#e01010;"></span>
-          <span id="user-role-badge" style="display:none;align-items:center;gap:4px;flex-wrap:wrap;max-width:340px;overflow:visible;"></span>
+          <span id="user-role-badge" style="display:none;align-items:center;gap:3px;flex-wrap:nowrap;max-width:200px;overflow:hidden;"></span>
         </div>
         <button id="profileButton" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
         <button id="logoutButton" onclick="window.doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
@@ -855,7 +666,7 @@
     <div class="vx-sidebar">
       <button class="sb-btn active" id="sb-home" onclick="window.showPage('home')">🏠 الرئيسية</button>
       <div class="sb-section">المحتوى</div>
-      <button class="sb-btn" id="sb-live" onclick="window.showPage('live')">🔴 البث المباشر</button>
+      <button class="sb-btn" id="sb-live" onclick="window.showPage('live')">🔴 live المباشر</button>
       <button class="sb-btn" id="sb-tournaments" onclick="window.showPage('tournaments')">🏆 البطولات</button>
       <button class="sb-btn" id="sb-highlights" onclick="window.showPage('highlights')">🎬 أبرز اللحظات</button>
       <div class="sb-section">المجتمع</div>
@@ -869,18 +680,14 @@
           <div class="home-welcome" data-ar="مرحباً بك في Virtux" data-en="Welcome to Virtux">مرحباً بك في Virtux</div>
 
           <!-- ══ ROW: About | Channel Panel | Rules ══ -->
-          <div id="home-main-grid" style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
-          <style>
-            @media(max-width:900px){#home-main-grid{grid-template-columns:1fr!important;}}
-            @media(min-width:901px) and (max-width:1100px){#home-main-grid{grid-template-columns:1fr 1.5fr 1fr!important;}}
-          </style>
+          <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
 
             <!-- About يسار -->
             <div class="home-about">
               <h3 data-ar="🎮 عن Virtux" data-en="🎮 About Virtux">🎮 عن Virtux</h3>
               <div class="about-text" style="font-size:13px;line-height:1.75;color:#ddd;">
-                <p style="margin:0 0 10px;"><strong style="color:#ff0000;" data-ar="🔴 البث المباشر" data-en="🔴 Live Streams">🔴 البث المباشر</strong><br>
-                <span data-ar="قسم خاص بالبث المباشر، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة." data-en="A dedicated live section where users can follow players and content creators in real time and interact with them on the platform.">قسم خاص بالبث المباشر، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة.</span></p>
+                <p style="margin:0 0 10px;"><strong style="color:#ff0000;" data-ar="🔴 مباشر Streams" data-en="🔴 Live Streams">🔴 مباشر Streams</strong><br>
+                <span data-ar="قسم خاص live المباشرة، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة." data-en="A dedicated live section where users can follow players and content creators in real time and interact with them on the platform.">قسم خاص live المباشرة، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة.</span></p>
                 <p style="margin:0 0 10px;"><strong style="color:#e01010;" data-ar="🏆 البطولات" data-en="🏆 Tournaments">🏆 البطولات</strong><br>
                 <span data-ar="منطقة البطولات في Virtux، وتضم: بطولات مفتوحة لجميع اللاعبين، بطولات VIP للاعبين المميزين، ومنافسات قوية بنظام احترافي وجوائز مستمرة." data-en="The Virtux tournaments zone features open tournaments for all players, VIP tournaments for elite players, and professional competitions with ongoing prizes.">منطقة البطولات في Virtux، وتضم: بطولات مفتوحة لجميع اللاعبين، بطولات VIP للاعبين المميزين، ومنافسات قوية بنظام احترافي وجوائز مستمرة.</span></p>
                 <p style="margin:0 0 10px;"><strong style="color:#cc2222;" data-ar="🎬 أبرز اللحظات" data-en="🎬 Highlights">🎬 أبرز اللحظات</strong><br>
@@ -888,7 +695,7 @@
                 <p style="margin:0 0 10px;"><strong style="color:#8888ff;">👥 Subscribers System</strong><br>
                 <span data-ar="نظام الاشتراكات داخل Virtux يتيح للمستخدمين دعم القنوات أو اللاعبين المفضلين لديهم، والحصول على مزايا خاصة ومحتوى حصري." data-en="The Virtux subscription system lets users support their favorite channels or players and gain exclusive perks and content.">نظام الاشتراكات داخل Virtux يتيح للمستخدمين دعم القنوات أو اللاعبين المفضلين لديهم، والحصول على مزايا خاصة ومحتوى حصري.</span></p>
                 <p style="margin:0;padding:8px 12px;background:rgba(220,0,0,0.1);border-radius:8px;border-right:3px solid #e01010;"><strong style="color:#e01010;" data-ar="🚀 هدفنا" data-en="🚀 Our Goal">🚀 هدفنا</strong><br>
-                <span style="font-size:12px;"><span data-ar="نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، والبث المباشر في بيئة احترافية وآمنة." data-en="Virtux aims to build a strong gaming community combining entertainment, competition, and live streaming in a professional and safe environment.">نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، والبث المباشر في بيئة احترافية وآمنة.</span></span></p>
+                <span style="font-size:12px;"><span data-ar="نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، live المباشر في بيئة احترافية وآمنة." data-en="Virtux aims to build a strong gaming community combining entertainment, competition, and live streaming in a professional and safe environment.">نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، live المباشر في بيئة احترافية وآمنة.</span></span></p>
               </div>
             </div>
 
@@ -897,7 +704,7 @@
               <div class="hcp-title" data-ar="📡 قنوات الموقع" data-en="📡 Site Channels">📡 قنوات الموقع</div>
               <div class="home-split">
                 <div class="hcp-half">
-                  <div class="hcp-half-head" data-ar="🔴 البث المباشر وما قبله" data-en="🔴 Live &amp; Pre-Live">🔴 البث المباشر وما قبله</div>
+                  <div class="hcp-half-head" data-ar="🔴 live المباشر وما قبل live" data-en="🔴 Live &amp; Pre-Live">🔴 live المباشر وما قبل live</div>
                   <div class="hc-wrap" id="hc-live"><div class="hc-loading">⏳ جارٍ التحميل...</div></div>
                 </div>
                 <div class="hcp-half">
@@ -1097,29 +904,6 @@ let currentEditRoom = null;
 let tickerAnimationId = null;
 let authReady = false;
 let ytAutofillTimers = {};
-
-window._highlightsPerPage = 40;
-window._highlightsCurrentPage = 1;
-window._highlightsTag = '';
-
-window.tTitle = function(t) {
-  if (!t) return '';
-  if (typeof t === 'object') return window._siteLanguage === 'en' ? (t.en || t.ar) : (t.ar || t.en);
-  if (t.includes(' | ')) {
-    const parts = t.split(' | ');
-    return window._siteLanguage === 'en' ? (parts[1] || parts[0]) : parts[0];
-  }
-  // Check cache
-  const targetLang = window._siteLanguage === 'en' ? 'en' : 'ar';
-  const hasArabic = /[\u0600-\u06FF]/.test(t);
-  const hasEnglish = /[A-Za-z]/.test(t);
-  const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
-  if (sourceLang && sourceLang !== targetLang && window._titleCache) {
-    const cacheKey = sourceLang + '|' + targetLang + '|' + t;
-    if (window._titleCache[cacheKey]) return window._titleCache[cacheKey];
-  }
-  return t;
-};
 
 window.doLogout = async function() {
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
@@ -1792,20 +1576,19 @@ window.openUserModal = function(room) {
   } else if (room === 'highlights') {
     formHtml = `<div class="form-with-preview">
       <div>
-        <div><label>${window.t('Title','العنوان')}</label><input id="title-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label>${window.t('Player / Game','اللاعب / اللعبة')}</label><input id="desc-${room}" style="${inputStyle}"></div>
-        <div style="margin-top:12px;"><label>${window.t('Type','النوع')}</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 YouTube Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
-        <div style="margin-top:12px;"><label>${window.t('YouTube URL / Media URL','رابط يوتيوب / رابط وسائط')}</label><input id="url-${room}" placeholder="https://www.youtube.com/watch?v=..." style="${inputStyle}"></div>
-        <div style="margin-top:12px; font-size:11px; color:#aaa;">${window.t('To save space, please use YouTube links for videos. Files are for photos only.','لحفظ المساحة، يرجى استخدام روابط يوتيوب للفيديوهات. رفع الملفات للصور فقط.')}</div>
-        ${fileInputHtml('image/*', window.t('Or upload a Photo','أو ارفع صورة'), 'media')}
+        <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Player / Game</label><input id="desc-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="Video">🎬 Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option></select></div>
+        <div style="margin-top:12px;"><label>Media URL (Image or Video URL)</label><input id="url-${room}" style="${inputStyle}"></div>
+        ${fileInputHtml('image/*,video/*', 'أو ارفع ملف من الحاسوب (صورة أو فيديو)', 'media')}
         <input type="hidden" id="icon-${room}">
       </div>
       <div class="preview-panel">
-        <h4 style="color:#e01010;">${window.t('Preview','معاينة')}</h4>
+        <h4 style="color:#e01010;">معاينة</h4>
         <img id="preview-img-${room}" class="preview-media" style="display:none;">
         <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-        <div id="preview-text-${room}" style="color:#aaa;">${window.t('No media','لا توجد وسائط')}</div>
-        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ ${window.t('Delete','حذف')}</button>
+        <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط</div>
+        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
       </div>
     </div>`;
   } else {
@@ -1869,61 +1652,6 @@ window.openUserModal = function(room) {
   document.getElementById('upm-modal').classList.add('active');
 };
 
-// فتح نافذة تعديل منشور موجود
-window.openEditPostModal = function(postId, room) {
-  const post = (window.allPosts?.[room] || []).find(p => String(p.id) === String(postId));
-  if (!post) { alert(window.t('لم يُعثر على المنشور', 'Post not found')); return; }
-  // افتح نافذة النشر لنفس الغرفة
-  window.openUserModal(room);
-  // بعد بناء الفورم، انتظر لحظة ثم اعبئ البيانات
-  setTimeout(() => {
-    const titleEl = document.getElementById('title-' + room);
-    const descEl  = document.getElementById('desc-'  + room);
-    const urlEl   = document.getElementById('url-'   + room);
-    const tagEl   = document.getElementById('tag-'   + room);
-    if (titleEl) titleEl.value = post.title || '';
-    if (descEl)  descEl.value  = post.description || '';
-    if (urlEl)   urlEl.value   = post.url || '';
-    if (tagEl)   tagEl.value   = post.tag || '';
-    // تغيير زر النشر
-    const submitBtn = document.getElementById('upm-submit');
-    if (submitBtn) submitBtn.textContent = window.t('💾 حفظ التعديل', '💾 Save Edit');
-    // تحديث دالة الإرسال لتعديل بدل نشر
-    submitBtn.onclick = async () => {
-      const newTitle = titleEl ? titleEl.value.trim() : '';
-      const newDesc  = descEl  ? descEl.value.trim()  : '';
-      const newUrl   = urlEl   ? urlEl.value.trim()   : '';
-      const newTag   = tagEl   ? tagEl.value           : post.tag;
-      if (!newTitle && !newUrl) { 
-        const errEl = document.getElementById('upm-err');
-        if (errEl) { errEl.textContent = window.t('❌ أدخل عنواناً على الأقل','❌ Enter at least a title'); errEl.style.display='block'; }
-        return; 
-      }
-      submitBtn.disabled = true; submitBtn.textContent = window.t('⏳ جاري الحفظ...','⏳ Saving...');
-      try {
-        const { error } = await db.from('posts').update({
-          title: newTitle || post.title,
-          description: newDesc || post.description,
-          url: newUrl || post.url,
-          tag: newTag
-        }).eq('id', post.id);
-        if (error) throw error;
-        const okEl = document.getElementById('upm-ok');
-        if (okEl) { okEl.textContent = window.t('✅ تم تحديث المنشور!','✅ Post updated!'); okEl.style.display='block'; }
-        loadPage(room);
-        setTimeout(() => { document.getElementById('upm-modal')?.classList.remove('active'); }, 1200);
-      } catch(e) {
-        const errEl = document.getElementById('upm-err');
-        if (errEl) { errEl.textContent = '❌ ' + (e.message||e); errEl.style.display='block'; }
-        submitBtn.disabled = false; submitBtn.textContent = window.t('💾 حفظ التعديل','💾 Save Edit');
-      }
-    };
-    // عنوان النافذة
-    const titleSpan = document.getElementById('upm-room-title');
-    if (titleSpan) titleSpan.textContent = window.t('تعديل المنشور','Edit Post');
-  }, 80);
-};
-
 async function submitUser(room) {
   var titleEl = document.getElementById('title-' + room);
   var descEl  = document.getElementById('desc-'  + room);
@@ -1949,11 +1677,7 @@ async function submitUser(room) {
   if (room === 'live'      && tag === 'مباشر Now' && !url) { showUPMError('live المباشر يحتاج رابط'); return; }
   if (room === 'yt-videos' && !url)                       { showUPMError('أدخل رابط يوتيوب'); return; }
   if (room === 'yt-videos' && !isValidYouTubeUrl(url))    { showUPMError('رابط يوتيوب غير صحيح'); return; }
-  if (room === 'highlights' && currentMediaFile && fileIsVideo) {
-    showUPMError(window.t('Video file uploads are not allowed in Highlights. Please use a YouTube link.','رفع ملفات الفيديو غير مسموح في أبرز اللحظات. يرجى استخدام رابط يوتيوب.'));
-    return;
-  }
-  if (room === 'highlights' && !url && !currentMediaFile)  { showUPMError(window.t('Please enter a YouTube link or upload a photo','أدخل رابط يوتيوب أو ارفع صورة')); return; }
+  if (room === 'highlights'&& !url && !currentMediaFile)  { showUPMError('أدخل رابط أو ارفع ملف'); return; }
 
   var btn  = document.getElementById('upm-submit');
   var okEl = document.getElementById('upm-ok');
@@ -1998,7 +1722,7 @@ async function submitUser(room) {
     var finalIcon = thumbUrl || (isYT ? '📹' : (isImg ? '🖼️' : (isVid ? '🎥' : (finalUrl ? '🔗' : '📄'))));
 
     // إذا كان الرابط يوتيوب ولم تُملأ الخانات نأخذ البيانات من API قبل النشر
-    if ((!title || !desc) && (room === 'live' || room === 'yt-videos' || room === 'highlights') && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
+    if ((!title || !desc) && (room === 'live' || room === 'yt-videos') && finalUrl && (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be'))) {
       try {
         var _inf = await fetchYouTubeVideoInfo(finalUrl);
         if (_inf) {
@@ -2081,14 +1805,11 @@ async function loadPage(room) {
   const el = document.getElementById(`grid-${room}`);
   if (!el) return;
   el.innerHTML = `<div class="loading-state">${window.t('جاري التحميل...','Loading...')}</div>`;
-  // Reset to page 1 on fresh load
-  const safeKey = '_' + room.replace(/-/g,'') + 'CurrentPage';
-  window[safeKey] = 1;
-  if (room === 'live') window._liveTag = '';
-  if (room === 'tournaments') window._tournamentsTag = '';
   try {
     let data, error;
+    // في live و yt-videos: قنوات youtuber_vip تأخذ الأولوية
     if (room === 'live' || room === 'yt-videos') {
+      // جلب فيديوهات القنوات المضافة (tag يبدأ بـ auto:)
       const [vipRes, normalRes] = await Promise.all([
         db.from('posts').select('*').eq('room', room).like('tag', 'auto:%').order('id', {ascending:false}),
         db.from('posts').select('*').eq('room', room).not('tag','like','auto:%').order('id', {ascending:false})
@@ -2099,19 +1820,17 @@ async function loadPage(room) {
       ({ data, error } = await db.from('posts').select('*').eq('room', room).order('id', { ascending: false }));
     }
     if (error) throw error;
-    window.allPosts = window.allPosts || {};
-    window.allPosts[room] = data || [];
-    if (data && data.length) {
+    allPosts[room] = data || [];
+    // في غرفة highlights نجلب بيانات أصحاب المنشورات
+    if (room === 'highlights' && data && data.length) {
       const uids = [...new Set(data.filter(p => p.user_id).map(p => p.user_id))];
       if (uids.length) {
-        const { data: profiles } = await db.from('profiles').select('id, username, avatar_url, role, roles, favorite_game').in('id', uids);
-        window._roomProfiles = window._roomProfiles || {};
-        window._roomProfiles[room] = {};
-        (profiles || []).forEach(pr => { window._roomProfiles[room][pr.id] = pr; });
-        if (room === 'highlights') window._highlightsProfiles = window._roomProfiles[room];
+        const { data: profiles } = await db.from('profiles').select('id, username, avatar_url').in('id', uids);
+        window._highlightsProfiles = {};
+        (profiles || []).forEach(pr => { window._highlightsProfiles[pr.id] = pr; });
       }
     }
-    renderCards(window.allPosts[room], `grid-${room}`, room);
+    renderCards(allPosts[room], `grid-${room}`, room);
   } catch(e) { el.innerHTML = '<div class="empty-state">فشل التحميل</div>'; }
 }
 
@@ -2128,436 +1847,229 @@ async function deletePost(id, room) {
 
 function renderCards(posts, gridId, room) {
   const el = document.getElementById(gridId);
+  // ⚠️ غرفة Subscribers تُحمّل المستخدمين من جدول profiles حتى لو لم توجد منشورات
   if (room === 'subscribers') {
     el.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">⏳ جارٍ تحميل المشتركين...</div>';
     loadSubscribersWithVIP(el, posts || []);
     return;
   }
-
-  let finalPosts = posts || [];
-  if (room === 'highlights' || room === 'tournaments') {
-    const isHighlights = room === 'highlights';
-    const tag = isHighlights ? (window._highlightsTag || '') : (window._tournamentsTag || '');
-    
-    // Filter by tag if applicable
-    if (tag) {
-      finalPosts = finalPosts.filter(p => {
-        if (!p.tag) return false;
-        const ptag = String(p.tag).trim();
-        if (room === 'tournaments' && (tag === 'تسجيل' || tag === 'Register')) {
-           return ptag === 'تسجيل' || ptag === 'Register' || ptag.toLowerCase().includes('reg') || ptag === 'VIP';
-        }
-        return ptag.toLowerCase() === tag.toLowerCase();
-      });
-    }
-
-    const total = finalPosts.length;
-    const perPage = isHighlights ? (window._highlightsPerPage || 40) : (window._tournamentsPerPage || 40);
-    const totalPages = Math.ceil(total / perPage);
-    let page = isHighlights ? (window._highlightsCurrentPage || 1) : (window._tournamentsCurrentPage || 1);
-    
-    if (page > totalPages && totalPages > 0) page = totalPages;
-    if (isHighlights) window._highlightsCurrentPage = page;
-    else window._tournamentsCurrentPage = page;
-    
-    const start = (page - 1) * perPage;
-    const pagedPosts = finalPosts.slice(start, start + perPage);
-    
-    if (!pagedPosts.length) { el.innerHTML = `<div class="empty-state">${window._siteLanguage==='en'?'No posts yet 🎮':'لا توجد منشورات بعد 🎮'}</div>`; return; }
-    
-    const isEN = window._siteLanguage === 'en';
-    const cardsHtml = pagedPosts.map(p => renderSingleCard(p, room)).join('');
-    
-    let paginationHtml = '';
-    if (totalPages > 1) {
-      const changePageFn = isHighlights ? 'window.changeHighlightsPage' : 'window.changeTournamentsPage';
-      paginationHtml = `
-        <div class="pagination-wrap" style="grid-column: 1 / -1; margin-top: 20px;">
-          <button class="pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="${changePageFn}(${page - 1})">${isEN ? 'Previous' : 'السابق'}</button>
-          <div class="pagination-info">${isEN ? 'Page' : 'صفحة'} ${page} ${isEN ? 'of' : 'من'} ${totalPages}</div>
-          <button class="pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="${changePageFn}(${page + 1})">${isEN ? 'Next' : 'التالي'}</button>
-        </div>
-      `;
-    }
-    el.innerHTML = cardsHtml + paginationHtml;
-    return;
-  }
-
-  if (!finalPosts || !finalPosts.length) { el.innerHTML = `<div class="empty-state">${window._siteLanguage==='en'?'No posts yet 🎮':'لا توجد منشورات بعد 🎮'}</div>`; return; }
-
+  if (!posts || !posts.length) { el.innerHTML = '<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
   if (room === 'yt-channels') {
-    const isEN = window._siteLanguage === 'en';
-    const total = posts.length;
-    const perPage = 40;
-    const totalPages = Math.ceil(total / perPage);
-    let page = window._ytchannelsCurrentPage || 1;
-    if (page > totalPages && totalPages > 0) page = totalPages;
-    window._ytchannelsCurrentPage = page;
-    const start = (page - 1) * perPage;
-    const pagedPosts = posts.slice(start, start + perPage);
-    let paginationHtml = '';
-    if (totalPages > 1) {
-      paginationHtml = `<div class="pagination-wrap" style="grid-column:1/-1;margin-top:20px;">
-        <button class="pagination-btn" ${page===1?'disabled':''} onclick="window.changeGenericPage('yt-channels',${page-1})">${isEN?'Previous':'السابق'}</button>
-        <div class="pagination-info">${isEN?'Page':'صفحة'} ${page} ${isEN?'of':'من'} ${totalPages}</div>
-        <button class="pagination-btn" ${page===totalPages?'disabled':''} onclick="window.changeGenericPage('yt-channels',${page+1})">${isEN?'Next':'التالي'}</button>
-      </div>`;
-    }
-    el.innerHTML = `<div class="channels-grid">${pagedPosts.map(p => {
+    el.innerHTML = `<div class="channels-grid">${posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
       const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
       let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} ${isEN?'subscribers':'مشترك'}`;
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
       return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div></div>${link}</div>`;
-    }).join('')}</div>${paginationHtml}`;
+    }).join('')}</div>`;
     return;
   }
-
-  // Generic pagination for remaining rooms (live, yt-videos, gaming-news, youtube-news, projects)
-  {
-    const isEN = window._siteLanguage === 'en';
-    const perPage = 40;
-    // For live room, use tag filtering
-    let displayPosts = finalPosts;
-    if (room === 'live') {
-      const tag = window._liveTag || '';
-      if (tag) {
-        // Normalize tag for comparison — handle Arabic/English equivalents
-        const isNowFilter = tag === 'مباشر Now' || tag === 'Live Now';
-        const isPreFilter = tag === 'Pre s' || tag === 'Pre' || tag.toLowerCase().includes('pre');
-        const isVipFilter = tag === 'VIP';
-        displayPosts = finalPosts.filter(p => {
-          if (!p.tag) return false;
-          const ptag = String(p.tag).trim();
-          const ptagL = ptag.toLowerCase();
-          if (isNowFilter) {
-            // Match: "مباشر Now", "Live Now", or anything containing "now" or "live" but not "pre"
-            return ptag === 'مباشر Now' || ptag === 'Live Now' || ptagL === 'live now' || ptagL === 'مباشر now'
-              || (ptagL.includes('live') && !ptagL.includes('pre') && !ptagL.includes('auto'));
-          }
-          if (isPreFilter) {
-            return ptag === 'Pre s' || ptagL.includes('pre') || ptagL.includes('قريب') || ptagL.includes('soon');
-          }
-          if (isVipFilter) {
-            return ptag === 'VIP' || ptagL === 'vip';
-          }
-          return ptag === tag || ptagL === tag.toLowerCase();
-        });
-      }
-    }
-    const total = displayPosts.length;
-    const totalPages = Math.ceil(total / perPage);
-    const safeKey = '_' + room.replace(/-/g,'') + 'CurrentPage';
-    let page = window[safeKey] || 1;
-    if (page > totalPages && totalPages > 0) page = totalPages;
-    window[safeKey] = page;
-    const start = (page - 1) * perPage;
-    const pagedPosts = displayPosts.slice(start, start + perPage);
-
-    if (!pagedPosts.length) {
-      if (room === 'live' && (window._liveTag === 'مباشر Now' || window._liveTag === 'Live Now')) {
-        el.innerHTML = `<div class="empty-state">${isEN ? '📡 No live streams right now. Check back soon!' : '📡 لا توجد بثوث مباشرة حالياً. تابعنا لاحقاً!'}</div>`;
-      } else {
-        el.innerHTML = `<div class="empty-state">${isEN ? 'No posts yet 🎮' : 'لا توجد منشورات بعد 🎮'}</div>`;
-      }
-      return;
-    }
-
-    let paginationHtml = '';
-    if (totalPages > 1) {
-      let prevFn, nextFn;
-      if (room === 'live') { prevFn = `window.changeLivePage(${page-1})`; nextFn = `window.changeLivePage(${page+1})`; }
-      else { prevFn = `window.changeGenericPage('${room}',${page-1})`; nextFn = `window.changeGenericPage('${room}',${page+1})`; }
-      paginationHtml = `<div class="pagination-wrap" style="grid-column:1/-1;margin-top:20px;">
-        <button class="pagination-btn" ${page===1?'disabled':''} onclick="${prevFn}">${isEN?'Previous':'السابق'}</button>
-        <div class="pagination-info">${isEN?'Page':'صفحة'} ${page} ${isEN?'of':'من'} ${totalPages}</div>
-        <button class="pagination-btn" ${page===totalPages?'disabled':''} onclick="${nextFn}">${isEN?'Next':'التالي'}</button>
-      </div>`;
-    }
-    el.innerHTML = pagedPosts.map(p => renderSingleCard(p, room)).join('') + paginationHtml;
-    return;
-  }
-}
-
-function renderSingleCard(p, room) {
   const canViewVIP = userHasAnyRole(['vip','member','admin','moderator','youtuber_vip']);
-  let media = '';
-  const isRestricted = isVIP(p) && !canViewVIP;
-  if (isRestricted) {
-    media = `<div style="width:100%;height:240px;background:linear-gradient(135deg,#1a0a2e,#0a0000);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;position:relative;z-index:2;">
-      <span style="font-size:42px;">👑</span>
-      <span style="color:#e01010;font-size:13px;font-weight:700;">${room==='tournaments'?'🏆 بطولة VIP':'🎬 محتوى VIP'}</span>
-      <span style="color:#888;font-size:11px;">خاص بأعضاء VIP / Member</span>
-    </div>`;
-  } else {
-    const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
-    const isVideoExt = p.url && /\.(mp4|webm|ogg|mov)/i.test(p.url);
-    const isStorageVideo = p.url && !isImageUrl && (p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
-    const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
-    const isYouTube = p.url && (p.url.includes('youtube.com') || p.url.includes('youtu.be'));
-    const isTwitch  = p.url && p.url.includes('twitch.tv');
+  el.innerHTML = posts.map(p => {
+    let media = '';
+    const isRestricted = isVIP(p) && !canViewVIP;
+    if (isRestricted) {
+      media = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1a0a2e,#0a0000);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+        <span style="font-size:42px;">👑</span>
+        <span style="color:#e01010;font-size:13px;font-weight:700;">${room==='tournaments'?'🏆 بطولة VIP':'🎬 محتوى VIP'}</span>
+        <span style="color:#888;font-size:11px;">خاص بأعضاء VIP  Member</span>
+      </div>`;
+    } else {
+      const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
+      const isVideoExt = p.url && /\.(mp4|webm|ogg|mov)/i.test(p.url);
+      const isStorageVideo = p.url && !isImageUrl && (p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
+      const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
+      const isYouTube = p.url && (p.url.includes('youtube.com') || p.url.includes('youtu.be'));
+      const isTwitch  = p.url && p.url.includes('twitch.tv');
 
-    if (isImageUrl) {
-      media = `<div class="post-media-wrap">`
-        + `<div class="post-media-bg" style="background-image:url('${p.url}')"></div>`
-        + `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)"></div>`;
-    }
-    else if (isLocalVideo) {
-      const poster = (p.icon && p.icon.startsWith('http')) ? p.icon : '';
-      const posterStyle = poster ? `style="background-image:url('${poster}')"` : '';
-      media = `<div class="post-media-wrap">`
-        + (poster ? `<div class="post-media-bg" ${posterStyle}></div>` : '')
-        + `<div class="post-card-video"><video src="${p.url}" ${poster ? `poster="${poster}"` : ''} controls preload="metadata" style="width:100%;height:100%;object-fit:cover;"></video></div></div>`;
-    }
-    else if (isYouTube) {
-      const videoId = extractYouTubeId(p.url);
-      if (videoId) {
-        const isLiveVid = p.url.includes('/live/') || p.tag === 'مباشر Now' || p.tag === 'Live Now';
-        const liveBadgeHtml = isLiveVid ? '<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;z-index:10;">&#9679; LIVE</div>' : '';
-        const bgImg = (p.icon && p.icon.startsWith('http')) ? p.icon : `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
-        media = `<div class="post-media-wrap">`
-          + `<div class="post-media-bg" style="background-image:url('${bgImg}')"></div>`
-          + `<div class="post-card-video" style="position:relative;cursor:pointer;" data-vid="${videoId}" data-postid="${p.id}" data-room="${room}" onclick="window.playYT(this); event.stopPropagation();">`
-          + `<img src="https://i.ytimg.com/vi/${videoId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:2;" onerror="window.fixThumb(this,this.closest('[data-vid]').dataset.vid)">`
-          + liveBadgeHtml
-          + `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>`
-          + `</div></div>`;
-      } else {
-        media = `<div class="post-media-wrap"><div class="post-card-emoji">🎬</div></div>`;
+      if (isImageUrl) {
+        media = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
+      }
+      else if (isLocalVideo) {
+        const poster = (p.icon && p.icon.startsWith('http')) ? `poster="${p.icon}"` : '';
+        media = `<div class="post-card-video"><video src="${p.url}" ${poster} controls preload="metadata" style="width:100%;height:100%;background:#000;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video><div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;color:#f55;font-size:12px;background:#0a0000;">❌ تعذر تحميل الفيديو</div></div>`;
+      }
+      else if (isYouTube) {
+        const videoId = extractYouTubeId(p.url);
+        if (videoId) {
+          const isLiveVid = p.url.includes('/live/') || p.tag === 'مباشر Now' || p.tag === 'Live Now';
+          const liveBadgeHtml = isLiveVid ? '<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;">&#9679; LIVE</div>' : '';
+          media = '<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;" data-vid="' + videoId + '" onclick="window.playYT(this)">'
+            + '<img src="https://i.ytimg.com/vi/' + videoId + '/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="window.fixThumb(this,this.closest(\'[data-vid]\').dataset.vid)">'
+            + liveBadgeHtml
+            + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>'
+            + '</div>';
+        } else {
+          media = '<div class="post-card-emoji">🎬</div>';
+        }
+      }
+      else if (isTwitch) {
+        const twitchMatch = p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+        if (twitchMatch) {
+          media = `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe></div>`;
+        } else {
+          media = `<div class="post-card-emoji">📺</div>`;
+        }
+      }
+      else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+        media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
+      }
+      else {
+        // منشور بدون وسائط — أيقونة مع خلفية بدل شاشة سوداء
+        const liveTag = room === 'live' && (p.tag === 'مباشر Now' || p.tag === 'Live Now')
+          ? `<div class="live-badge">${window.t('مباشر','LIVE')}</div>` : '';
+        media = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0a0a1a,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">${liveTag}<span style="font-size:36px;">${p.icon || '📄'}</span></div>`;
       }
     }
-    else if (isTwitch) {
-      const twitchMatch = p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-      if (twitchMatch) {
-        media = `<div class="post-media-wrap"><div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe></div></div>`;
-      } else {
-        media = `<div class="post-media-wrap"><div class="post-card-emoji">📺</div></div>`;
+    const rawSummary = p.content || p.description || '';
+    // إخفاء أي ISO date خام من الملخص
+    const cleanSummary = rawSummary.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, '').trim();
+    let summary = cleanSummary.substring(0, 150);
+    if (cleanSummary.length > 150) summary += '...';
+    const readMoreLink = (p.content && room !== 'yt-videos') ? `<a href="post.html?id=${p.id}" class="read-more">📖 ${window.t("اقرأ المزيد","Read More")}</a>` : '';
+    let actions = '';
+    if (!isRestricted && p.url) {
+      const isStorageFile = p.url.includes('/storage/v1/object/public/');
+      const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
+      const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
+      const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
+      if (isVideoFile || isImageFile) {
+        actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل","Download")}</a>`;
+      } else if (!isYouTubeUrl) {
+        actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط","Link")}</a>`;
       }
     }
-    else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
-      media = `<div class="post-media-wrap"><div class="post-media-bg" style="background-image:url('${p.icon}')"></div><img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)"></div>`;
-    }
-    else {
-      const liveTag = room === 'live' && (p.tag === 'مباشر Now' || p.tag === 'Live Now')
-        ? `<div class="live-badge">${window.t('مباشر','LIVE')}</div>` : '';
-      media = `<div class="post-media-wrap"><div style="width:100%;height:100%;background:linear-gradient(135deg,#0a0a1a,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">${liveTag}<span style="font-size:36px;">${p.icon || '📄'}</span></div></div>`;
-    }
-  }
-
-  const rawSummary = p.content || p.description || '';
-  const cleanSummary = rawSummary.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, '').trim();
-  let summary = cleanSummary.substring(0, 150);
-  if (cleanSummary.length > 150) summary += '...';
-  
-  let actions = '';
-  if (!isRestricted && p.url) {
-    const isStorageFile = p.url.includes('/storage/v1/object/public/');
-    const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
-    const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
-    const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
-    if (isVideoFile || isImageFile) {
-      actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل","Download")}</a>`;
-    } else if (!isYouTubeUrl) {
-      actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط","Link")}</a>`;
-    }
-  }
-  
-  let registerBtn = '';
-  if (room === 'tournaments') {
-    if (isVIP(p)) {
+    // زر تسجيل بطولة VIP
+    let registerBtn = '';
+    if (room === 'tournaments' && isVIP(p)) {
       if (canViewVIP) {
         registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل","🏆 Register")}</button>`;
       } else {
         registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
       }
-    } else if (p.tag === 'تسجيل') {
-      if (window.currentUserId) {
-        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#1a6e1a,#0d4d0d);color:#fff;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("📋 تسجيل","📋 Register")}</button>`;
-      } else {
-        registerBtn = `<button onclick="openModal()" style="background:transparent;border:1px solid #e01010;color:#e01010;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("📋 تسجيل","📋 Register")}</button>`;
+    }
+    // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
+    const currentUid = window.currentUserId;
+    const isOwner = currentUid && p.user_id && p.user_id === currentUid;
+    const deleteBtn = isOwner
+      ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
+      : '';
+    // تمييز فيديوهات قنوات YT VIP
+    const isVipChannelPost = p.tag && p.tag.startsWith('auto:');
+    const vipBadgeHtml = isVipChannelPost
+      ? '<div class="vip-channel-badge">🔥 YT VIP</div>' : '';
+    const cardClass = isVipChannelPost ? 'post-card vip-channel-card' : 'post-card';
+
+    const isVipCh = !!(p.tag && p.tag.startsWith('auto:'));
+    const vipBadge = isVipCh ? '<div class="vip-ch-badge">🔥 YT VIP</div>' : '';
+    const cardCls = isVipCh ? 'post-card vip-ch' : 'post-card';
+
+    let dateLabel = '';
+    if (p.created_at) {
+      const isEN = window._siteLanguage === 'en';
+      const d = new Date(p.created_at);
+      const now = new Date();
+      const diff = Math.floor((now - d) / 1000);
+      let rel = '';
+      if (diff < 60)     rel = isEN ? 'Just now' : 'الآن';
+      else if (diff < 3600)  { const m=Math.floor(diff/60);   rel = isEN ? m+'m ago' : 'منذ '+m+' د'; }
+      else if (diff < 86400) { const h=Math.floor(diff/3600);  rel = isEN ? h+'h ago' : 'منذ '+h+' س'; }
+      else if (diff < 604800){ const dd=Math.floor(diff/86400); rel = isEN ? dd+'d ago' : 'منذ '+dd+' يوم'; }
+      else {
+        const opts = { year:'numeric', month:'short', day:'numeric' };
+        rel = d.toLocaleDateString(isEN ? 'en-US' : 'ar-EG', opts);
+      }
+      dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
+    }
+    // معلومات صاحب المنشور للـ highlights
+    let authorHtml = '';
+    if (room === 'highlights' && p.user_id) {
+      const pr = (window._highlightsProfiles || {})[p.user_id];
+      const authorName = pr?.username || '';
+      const authorAvatar = pr?.avatar_url || '';
+      if (authorName || authorAvatar) {
+        const avatarEl = authorAvatar
+          ? `<img src="${authorAvatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`
+          : `<span style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">👤</span>`;
+        authorHtml = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">${avatarEl}<span style="font-size:11px;color:#888;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">@${escapeHtml(authorName)}</span></div>`;
       }
     }
-  }
-
-  const currentUid = window.currentUserId;
-  const isOwner = currentUid && p.user_id && p.user_id === currentUid;
-  const canAdmin = userHasAnyRole(['admin','moderator']);
-  const canManage = isOwner || canAdmin;
-  const editBtn = canManage
-    ? `<button onclick="window.openEditPostModal(${p.id},'${room}')" style="background:transparent;border:1px solid #e01010;color:#e01010;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" title="${window.t('تعديل','Edit')}">✏️</button>`
-    : '';
-  const deleteBtn = canManage
-    ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:2px;" title="${window.t('حذف','Delete')}">🗑️</button>`
-    : '';
-
-  const isVipCh = !!(p.tag && p.tag.startsWith('auto:'));
-  const vipBadge = isVipCh ? '<div class="vip-ch-badge">🔥 YT VIP</div>' : '';
-  const cardCls = isVipCh ? 'post-card vip-ch' : 'post-card';
-
-  let dateLabel = '';
-  if (p.created_at) {
-    const isEN = window._siteLanguage === 'en';
-    const d = new Date(p.created_at);
-    const now = new Date();
-    const diff = Math.floor((now - d) / 1000);
-    let rel = '';
-    if (diff < 60)     rel = isEN ? 'Just now' : 'الآن';
-    else if (diff < 3600)  { const m=Math.floor(diff/60);   rel = isEN ? m+'m ago' : 'منذ '+m+' د'; }
-    else if (diff < 86400) { const h=Math.floor(diff/3600);  rel = isEN ? h+'h ago' : 'منذ '+h+' س'; }
-    else if (diff < 604800){ const dd=Math.floor(diff/86400); rel = isEN ? dd+'d ago' : 'منذ '+dd+' يوم'; }
-    else {
-      const opts = { year:'numeric', month:'short', day:'numeric' };
-      rel = d.toLocaleDateString(isEN ? 'en-US' : 'ar-EG', opts);
+    // زر الرابط الاجتماعي في highlights
+    let socialLinkBtn = '';
+    if (room === 'highlights' && p.content && (p.content.startsWith('http://') || p.content.startsWith('https://'))) {
+      const socialDomain = (() => {
+        try { const u = new URL(p.content); return u.hostname.replace('www.',''); } catch(e) { return ''; }
+      })();
+      const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
+      socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
     }
-    dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
-  }
-
-  let authorHtml = '';
-  if (p.user_id) {
-    const roomProfiles = (window._roomProfiles && window._roomProfiles[room]) || window._highlightsProfiles || {};
-    const pr = roomProfiles[p.user_id];
-    const authorName = pr?.username || '';
-    const authorAvatar = pr?.avatar_url || '';
-    if (authorName || authorAvatar) {
-      const avatarEl = authorAvatar
-        ? `<img src="${authorAvatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`
-        : `<span style="width:18px;height:18px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">👤</span>`;
-      const safeUid = escapeHtml(p.user_id);
-      const safeName = escapeHtml(authorName);
-      authorHtml = `<div onclick="event.stopPropagation();window._openAuthorPopup('${safeUid}','${safeName}')" style="display:flex;align-items:center;gap:4px;margin-bottom:2px;cursor:pointer;" title="${window.t('عرض الملف الشخصي','View Profile')}">${avatarEl}<span style="font-size:10px;color:#e01010;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;">@${safeName}</span></div>`;
-    }
-  }
-
-  let socialLinkBtn = '';
-  if (room === 'highlights' && p.content && (p.content.startsWith('http://') || p.content.startsWith('https://'))) {
-    const socialDomain = (() => {
-      try { const u = new URL(p.content); return u.hostname.replace('www.',''); } catch(e) { return ''; }
-    })();
-    const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
-    socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
-  }
-
-  /* Playback overlay removed for cleaner YouTube integration in Highlights */
-
-  const isVideo = p.url && (
-    p.url.includes('youtube.com') || p.url.includes('youtu.be') || 
-    p.url.includes('twitch.tv') || 
-    /\.(mp4|webm|ogg|mov)/i.test(p.url) || 
-    p.url.includes('/storage/v1/object/public/videos/')
-  );
-  const shouldOpenModal = (room === 'yt-videos') || (room === 'highlights' && isVideo && !isRestricted);
-
-  const cardUrl = shouldOpenModal ? '#' : `post.html?id=${p.id}`;
-  const cardOnClick = shouldOpenModal 
-    ? `onclick="if(!event.target.closest('button, a, .post-card-video, .play-overlay-btns')) window.openVideoModal(${p.id}, '${room}')"`
-    : `onclick="if(!event.target.closest('button, a, .post-card-video, .play-overlay-btns')) window.location.href='${cardUrl}'"`;
-  const cursorStyle = 'cursor:pointer;';
-  
-  return `<div class="${cardCls}" ${cardOnClick} style="${cursorStyle}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${deleteBtn}</div></div></div></div>`;
+  }).join('');
 }
 
 async function loadSubscribersWithVIP(el, posts, roleFilter) {
   let groupedHtml = '';
-  const isEN = window._siteLanguage === 'en';
   try {
     let { data: vipUsers, error } = await db.from('profiles')
       .select('username, avatar_url, role, roles')
       .order('created_at', { ascending: false });
     if (error) {
+      console.warn('[Subscribers] خطأ بالاستعلام مع roles، تجريب بدونه:', error);
       const fb = await db.from('profiles').select('username, avatar_url, role').order('created_at',{ascending:false});
       vipUsers = fb.data;
+      if (fb.error) console.error('[Subscribers] فشل الاستعلام الاحتياطي:', fb.error);
     }
-
+    console.log('[Subscribers] إجمالي البروفايلات المُحمَّلة:', vipUsers?.length || 0);
     if (vipUsers && vipUsers.length) {
+      console.log('[Subscribers] عيّنة من الرولات:', vipUsers.slice(0,5).map(u => ({ name: u.username, role: u.role, roles: u.roles, normalized: normalizeRoles(u) })));
       const ROLE_DEFS = [
-        { key: 'admin',       title: isEN ? '🛡️ Admins'        : '🛡️ الإدارة',       short: 'ADMIN',    color: '#ff0000', bg: '#3d0f0f', border: '#ff0000' },
-        { key: 'moderator',   title: isEN ? '🔧 Moderators'    : '🔧 المشرفون',       short: 'MOD',      color: '#ff2222', bg: '#2a0000', border: '#ff2222' },
-        { key: 'youtuber_vip',title: '🔥 Youtuber VIP',                                short: 'YT VIP',   color: '#ff1111', bg: '#3d1a0f', border: '#ff1111' },
-        { key: 'youtuber',    title: isEN ? '🎬 Youtubers'     : '🎬 يوتيوبرز',       short: 'YOUTUBER', color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
-        { key: 'vip',         title: '👑 VIP',                                          short: 'VIP',      color: '#e01010', bg: '#1a0000', border: '#e01010' },
-        { key: 'member',      title: isEN ? '⭐ Members'       : '⭐ الأعضاء',         short: 'MEMBER',   color: '#cc2222', bg: '#100000', border: '#cc2222' },
-        { key: 'user',        title: isEN ? '👤 Users'         : '👤 المستخدمون',      short: 'USER',     color: '#888888', bg: '#111111', border: '#444444' },
+        { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff0000', bg: '#3d0f0f', border: '#ff0000' },
+        { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff2222', bg: '#2a0000', border: '#ff2222' },
+        { key: 'youtuber_vip',title: '🔥 Youtuber VIP',     short: 'YT VIP',       color: '#ff1111', bg: '#3d1a0f', border: '#ff1111' },
+        { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
+        { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#e01010', bg: '#1a0000', border: '#e01010' },
+        { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#cc2222', bg: '#100000', border: '#cc2222' },
+        { key: 'user',         title: '👤 المستخدمون',        short: 'USER',         color: '#888888', bg: '#111111', border: '#444444' },
       ];
+      // ترتيب الأولوية من الأعلى إلى الأدنى
       const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','user'];
-      
-      const userCard = (u) => {
-        const rs = normalizeRoles(u).filter(r => r !== 'user');
-        const topRole = ROLE_PRIORITY.find(r => rs.includes(r)) || 'user';
-        const topDef = ROLE_DEFS.find(d => d.key === topRole) || ROLE_DEFS[ROLE_DEFS.length-1];
-        const accentColor = topDef.color;
-        const avatar = u.avatar_url
-          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
-          : `<div class="channel-avatar" style="width:64px;height:64px;border:2px solid ${accentColor};font-size:24px;">👤</div>`;
-        const allBadges = rs.map(r => {
-          const def = ROLE_DEFS.find(d => d.key === r);
-          if (!def) return '';
-          return `<span class="subscriber-badge" style="background:${def.bg};color:${def.color};border:1px solid ${def.color};font-size:8px;padding:1px 5px;">${def.short}</span>`;
-        }).join('');
-
-        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:5px;display:flex;gap:3px;flex-wrap:wrap;justify-content:center;">${allBadges}</div></div></div>`;
-      };
-
-      const seen = new Set();
-      let filteredUsers = vipUsers.filter(u => {
-        const name = (u.username || '').toLowerCase();
-        const search = (window._subscribersSearchQuery || '').toLowerCase();
-        if (search && !name.includes(search)) return false;
-
+      const getTopRole = (u) => {
         const rs = normalizeRoles(u);
-        if (roleFilter) {
-          const def = ROLE_DEFS.find(d => d.key === roleFilter);
-          if (!def) return false;
+        const found = ROLE_PRIORITY.find(r => rs.includes(r));
+        return found || 'user';
+      };
+      const userCard = (u, accentColor, topRoleDef) => {
+        const avatar = u.avatar_url
+          ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">`
+          : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
+        // شارة واحدة فقط = الرتبة الأعلى للمستخدم
+        const badge = topRoleDef
+          ? `<span class="subscriber-badge" style="background:${topRoleDef.bg};color:${topRoleDef.color};border:1px solid ${topRoleDef.color};">${topRoleDef.short}</span>`
+          : '';
+        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
+      };
+      ROLE_DEFS.forEach(def => {
+        if (roleFilter && def.key !== roleFilter) return;
+        const usersInRole = vipUsers.filter(u => {
+          const rs = normalizeRoles(u);
           if (def.key === 'user') return rs.includes('user');
           return rs.includes(def.key);
-        }
-        return true;
+        });
+        if (!usersInRole.length) return;
+        groupedHtml += `<div class="channels-grid subscribers-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
       });
-
-      const uniqueUsers = filteredUsers.filter(u => {
-        const key = u.username || Math.random();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
-      // Pagination Logic
-      const total = uniqueUsers.length;
-      const perPage = window._subscribersPerPage || 40;
-      const totalPages = Math.ceil(total / perPage);
-      let page = window._subscribersCurrentPage || 1;
-      if (page > totalPages && totalPages > 0) page = totalPages;
-      window._subscribersCurrentPage = page;
-
-      const start = (page - 1) * perPage;
-      const pagedUsers = uniqueUsers.slice(start, start + perPage);
-
-      if (pagedUsers.length) {
-        groupedHtml += `<div class="subscribers-flex-wrap">${pagedUsers.map(u => userCard(u)).join('')}</div>`;
-        
-        // Pagination Controls
-        if (totalPages > 1) {
-          groupedHtml += `
-            <div class="pagination-wrap" style="grid-column: 1 / -1;">
-              <button class="pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="window.changeSubPage(${page - 1})">${isEN ? 'Previous' : 'السابق'}</button>
-              <div class="pagination-info">${isEN ? 'Page' : 'صفحة'} ${page} ${isEN ? 'of' : 'من'} ${totalPages}</div>
-              <button class="pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="window.changeSubPage(${page + 1})">${isEN ? 'Next' : 'التالي'}</button>
-            </div>
-          `;
-        }
-
-      }
     }
   } catch(e) { console.error(e); }
 
   let youtuberHtml = '';
-  if (posts && posts.length && !window._subscribersSearchQuery && !roleFilter) {
+  if (posts && posts.length) {
     const youtuberCards = posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
       const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
       let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} ${window.t('مشترك','subscribers')}`;
+      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
       const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
       return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
     }).join('');
@@ -2573,24 +2085,6 @@ async function loadSubscribersWithVIP(el, posts, roleFilter) {
     window.t('<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد</div>','<div style="text-align:center;color:#888;padding:30px;">No subscribers yet.</div>'));
 }
 
-window.handleSubscribersSearch = function(q) {
-  window._subscribersSearchQuery = q;
-  window._subscribersCurrentPage = 1;
-  const el = document.getElementById('grid-subscribers');
-  if (el) loadSubscribersWithVIP(el, allPosts['subscribers'] || [], window._subscribersRoleFilter || '');
-};
-
-window.changeSubPage = function(p) {
-  window._subscribersCurrentPage = p;
-  const el = document.getElementById('grid-subscribers');
-  if (el) {
-    loadSubscribersWithVIP(el, allPosts['subscribers'] || [], window._subscribersRoleFilter || '');
-    // Scroll to top of grid
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-};
-
-
 window.filterSubscribers = function(roleKey, btn) {
   if (btn && btn.closest('.filter-bar')) {
     btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -2599,81 +2093,10 @@ window.filterSubscribers = function(roleKey, btn) {
   const el = document.getElementById('grid-subscribers');
   if (!el) return;
   window._subscribersRoleFilter = roleKey || '';
-  window._subscribersCurrentPage = 1; // Reset to page 1
   loadSubscribersWithVIP(el, allPosts['subscribers'] || [], roleKey || '');
 };
 
-
-function filterPosts(room, tag, btn) {
-  if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-  
-  if (room === 'highlights') {
-    window._highlightsTag = tag || '';
-    window._highlightsCurrentPage = 1;
-    renderCards(allPosts['highlights'] || [], 'grid-highlights', 'highlights');
-    return;
-  }
-
-  if (room === 'tournaments') {
-    window._tournamentsTag = tag || '';
-    window._tournamentsCurrentPage = 1;
-    renderCards(allPosts['tournaments'] || [], 'grid-tournaments', 'tournaments');
-    return;
-  }
-
-  if (room === 'live') {
-    window._liveTag = tag || '';
-    window._liveCurrentPage = 1;
-    renderCards(allPosts['live'] || [], 'grid-live', 'live');
-    return;
-  }
-
-  const posts = allPosts[room]||[];
-  const filtered = tag ? posts.filter(p => {
-    if (!p.tag) return false;
-    const ptag = String(p.tag).trim();
-    return ptag === tag || ptag.toLowerCase() === tag.toLowerCase();
-  }) : posts;
-  renderCards(filtered, `grid-${room}`, room);
-}
-
-window.changeHighlightsPage = function(p) {
-  window._highlightsCurrentPage = p;
-  const el = document.getElementById('grid-highlights');
-  if (el) {
-    renderCards(allPosts['highlights'] || [], 'grid-highlights', 'highlights');
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-};
-
-window.changeTournamentsPage = function(p) {
-  window._tournamentsCurrentPage = p;
-  const el = document.getElementById('grid-tournaments');
-  if (el) {
-    renderCards(allPosts['tournaments'] || [], 'grid-tournaments', 'tournaments');
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-};
-
-window.changeLivePage = function(p) {
-  window._liveCurrentPage = p;
-  const el = document.getElementById('grid-live');
-  if (el) {
-    renderCards(allPosts['live'] || [], 'grid-live', 'live');
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-};
-
-window.changeGenericPage = function(room, p) {
-  const safeKey = '_' + room.replace(/-/g, '') + 'CurrentPage';
-  window[safeKey] = p;
-  const el = document.getElementById('grid-' + room);
-  if (el) {
-    renderCards(allPosts[room] || [], 'grid-' + room, room);
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-};
-
+function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
 window._currentPage = 'home';
 function showPage(id) {
   document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
@@ -2744,7 +2167,7 @@ async function updateUIAfterAuth(sessionOverride) {
         };
         roleBadge.innerHTML = roles.map(r => {
           const c = colors[r] || {bg:'#2a2a3a', fg:'#e01010', label:r.toUpperCase()};
-          return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:999px;padding:1px 7px;font-size:10px;font-weight:700;white-space:nowrap;line-height:18px;">${c.label}</span>`;
+          return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:2px 6px;margin-right:3px;font-size:11px;">${c.label}</span>`;
         }).join('');
         roleBadge.style.display = 'flex';
         roleBadge.style.background = 'transparent';
@@ -3118,102 +2541,42 @@ let tickerContainerWidth = 0;
 let tickerHalfWidth = 0;
 const TICKER_SPEED = 1.2;
 // حفظ البيانات الخام للـ ticker لإعادة البناء عند تغيير اللغة
-window._tickerRawData = { news: [], gamingnews: [], youtubenews: [], live: [], videos: [] };
+window._tickerRawData = { news: [], live: [], videos: [] };
 
 function buildTickerItems() {
   const isEN = window._siteLanguage === 'en';
-  const targetLang = isEN ? 'en' : 'ar';
-  const { news, gamingnews, youtubenews, live, videos } = window._tickerRawData;
+  const { news, live, videos } = window._tickerRawData;
   let items = [];
-  let needsTranslation = false;
-
-  function getTitle(rawTitle) {
-    if (!rawTitle) return '';
-    const translated = window.tTitle(rawTitle);
-    // If tTitle returns original (not yet translated), mark that we need a rebuild later
-    if (translated === rawTitle) {
-      const hasArabic = /[\u0600-\u06FF]/.test(rawTitle);
-      const hasEnglish = /[A-Za-z]/.test(rawTitle);
-      const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
-      if (sourceLang && sourceLang !== targetLang) needsTranslation = true;
-    }
-    return translated;
-  }
-
-  // Site news (ticker room) — manual posts from admin
-  for (const p of (news||[])) {
-    items.push({ text: '📢 ' + getTitle(p.title), url: p.url });
-  }
-  // Gaming news
-  for (const p of (gamingnews||[])) {
-    items.push({ text: (isEN ? '🎮 Gaming: ' : '🎮 ألعاب: ') + getTitle(p.title), url: p.url });
-  }
-  // YouTube news
-  for (const p of (youtubenews||[])) {
-    items.push({ text: (isEN ? '▶️ YouTube: ' : '▶️ يوتيوب: ') + getTitle(p.title), url: p.url });
-  }
-  // Live streams
-  for (const p of (live||[])) {
+  for (const p of news)   items.push({ text: '📢 ' + (window.tTitle(p.title||'')), url: p.url });
+  for (const p of live) {
     const t = (p.tag||'').toLowerCase();
-    const icon = (t.includes('live') || t.includes('now')) ? '🔴 LIVE' : t.includes('pre') ? (isEN ? '⏰ Soon' : '⏰ قريباً') : '📡';
-    items.push({ text: icon + ': ' + getTitle(p.title), url: p.url });
+    const icon = t.includes('live') ? '🔴 LIVE' : t.includes('pre') ? (isEN ? '⏰ Soon' : '⏰ قريباً') : '📡';
+    items.push({ text: icon + ': ' + (window.tTitle(p.title||'')), url: p.url });
   }
-  // Latest videos
-  for (const p of (videos||[])) {
-    items.push({ text: '🎬 ' + getTitle(p.title), url: p.url });
-  }
-
-  tickerItems = items.length ? items : [{ text: isEN ? '🎮 Welcome to Virtux — Gaming Community' : '🎮 مرحباً في Virtux — مجتمع الألعاب', url: null }];
-
-  // If some titles need translation, rebuild ticker after translations complete
-  if (needsTranslation) {
-    // Trigger translations for all untranslated titles
-    const allItems = [...(news||[]), ...(gamingnews||[]), ...(youtubenews||[]), ...(live||[]), ...(videos||[])];
-    allItems.forEach(p => {
-      if (!p.title) return;
-      const hasArabic = /[\u0600-\u06FF]/.test(p.title);
-      const hasEnglish = /[A-Za-z]/.test(p.title);
-      const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
-      if (sourceLang && sourceLang !== targetLang) {
-        const cacheKey = sourceLang + '|' + targetLang + '|' + p.title;
-        if (!window._titleCache[cacheKey] && !window._titleTranslatePending[cacheKey]) {
-          window._translateTitleBg(p.title, sourceLang, targetLang);
-        }
-      }
-    });
-  }
+  for (const p of videos) items.push({ text: '🎬 ' + (window.tTitle(p.title||'')), url: p.url });
+  tickerItems = items.length ? items : [{ text: isEN ? '🎮 Welcome to Virtux' : '🎮 مرحباً في Virtux', url: null }];
 }
 
 async function loadTicker() {
   try {
-    const [tickerRes, gamingRes, ytNewsRes, liveRes, vidRes] = await Promise.all([
-      db.from('posts').select('title,url').eq('room','ticker').order('id',{ascending:false}).limit(8),
-      db.from('posts').select('title,url').eq('room','gaming-news').order('id',{ascending:false}).limit(5),
-      db.from('posts').select('title,url').eq('room','youtube-news').order('id',{ascending:false}).limit(4),
+    const [newsRes, liveRes, vidRes] = await Promise.all([
+      db.from('posts').select('title,url').eq('room','ticker').order('id',{ascending:false}).limit(10),
       db.from('posts').select('title,url,tag').eq('room','live').order('id',{ascending:false}).limit(5),
-      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(6)
+      db.from('posts').select('title,url').eq('room','yt-videos').order('id',{ascending:false}).limit(8)
     ]);
     window._tickerRawData = {
-      news:        tickerRes.data  || [],
-      gamingnews:  gamingRes.data  || [],
-      youtubenews: ytNewsRes.data  || [],
-      live:        liveRes.data    || [],
-      videos:      vidRes.data     || []
+      news:   newsRes.data  || [],
+      live:   liveRes.data  || [],
+      videos: vidRes.data   || []
     };
   } catch(e) {
-    window._tickerRawData = { news: [], gamingnews: [], youtubenews: [], live: [], videos: [] };
+    window._tickerRawData = { news: [], live: [], videos: [] };
   }
   buildTickerItems();
   buildTickerTrack();
 }
 window.loadTicker = loadTicker;
-window.rebuildTicker = function() {
-  if (!window._tickerRawData) {
-    window._tickerRawData = { news: [], gamingnews: [], youtubenews: [], live: [], videos: [] };
-  }
-  buildTickerItems();
-  buildTickerTrack();
-};
+window.rebuildTicker = function() { buildTickerItems(); buildTickerTrack(); };
 function buildTickerTrack() {
   const track = document.getElementById('tickerTrack');
   if (!track) return;
@@ -3248,17 +2611,9 @@ window.deletePost = deletePost;
 (function(){
   function ytId(url){ if(!url) return null; const m=url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/); return m?m[1]:null; }
   function buildCarousel(wrap,items,renderFn){
-    const isEN = window._siteLanguage === 'en';
-    if(!items||!items.length){ wrap.innerHTML=`<div class="hc-empty">${isEN?'No content available':'لا يوجد محتوى حالياً'}</div>`; return; }
+    if(!items||!items.length){ wrap.innerHTML='<div class="hc-empty">لا يوجد محتوى حالياً</div>'; return; }
     const track=document.createElement('div'); track.className='hc-track';
-    track.style.width = (items.length * 100) + '%';
-    items.forEach(it=>{ 
-      const sl=document.createElement('div'); 
-      sl.className='hc-slide'; 
-      sl.style.width = (100/items.length) + '%';
-      sl.innerHTML=renderFn(it); 
-      track.appendChild(sl); 
-    });
+    items.forEach(it=>{ const sl=document.createElement('div'); sl.className='hc-slide'; sl.innerHTML=renderFn(it); track.appendChild(sl); });
     const nav=document.createElement('div'); nav.className='hc-nav';
     const dotsEl=document.createElement('div'); dotsEl.className='hc-dots';
     items.forEach((_,i)=>{ const d=document.createElement('div'); d.className='hc-dot'+(i===0?' active':''); dotsEl.appendChild(d); });
@@ -3268,7 +2623,7 @@ window.deletePost = deletePost;
     wrap.innerHTML=''; wrap.appendChild(track); wrap.appendChild(nav);
     let cur=0; const total=items.length;
     const dots=dotsEl.querySelectorAll('.hc-dot');
-    function go(n){ cur=((n%total)+total)%total; track.style.transform=`translateX(-${cur*(100/total)}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===cur)); }
+    function go(n){ cur=((n%total)+total)%total; track.style.transform=`translateX(-${cur*100}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===cur)); }
     prev.onclick=()=>go(cur-1); next.onclick=()=>go(cur+1);
     let iv=setInterval(()=>go(cur+1),6000);
     wrap.addEventListener('mouseenter',()=>clearInterval(iv));
@@ -3287,11 +2642,11 @@ window.deletePost = deletePost;
     const isTwitch=p.url&&p.url.includes('twitch.tv');
     const twitchMatch=isTwitch&&p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
     if(vid){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     } else if(twitchMatch){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://player.twitch.tv/?channel=${twitchMatch[1]}&parent='+location.hostname+'\\' allow=\\'autoplay; fullscreen\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://player.twitch.tv/?channel=${twitchMatch[1]}&parent='+location.hostname+'\\' allow=\\'autoplay; fullscreen\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     }
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div></a>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${badge}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('بث مباشر','Live Stream'))}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
   }
   function renderVideo(p){
     const vid=ytId(p.url);
@@ -3299,9 +2654,9 @@ window.deletePost = deletePost;
     const vipBadgeHtml = isVip ? `<div style="position:absolute;top:7px;left:8px;background:linear-gradient(135deg,#ff6600,#cc3300);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;">🔥 YT VIP</div>` : '';
     const thumbEl=vid?`<img class="hc-thumb" src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" loading="lazy">`:(p.icon&&p.icon.startsWith('http'))?`<img class="hc-thumb" src="${p.icon}" loading="lazy">`:`<div class="hc-thumb-placeholder">🎬</div>`;
     if(vid){
-      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('فيديو','Video'))}</div></div>`;
+      return `<div class="hc-playable" onclick="this.innerHTML='<iframe src=\\'https://www.youtube.com/embed/${vid}?autoplay=1\\' allow=\\'autoplay; encrypted-media\\' allowfullscreen style=\\'width:100%;height:100%;border:none\\'></iframe>';this.style.aspectRatio='16/9';" style="cursor:pointer"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('فيديو','Video'))}</div><div class="hc-info-ch">${p.description||''}</div></div>`;
     }
-    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('فيديو','Video'))}</div></a>`;
+    return `<a href="${p.url||'#'}" target="_blank" rel="noopener"><div class="hc-thumb-wrap ${isVip?'vip-ch':''}">${thumbEl}${vipBadgeHtml}</div><div class="hc-info-title">${escapeHtml(window.tTitle(p.title)||window.t('فيديو','Video'))}</div><div class="hc-info-ch">${p.description||''}</div></a>`;
   }
   async function loadHomePanel(){
     const liveEl=document.getElementById('hc-live');
@@ -3325,15 +2680,14 @@ window.deletePost = deletePost;
         buildCarousel(videosEl,data,renderVideo); 
       }
     }catch(e){
-      const isEN = window._siteLanguage === 'en';
-      if(liveEl) liveEl.innerHTML=`<div class="hc-empty">⚠️ ${isEN?'Failed to load':'تعذر التحميل'}</div>`;
-      if(videosEl) videosEl.innerHTML=`<div class="hc-empty">⚠️ ${isEN?'Failed to load':'تعذر التحميل'}</div>`;
+      if(liveEl) liveEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
+      if(videosEl) videosEl.innerHTML='<div class="hc-empty">⚠️ تعذر التحميل</div>';
     }
   }
   window.loadHomePanel=loadHomePanel;
   const _orig=window.showPage;
   window.showPage=function(room){ if(typeof _orig==='function') _orig(room); if(room==='home') setTimeout(loadHomePanel,80); };
-  document.addEventListener('DOMContentLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
+  document.addEventListener('DOMLoaded',()=>{ const pg=document.getElementById('page-home'); if(pg&&pg.classList.contains('active')) loadHomePanel(); });
   // auto-refresh disabled to prevent freezing
 })();
 
@@ -3816,23 +3170,7 @@ window.confirmDeleteAccount = async function() {
 };
 
 // ==================== نظام الترجمة EN/AR ====================
-window._subscribersPerPage = 40;
-window._highlightsCurrentPage = 1;
-window._highlightsTag = '';
-window._highlightsPerPage = 40;
-window._tournamentsCurrentPage = 1;
-window._tournamentsTag = '';
-window._tournamentsPerPage = 40;
-window._liveCurrentPage = 1;
-window._liveTag = '';
-window._livePerPage = 40;
-window._ytchannelsCurrentPage = 1;
-window._ytvideosCurrentPage = 1;
-window._gamingnewsCurrentPage = 1;
-window._youtubenewsCurrentPage = 1;
-window._projectsCurrentPage = 1;
-
-
+window._siteLanguage = window._siteLanguage || 'ar';
 
 // دالة مساعدة تُرجع النص حسب اللغة الحالية
 window.t = function(ar, en) {
@@ -3841,45 +3179,74 @@ window.t = function(ar, en) {
 
 // ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
 window._titleCache = {};
-window._titleTranslatePending = {};
-window._manualTitlePairs = [
-  // AR → EN
-  ['بث مباشر', 'Live Stream'],
-  ['مباشر على Twitch', 'Live on Twitch'],
-  ['Facebook مباشر', 'Facebook Live'],
-  ['TikTok مباشر', 'TikTok Live'],
-  ['منشور', 'Post'],
-  ['فيديو', 'Video'],
-  ['بطولة', 'Tournament'],
-  ['أبرز اللحظات', 'Highlights'],
-  ['أخبار', 'News'],
-  ['ألعاب', 'Games'],
-  ['لاعب', 'Player'],
-  ['مباراة', 'Match'],
-  ['فوز', 'Win'],
-  ['خسارة', 'Loss'],
-  ['جديد', 'New'],
-  // EN → AR (common gaming/streaming terms)
-  ['Live Stream', 'بث مباشر'],
-  ['Highlights', 'أبرز اللحظات'],
-  ['Tournament', 'بطولة'],
-  ['Gaming News', 'أخبار الألعاب'],
-  ['YouTube News', 'أخبار يوتيوب'],
-  ['New Video', 'فيديو جديد'],
-  ['Latest Video', 'أحدث فيديو'],
-  ['Top Plays', 'أفضل اللقطات'],
-  ['Collaboration', 'تعاون'],
-];
+// ترجمة عناوين الفيديوهات/البثوث — إذا كانت إنجليزية يعرضها كما هي، إذا عربية يحاول ترجمتها
+window._titleCache = {};
+window.tTitle = function(title) {
+  if (!title) return '';
+  if (window._siteLanguage !== 'en') return title;
+  
+  // 1. ترجمات يدوية سريعة
+  let t = title;
+  t = t.replace(/بث مباشر/g, 'Live Stream');
+  t = t.replace(/مباشر على Twitch/g, 'Live on Twitch');
+  t = t.replace(/Facebook مباشر/g, 'Facebook Live');
+  t = t.replace(/TikTok مباشر/g, 'TikTok Live');
+  t = t.replace(/منشور/g, 'Post');
+  t = t.replace(/فيديو/g, 'Video');
+  
+  if (t !== title) return t; // تم ترجمتها يدوياً
 
-window._applyManualTitleTranslation = function(title, targetLang) {
-  let translated = title || '';
-  window._manualTitlePairs.forEach(([ar, en]) => {
-    translated = translated.replaceAll(targetLang === 'en' ? ar : en, targetLang === 'en' ? en : ar);
-  });
-  return translated;
+  // 2. إذا العنوان يحتوي عربي، حاول ترجمته عبر API في الخلفية
+  const hasArabic = /[؀-ۿ]/.test(title);
+  if (!hasArabic) return title; // إنجليزي أصلاً
+  
+  if (window._titleCache[title]) return window._titleCache[title];
+  
+  // أرجع العنوان الأصلي فوراً، وابدأ الترجمة في الخلفية
+  window._translateTitleBg(title);
+  return title;
 };
 
-window._refreshTranslatedTitles = function() {
+window._translateTitleBg = async function(title) {
+  if (window._titleCache[title]) return;
+  try {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=' + encodeURIComponent(title);
+    const r = await fetch(url);
+    const j = await r.json();
+    const translated = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('') || title;
+    window._titleCache[title] = translated;
+    
+    // تحديث العناوين في الصفحة إذا لا تزال إنجليزية
+    if (window._siteLanguage === 'en') {
+      document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title, .ticker-item, .ticker-item a').forEach(el => {
+        if (el.textContent === title) el.textContent = translated;
+      });
+    }
+  } catch(e) {}
+};
+
+window.setLang = function(lang) {
+  if (window._siteLanguage === lang) return;
+  window._siteLanguage = lang;
+  const arBtn = document.getElementById('lang-ar-btn');
+  const enBtn = document.getElementById('lang-en-btn');
+  // أنيميشن على الزر النشط
+  const activeBtn = lang === 'en' ? enBtn : arBtn;
+  if (activeBtn) {
+    activeBtn.classList.remove('lang-switching');
+    void activeBtn.offsetWidth; // reset animation
+    activeBtn.classList.add('lang-switching');
+    setTimeout(() => activeBtn.classList.remove('lang-switching'), 400);
+  }
+  if (lang === 'ar') {
+    if (arBtn) { arBtn.style.background='#e01010'; arBtn.style.color='#000'; }
+    if (enBtn) { enBtn.style.background='transparent'; enBtn.style.color='#e01010'; }
+  } else {
+    if (enBtn) { enBtn.style.background='#e01010'; enBtn.style.color='#000'; }
+    if (arBtn) { arBtn.style.background='transparent'; arBtn.style.color='#e01010'; }
+  }
+  applyTranslations();
+  if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
   if (window.allPosts) {
     Object.keys(window.allPosts).forEach(room => {
       const el = document.getElementById('grid-' + room);
@@ -3899,192 +3266,7 @@ window._refreshTranslatedTitles = function() {
       if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
       if (typeof window.loadTicker === 'function') window.loadTicker();
     }, 50);
-    return;
   }
-  if (typeof window.loadTicker === 'function') window.loadTicker();
-};
-
-window.tTitle = function(title) {
-  if (!title) return '';
-  if (typeof title === 'object') return window._siteLanguage === 'en' ? (title.en || title.ar) : (title.ar || title.en);
-  if (title.includes(' | ')) {
-    const parts = title.split(' | ');
-    return window._siteLanguage === 'en' ? (parts[1] || parts[0]) : parts[0];
-  }
-
-  const targetLang = window._siteLanguage === 'en' ? 'en' : 'ar';
-  const manuallyTranslated = window._applyManualTitleTranslation(title, targetLang);
-  if (manuallyTranslated !== title) return manuallyTranslated;
-
-  const hasArabic = /[\u0600-\u06FF]/.test(title);
-  const hasEnglish = /[A-Za-z]/.test(title);
-
-  // If title is purely English and we want Arabic, translate it
-  // If title is purely Arabic and we want English, translate it
-  const sourceLang = hasArabic && !hasEnglish ? 'ar' : (!hasArabic && hasEnglish ? 'en' : '');
-  if (!sourceLang || sourceLang === targetLang) return title;
-
-  const cacheKey = sourceLang + '|' + targetLang + '|' + title;
-  if (window._titleCache[cacheKey]) return window._titleCache[cacheKey];
-
-  // Start background translation
-  window._translateTitleBg(title, sourceLang, targetLang);
-  return title; // Return original while translating
-};
-
-window._translateTitleBg = async function(title, sourceLang, targetLang) {
-  const cacheKey = sourceLang + '|' + targetLang + '|' + title;
-  if (window._titleCache[cacheKey] || window._titleTranslatePending[cacheKey]) return;
-  window._titleTranslatePending[cacheKey] = true;
-  try {
-    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + sourceLang + '&tl=' + targetLang + '&dt=t&q=' + encodeURIComponent(title);
-    const r = await fetch(url);
-    const j = await r.json();
-    const translated = j?.[0]?.map(x => x?.[0]).filter(Boolean).join('') || title;
-    window._titleCache[cacheKey] = translated;
-    if (window._siteLanguage === targetLang) {
-      // Rebuild cards/grids
-      window._refreshTranslatedTitles();
-      // Also rebuild ticker since titles changed
-      if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
-    }
-  } catch(e) {
-  } finally {
-    delete window._titleTranslatePending[cacheKey];
-  }
-};
-
-window.setLang = function(lang) {
-  if (window._siteLanguage === lang) return;
-  window._siteLanguage = lang;
-  const arBtn = document.getElementById('lang-ar-btn');
-  const enBtn = document.getElementById('lang-en-btn');
-  const activeBtn = lang === 'en' ? enBtn : arBtn;
-  if (activeBtn) {
-    activeBtn.classList.remove('lang-switching');
-    void activeBtn.offsetWidth;
-    activeBtn.classList.add('lang-switching');
-    setTimeout(() => activeBtn.classList.remove('lang-switching'), 400);
-  }
-  if (lang === 'ar') {
-    if (arBtn) { arBtn.style.background='#e01010'; arBtn.style.color='#000'; }
-    if (enBtn) { enBtn.style.background='transparent'; enBtn.style.color='#e01010'; }
-  } else {
-    if (enBtn) { enBtn.style.background='#e01010'; enBtn.style.color='#000'; }
-    if (arBtn) { arBtn.style.background='transparent'; arBtn.style.color='#e01010'; }
-  }
-  applyTranslations();
-
-  const targetLang = lang;
-
-  // ── دالة إعادة بناء كل الصفحات والـ ticker ──
-  function doRebuildAll() {
-    if (window.allPosts) {
-      Object.keys(window.allPosts).forEach(room => {
-        const el = document.getElementById('grid-' + room);
-        if (el && window.allPosts[room]?.length) {
-          if (room === 'subscribers' || room === 'yt-channels') {
-            loadSubscribersWithVIP(el, window.allPosts[room] || [], window._subscribersRoleFilter || '');
-          } else {
-            renderCards(window.allPosts[room], 'grid-' + room, room);
-          }
-        }
-      });
-      setTimeout(() => {
-        document.querySelectorAll('.vx-page').forEach(page => {
-          rebuildFilterBar(page.id.replace('page-',''));
-        });
-        if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
-      }, 30);
-    }
-    if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
-  }
-
-  // ── جمع كل العناوين التي تحتاج ترجمة ──
-  const seen = new Set();
-  const toTranslate = [];
-  const collectTitles = (list) => {
-    (list || []).forEach(p => {
-      if (!p || !p.title || seen.has(p.title)) return;
-      seen.add(p.title);
-      const hasAr = /[\u0600-\u06FF]/.test(p.title);
-      const hasEn = /[A-Za-z]/.test(p.title);
-      const src = (hasAr && !hasEn) ? 'ar' : (!hasAr && hasEn ? 'en' : '');
-      if (!src || src === targetLang) return;
-      const key = src + '|' + targetLang + '|' + p.title;
-      if (!window._titleCache[key]) toTranslate.push({ title: p.title, src, tgt: targetLang });
-    });
-  };
-  if (window.allPosts) Object.values(window.allPosts).forEach(collectTitles);
-  if (window._tickerRawData) {
-    ['news','gamingnews','youtubenews','live','videos'].forEach(k => collectTitles(window._tickerRawData[k]));
-  }
-
-  // ── بناء فوري بالـ cache الموجود ──
-  doRebuildAll();
-
-  if (!toTranslate.length) return;
-
-  // ── ترجمة فورية بـ Promise.all (طلبات متوازية) ──
-  // نستخدم multi-q API التي تدعمها Google Translate بشكل موثوق
-  async function translateBatch(items) {
-    // نقسّم إلى chunks لتفادي URL طويلة
-    const CHUNK = 8;
-    const chunks = [];
-    for (let i = 0; i < items.length; i += CHUNK) chunks.push(items.slice(i, i + CHUNK));
-
-    await Promise.all(chunks.map(async chunk => {
-      const { src, tgt } = chunk[0];
-      try {
-        // نرسل كل عنوان كـ &q= منفصل — هذا هو الأسلوب الموثوق
-        const params = chunk.map(c => 'q=' + encodeURIComponent(c.title)).join('&');
-        const url = `https://translate.googleapis.com/translate_a/t?client=gtx&sl=${src}&tl=${tgt}&${params}`;
-        const r = await fetch(url);
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const j = await r.json();
-        // الـ API تعيد array من strings أو array من arrays
-        const results = Array.isArray(j) ? j : [];
-        chunk.forEach((item, idx) => {
-          let tr = '';
-          const res = results[idx];
-          if (typeof res === 'string') tr = res;
-          else if (Array.isArray(res)) tr = res[0] || '';
-          else tr = '';
-          tr = tr.trim();
-          if (tr && tr !== item.title) {
-            window._titleCache[src + '|' + tgt + '|' + item.title] = tr;
-          }
-        });
-      } catch(e) {
-        // fallback: طلب واحد لكل عنوان
-        await Promise.all(chunk.map(async item => {
-          try {
-            const url2 = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${item.src}&tl=${item.tgt}&dt=t&q=${encodeURIComponent(item.title)}`;
-            const r2 = await fetch(url2);
-            const j2 = await r2.json();
-            const tr = j2?.[0]?.map(x => x?.[0]).filter(Boolean).join('').trim() || '';
-            if (tr && tr !== item.title) {
-              window._titleCache[item.src + '|' + item.tgt + '|' + item.title] = tr;
-            }
-          } catch(e2) {}
-        }));
-      }
-    }));
-
-    // بعد انتهاء كل الترجمات: إعادة البناء مرة واحدة
-    if (window._siteLanguage === targetLang) doRebuildAll();
-  }
-
-  const enToAr = toTranslate.filter(x => x.src === 'en');
-  const arToEn = toTranslate.filter(x => x.src === 'ar');
-  const allBatches = [];
-  if (enToAr.length) allBatches.push(translateBatch(enToAr));
-  if (arToEn.length) allBatches.push(translateBatch(arToEn));
-  // إعادة البناء النهائية بعد كل الترجمات
-  Promise.all(allBatches).then(() => {
-    if (window._siteLanguage === targetLang) doRebuildAll();
-    if (typeof window.loadTicker === 'function') window.loadTicker();
-  });
 };
 
 window.toggleLanguage = function() {
@@ -4122,11 +3304,7 @@ function rebuildFilterBar(room) {
       <button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button>
     </div>`;
   } else if (room === 'subscribers') {
-    const searchQuery = window._subscribersSearchQuery || '';
-    newBar = `<div class="sub-search-wrap">
-      <input type="text" class="sub-search-input" placeholder="${isEN?'Search subscribers...':'بحث عن مشتركين...'}" value="${searchQuery}" oninput="window.handleSubscribersSearch(this.value)">
-    </div>
-    <div class="filter-bar">
+    newBar = `<div class="filter-bar">
       <button class="filter-btn active" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button>
       <button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button>
       <button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button>
@@ -4139,7 +3317,6 @@ function rebuildFilterBar(room) {
       <button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button>
     </div>`;
   }
-
   if (newBar) existing.outerHTML = newBar;
 }
 
@@ -4198,7 +3375,7 @@ function applyTranslations() {
     'الأخبار ▾':'News ▾','يوتيوب ▾':'YouTube ▾','📢 الإعلانات ▾':'📢 Announcements ▾',
     '📰 أخبار الألعاب':'📰 Gaming News','▶️ أخبار يوتيوب':'▶️ YouTube News',
     '📺 القنوات':'📺 Channels','🎬 الفيديوهات':'🎬 Videos','🌐 التعاون':'🌐 Collaboration',
-    'تسجيل الدخول':'Login', '📞 التواصل':'📞 Contact'
+    'تسجيل الدخول':'Login'
   };
   document.querySelectorAll('.dd-btn, .dd-menu a').forEach(el => {
     const txt = el.textContent.trim();
@@ -4208,32 +3385,14 @@ function applyTranslations() {
 
   // Sidebar
   const sbMap = {
-    '🏠 الرئيسية':'🏠 Home','المحتوى':'Content','🔴 البث المباشر':'🔴 Live Streams',
+    '🏠 الرئيسية':'🏠 Home','المحتوى':'Content','🔴 live المباشر':'🔴 Live',
     '🏆 البطولات':'🏆 Tournaments','🎬 أبرز اللحظات':'🎬 Highlights',
     'المجتمع':'Community','👥 المشتركون':'👥 Subscribers','💎 الميزات والرتب':'💎 Features & Ranks','📞 التواصل':'📞 Contact'
-  };
-  // Also handle reverse mapping for sidebar section labels
-  const sbSectionMap = {
-    'المحتوى': 'Content',
-    'المجتمع': 'Community',
-    'Content': 'المحتوى',
-    'Community': 'المجتمع'
   };
   document.querySelectorAll('.sb-btn, .sb-section').forEach(el => {
     const txt = el.textContent.trim();
     if (isEN && sbMap[txt]) el.textContent = sbMap[txt];
     else if (!isEN) { const k = Object.keys(sbMap).find(k=>sbMap[k]===txt); if(k) el.textContent=k; }
-  });
-  // Fix sidebar section labels separately (they don't have icons)
-  document.querySelectorAll('.sb-section').forEach(el => {
-    const txt = el.textContent.trim();
-    if (isEN) {
-      if (txt === 'المحتوى') el.textContent = 'Content';
-      else if (txt === 'المجتمع') el.textContent = 'Community';
-    } else {
-      if (txt === 'Content') el.textContent = 'المحتوى';
-      else if (txt === 'Community') el.textContent = 'المجتمع';
-    }
   });
 
   // Auth
@@ -4248,10 +3407,14 @@ function applyTranslations() {
   const welcome = document.querySelector('.home-welcome');
   if (welcome) welcome.textContent = isEN ? 'Welcome to Virtux' : 'مرحباً بك في Virtux';
 
+  // Ticker
+  const tickerLabel = document.querySelector('.ticker-label');
+  if (tickerLabel) tickerLabel.textContent = isEN ? 'LIVE' : 'مباشر';
+
   // Profile modal
   const saveBtn = document.getElementById('saveProfileBtn');
   if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
-  const closeBtn = document.getElementById('closeProfileBtn');
+  const closeBtn = document.getElementById('close Btn');
   if (closeBtn) closeBtn.textContent = isEN ? 'Close' : 'إغلاق';
   const delBtn = document.getElementById('deleteAccountBtn');
   if (delBtn && !delBtn.disabled) delBtn.textContent = isEN ? '🗑️ Delete Account Permanently' : '🗑️ حذف الحساب نهائياً';
@@ -4264,10 +3427,10 @@ function applyTranslations() {
     'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
   };
   const roomLabelsAR = {
-    live:'🔴 البث المباشر', tournaments:'🏆 البطولات', highlights:'🎬 أبرز اللحظات',
-    subscribers:'👥 المشتركون', 'gaming-news':'📰 أخبار الألعاب',
-    'youtube-news':'▶️ أخبار يوتيوب', 'yt-channels':'📺 قنوات يوتيوب',
-    'yt-videos':'🎬 فيديوهات يوتيوب', projects:'🌐 التعاون'
+    live:'🔴 مباشر Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
+    subscribers:'👥 Subscribers', 'gaming-news':'📰 أخبار الألعاب',
+    'youtube-news':'▶️ أخبار يوتيوب', 'yt-channels':'📺 Youtube Channels',
+    'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
   };
   document.querySelectorAll('.vx-page').forEach(page => {
     const room = page.id.replace('page-','');
@@ -4290,51 +3453,6 @@ function applyTranslations() {
   document.querySelectorAll('.loading-state').forEach(el => {
     el.textContent = isEN ? 'Loading...' : 'جاري التحميل...';
   });
-
-  // ترجمة عناوين الإطار المتحرك في الصفحة الرئيسية
-  document.querySelectorAll('.hcp-half-head[data-ar][data-en], .hcp-title[data-ar][data-en]').forEach(el => {
-    el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
-  });
-  // Home hero elements with data-ar/data-en (covers all about text, rules, welcome etc.)
-  document.querySelectorAll('[data-ar][data-en]').forEach(el => {
-    el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
-  });
-  // Home carousel empty/loading text
-  document.querySelectorAll('.hc-empty').forEach(el => {
-    const txt = el.textContent.trim();
-    if (txt === 'لا يوجد محتوى حالياً' || txt === 'No content available') {
-      el.textContent = isEN ? 'No content available' : 'لا يوجد محتوى حالياً';
-    }
-  });
-  document.querySelectorAll('.hc-loading').forEach(el => {
-    el.innerHTML = `<span>⏳ ${isEN ? 'Loading...' : 'جارٍ التحميل...'}</span>`;
-  });
-  // Copyright bar
-  const cpBar = document.querySelector('.vx-copyright-bar');
-  if (cpBar) cpBar.innerHTML = isEN 
-    ? '&copy; 2026 <span>Virtux</span> — All Rights Reserved'
-    : '&copy; 2026 <span>Virtux</span> — جميع الحقوق محفوظة &nbsp;|&nbsp; All Rights Reserved';
-  // Contact page
-  const contactPage = document.getElementById('page-contact');
-  if (contactPage) {
-    const h2 = contactPage.querySelector('.page-header h2');
-    if (h2) h2.textContent = isEN ? '📞 Contact Virtux' : '📞 التواصل Virtux';
-    contactPage.querySelectorAll('.cc-name').forEach(el => {
-      if (el.textContent === 'البريد الإلكتروني' || el.textContent === 'Email') {
-        el.textContent = isEN ? 'Email' : 'البريد الإلكتروني';
-      }
-    });
-  }
-  // Rebuild home carousel with new language
-  if (typeof window.loadHomePanel === 'function') {
-    setTimeout(() => window.loadHomePanel(), 0);
-  }
-  if (typeof window.loadTicker === 'function') {
-    setTimeout(() => window.loadTicker(), 0);
-  }
-  // ترجمة ticker label
-  const tickerLbl = document.querySelector('.ticker-label');
-  if (tickerLbl) tickerLbl.textContent = isEN ? 'LIVE' : 'مباشر';
 }
 
 // ==================== صفحة الميزات والرتب ====================
@@ -4802,34 +3920,17 @@ function applyTranslations() {
 // ===== تشغيل يوتيوب =====
 window.playYT = function(el) {
   var vid = el.getAttribute('data-vid');
-  var postId = el.getAttribute('data-postid');
-  var room = el.getAttribute('data-room');
   if (!vid) return;
-  
+  el.onclick = null;
   el.style.cursor = 'default';
-  el.innerHTML = '';
-  
   var iframe = document.createElement('iframe');
   iframe.src = 'https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0';
   iframe.setAttribute('frameborder', '0');
   iframe.setAttribute('allowfullscreen', '');
   iframe.setAttribute('allow', 'accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture');
   iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:none;';
-  
-  // Create Expand Button for Theater Mode
-  var expandBtn = document.createElement('div');
-  expandBtn.innerHTML = '📺';
-  expandBtn.style.cssText = 'position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.8);color:#fff;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;z-index:10;font-size:18px;border:1px solid rgba(255,255,255,0.2);box-shadow:0 4px 10px rgba(0,0,0,0.5);transition:transform 0.2s;';
-  expandBtn.title = window.t('فتح في وضع المسرح','Open in Theater Mode');
-  expandBtn.onmouseover = function() { this.style.transform = 'scale(1.1)'; };
-  expandBtn.onmouseout = function() { this.style.transform = 'scale(1)'; };
-  expandBtn.onclick = function(e) {
-    e.stopPropagation();
-    window.openVideoModal(postId, room);
-  };
-  
+  el.innerHTML = '';
   el.appendChild(iframe);
-  el.appendChild(expandBtn);
 };
 
 window.fixThumb = function(img, vid) {
@@ -4847,200 +3948,11 @@ window.fixThumb = function(img, vid) {
   }
 };
 
-// ══ Video Modal Logic ══
-window.openVideoModal = function(postId, room) {
-  const post = (window.allPosts?.[room] || []).find(p => String(p.id) === String(postId));
-  if (!post || !post.url) return;
-
-  const modal = document.getElementById('videoPlayerModal');
-  const body = document.getElementById('vm-body');
-  const titleEl = document.getElementById('vm-title');
-  const descEl = document.getElementById('vm-desc');
-  if (!modal || !body) return;
-
-  if (titleEl) titleEl.textContent = window.tTitle(post.title) || '';
-  if (descEl) descEl.textContent = post.description || '';
-
-  let content = '';
-  const isYT = post.url.includes('youtube.com') || post.url.includes('youtu.be');
-  const isTwitch = post.url.includes('twitch.tv');
-  const videoId = isYT ? extractYouTubeId(post.url) : null;
-
-  if (isYT && videoId) {
-    content = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
-  } else if (isTwitch) {
-    const match = post.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-    if (match) {
-      content = `<iframe src="https://player.twitch.tv/?channel=${match[1]}&parent=${location.hostname}&autoplay=true" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
-    }
-  } else if (post.url.match(/\.(mp4|webm|mov|ogg)/i) || post.url.includes('/storage/v1/object/public/')) {
-    content = `<video src="${post.url}" controls autoplay style="width:100%;height:100%;"></video>`;
-  } else if (post.url.match(/\.(jpg|jpeg|png|gif|webp|svg)/i)) {
-    content = `<img src="${post.url}" style="width:100%;height:100%;object-fit:contain;">`;
-  } else {
-    content = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">${window.t('لا يمكن عرض هذا النوع من الوسائط','Cannot display this media type')}</div>`;
-  }
-
-  body.innerHTML = content;
-  modal.classList.add('active');
-  document.body.style.overflow = 'hidden';
-};
-
-window.closeVideoModal = function() {
-  const modal = document.getElementById('videoPlayerModal');
-  const body = document.getElementById('vm-body');
-  if (modal) modal.classList.remove('active');
-  if (body) body.innerHTML = '';
-  document.body.style.overflow = '';
-};
-
 initializeAuth();
 showPage('home');
 loadTicker();
 // تهيئة الترجمة عند تحميل الصفحة
 if (typeof applyTranslations === 'function') applyTranslations();
-
-// ══ Copyright Bar ══
-(function(){
-  const bar = document.createElement('div');
-  bar.className = 'vx-copyright-bar';
-  bar.innerHTML = '&copy; 2026 <span>Virtux</span> — جميع الحقوق محفوظة &nbsp;|&nbsp; All Rights Reserved';
-  document.body.appendChild(bar);
-})();
 </script>
-
-<div id="videoPlayerModal" class="video-modal" onclick="if(event.target===this) window.closeVideoModal()">
-  <div class="vm-container">
-    <div class="vm-box">
-      <div class="vm-close" onclick="window.closeVideoModal()">✕</div>
-      <div id="vm-body" class="vm-body"></div>
-    </div>
-    <div id="vm-info" class="vm-info">
-      <h2 id="vm-title"></h2>
-      <div id="vm-desc"></div>
-    </div>
-  </div>
-</div>
-<!-- ══ Author Profile Popup ══ -->
-<div id="authorPopupOverlay" onclick="if(event.target===this)window._closeAuthorPopup()">
-  <div class="ap-box">
-    <button class="ap-close" onclick="window._closeAuthorPopup()">✕</button>
-    <div id="ap-avatar-area"></div>
-    <div class="ap-name" id="ap-name-el"></div>
-    <div class="ap-badges" id="ap-badges-el"></div>
-    <div class="ap-games" id="ap-games-el" style="display:none;">
-      <div class="ap-games-title" id="ap-games-title-el"></div>
-      <div class="ap-games-list" id="ap-games-list-el"></div>
-    </div>
-  </div>
-</div>
-
-<script>
-// ══ Author Popup System ══
-window._authorPopupCache = {};
-
-window._closeAuthorPopup = function() {
-  const el = document.getElementById('authorPopupOverlay');
-  if (el) el.classList.remove('vx-open');
-  document.body.style.overflow = '';
-};
-
-window._openAuthorPopup = async function(userId, username) {
-  const overlay = document.getElementById('authorPopupOverlay');
-  if (!overlay) return;
-  const isEN = window._siteLanguage === 'en';
-
-  // عرض حالة التحميل فوراً
-  document.getElementById('ap-avatar-area').innerHTML = '<div class="ap-avatar-ph">⏳</div>';
-  document.getElementById('ap-name-el').textContent = '@' + (username || '...');
-  document.getElementById('ap-badges-el').innerHTML = '';
-  document.getElementById('ap-games-el').style.display = 'none';
-  overlay.classList.add('vx-open');
-  document.body.style.overflow = 'hidden';
-
-  try {
-    // جلب البروفايل من الـ cache أو من قاعدة البيانات
-    let profile = window._authorPopupCache[userId];
-    if (!profile) {
-      // أولاً: ابحث في _roomProfiles (محمّل مسبقاً)
-      if (window._roomProfiles) {
-        for (const roomKey of Object.keys(window._roomProfiles)) {
-          const pr = window._roomProfiles[roomKey][userId];
-          if (pr) { profile = pr; break; }
-        }
-      }
-      // إذا لم يُوجد في الـ cache، اجلبه من قاعدة البيانات
-      if (!profile) {
-        const { data } = await db.from('profiles')
-          .select('id, username, avatar_url, role, roles, favorite_game')
-          .eq('id', userId)
-          .maybeSingle();
-        profile = data;
-      }
-      if (profile) window._authorPopupCache[userId] = profile;
-    }
-
-    if (!profile) {
-      document.getElementById('ap-avatar-area').innerHTML = '<div class="ap-avatar-ph">👤</div>';
-      document.getElementById('ap-name-el').textContent = '@' + (username || window.t('مستخدم','User'));
-      return;
-    }
-
-    // ── الصورة الشخصية ──
-    const avatarArea = document.getElementById('ap-avatar-area');
-    if (profile.avatar_url) {
-      avatarArea.innerHTML = `<img class="ap-avatar" src="${escapeHtml(profile.avatar_url)}" onerror="this.style.display='none';document.getElementById('ap-avatar-ph-fb').style.display='flex'"><div id="ap-avatar-ph-fb" class="ap-avatar-ph" style="display:none;">👤</div>`;
-    } else {
-      avatarArea.innerHTML = '<div class="ap-avatar-ph">👤</div>';
-    }
-
-    // ── الاسم ──
-    document.getElementById('ap-name-el').textContent = '@' + (profile.username || username || window.t('مستخدم','User'));
-
-    // ── الشارات ──
-    const ROLE_DEFS = {
-      admin:        { bg:'#3d0f0f', color:'#ff0000', label:'🛡️ ADMIN' },
-      moderator:    { bg:'#2a0000', color:'#ff2222', label:'🔧 MOD' },
-      youtuber_vip: { bg:'#3d1a0f', color:'#ff6600', label:'🔥 YT VIP' },
-      youtuber:     { bg:'#2d0a0a', color:'#cc0000', label:'🎬 YOUTUBER' },
-      vip:          { bg:'#1a0000', color:'#e01010', label:'👑 VIP' },
-      member:       { bg:'#100000', color:'#cc2222', label:'⭐ MEMBER' },
-      donor:        { bg:'#001a22', color:'#00ccff', label:'💎 DONOR' },
-      guest:        { bg:'#1a1a1a', color:'#aaa',    label:'🛡️ GUEST' },
-      user:         { bg:'#111',    color:'#666',    label:'👤 USER' },
-    };
-    const roles = (typeof normalizeRoles === 'function' ? normalizeRoles(profile) : [profile.role || 'user']).filter(r => r !== 'user');
-    const badgesEl = document.getElementById('ap-badges-el');
-    if (roles.length) {
-      badgesEl.innerHTML = roles.map(r => {
-        const d = ROLE_DEFS[r] || { bg:'#2a2a3a', color:'#e01010', label: r.toUpperCase() };
-        return `<span class="ap-badge" style="background:${d.bg};color:${d.color};border-color:${d.color};">${d.label}</span>`;
-      }).join('');
-    } else {
-      badgesEl.innerHTML = `<span class="ap-badge" style="background:#111;color:#666;border-color:#444;">👤 USER</span>`;
-    }
-
-    // ── الألعاب المفضلة ──
-    const gamesEl = document.getElementById('ap-games-el');
-    const gamesTitleEl = document.getElementById('ap-games-title-el');
-    const gamesListEl = document.getElementById('ap-games-list-el');
-    gamesTitleEl.textContent = isEN ? '🎮 Favorite Games' : '🎮 الألعاب المفضلة';
-    const favGame = profile.favorite_game;
-    if (favGame && String(favGame).trim()) {
-      const games = String(favGame).split(',').map(g => g.trim()).filter(Boolean);
-      gamesListEl.innerHTML = games.map(g => `<span class="ap-game-tag">${escapeHtml(g)}</span>`).join('');
-      gamesEl.style.display = 'block';
-    } else {
-      gamesEl.style.display = 'none';
-    }
-
-  } catch(e) {
-    console.error('_openAuthorPopup error:', e);
-    document.getElementById('ap-avatar-area').innerHTML = '<div class="ap-avatar-ph">👤</div>';
-    document.getElementById('ap-name-el').textContent = '@' + (username || '?');
-  }
-};
-</script>
-
 </body>
 </html>
