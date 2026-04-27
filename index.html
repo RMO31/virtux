@@ -641,9 +641,9 @@
     @media(max-width:680px){.home-split{grid-template-columns:1fr;}}
     .hcp-half{background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);border:1px solid rgba(220,0,0,0.3);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
     .hcp-half-head{font-size:11px;font-weight:700;color:#e01010;padding:9px 13px 8px;border-bottom:1px solid rgba(220,0,0,0.15);}
-    .hc-wrap{position:relative;overflow:hidden;min-height:210px;}
-    .hc-track{display:flex;transition:transform 0.36s cubic-bezier(.4,0,.2,1);}
-    .hc-slide{min-width:100%;box-sizing:border-box;padding:11px 12px 46px;}
+    .hc-wrap{position:relative;overflow:hidden;min-height:210px;direction:ltr;}
+    .hc-track{display:flex;transition:transform 0.36s cubic-bezier(.4,0,.2,1);direction:ltr;}
+    .hc-slide{min-width:100%;width:100%;box-sizing:border-box;padding:11px 12px 46px;flex-shrink:0;}
     .hc-slide a{text-decoration:none;color:inherit;display:block;}
     .hc-thumb-wrap{position:relative;border-radius:9px;overflow:hidden;background:#050000;}
     .hc-thumb-wrap.vip-ch{border:2px solid #ff6600;box-shadow:0 0 12px rgba(255,102,0,0.4);}
@@ -869,7 +869,11 @@
           <div class="home-welcome" data-ar="مرحباً بك في Virtux" data-en="Welcome to Virtux">مرحباً بك في Virtux</div>
 
           <!-- ══ ROW: About | Channel Panel | Rules ══ -->
-          <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
+          <div id="home-main-grid" style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:18px;max-width:1300px;width:100%;margin:0 auto;align-items:start;">
+          <style>
+            @media(max-width:900px){#home-main-grid{grid-template-columns:1fr!important;}}
+            @media(min-width:901px) and (max-width:1100px){#home-main-grid{grid-template-columns:1fr 1.5fr 1fr!important;}}
+          </style>
 
             <!-- About يسار -->
             <div class="home-about">
@@ -3247,7 +3251,14 @@ window.deletePost = deletePost;
     const isEN = window._siteLanguage === 'en';
     if(!items||!items.length){ wrap.innerHTML=`<div class="hc-empty">${isEN?'No content available':'لا يوجد محتوى حالياً'}</div>`; return; }
     const track=document.createElement('div'); track.className='hc-track';
-    items.forEach(it=>{ const sl=document.createElement('div'); sl.className='hc-slide'; sl.innerHTML=renderFn(it); track.appendChild(sl); });
+    track.style.width = (items.length * 100) + '%';
+    items.forEach(it=>{ 
+      const sl=document.createElement('div'); 
+      sl.className='hc-slide'; 
+      sl.style.width = (100/items.length) + '%';
+      sl.innerHTML=renderFn(it); 
+      track.appendChild(sl); 
+    });
     const nav=document.createElement('div'); nav.className='hc-nav';
     const dotsEl=document.createElement('div'); dotsEl.className='hc-dots';
     items.forEach((_,i)=>{ const d=document.createElement('div'); d.className='hc-dot'+(i===0?' active':''); dotsEl.appendChild(d); });
@@ -3257,7 +3268,7 @@ window.deletePost = deletePost;
     wrap.innerHTML=''; wrap.appendChild(track); wrap.appendChild(nav);
     let cur=0; const total=items.length;
     const dots=dotsEl.querySelectorAll('.hc-dot');
-    function go(n){ cur=((n%total)+total)%total; track.style.transform=`translateX(-${cur*100}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===cur)); }
+    function go(n){ cur=((n%total)+total)%total; track.style.transform=`translateX(-${cur*(100/total)}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===cur)); }
     prev.onclick=()=>go(cur-1); next.onclick=()=>go(cur+1);
     let iv=setInterval(()=>go(cur+1),6000);
     wrap.addEventListener('mouseenter',()=>clearInterval(iv));
