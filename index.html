@@ -16,6 +16,16 @@
   --card:rgba(12,15,26,0.9);--glow:0 0 24px rgba(99,102,241,0.25);
   --radius:14px;--radius2:10px;
 }
+body.lang-ar .en { display: none; }
+body.lang-en .ar { display: none; }
+body.lang-en { direction: ltr; }
+body.lang-en .sidebar { border-right: 1px solid var(--border); border-left: none; }
+body.lang-en .notif-panel { left: 20px; right: auto; }
+body.lang-en .toast-container { left: 22px; right: auto; }
+body.lang-en .post-textarea, body.lang-en .modal-textarea, body.lang-en .form-input { direction: ltr; }
+body.lang-bi .en::before { content: ' ('; }
+body.lang-bi .en::after { content: ')'; }
+body.lang-bi .en { color: var(--text3); font-size: 0.9em; }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
@@ -29,6 +39,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,8,16,0.94
 .nav-links a{color:var(--text2);text-decoration:none;padding:6px 13px;border-radius:8px;font-size:13.5px;transition:all 0.2s;}
 .nav-links a:hover,.nav-links a.active{color:var(--text);background:rgba(99,102,241,0.12);}
 .nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.lang-toggle{background:rgba(99,102,241,0.1);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;cursor:pointer;color:var(--accent2);font-size:12px;font-weight:700;transition:all 0.2s;}
+.lang-toggle:hover{background:var(--accent);color:#fff;}
 .btn{padding:7px 16px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:13.5px;cursor:pointer;border:none;transition:all 0.2s;font-weight:500;}
 .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
 .btn-ghost:hover{color:var(--text);border-color:var(--accent);}
@@ -52,10 +64,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,8,16,0.94
 .nav-user span{font-size:13px;color:var(--text2);}
 
 /* LAYOUT */
-.wrapper{display:flex;margin-top:60px;min-height:calc(100vh - 60px);position:relative;z-index:1;}
+.wrapper{display:flex;margin-top:60px;min-height:calc(100vh - 60px);position:relative;z-index:1;justify-content:center;}
 .sidebar{width:215px;min-width:215px;background:rgba(10,13,22,0.7);border-left:1px solid var(--border);padding:18px 10px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
-main{flex:1;padding:22px 18px;max-width:840px;min-width:0;}
-.right-sidebar{width:275px;min-width:275px;padding:18px 12px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+main{flex:1;padding:22px 18px;max-width:1100px;min-width:0;}
+.right-sidebar{width:290px;min-width:290px;padding:18px 12px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
 
 .sidebar-section{margin-bottom:22px;}
 .sidebar-title{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);padding:0 8px;margin-bottom:5px;}
@@ -248,7 +260,7 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
 @media(max-width:900px){.sidebar,.right-sidebar{display:none;} nav .nav-links{display:none;} main{max-width:100%;padding:14px 10px;}}
 </style>
 </head>
-<body>
+<body class="lang-bi">
 
 <div class="modal-overlay" id="editModal">
   <div class="modal">
@@ -326,12 +338,13 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
 <nav>
   <div class="logo">VIRTUX</div>
   <ul class="nav-links">
-    <li><a href="#" class="active" onclick="setPage('home',this)">🏠 الرئيسية (Home)</a></li>
-    <li><a href="#" onclick="setPage('live',this)">🔴 مباشر (Live)</a></li>
-    <li><a href="#" onclick="setPage('tourney',this)">🏆 البطولات (Tournaments)</a></li>
-    <li><a href="#" onclick="setPage('youtube',this)">🎬 يوتيوب (YouTube)</a></li>
+    <li><a href="#" class="active" onclick="setPage('home',this)">🏠 <span class="ar">الرئيسية</span><span class="en">Home</span></a></li>
+    <li><a href="#" onclick="setPage('live',this)">🔴 <span class="ar">مباشر</span><span class="en">Live</span></a></li>
+    <li><a href="#" onclick="setPage('tourney',this)">🏆 <span class="ar">البطولات</span><span class="en">Tournaments</span></a></li>
+    <li><a href="#" onclick="setPage('youtube',this)">🎬 <span class="ar">يوتيوب</span><span class="en">YouTube</span></a></li>
   </ul>
   <div class="nav-right">
+    <button class="lang-toggle" onclick="toggleLang()" id="langBtn">AR/EN</button>
     <button class="notif-btn" onclick="toggleNotif()" id="notifBtn">🔔<span class="notif-dot" id="notifDot"></span></button>
     <div id="navAuthArea">
       <button class="btn btn-ghost btn-sm" onclick="openAuth('login')">دخول (Login)</button>
@@ -343,23 +356,23 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
 <div class="wrapper">
   <aside class="sidebar">
     <div class="sidebar-section">
-      <div class="sidebar-title">القائمة (Menu)</div>
-      <div class="sidebar-item active" onclick="setPage('home')"><span class="icon">🏠</span> الرئيسية (Home)</div>
-      <div class="sidebar-item" onclick="setPage('live')"><span class="icon">🔴</span> مباشر (Live)<span class="badge badge-red">LIVE</span></div>
-      <div class="sidebar-item" onclick="setPage('tourney')"><span class="icon">🏆</span> البطولات (Tournaments)<span class="badge badge-gold">5</span></div>
-      <div class="sidebar-item" onclick="setPage('youtube')"><span class="icon">🎬</span> يوتيوب (YouTube)</div>
+      <div class="sidebar-title"><span class="ar">القائمة</span><span class="en">Menu</span></div>
+      <div class="sidebar-item active" onclick="setPage('home')"><span class="icon">🏠</span> <span class="ar">الرئيسية</span><span class="en">Home</span></div>
+      <div class="sidebar-item" onclick="setPage('live')"><span class="icon">🔴</span> <span class="ar">مباشر</span><span class="en">Live</span><span class="badge badge-red">LIVE</span></div>
+      <div class="sidebar-item" onclick="setPage('tourney')"><span class="icon">🏆</span> <span class="ar">البطولات</span><span class="en">Tournaments</span><span class="badge badge-gold">5</span></div>
+      <div class="sidebar-item" onclick="setPage('youtube')"><span class="icon">🎬</span> <span class="ar">يوتيوب</span><span class="en">YouTube</span></div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-title">حسابي</div>
-      <div class="sidebar-item" onclick="checkAuth('profile')"><span class="icon">👤</span> الملف الشخصي</div>
-      <div class="sidebar-item" onclick="checkAuth('stats')"><span class="icon">📊</span> إحصائياتي</div>
-      <div class="sidebar-item" onclick="checkAuth('achievements')"><span class="icon">🎯</span> إنجازاتي</div>
-      <div class="sidebar-item" onclick="checkAuth('messages')"><span class="icon">💬</span> رسائلي<span class="badge badge-red">5</span></div>
+      <div class="sidebar-title"><span class="ar">حسابي</span><span class="en">My Account</span></div>
+      <div class="sidebar-item" onclick="checkAuth('profile')"><span class="icon">👤</span> <span class="ar">الملف الشخصي</span><span class="en">Profile</span></div>
+      <div class="sidebar-item" onclick="checkAuth('stats')"><span class="icon">📊</span> <span class="ar">إحصائياتي</span><span class="en">My Stats</span></div>
+      <div class="sidebar-item" onclick="checkAuth('achievements')"><span class="icon">🎯</span> <span class="ar">إنجازاتي</span><span class="en">Achievements</span></div>
+      <div class="sidebar-item" onclick="checkAuth('messages')"><span class="icon">💬</span> <span class="ar">رسائلي</span><span class="en">Messages</span><span class="badge badge-red">5</span></div>
     </div>
     <div class="sidebar-section">
-      <div class="sidebar-title">المجتمع</div>
-      <div class="sidebar-item"><span class="icon">👥</span> الأصدقاء</div>
-      <div class="sidebar-item"><span class="icon">📅</span> الأحداث</div>
+      <div class="sidebar-title"><span class="ar">المجتمع</span><span class="en">Community</span></div>
+      <div class="sidebar-item"><span class="icon">👥</span> <span class="ar">الأصدقاء</span><span class="en">Friends</span></div>
+      <div class="sidebar-item"><span class="icon">📅</span> <span class="ar">الأحداث</span><span class="en">Events</span></div>
     </div>
     <div class="sidebar-section" id="sideAdminSection" style="display:none;">
       <div class="sidebar-title">الإدارة</div>
@@ -370,25 +383,25 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
   <main id="mainContent">
     <div id="pageHome">
       <div class="hero-banner">
-        <div class="hero-title">مرحباً بك في Virtux (Welcome to Virtux) 🎮</div>
-        <div class="hero-sub">مجتمع الألعاب العربي الأول — شارك، نافس، وابرز (The First Arabic Gaming Community — Share, Compete, and Stand Out)</div>
+        <div class="hero-title"><span class="ar">مرحباً بك في Virtux</span><span class="en">Welcome to Virtux</span> 🎮</div>
+        <div class="hero-sub"><span class="ar">مجتمع الألعاب العربي الأول — شارك، نافس، وابرز</span><span class="en">The First Arabic Gaming Community — Share, Compete, and Stand Out</span></div>
         <div class="hero-stats">
-          <div class="hero-stat"><span class="num" id="statOnline">—</span><span class="lbl">متصل (Online)</span></div>
-          <div class="hero-stat"><span class="num" id="statPosts">—</span><span class="lbl">منشور (Posts)</span></div>
-          <div class="hero-stat"><span class="num">5</span><span class="lbl">بطولات (Tournaments)</span></div>
-          <div class="hero-stat"><span class="num">84K+</span><span class="lbl">عضو (Members)</span></div>
+          <div class="hero-stat"><span class="num" id="statOnline">—</span><span class="lbl"><span class="ar">متصل</span><span class="en">Online</span></span></div>
+          <div class="hero-stat"><span class="num" id="statPosts">—</span><span class="lbl"><span class="ar">منشور</span><span class="en">Posts</span></span></div>
+          <div class="hero-stat"><span class="num">5</span><span class="lbl"><span class="ar">بطولات</span><span class="en">Tournaments</span></span></div>
+          <div class="hero-stat"><span class="num">84K+</span><span class="lbl"><span class="ar">عضو</span><span class="en">Members</span></span></div>
         </div>
       </div>
 
       <div class="card" style="padding:13px 15px;">
-        <div class="card-header"><div class="card-title">➕ ماذا تريد أن تشارك؟ (What do you want to share?)</div></div>
+        <div class="card-header"><div class="card-title">➕ <span class="ar">ماذا تريد أن تشارك؟</span><span class="en">What do you want to share?</span></div></div>
         <div class="quick-share">
-          <button class="qs-btn" onclick="openEditor('clip')"><span class="qs-icon">🎬</span><span>كليب (Clip)</span></button>
-          <button class="qs-btn" onclick="openEditor('screen')"><span class="qs-icon">📸</span><span>لقطة (Shot)</span></button>
-          <button class="qs-btn" onclick="openEditor('news')"><span class="qs-icon">📰</span><span>خبر (News)</span></button>
-          <button class="qs-btn" onclick="openEditor('tourney')"><span class="qs-icon">🏆</span><span>بطولة (Tournament)</span></button>
-          <button class="qs-btn" onclick="openEditor('question')"><span class="qs-icon">❓</span><span>سؤال (Question)</span></button>
-          <button class="qs-btn" onclick="openEditor('review')"><span class="qs-icon">⭐</span><span>تقييم (Review)</span></button>
+          <button class="qs-btn" onclick="openEditor('clip')"><span class="qs-icon">🎬</span><span><span class="ar">كليب</span><span class="en">Clip</span></span></button>
+          <button class="qs-btn" onclick="openEditor('screen')"><span class="qs-icon">📸</span><span><span class="ar">لقطة</span><span class="en">Shot</span></span></button>
+          <button class="qs-btn" onclick="openEditor('news')"><span class="qs-icon">📰</span><span><span class="ar">خبر</span><span class="en">News</span></span></button>
+          <button class="qs-btn" onclick="openEditor('tourney')"><span class="qs-icon">🏆</span><span><span class="ar">بطولة</span><span class="en">Tournament</span></span></button>
+          <button class="qs-btn" onclick="openEditor('question')"><span class="qs-icon">❓</span><span><span class="ar">سؤال</span><span class="en">Question</span></span></button>
+          <button class="qs-btn" onclick="openEditor('review')"><span class="qs-icon">⭐</span><span><span class="ar">تقييم</span><span class="en">Review</span></span></button>
         </div>
       </div>
 
@@ -426,11 +439,11 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
       </div>
 
       <div class="tabs">
-        <button class="tab active" onclick="filterFeed('all',this)">🔥 الكل (All)</button>
-        <button class="tab" onclick="filterFeed('clip',this)">🎬 كليبات (Clips)</button>
-        <button class="tab" onclick="filterFeed('news',this)">📰 أخبار (News)</button>
-        <button class="tab" onclick="filterFeed('tourney',this)">🏆 بطولات (Tourneys)</button>
-        <button class="tab" onclick="filterFeed('question',this)">❓ أسئلة (Q&A)</button>
+        <button class="tab active" onclick="filterFeed('all',this)">🔥 <span class="ar">الكل</span><span class="en">All</span></button>
+        <button class="tab" onclick="filterFeed('clip',this)">🎬 <span class="ar">كليبات</span><span class="en">Clips</span></button>
+        <button class="tab" onclick="filterFeed('news',this)">📰 <span class="ar">أخبار</span><span class="en">News</span></button>
+        <button class="tab" onclick="filterFeed('tourney',this)">🏆 <span class="ar">بطولات</span><span class="en">Tourneys</span></button>
+        <button class="tab" onclick="filterFeed('question',this)">❓ <span class="ar">أسئلة</span><span class="en">Q&A</span></button>
       </div>
 
       <div id="feedContainer"><div class="loader">جاري تحميل المنشورات...<span class="spinner"></span></div></div>
@@ -477,7 +490,7 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
     </div>
 
     <div class="card" style="padding:13px;">
-      <div class="card-header"><div class="card-title">🔥 الأكثر تداولاً (Trending)</div></div>
+      <div class="card-header"><div class="card-title">🔥 <span class="ar">الأكثر تداولاً</span><span class="en">Trending</span></div></div>
       <div>
         <span class="trending-tag" onclick="filterByTag('Valorant')">#Valorant</span>
         <span class="trending-tag" onclick="filterByTag('ProLeague')">#ProLeague</span>
@@ -490,35 +503,35 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
 
     <div class="card" style="padding:13px;">
       <div class="card-header">
-        <div class="card-title"><span class="live-badge"><span class="live-dot"></span>مباشر</span></div>
-        <a class="section-link" onclick="setPage('live')">الكل</a>
+        <div class="card-title"><span class="live-badge"><span class="live-dot"></span><span class="ar">مباشر</span><span class="en">Live</span></span></div>
+        <a class="section-link" onclick="setPage('live')"><span class="ar">الكل</span><span class="en">All</span></a>
       </div>
       <div id="sideStreams"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
     </div>
 
     <div class="card" style="padding:13px;">
       <div class="card-header">
-        <div class="card-title">🏆 بطولات (Tournaments)</div>
-        <a class="section-link" onclick="setPage('tourney')">الكل (All)</a>
+        <div class="card-title">🏆 <span class="ar">بطولات</span><span class="en">Tournaments</span></div>
+        <a class="section-link" onclick="setPage('tourney')"><span class="ar">الكل</span><span class="en">All</span></a>
       </div>
       <div id="sideTourneys"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
     </div>
 
     <div class="card" style="padding:13px;">
-      <div class="card-header"><div class="card-title">👑 المتصدرون (Leaderboard)</div></div>
+      <div class="card-header"><div class="card-title">👑 <span class="ar">المتصدرون</span><span class="en">Leaderboard</span></div></div>
       <div id="sideLeaderboard"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
     </div>
 
     <div class="card" style="padding:13px;" id="achSection" style="display:none;">
-      <div class="card-header"><div class="card-title">🎯 إنجازاتي (Achievements)</div></div>
+      <div class="card-header"><div class="card-title">🎯 <span class="ar">إنجازاتي</span><span class="en">Achievements</span></div></div>
       <div class="achievement"><div class="ach-icon">🎯</div><div><div class="ach-name">القناص</div><div class="ach-desc">50 headshot</div></div></div>
       <div class="achievement"><div class="ach-icon">🔥</div><div><div class="ach-name">On Fire</div><div class="ach-desc">7 wins</div></div></div>
     </div>
 
     <div class="card" style="padding:13px;">
       <div class="card-header">
-        <div class="card-title">📺 فيديوهات (Videos)</div>
-        <a class="section-link" onclick="setPage('youtube')">الكل (All)</a>
+        <div class="card-title">📺 <span class="ar">فيديوهات</span><span class="en">Videos</span></div>
+        <a class="section-link" onclick="setPage('youtube')"><span class="ar">الكل</span><span class="en">All</span></a>
       </div>
       <div id="sideYT"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
     </div>
@@ -583,12 +596,12 @@ function closeAuth(){document.getElementById('authModal').classList.remove('open
 function switchToLogin(){
   document.getElementById('loginForm').style.display='block';
   document.getElementById('registerForm').style.display='none';
-  document.getElementById('authTitle').textContent='🔐 تسجيل الدخول (Login)';
+  document.getElementById('authTitle').innerHTML='<span class="ar">🔐 تسجيل الدخول</span><span class="en">🔐 Login</span>';
 }
 function switchToRegister(){
   document.getElementById('loginForm').style.display='none';
   document.getElementById('registerForm').style.display='block';
-  document.getElementById('authTitle').textContent='✨ إنشاء حساب (Register)';
+  document.getElementById('authTitle').innerHTML='<span class="ar">✨ إنشاء حساب</span><span class="en">✨ Register</span>';
 }
 
 async function signInEmail(){
@@ -966,7 +979,17 @@ sb.channel('posts-channel').on('postgres_changes',{event:'INSERT',schema:'public
   }
 }).subscribe();
 
+function toggleLang(){
+  const b=document.body;
+  if(b.classList.contains('lang-bi')){b.classList.replace('lang-bi','lang-ar');}
+  else if(b.classList.contains('lang-ar')){b.classList.replace('lang-ar','lang-en');}
+  else{b.classList.replace('lang-en','lang-bi');}
+  localStorage.setItem('virtux_lang',b.className.match(/lang-\w+/)[0]);
+}
+
 (async()=>{
+  const savedLang=localStorage.getItem('virtux_lang');
+  if(savedLang)document.body.className=savedLang;
   const{data:{session}}=await sb.auth.getSession();
   currentUser=session?.user||null;
   if(currentUser){await loadProfile();renderNavUser();}
