@@ -3,1880 +3,979 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Virtux — مجتمع الألعاب</title>
+<title>Virtux — مجتمع الألعاب العربي</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #060810;
-    --bg2: #0c0f1a;
-    --bg3: #111525;
-    --border: rgba(99,102,241,0.18);
-    --border2: rgba(99,102,241,0.35);
-    --accent: #6366f1;
-    --accent2: #818cf8;
-    --accent3: #c084fc;
-    --gold: #f59e0b;
-    --red: #ef4444;
-    --green: #22c55e;
-    --text: #e2e8f0;
-    --text2: #94a3b8;
-    --text3: #475569;
-    --card: rgba(12,15,26,0.85);
-    --glow: 0 0 24px rgba(99,102,241,0.25);
-    --radius: 14px;
-    --radius2: 10px;
-  }
+:root {
+  --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
+  --border:rgba(99,102,241,0.18);--border2:rgba(99,102,241,0.35);
+  --accent:#6366f1;--accent2:#818cf8;--accent3:#c084fc;
+  --gold:#f59e0b;--red:#ef4444;--green:#22c55e;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+  --card:rgba(12,15,26,0.9);--glow:0 0 24px rgba(99,102,241,0.25);
+  --radius:14px;--radius2:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(99,102,241,0.09) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(192,132,252,0.06) 0%,transparent 50%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,8,16,0.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.logo{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;background:linear-gradient(135deg,var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;flex-shrink:0;}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none;}
+.nav-links a{color:var(--text2);text-decoration:none;padding:6px 13px;border-radius:8px;font-size:13.5px;transition:all 0.2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--text);background:rgba(99,102,241,0.12);}
+.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.btn{padding:7px 16px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:13.5px;cursor:pointer;border:none;transition:all 0.2s;font-weight:500;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-ghost:hover{color:var(--text);border-color:var(--accent);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:var(--glow);}
+.btn-sm{padding:5px 12px;font-size:13px;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-green{background:var(--green);color:#000;font-weight:700;}
 
-  body {
-    font-family: 'Tajawal', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+.notif-btn{position:relative;background:rgba(99,102,241,0.1);border:1px solid var(--border2);border-radius:8px;padding:7px 11px;cursor:pointer;color:var(--text2);font-size:15px;transition:all 0.2s;}
+.notif-btn:hover{color:var(--text);background:rgba(99,102,241,0.2);}
+.notif-dot{position:absolute;top:5px;right:5px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid var(--bg);animation:pdot 2s infinite;}
+@keyframes pdot{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
-  /* ANIMATED BG */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(99,102,241,0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(192,132,252,0.06) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-  }
+.live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.live-dot{width:6px;height:6px;background:var(--red);border-radius:50%;animation:pdot 1.2s infinite;}
 
-  /* GRID OVERLAY */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+.nav-user{display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:rgba(99,102,241,0.06);transition:all 0.2s;}
+.nav-user:hover{border-color:var(--border2);background:rgba(99,102,241,0.12);}
+.nav-user img{width:28px;height:28px;border-radius:50%;object-fit:cover;}
+.nav-user span{font-size:13px;color:var(--text2);}
 
-  /* NAV */
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 1000;
-    background: rgba(6,8,16,0.92);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    height: 62px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+/* LAYOUT */
+.wrapper{display:flex;margin-top:60px;min-height:calc(100vh - 60px);position:relative;z-index:1;}
+.sidebar{width:215px;min-width:215px;background:rgba(10,13,22,0.7);border-left:1px solid var(--border);padding:18px 10px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+main{flex:1;padding:22px 18px;max-width:840px;min-width:0;}
+.right-sidebar{width:275px;min-width:275px;padding:18px 12px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
 
-  .logo {
-    font-family: 'Orbitron', monospace;
-    font-size: 22px;
-    font-weight: 900;
-    background: linear-gradient(135deg, var(--accent2), var(--accent3));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 3px;
-  }
+.sidebar-section{margin-bottom:22px;}
+.sidebar-title{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text3);padding:0 8px;margin-bottom:5px;}
+.sidebar-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;color:var(--text2);cursor:pointer;transition:all 0.18s;font-size:13.5px;position:relative;}
+.sidebar-item:hover{background:rgba(99,102,241,0.1);color:var(--text);}
+.sidebar-item.active{background:rgba(99,102,241,0.15);color:var(--accent2);}
+.sidebar-item .icon{font-size:15px;min-width:20px;text-align:center;}
+.sidebar-item .badge{margin-right:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;}
+.badge-red{background:var(--red)!important;}
+.badge-gold{background:var(--gold)!important;color:#000!important;}
 
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    list-style: none;
-  }
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;backdrop-filter:blur(10px);transition:border-color 0.2s;}
+.card:hover{border-color:var(--border2);}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.card-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;}
+.section-link{font-size:11px;color:var(--accent2);cursor:pointer;}
 
-  .nav-links a {
-    color: var(--text2);
-    text-decoration: none;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: all 0.2s;
-  }
-  .nav-links a:hover { color: var(--text); background: rgba(99,102,241,0.12); }
+.hero-banner{background:linear-gradient(135deg,rgba(99,102,241,0.14) 0%,rgba(192,132,252,0.09) 100%);border:1px solid var(--border2);border-radius:var(--radius);padding:26px 22px;margin-bottom:18px;position:relative;overflow:hidden;}
+.hero-banner::before{content:'VIRTUX';position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-family:'Orbitron',monospace;font-size:72px;font-weight:900;color:rgba(99,102,241,0.055);letter-spacing:4px;pointer-events:none;}
+.hero-title{font-family:'Orbitron',monospace;font-size:23px;font-weight:900;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:5px;}
+.hero-sub{color:var(--text2);font-size:13.5px;margin-bottom:14px;}
+.hero-stats{display:flex;gap:18px;flex-wrap:wrap;}
+.hero-stat .num{font-size:20px;font-weight:700;color:var(--accent2);display:block;}
+.hero-stat .lbl{font-size:11px;color:var(--text3);}
 
-  .nav-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+.tabs{display:flex;gap:3px;background:rgba(12,15,26,0.6);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:14px;}
+.tab{flex:1;text-align:center;padding:8px 10px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--text2);transition:all 0.18s;border:none;background:transparent;font-family:'Tajawal',sans-serif;font-weight:500;}
+.tab.active{background:rgba(99,102,241,0.2);color:var(--accent2);border:1px solid var(--border2);}
+.tab:hover:not(.active){background:rgba(99,102,241,0.07);color:var(--text);}
 
-  .btn {
-    padding: 7px 18px;
-    border-radius: 8px;
-    font-family: 'Tajawal', sans-serif;
-    font-size: 14px;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    font-weight: 500;
-  }
-  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
-  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: var(--glow); }
-  .btn-gold { background: var(--gold); color: #000; }
-  .btn-gold:hover { background: #fbbf24; transform: translateY(-1px); }
-  .btn-red { background: var(--red); color: #fff; }
-  .btn-green { background: var(--green); color: #000; }
-  .btn-sm { padding: 5px 12px; font-size: 13px; }
+.post-editor{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;transition:border-color 0.2s;}
+.post-editor:focus-within{border-color:var(--accent);}
+.editor-top{display:flex;gap:11px;align-items:flex-start;margin-bottom:10px;}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;overflow:hidden;}
+.avatar img{width:100%;height:100%;object-fit:cover;}
+.post-textarea{width:100%;background:transparent;border:none;color:var(--text);font-family:'Tajawal',sans-serif;font-size:14.5px;resize:none;outline:none;min-height:58px;line-height:1.65;direction:rtl;}
+.post-textarea::placeholder{color:var(--text3);}
+.editor-toolbar{display:flex;align-items:center;gap:3px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.toolbar-btn{background:transparent;border:1px solid transparent;border-radius:7px;padding:5px 9px;color:var(--text2);cursor:pointer;font-size:12.5px;transition:all 0.15s;display:flex;align-items:center;gap:4px;font-family:'Tajawal',sans-serif;}
+.toolbar-btn:hover{background:rgba(99,102,241,0.12);color:var(--text);border-color:var(--border);}
+.editor-actions{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.post-types{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;}
+.post-type-btn{padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'Tajawal',sans-serif;}
+.post-type-btn:hover{border-color:var(--accent);color:var(--accent2);}
+.post-type-btn.active{background:rgba(99,102,241,0.15);border-color:var(--accent);color:var(--accent2);}
 
-  /* NOTIFICATION DOT */
-  .notif-btn {
-    position: relative;
-    background: rgba(99,102,241,0.1);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    color: var(--text2);
-    font-size: 16px;
-    transition: all 0.2s;
-  }
-  .notif-btn:hover { color: var(--text); background: rgba(99,102,241,0.2); }
-  .notif-dot {
-    position: absolute;
-    top: 5px; right: 5px;
-    width: 8px; height: 8px;
-    background: var(--red);
-    border-radius: 50%;
-    border: 2px solid var(--bg);
-    animation: pulse-dot 2s infinite;
-  }
-  @keyframes pulse-dot {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
+.post{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:15px;margin-bottom:12px;backdrop-filter:blur(10px);transition:border-color 0.2s,transform 0.15s;animation:fadeUp 0.35s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.post:hover{border-color:var(--border2);transform:translateY(-1px);}
+.post-header{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.post-header .info{flex:1;}
+.post-header .name{font-weight:700;font-size:13.5px;color:var(--text);}
+.post-header .meta{font-size:11px;color:var(--text3);margin-top:1px;}
+.post-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;}
+.tag-clip{background:rgba(99,102,241,0.12);color:var(--accent2);border:1px solid rgba(99,102,241,0.2);}
+.tag-news{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.2);}
+.tag-tourney{background:rgba(192,132,252,0.12);color:#d8b4fe;border:1px solid rgba(192,132,252,0.2);}
+.tag-question{background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.2);}
+.tag-review{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.2);}
+.post-body{font-size:14px;line-height:1.7;color:var(--text2);margin-bottom:11px;}
+.post-body strong{color:var(--text);}
+.post-media{width:100%;border-radius:10px;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(192,132,252,0.08));height:170px;display:flex;align-items:center;justify-content:center;margin-bottom:11px;border:1px solid var(--border);position:relative;overflow:hidden;cursor:pointer;}
+.post-media-icon{font-size:34px;}
+.post-actions{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.action-btn{display:flex;align-items:center;gap:4px;padding:5px 11px;border-radius:7px;background:transparent;border:1px solid transparent;color:var(--text2);cursor:pointer;font-size:12.5px;transition:all 0.15s;font-family:'Tajawal',sans-serif;}
+.action-btn:hover{background:rgba(99,102,241,0.1);color:var(--text);border-color:var(--border);}
+.action-btn.liked{color:#f87171;}
+.action-btn.saved{color:var(--gold);}
+.action-btn-edit{display:flex;align-items:center;gap:4px;padding:5px 11px;border-radius:7px;background:rgba(99,102,241,0.07);border:1px solid var(--border2);color:var(--accent2);cursor:pointer;font-size:12px;transition:all 0.15s;font-family:'Tajawal',sans-serif;margin-right:auto;}
+.action-btn-edit:hover{background:rgba(99,102,241,0.17);}
+.game-tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;background:rgba(192,132,252,0.1);color:#d8b4fe;border:1px solid rgba(192,132,252,0.2);}
+.verify{font-size:11px;}
 
-  /* LIVE BADGE */
-  .live-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(239,68,68,0.15);
-    border: 1px solid rgba(239,68,68,0.35);
-    color: #f87171;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .live-dot {
-    width: 6px; height: 6px;
-    background: var(--red);
-    border-radius: 50%;
-    animation: pulse-dot 1.2s infinite;
-  }
+.quick-share{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap;}
+.qs-btn{flex:1;min-width:72px;padding:9px 6px;border-radius:10px;background:var(--bg3);border:1px dashed var(--border);color:var(--text2);cursor:pointer;font-size:11.5px;text-align:center;transition:all 0.18s;font-family:'Tajawal',sans-serif;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.qs-btn .qs-icon{font-size:18px;}
+.qs-btn:hover{background:rgba(99,102,241,0.1);border-color:var(--accent);border-style:solid;color:var(--text);transform:translateY(-2px);}
 
-  /* MAIN LAYOUT */
-  .wrapper {
-    display: flex;
-    margin-top: 62px;
-    min-height: calc(100vh - 62px);
-    position: relative;
-    z-index: 1;
-  }
+.poll-option{width:100%;text-align:right;padding:9px 13px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-family:'Tajawal',sans-serif;font-size:13px;margin-bottom:5px;transition:all 0.18s;position:relative;overflow:hidden;}
+.poll-option:hover{border-color:var(--border2);}
+.poll-option.voted{border-color:var(--accent);color:var(--accent2);}
+.poll-fill{position:absolute;top:0;bottom:0;right:0;background:rgba(99,102,241,0.1);transition:width 0.5s ease;}
+.poll-text{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;}
 
-  /* SIDEBAR */
-  .sidebar {
-    width: 220px;
-    min-width: 220px;
-    background: rgba(12,15,26,0.7);
-    border-left: 1px solid var(--border);
-    padding: 20px 12px;
-    position: sticky;
-    top: 62px;
-    height: calc(100vh - 62px);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border2) transparent;
-  }
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(8px);z-index:2000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:22px;width:500px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,0.5),var(--glow);animation:min 0.22s ease;}
+@keyframes min{from{opacity:0;transform:translateY(18px) scale(0.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.modal-title{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.modal-close{background:transparent;border:1px solid var(--border);color:var(--text2);padding:5px 9px;border-radius:7px;cursor:pointer;font-size:13px;transition:all 0.15s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.modal-textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:13.5px;padding:11px;resize:none;outline:none;min-height:110px;line-height:1.65;margin-bottom:11px;direction:rtl;transition:border-color 0.2s;}
+.modal-textarea:focus{border-color:var(--accent);}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:13.5px;padding:9px 13px;outline:none;margin-bottom:9px;direction:rtl;transition:border-color 0.2s;}
+.form-input:focus{border-color:var(--accent);}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;}
 
-  .sidebar-section {
-    margin-bottom: 24px;
-  }
-  .sidebar-title {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--text3);
-    padding: 0 8px;
-    margin-bottom: 6px;
-  }
-  .sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 9px 10px;
-    border-radius: 9px;
-    color: var(--text2);
-    cursor: pointer;
-    transition: all 0.18s;
-    font-size: 14px;
-    position: relative;
-  }
-  .sidebar-item:hover { background: rgba(99,102,241,0.1); color: var(--text); }
-  .sidebar-item.active { background: rgba(99,102,241,0.15); color: var(--accent2); }
-  .sidebar-item .icon { font-size: 16px; min-width: 20px; text-align: center; }
-  .sidebar-item .badge {
-    margin-right: auto;
-    background: var(--accent);
-    color: #fff;
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-weight: 700;
-  }
-  .sidebar-item .badge-red { background: var(--red); }
-  .sidebar-item .badge-gold { background: var(--gold); color: #000; }
+.notif-panel{display:none;position:fixed;top:68px;left:auto;right:20px;width:330px;background:var(--bg2);border:1px solid var(--border2);border-radius:13px;box-shadow:0 18px 55px rgba(0,0,0,0.45);z-index:999;overflow:hidden;animation:fadeD 0.2s ease;max-height:450px;overflow-y:auto;}
+.notif-panel.open{display:block;}
+@keyframes fadeD{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.notif-header{padding:12px 15px;border-bottom:1px solid var(--border);font-size:13.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+.notif-item{display:flex;gap:9px;padding:11px 15px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;align-items:flex-start;}
+.notif-item:hover{background:rgba(99,102,241,0.06);}
+.notif-item.unread{background:rgba(99,102,241,0.04);}
+.notif-icon{font-size:17px;min-width:26px;text-align:center;margin-top:1px;}
+.notif-text{font-size:12px;color:var(--text2);line-height:1.5;}
+.notif-text strong{color:var(--text);}
+.notif-time{font-size:10.5px;color:var(--text3);margin-top:2px;}
+.notif-udot{width:6px;height:6px;background:var(--accent);border-radius:50%;margin-top:4px;flex-shrink:0;}
 
-  /* MAIN CONTENT */
-  main {
-    flex: 1;
-    padding: 24px 20px;
-    max-width: 860px;
-    min-width: 0;
-  }
+.toast-container{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:11px 15px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:7px;box-shadow:0 7px 22px rgba(0,0,0,0.3);animation:tin 0.25s ease;min-width:190px;max-width:290px;}
+@keyframes tin{from{opacity:0;transform:translateX(18px);}to{opacity:1;transform:translateX(0);}}
+.toast.success{border-color:rgba(34,197,94,0.3);}
+.toast.error{border-color:rgba(239,68,68,0.3);}
 
-  /* RIGHT SIDEBAR */
-  .right-sidebar {
-    width: 280px;
-    min-width: 280px;
-    padding: 20px 14px;
-    position: sticky;
-    top: 62px;
-    height: calc(100vh - 62px);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border2) transparent;
-  }
+.leaderboard-item{display:flex;align-items:center;gap:9px;padding:9px 9px;border-radius:9px;transition:background 0.15s;cursor:pointer;margin-bottom:3px;}
+.leaderboard-item:hover{background:rgba(99,102,241,0.07);}
+.rank{width:22px;text-align:center;font-weight:700;font-size:12.5px;color:var(--text3);}
+.rank.top1{color:var(--gold);}
+.rank.top2{color:#94a3b8;}
+.rank.top3{color:#cd7c2a;}
+.lb-info{flex:1;}
+.lb-name{font-size:12.5px;font-weight:600;color:var(--text);}
+.lb-pts{font-size:10.5px;color:var(--text3);}
+.lb-score{font-size:12.5px;font-weight:700;color:var(--accent2);}
 
-  /* CARDS */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px;
-    margin-bottom: 16px;
-    backdrop-filter: blur(10px);
-    transition: border-color 0.2s;
-  }
-  .card:hover { border-color: var(--border2); }
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .card-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+.tourney-card{background:linear-gradient(135deg,rgba(192,132,252,0.09),rgba(99,102,241,0.07));border:1px solid rgba(192,132,252,0.18);border-radius:var(--radius2);padding:13px;margin-bottom:7px;cursor:pointer;transition:all 0.2s;}
+.tourney-card:hover{border-color:rgba(192,132,252,0.38);transform:translateX(-2px);}
+.tourney-title{font-size:13px;font-weight:700;margin-bottom:3px;}
+.tourney-meta{font-size:11px;color:var(--text3);display:flex;gap:9px;}
+.tourney-prize{color:var(--gold);font-weight:700;}
 
-  /* HERO BANNER */
-  .hero-banner {
-    background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(192,132,252,0.1) 100%);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    padding: 28px 24px;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero-banner::before {
-    content: 'VIRTUX';
-    position: absolute;
-    right: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-family: 'Orbitron', monospace;
-    font-size: 80px;
-    font-weight: 900;
-    color: rgba(99,102,241,0.06);
-    letter-spacing: 5px;
-    pointer-events: none;
-  }
-  .hero-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 26px;
-    font-weight: 900;
-    background: linear-gradient(135deg, #fff, var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 6px;
-  }
-  .hero-sub {
-    color: var(--text2);
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-  .hero-stats {
-    display: flex;
-    gap: 20px;
-  }
-  .hero-stat {
-    text-align: center;
-  }
-  .hero-stat .num {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent2);
-    display: block;
-  }
-  .hero-stat .lbl {
-    font-size: 12px;
-    color: var(--text3);
-  }
+.stream-item{display:flex;gap:9px;align-items:center;padding:9px;border-radius:9px;cursor:pointer;transition:background 0.15s;margin-bottom:3px;}
+.stream-item:hover{background:rgba(99,102,241,0.08);}
+.stream-thumb{width:52px;height:36px;border-radius:6px;background:linear-gradient(135deg,rgba(99,102,241,0.28),rgba(192,132,252,0.18));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;border:1px solid var(--border);}
+.stream-info{flex:1;min-width:0;}
+.stream-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stream-game{font-size:10.5px;color:var(--text3);}
+.stream-viewers{font-size:10.5px;color:#f87171;font-weight:600;flex-shrink:0;}
 
-  /* TABS */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    background: rgba(12,15,26,0.6);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 16px;
-  }
-  .tab {
-    flex: 1;
-    text-align: center;
-    padding: 8px 12px;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--text2);
-    transition: all 0.18s;
-    border: none;
-    background: transparent;
-    font-family: 'Tajawal', sans-serif;
-    font-weight: 500;
-  }
-  .tab.active {
-    background: rgba(99,102,241,0.2);
-    color: var(--accent2);
-    border: 1px solid var(--border2);
-  }
-  .tab:hover:not(.active) { background: rgba(99,102,241,0.08); color: var(--text); }
+.progress-bar{width:100%;height:4px;background:rgba(99,102,241,0.1);border-radius:2px;overflow:hidden;margin:5px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:2px;transition:width 0.6s ease;}
 
-  /* POST EDITOR */
-  .post-editor {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 16px;
-    transition: border-color 0.2s;
-  }
-  .post-editor:focus-within { border-color: var(--accent); }
+.xp-section{padding:11px;background:rgba(99,102,241,0.06);border-radius:9px;border:1px solid var(--border);margin-bottom:11px;}
+.xp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.xp-level{font-size:12.5px;font-weight:700;color:var(--accent2);}
+.xp-pts{font-size:10.5px;color:var(--text3);}
 
-  .editor-top {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
+.trending-tag{display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;background:rgba(99,102,241,0.07);border:1px solid var(--border);color:var(--text2);font-size:11.5px;cursor:pointer;transition:all 0.15s;margin:2px;}
+.trending-tag:hover{background:rgba(99,102,241,0.17);color:var(--accent2);border-color:var(--border2);}
 
-  .avatar {
-    width: 38px; height: 38px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent3));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
+.achievement{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.12);margin-bottom:5px;}
+.ach-icon{font-size:19px;}
+.ach-name{font-size:12px;font-weight:600;color:var(--text);}
+.ach-desc{font-size:10.5px;color:var(--text3);}
 
-  .post-textarea {
-    width: 100%;
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-family: 'Tajawal', sans-serif;
-    font-size: 15px;
-    resize: none;
-    outline: none;
-    min-height: 60px;
-    line-height: 1.6;
-    direction: rtl;
-  }
-  .post-textarea::placeholder { color: var(--text3); }
+.user-mini{display:flex;align-items:center;gap:9px;padding:9px;border-radius:9px;cursor:pointer;transition:background 0.15s;margin-bottom:3px;}
+.user-mini:hover{background:rgba(99,102,241,0.07);}
+.uname{font-size:12.5px;font-weight:600;color:var(--text);}
+.ugame{font-size:10.5px;color:var(--text3);}
+.online-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.offline-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
 
-  /* EDITOR TOOLBAR */
-  .editor-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-  .toolbar-btn {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    padding: 6px 10px;
-    color: var(--text2);
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-family: 'Tajawal', sans-serif;
-    font-size: 13px;
-  }
-  .toolbar-btn:hover { background: rgba(99,102,241,0.12); color: var(--text); border-color: var(--border); }
+.yt-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:5px;}
+.yt-item{border-radius:9px;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;background:var(--bg3);}
+.yt-item:hover{border-color:var(--border2);transform:translateY(-2px);}
+.yt-thumb{width:100%;height:80px;object-fit:cover;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(192,132,252,0.1));display:flex;align-items:center;justify-content:center;font-size:22px;}
+.yt-thumb img{width:100%;height:80px;object-fit:cover;}
+.yt-info{padding:7px 8px;}
+.yt-title{font-size:11px;color:var(--text);font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.yt-ch{font-size:10px;color:var(--text3);margin-top:3px;}
 
-  .editor-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-  }
+.loader{text-align:center;padding:28px;color:var(--text3);font-size:13px;}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin-left:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-  /* POST TYPE SELECTOR */
-  .post-types {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-  }
-  .post-type-btn {
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text2);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: 'Tajawal', sans-serif;
-  }
-  .post-type-btn:hover { border-color: var(--accent); color: var(--accent2); }
-  .post-type-btn.active { background: rgba(99,102,241,0.15); border-color: var(--accent); color: var(--accent2); }
+.btn-google{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px;border-radius:9px;background:#fff;color:#333;border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:600;transition:all 0.2s;margin-bottom:10px;}
+.btn-google:hover{background:#f1f5f9;transform:translateY(-1px);}
+.btn-google svg{width:18px;height:18px;}
+.divider-or{text-align:center;color:var(--text3);font-size:12px;margin:10px 0;position:relative;}
+.divider-or::before,.divider-or::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--border);}
+.divider-or::before{right:0;}
+.divider-or::after{left:0;}
 
-  /* FEED POSTS */
-  .post {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 14px;
-    backdrop-filter: blur(10px);
-    transition: border-color 0.2s, transform 0.15s;
-  }
-  .post:hover { border-color: var(--border2); transform: translateY(-1px); }
+select.form-select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:6px 10px;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;}
 
-  .post-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-  .post-header .info { flex: 1; }
-  .post-header .name {
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--text);
-  }
-  .post-header .meta {
-    font-size: 12px;
-    color: var(--text3);
-    margin-top: 1px;
-  }
-
-  .post-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 9px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  .tag-clip { background: rgba(99,102,241,0.12); color: var(--accent2); border: 1px solid rgba(99,102,241,0.2); }
-  .tag-news { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
-  .tag-tourney { background: rgba(192,132,252,0.12); color: #d8b4fe; border: 1px solid rgba(192,132,252,0.2); }
-  .tag-question { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
-  .tag-review { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-
-  .post-body {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--text2);
-    margin-bottom: 12px;
-  }
-  .post-body strong { color: var(--text); }
-
-  .post-img {
-    width: 100%;
-    border-radius: 10px;
-    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(192,132,252,0.1));
-    height: 180px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text3);
-    font-size: 13px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-    position: relative;
-  }
-  .post-img-thumb {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.6;
-  }
-  .post-img-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 36px;
-  }
-
-  .post-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-  .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text2);
-    cursor: pointer;
-    font-size: 13px;
-    transition: all 0.15s;
-    font-family: 'Tajawal', sans-serif;
-  }
-  .action-btn:hover { background: rgba(99,102,241,0.1); color: var(--text); border-color: var(--border); }
-  .action-btn.liked { color: #f87171; }
-  .action-btn.liked:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); }
-  .action-btn.saved { color: var(--gold); }
-
-  .action-btn-edit {
-    display: flex; align-items: center; gap: 5px;
-    padding: 6px 12px; border-radius: 8px;
-    background: rgba(99,102,241,0.08); border: 1px solid var(--border2);
-    color: var(--accent2); cursor: pointer; font-size: 12px;
-    transition: all 0.15s; font-family: 'Tajawal', sans-serif;
-    margin-right: auto;
-  }
-  .action-btn-edit:hover { background: rgba(99,102,241,0.18); }
-
-  /* EDIT POST MODAL */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(8px);
-    z-index: 2000;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: 16px;
-    padding: 24px;
-    width: 520px;
-    max-width: 95vw;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5), var(--glow);
-    animation: modal-in 0.2s ease;
-  }
-  @keyframes modal-in {
-    from { opacity: 0; transform: translateY(20px) scale(0.96); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .modal-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .modal-close {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text2);
-    padding: 6px 10px;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.15s;
-  }
-  .modal-close:hover { border-color: var(--red); color: var(--red); }
-
-  .modal-textarea {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    color: var(--text);
-    font-family: 'Tajawal', sans-serif;
-    font-size: 14px;
-    padding: 12px;
-    resize: none;
-    outline: none;
-    min-height: 120px;
-    line-height: 1.7;
-    margin-bottom: 12px;
-    direction: rtl;
-    transition: border-color 0.2s;
-  }
-  .modal-textarea:focus { border-color: var(--accent); }
-
-  .modal-tags {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 14px;
-  }
-
-  .modal-footer {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-  }
-
-  /* LEADERBOARD */
-  .leaderboard-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 10px;
-    transition: background 0.15s;
-    cursor: pointer;
-    margin-bottom: 4px;
-  }
-  .leaderboard-item:hover { background: rgba(99,102,241,0.07); }
-  .rank {
-    width: 24px;
-    text-align: center;
-    font-weight: 700;
-    font-size: 13px;
-    color: var(--text3);
-  }
-  .rank.top1 { color: var(--gold); }
-  .rank.top2 { color: #94a3b8; }
-  .rank.top3 { color: #cd7c2a; }
-  .lb-info { flex: 1; }
-  .lb-name { font-size: 13px; font-weight: 600; color: var(--text); }
-  .lb-pts { font-size: 11px; color: var(--text3); }
-  .lb-score {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--accent2);
-  }
-
-  /* TOURNAMENT CARD */
-  .tourney-card {
-    background: linear-gradient(135deg, rgba(192,132,252,0.1), rgba(99,102,241,0.08));
-    border: 1px solid rgba(192,132,252,0.2);
-    border-radius: var(--radius2);
-    padding: 14px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .tourney-card:hover { border-color: rgba(192,132,252,0.4); transform: translateX(-2px); }
-  .tourney-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-  .tourney-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; }
-  .tourney-prize { color: var(--gold); font-weight: 700; }
-
-  /* LIVE STREAMS */
-  .stream-item {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.15s;
-    margin-bottom: 4px;
-  }
-  .stream-item:hover { background: rgba(99,102,241,0.08); }
-  .stream-thumb {
-    width: 54px; height: 38px;
-    border-radius: 6px;
-    background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(192,132,252,0.2));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    flex-shrink: 0;
-    border: 1px solid var(--border);
-    position: relative;
-    overflow: hidden;
-  }
-  .stream-info { flex: 1; min-width: 0; }
-  .stream-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .stream-game { font-size: 11px; color: var(--text3); }
-  .stream-viewers {
-    font-size: 11px;
-    color: #f87171;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-
-  /* NOTIFICATION PANEL */
-  .notif-panel {
-    display: none;
-    position: fixed;
-    top: 70px;
-    left: 300px;
-    width: 340px;
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: 14px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    z-index: 999;
-    overflow: hidden;
-    animation: fade-down 0.2s ease;
-  }
-  .notif-panel.open { display: block; }
-  @keyframes fade-down {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .notif-header {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
-    font-weight: 700;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .notif-item {
-    display: flex;
-    gap: 10px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background 0.15s;
-    align-items: flex-start;
-  }
-  .notif-item:hover { background: rgba(99,102,241,0.06); }
-  .notif-item.unread { background: rgba(99,102,241,0.04); }
-  .notif-icon { font-size: 18px; min-width: 28px; text-align: center; margin-top: 1px; }
-  .notif-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
-  .notif-text strong { color: var(--text); }
-  .notif-time { font-size: 11px; color: var(--text3); margin-top: 3px; }
-  .notif-unread-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-
-  /* SEARCH BAR */
-  .search-wrapper {
-    position: relative;
-    margin-bottom: 16px;
-  }
-  .search-input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-family: 'Tajawal', sans-serif;
-    font-size: 14px;
-    padding: 10px 16px 10px 36px;
-    outline: none;
-    transition: border-color 0.2s;
-    direction: rtl;
-  }
-  .search-input:focus { border-color: var(--accent); }
-  .search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text3);
-    font-size: 14px;
-    pointer-events: none;
-  }
-
-  /* ACHIEVEMENTS */
-  .achievement {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 9px;
-    background: rgba(245,158,11,0.06);
-    border: 1px solid rgba(245,158,11,0.12);
-    margin-bottom: 6px;
-  }
-  .ach-icon { font-size: 20px; }
-  .ach-info { flex: 1; }
-  .ach-name { font-size: 12px; font-weight: 600; color: var(--text); }
-  .ach-desc { font-size: 11px; color: var(--text3); }
-
-  /* PROGRESS BAR */
-  .progress-bar {
-    width: 100%;
-    height: 4px;
-    background: rgba(99,102,241,0.1);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 6px 0;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent3));
-    border-radius: 2px;
-    transition: width 0.5s ease;
-  }
-
-  /* TRENDING */
-  .trending-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    background: rgba(99,102,241,0.08);
-    border: 1px solid var(--border);
-    color: var(--text2);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    margin: 3px;
-  }
-  .trending-tag:hover { background: rgba(99,102,241,0.18); color: var(--accent2); border-color: var(--border2); }
-
-  /* TOAST */
-  .toast-container {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .toast {
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    animation: toast-in 0.25s ease;
-    min-width: 200px;
-    max-width: 300px;
-  }
-  @keyframes toast-in {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  .toast.success { border-color: rgba(34,197,94,0.3); }
-  .toast.error { border-color: rgba(239,68,68,0.3); }
-
-  /* BOTTOM NAV FOR MOBILE */
-  @media (max-width: 768px) {
-    .sidebar, .right-sidebar { display: none; }
-    nav .nav-links { display: none; }
-    main { padding: 16px 12px; max-width: 100%; }
-    .hero-stats { gap: 12px; }
-    .hero-stat .num { font-size: 18px; }
-  }
-
-  /* DIVIDER */
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 16px 0;
-  }
-
-  /* SECTION HEADER */
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  .section-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .section-link {
-    font-size: 12px;
-    color: var(--accent2);
-    cursor: pointer;
-    text-decoration: none;
-  }
-  .section-link:hover { text-decoration: underline; }
-
-  /* QUICK SHARE */
-  .quick-share {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-  }
-  .qs-btn {
-    flex: 1;
-    min-width: 80px;
-    padding: 10px 8px;
-    border-radius: 10px;
-    background: var(--bg3);
-    border: 1px dashed var(--border);
-    color: var(--text2);
-    cursor: pointer;
-    font-size: 12px;
-    text-align: center;
-    transition: all 0.18s;
-    font-family: 'Tajawal', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-  .qs-btn .qs-icon { font-size: 20px; }
-  .qs-btn:hover {
-    background: rgba(99,102,241,0.1);
-    border-color: var(--accent);
-    border-style: solid;
-    color: var(--text);
-    transform: translateY(-2px);
-  }
-
-  /* POLL */
-  .poll-option {
-    width: 100%;
-    text-align: right;
-    padding: 10px 14px;
-    border-radius: 9px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text2);
-    cursor: pointer;
-    font-family: 'Tajawal', sans-serif;
-    font-size: 13px;
-    margin-bottom: 6px;
-    transition: all 0.18s;
-    position: relative;
-    overflow: hidden;
-  }
-  .poll-option:hover { border-color: var(--border2); color: var(--text); }
-  .poll-option.voted { border-color: var(--accent); color: var(--accent2); }
-  .poll-fill {
-    position: absolute;
-    top: 0; bottom: 0; right: 0;
-    background: rgba(99,102,241,0.1);
-    transition: width 0.5s ease;
-  }
-  .poll-text { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; }
-
-  /* USER MINI CARD */
-  .user-mini {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.15s;
-    margin-bottom: 4px;
-  }
-  .user-mini:hover { background: rgba(99,102,241,0.07); }
-  .user-mini .uname { font-size: 13px; font-weight: 600; color: var(--text); }
-  .user-mini .ugame { font-size: 11px; color: var(--text3); }
-  .online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-  .offline-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
-
-  /* SCROLL ANIMATIONS */
-  .fade-up {
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-  }
-  .fade-up.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* VERIFY BADGE */
-  .verify { display: inline; font-size: 12px; }
-
-  /* GAME TAGS */
-  .game-tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-    background: rgba(192,132,252,0.1);
-    color: #d8b4fe;
-    border: 1px solid rgba(192,132,252,0.2);
-  }
-
-  /* XP BAR */
-  .xp-section {
-    padding: 12px;
-    background: rgba(99,102,241,0.06);
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    margin-bottom: 12px;
-  }
-  .xp-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-  .xp-level { font-size: 13px; font-weight: 700; color: var(--accent2); }
-  .xp-pts { font-size: 11px; color: var(--text3); }
+@media(max-width:900px){.sidebar,.right-sidebar{display:none;} nav .nav-links{display:none;} main{max-width:100%;padding:14px 10px;}}
 </style>
 </head>
 <body>
 
-<!-- NOTIFICATION PANEL -->
-<div class="notif-panel" id="notifPanel">
-  <div class="notif-header">
-    <span>🔔 الإشعارات</span>
-    <button onclick="markAllRead()" style="background:transparent;border:none;color:var(--accent2);font-size:12px;cursor:pointer;font-family:'Tajawal',sans-serif;">تعيين الكل كمقروء</button>
-  </div>
-  <div class="notif-item unread">
-    <div class="notif-icon">❤️</div>
-    <div style="flex:1">
-      <div class="notif-text"><strong>ProGamer_X</strong> أعجب بمنشورك</div>
-      <div class="notif-time">منذ دقيقتين</div>
-    </div>
-    <div class="notif-unread-dot"></div>
-  </div>
-  <div class="notif-item unread">
-    <div class="notif-icon">💬</div>
-    <div style="flex:1">
-      <div class="notif-text"><strong>NightHunter</strong> علق على منشورك: "ماشاء الله لحظة قوية"</div>
-      <div class="notif-time">منذ 8 دقائق</div>
-    </div>
-    <div class="notif-unread-dot"></div>
-  </div>
-  <div class="notif-item">
-    <div class="notif-icon">🏆</div>
-    <div style="flex:1">
-      <div class="notif-text">بدأت بطولة <strong>Pro League S3</strong> - سجل الآن!</div>
-      <div class="notif-time">منذ ساعة</div>
-    </div>
-  </div>
-  <div class="notif-item">
-    <div class="notif-icon">👥</div>
-    <div style="flex:1">
-      <div class="notif-text"><strong>ShadowKill</strong> يتابعك الآن</div>
-      <div class="notif-time">منذ 3 ساعات</div>
-    </div>
-  </div>
-  <div class="notif-item">
-    <div class="notif-icon">🎯</div>
-    <div style="flex:1">
-      <div class="notif-text">حصلت على إنجاز جديد: <strong>القناص الأسطوري</strong></div>
-      <div class="notif-time">أمس</div>
-    </div>
-  </div>
-  <div style="padding:10px 16px; text-align:center;">
-    <button class="btn btn-ghost btn-sm" style="width:100%;">عرض كل الإشعارات</button>
-  </div>
-</div>
-
-<!-- EDIT POST MODAL -->
 <div class="modal-overlay" id="editModal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">✏️ تعديل المنشور</div>
       <button class="modal-close" onclick="closeEditModal()">✕</button>
     </div>
-    <div class="modal-tags" id="editTagsRow">
-      <button class="post-type-btn active" data-tag="clip" onclick="selectEditTag(this,'clip')">🎬 كليب</button>
-      <button class="post-type-btn" data-tag="news" onclick="selectEditTag(this,'news')">📰 خبر</button>
-      <button class="post-type-btn" data-tag="tourney" onclick="selectEditTag(this,'tourney')">🏆 بطولة</button>
-      <button class="post-type-btn" data-tag="question" onclick="selectEditTag(this,'question')">❓ سؤال</button>
-      <button class="post-type-btn" data-tag="review" onclick="selectEditTag(this,'review')">⭐ تقييم</button>
+    <div class="post-types" id="editTagsRow">
+      <button class="post-type-btn active" data-tag="clip" onclick="selTag(this,'editTagsRow')">🎬 كليب</button>
+      <button class="post-type-btn" data-tag="news" onclick="selTag(this,'editTagsRow')">📰 خبر</button>
+      <button class="post-type-btn" data-tag="tourney" onclick="selTag(this,'editTagsRow')">🏆 بطولة</button>
+      <button class="post-type-btn" data-tag="question" onclick="selTag(this,'editTagsRow')">❓ سؤال</button>
+      <button class="post-type-btn" data-tag="review" onclick="selTag(this,'editTagsRow')">⭐ تقييم</button>
     </div>
-    <textarea class="modal-textarea" id="editContent" placeholder="اكتب منشورك هنا..."></textarea>
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="toolbar-btn" onclick="addToEdit('🎮')">🎮 إيموجي لعبة</button>
-      <button class="toolbar-btn" onclick="addToEdit('#')">🏷️ هاشتاق</button>
-      <button class="toolbar-btn" onclick="addToEdit('@')">👤 منشن</button>
+    <textarea class="modal-textarea" id="editContent" placeholder="اكتب منشورك..."></textarea>
+    <div style="display:flex;gap:6px;margin-bottom:11px;">
+      <button class="toolbar-btn" onclick="appendTo('editContent','#')">🏷️ هاشتاق</button>
+      <button class="toolbar-btn" onclick="appendTo('editContent','@')">👤 منشن</button>
+      <button class="toolbar-btn" onclick="appendTo('editContent','🔥')">🔥</button>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeEditModal()">إلغاء</button>
-      <button class="btn btn-primary" onclick="saveEdit()">💾 حفظ التعديل</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeEditModal()">إلغاء</button>
+      <button class="btn btn-primary btn-sm" onclick="saveEdit()">💾 حفظ</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST CONTAINER -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title" id="authTitle">🔐 تسجيل الدخول</div>
+      <button class="modal-close" onclick="closeAuth()">✕</button>
+    </div>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      تسجيل عبر Google
+    </button>
+    <div class="divider-or">أو</div>
+    <div id="loginForm">
+      <label class="form-label">البريد أو اسم المستخدم</label>
+      <input class="form-input" id="authEmail" type="email" placeholder="example@email.com">
+      <label class="form-label">كلمة المرور</label>
+      <input class="form-input" id="authPass" type="password" placeholder="••••••••">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--accent2);cursor:pointer;">نسيت كلمة المرور؟</span>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:9px;" onclick="signInEmail()">دخول</button>
+      <button class="btn btn-ghost" style="width:100%;" onclick="switchToRegister()">ليس لديك حساب؟ سجّل الآن</button>
+    </div>
+    <div id="registerForm" style="display:none;">
+      <label class="form-label">اسم المستخدم</label>
+      <input class="form-input" id="regUsername" type="text" placeholder="GamerPro">
+      <label class="form-label">البريد الإلكتروني</label>
+      <input class="form-input" id="regEmail" type="email" placeholder="example@email.com">
+      <label class="form-label">كلمة المرور</label>
+      <input class="form-input" id="regPass" type="password" placeholder="••••••••">
+      <button class="btn btn-primary" style="width:100%;margin-bottom:9px;" onclick="signUpEmail()">إنشاء حساب</button>
+      <button class="btn btn-ghost" style="width:100%;" onclick="switchToLogin()">لديك حساب؟ دخول</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-header">
+    <span>🔔 الإشعارات</span>
+    <button onclick="markAllRead()" style="background:transparent;border:none;color:var(--accent2);font-size:11px;cursor:pointer;font-family:'Tajawal',sans-serif;">قراءة الكل</button>
+  </div>
+  <div id="notifList"><div class="loader" style="padding:16px;">جاري...<span class="spinner"></span></div></div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- NAV -->
 <nav>
   <div class="logo">VIRTUX</div>
   <ul class="nav-links">
-    <li><a href="#" onclick="setTab('home')">🏠 الرئيسية</a></li>
-    <li><a href="#" onclick="setTab('live')">🔴 مباشر</a></li>
-    <li><a href="#" onclick="setTab('tourney')">🏆 البطولات</a></li>
-    <li><a href="#" onclick="setTab('clips')">🎬 كليبات</a></li>
-    <li><a href="#" onclick="setTab('market')">🛒 متجر</a></li>
+    <li><a href="#" class="active" onclick="setPage('home',this)">🏠 الرئيسية</a></li>
+    <li><a href="#" onclick="setPage('live',this)">🔴 مباشر</a></li>
+    <li><a href="#" onclick="setPage('tourney',this)">🏆 البطولات</a></li>
+    <li><a href="#" onclick="setPage('youtube',this)">🎬 يوتيوب</a></li>
   </ul>
   <div class="nav-right">
-    <button class="notif-btn" onclick="toggleNotif()">
-      🔔
-      <span class="notif-dot" id="notifDot"></span>
-    </button>
-    <button class="btn btn-ghost btn-sm" onclick="openLogin()">دخول</button>
-    <button class="btn btn-primary btn-sm" onclick="openRegister()">انضم الآن</button>
+    <button class="notif-btn" onclick="toggleNotif()" id="notifBtn">🔔<span class="notif-dot" id="notifDot"></span></button>
+    <div id="navAuthArea">
+      <button class="btn btn-ghost btn-sm" onclick="openAuth('login')">دخول</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuth('register')">انضم الآن</button>
+    </div>
   </div>
 </nav>
 
 <div class="wrapper">
-  <!-- LEFT SIDEBAR (RTL = right side visually) -->
   <aside class="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-title">القائمة</div>
-      <div class="sidebar-item active" onclick="setTab('home')">
-        <span class="icon">🏠</span> الرئيسية
-      </div>
-      <div class="sidebar-item" onclick="setTab('live')">
-        <span class="icon">🔴</span> مباشر
-        <span class="badge badge-red">3</span>
-      </div>
-      <div class="sidebar-item" onclick="setTab('tourney')">
-        <span class="icon">🏆</span> البطولات
-        <span class="badge badge-gold">2</span>
-      </div>
-      <div class="sidebar-item" onclick="setTab('clips')">
-        <span class="icon">🎬</span> الكليبات
-      </div>
-      <div class="sidebar-item" onclick="setTab('market')">
-        <span class="icon">🛒</span> المتجر
-        <span class="badge">جديد</span>
-      </div>
+      <div class="sidebar-item active" onclick="setPage('home')"><span class="icon">🏠</span> الرئيسية</div>
+      <div class="sidebar-item" onclick="setPage('live')"><span class="icon">🔴</span> مباشر<span class="badge badge-red">LIVE</span></div>
+      <div class="sidebar-item" onclick="setPage('tourney')"><span class="icon">🏆</span> البطولات<span class="badge badge-gold">5</span></div>
+      <div class="sidebar-item" onclick="setPage('youtube')"><span class="icon">🎬</span> يوتيوب</div>
     </div>
-
     <div class="sidebar-section">
       <div class="sidebar-title">حسابي</div>
-      <div class="sidebar-item">
-        <span class="icon">👤</span> الملف الشخصي
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">💎</span> الرتبة والمزايا
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">📊</span> إحصائياتي
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">🎯</span> إنجازاتي
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">💬</span> رسائلي
-        <span class="badge badge-red">5</span>
-      </div>
+      <div class="sidebar-item" onclick="checkAuth('profile')"><span class="icon">👤</span> الملف الشخصي</div>
+      <div class="sidebar-item" onclick="checkAuth('stats')"><span class="icon">📊</span> إحصائياتي</div>
+      <div class="sidebar-item" onclick="checkAuth('achievements')"><span class="icon">🎯</span> إنجازاتي</div>
+      <div class="sidebar-item" onclick="checkAuth('messages')"><span class="icon">💬</span> رسائلي<span class="badge badge-red">5</span></div>
     </div>
-
     <div class="sidebar-section">
       <div class="sidebar-title">المجتمع</div>
-      <div class="sidebar-item">
-        <span class="icon">👥</span> الأصدقاء
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">🌐</span> المجموعات
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">📅</span> الأحداث
-      </div>
+      <div class="sidebar-item"><span class="icon">👥</span> الأصدقاء</div>
+      <div class="sidebar-item"><span class="icon">📅</span> الأحداث</div>
     </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">إعدادات</div>
-      <div class="sidebar-item">
-        <span class="icon">⚙️</span> الإعدادات
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">🌙</span> الوضع المظلم
-      </div>
-      <div class="sidebar-item">
-        <span class="icon">🔒</span> الخصوصية
-      </div>
+    <div class="sidebar-section" id="sideAdminSection" style="display:none;">
+      <div class="sidebar-title">الإدارة</div>
+      <div class="sidebar-item"><span class="icon">⚙️</span> لوحة التحكم</div>
     </div>
   </aside>
 
-  <!-- MAIN FEED -->
   <main id="mainContent">
-
-    <!-- HERO -->
-    <div class="hero-banner fade-up">
-      <div class="hero-title">مرحباً بك في Virtux 🎮</div>
-      <div class="hero-sub">مجتمع الألعاب العربي الأول — شارك، نافس، وابرز في عالم الألعاب</div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span class="num" id="statsOnline">1,247</span>
-          <span class="lbl">متصل الآن</span>
-        </div>
-        <div class="hero-stat">
-          <span class="num">38</span>
-          <span class="lbl">بث مباشر</span>
-        </div>
-        <div class="hero-stat">
-          <span class="num">5</span>
-          <span class="lbl">بطولات نشطة</span>
-        </div>
-        <div class="hero-stat">
-          <span class="num">84K+</span>
-          <span class="lbl">عضو</span>
+    <div id="pageHome">
+      <div class="hero-banner">
+        <div class="hero-title">مرحباً بك في Virtux 🎮</div>
+        <div class="hero-sub">مجتمع الألعاب العربي الأول — شارك، نافس، وابرز</div>
+        <div class="hero-stats">
+          <div class="hero-stat"><span class="num" id="statOnline">—</span><span class="lbl">متصل</span></div>
+          <div class="hero-stat"><span class="num" id="statPosts">—</span><span class="lbl">منشور</span></div>
+          <div class="hero-stat"><span class="num">5</span><span class="lbl">بطولات</span></div>
+          <div class="hero-stat"><span class="num">84K+</span><span class="lbl">عضو</span></div>
         </div>
       </div>
+
+      <div class="card" style="padding:13px 15px;">
+        <div class="card-header"><div class="card-title">➕ ماذا تريد أن تشارك؟</div></div>
+        <div class="quick-share">
+          <button class="qs-btn" onclick="openEditor('clip')"><span class="qs-icon">🎬</span><span>كليب</span></button>
+          <button class="qs-btn" onclick="openEditor('screen')"><span class="qs-icon">📸</span><span>لقطة</span></button>
+          <button class="qs-btn" onclick="openEditor('news')"><span class="qs-icon">📰</span><span>خبر</span></button>
+          <button class="qs-btn" onclick="openEditor('tourney')"><span class="qs-icon">🏆</span><span>بطولة</span></button>
+          <button class="qs-btn" onclick="openEditor('question')"><span class="qs-icon">❓</span><span>سؤال</span></button>
+          <button class="qs-btn" onclick="openEditor('review')"><span class="qs-icon">⭐</span><span>تقييم</span></button>
+        </div>
+      </div>
+
+      <div class="post-editor" id="postEditor" style="display:none;">
+        <div class="editor-top">
+          <div class="avatar" id="editorAvatar">🎮</div>
+          <div style="flex:1;">
+            <div class="post-types" id="postTypesRow">
+              <button class="post-type-btn active" data-tag="clip" onclick="selTag(this,'postTypesRow')">🎬 كليب</button>
+              <button class="post-type-btn" data-tag="news" onclick="selTag(this,'postTypesRow')">📰 خبر</button>
+              <button class="post-type-btn" data-tag="tourney" onclick="selTag(this,'postTypesRow')">🏆 بطولة</button>
+              <button class="post-type-btn" data-tag="question" onclick="selTag(this,'postTypesRow')">❓ سؤال</button>
+              <button class="post-type-btn" data-tag="review" onclick="selTag(this,'postTypesRow')">⭐ تقييم</button>
+            </div>
+            <textarea class="post-textarea" id="postContent" placeholder="شارك لحظتك..." rows="3"></textarea>
+          </div>
+        </div>
+        <div class="editor-toolbar">
+          <button class="toolbar-btn" onclick="ins('#')">🏷️ هاشتاق</button>
+          <button class="toolbar-btn" onclick="ins('@')">👤 منشن</button>
+          <button class="toolbar-btn" onclick="ins('🔗 ')">🔗 رابط</button>
+          <button class="toolbar-btn" onclick="ins('🔥')">🔥</button>
+          <button class="toolbar-btn" onclick="ins('😂')">😂</button>
+          <button class="toolbar-btn" onclick="ins('👑')">👑</button>
+        </div>
+        <div class="editor-actions">
+          <button class="btn btn-ghost btn-sm" onclick="closeEditor()">إلغاء</button>
+          <select class="form-select" style="width:auto;padding:5px 9px;font-size:12px;">
+            <option>🌍 عام</option>
+            <option>👥 أصدقاء</option>
+            <option>🔒 خاص</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="publishPost()">نشر ✈️</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="filterFeed('all',this)">🔥 الكل</button>
+        <button class="tab" onclick="filterFeed('clip',this)">🎬 كليبات</button>
+        <button class="tab" onclick="filterFeed('news',this)">📰 أخبار</button>
+        <button class="tab" onclick="filterFeed('tourney',this)">🏆 بطولات</button>
+        <button class="tab" onclick="filterFeed('question',this)">❓ أسئلة</button>
+      </div>
+
+      <div id="feedContainer"><div class="loader">جاري تحميل المنشورات...<span class="spinner"></span></div></div>
+      <button class="btn btn-ghost" id="loadMoreBtn" style="width:100%;margin-top:6px;display:none;" onclick="loadMorePosts()">⬇️ تحميل المزيد</button>
     </div>
 
-    <!-- QUICK SHARE -->
-    <div class="card fade-up" style="padding:14px 16px;">
-      <div class="section-header">
-        <div class="section-title">➕ ماذا تريد أن تشارك؟</div>
+    <div id="pageLive" style="display:none;">
+      <div class="hero-banner">
+        <div class="hero-title">🔴 البث المباشر</div>
+        <div class="hero-sub">تابع اللاعبين وصناع المحتوى في الوقت الحقيقي</div>
       </div>
-      <div class="quick-share">
-        <button class="qs-btn" onclick="openPostEditor('clip')">
-          <span class="qs-icon">🎬</span>
-          <span>كليب</span>
-        </button>
-        <button class="qs-btn" onclick="openPostEditor('screen')">
-          <span class="qs-icon">📸</span>
-          <span>لقطة شاشة</span>
-        </button>
-        <button class="qs-btn" onclick="openPostEditor('news')">
-          <span class="qs-icon">📰</span>
-          <span>خبر</span>
-        </button>
-        <button class="qs-btn" onclick="openPostEditor('tourney')">
-          <span class="qs-icon">🏆</span>
-          <span>بطولة</span>
-        </button>
-        <button class="qs-btn" onclick="openPostEditor('question')">
-          <span class="qs-icon">❓</span>
-          <span>سؤال</span>
-        </button>
-        <button class="qs-btn" onclick="openPostEditor('review')">
-          <span class="qs-icon">⭐</span>
-          <span>تقييم</span>
-        </button>
-      </div>
+      <div id="liveGrid"><div class="loader">جاري التحميل...<span class="spinner"></span></div></div>
     </div>
 
-    <!-- POST EDITOR -->
-    <div class="post-editor fade-up" id="postEditor" style="display:none;">
-      <div class="editor-top">
-        <div class="avatar">🎮</div>
-        <div style="flex:1">
-          <div class="post-types" id="postTypesRow">
-            <button class="post-type-btn active" data-tag="clip" onclick="selectPostType(this)">🎬 كليب</button>
-            <button class="post-type-btn" data-tag="news" onclick="selectPostType(this)">📰 خبر</button>
-            <button class="post-type-btn" data-tag="tourney" onclick="selectPostType(this)">🏆 بطولة</button>
-            <button class="post-type-btn" data-tag="question" onclick="selectPostType(this)">❓ سؤال</button>
-            <button class="post-type-btn" data-tag="review" onclick="selectPostType(this)">⭐ تقييم</button>
-          </div>
-          <textarea class="post-textarea" id="postContent" placeholder="شارك لحظتك، خبرك، أو سؤالك..." rows="3"></textarea>
-        </div>
+    <div id="pageTourney" style="display:none;">
+      <div class="hero-banner">
+        <div class="hero-title">🏆 البطولات</div>
+        <div class="hero-sub">سجّل وشارك في أقوى بطولات الألعاب العربية</div>
       </div>
-      <div class="editor-toolbar">
-        <button class="toolbar-btn" onclick="insertText('🎮 ')">🎮 لعبة</button>
-        <button class="toolbar-btn" onclick="insertText('#')">🏷️ هاشتاق</button>
-        <button class="toolbar-btn" onclick="insertText('@')">👤 منشن</button>
-        <button class="toolbar-btn" onclick="insertText('🔗 ')">🔗 رابط</button>
-        <button class="toolbar-btn" onclick="insertEmoji()">😂 إيموجي</button>
-      </div>
-      <div class="editor-actions">
-        <button class="btn btn-ghost btn-sm" onclick="closePostEditor()">إلغاء</button>
-        <select style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 10px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
-          <option>🌍 عام</option>
-          <option>👥 الأصدقاء فقط</option>
-          <option>🔒 خاص</option>
-        </select>
-        <button class="btn btn-primary" onclick="publishPost()">نشر ✈️</button>
-      </div>
+      <div id="tourneyGrid"><div class="loader">جاري التحميل...<span class="spinner"></span></div></div>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs fade-up">
-      <button class="tab active" id="tab-all" onclick="filterFeed('all', this)">🔥 كل الفيد</button>
-      <button class="tab" id="tab-clips" onclick="filterFeed('clips', this)">🎬 كليبات</button>
-      <button class="tab" id="tab-news" onclick="filterFeed('news', this)">📰 أخبار</button>
-      <button class="tab" id="tab-tourney" onclick="filterFeed('tourney', this)">🏆 بطولات</button>
-      <button class="tab" id="tab-following" onclick="filterFeed('following', this)">👥 متابَعون</button>
+    <div id="pageYoutube" style="display:none;">
+      <div class="hero-banner">
+        <div class="hero-title">🎬 أحدث فيديوهات الألعاب</div>
+        <div class="hero-sub">أبرز المحتوى العربي في عالم الألعاب</div>
+      </div>
+      <div style="margin-bottom:12px;display:flex;gap:8px;">
+        <input class="form-input" id="ytSearch" placeholder="ابحث..." style="margin-bottom:0;flex:1;" onkeydown="if(event.key==='Enter')searchYT()">
+        <button class="btn btn-primary" onclick="searchYT()">🔍</button>
+      </div>
+      <div id="ytGrid"><div class="loader">جاري...<span class="spinner"></span></div></div>
     </div>
-
-    <!-- POSTS FEED -->
-    <div id="feedContainer">
-
-      <!-- POST 1 -->
-      <div class="post fade-up" data-type="clip" id="post-1">
-        <div class="post-header">
-          <div class="avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">🎯</div>
-          <div class="info">
-            <div class="name">ProGamer_X <span class="verify">✅</span> <span class="game-tag">Valorant</span></div>
-            <div class="meta">منذ 12 دقيقة · <span class="live-badge" style="font-size:10px;padding:1px 7px;"><span class="live-dot"></span>مباشر</span></div>
-          </div>
-          <span class="post-tag tag-clip">🎬 كليب</span>
-        </div>
-        <div class="post-body">
-          لحظة <strong>1v5 clutch</strong> في جولة البطولة الأخيرة! ما كنت مصدق نفسي 🔥
-          <br><br>#Valorant #Clutch #Virtux
-        </div>
-        <div class="post-img">
-          <div class="post-img-overlay">▶️</div>
-        </div>
-        <div class="post-actions">
-          <button class="action-btn" onclick="likePost(1, this)">❤️ <span class="like-count">342</span></button>
-          <button class="action-btn" onclick="showComments(1)">💬 87 تعليق</button>
-          <button class="action-btn" onclick="sharePost(1)">↗️ مشاركة</button>
-          <button class="action-btn" onclick="savePost(1, this)">🔖 حفظ</button>
-          <button class="action-btn-edit" onclick="openEditModal('post-1', 'لحظة 1v5 clutch في جولة البطولة الأخيرة! ما كنت مصدق نفسي 🔥')">✏️ تعديل</button>
-        </div>
-      </div>
-
-      <!-- POST 2 - POLL -->
-      <div class="post fade-up" data-type="news" id="post-2">
-        <div class="post-header">
-          <div class="avatar" style="background:linear-gradient(135deg,#6366f1,#c084fc);">📰</div>
-          <div class="info">
-            <div class="name">Virtux News <span class="verify">✅</span></div>
-            <div class="meta">منذ 35 دقيقة</div>
-          </div>
-          <span class="post-tag tag-news">📰 خبر</span>
-        </div>
-        <div class="post-body">
-          📊 <strong>استطلاع:</strong> ما أفضل لعبة بالتريلر الأخير؟
-        </div>
-        <div id="pollContainer">
-          <button class="poll-option" onclick="votePoll(this, 65)">
-            <div class="poll-fill" style="width:0%"></div>
-            <div class="poll-text"><span>🎮 GTA VI</span><span class="poll-pct" style="display:none;color:var(--accent2);font-weight:700;">65%</span></div>
-          </button>
-          <button class="poll-option" onclick="votePoll(this, 22)">
-            <div class="poll-fill" style="width:0%"></div>
-            <div class="poll-text"><span>⚔️ Elden Ring 2</span><span class="poll-pct" style="display:none;color:var(--accent2);font-weight:700;">22%</span></div>
-          </button>
-          <button class="poll-option" onclick="votePoll(this, 13)">
-            <div class="poll-fill" style="width:0%"></div>
-            <div class="poll-text"><span>🏎️ Need For Speed</span><span class="poll-pct" style="display:none;color:var(--accent2);font-weight:700;">13%</span></div>
-          </button>
-        </div>
-        <div class="post-actions" style="margin-top:10px;">
-          <button class="action-btn" onclick="likePost(2,this)">❤️ <span class="like-count">128</span></button>
-          <button class="action-btn" onclick="sharePost(2)">↗️ مشاركة</button>
-          <button class="action-btn-edit" onclick="openEditModal('post-2', 'استطلاع: ما أفضل لعبة بالتريلر الأخير؟')">✏️ تعديل</button>
-        </div>
-      </div>
-
-      <!-- POST 3 -->
-      <div class="post fade-up" data-type="tourney" id="post-3">
-        <div class="post-header">
-          <div class="avatar" style="background:linear-gradient(135deg,#c084fc,#818cf8);">🏆</div>
-          <div class="info">
-            <div class="name">TourneyAdmin <span class="verify">✅</span></div>
-            <div class="meta">منذ ساعة</div>
-          </div>
-          <span class="post-tag tag-tourney">🏆 بطولة</span>
-        </div>
-        <div class="post-body">
-          🎉 نعلن عن انطلاق <strong>Pro League Season 3</strong>!<br>
-          الجائزة الكبرى: <span style="color:var(--gold);font-weight:700;">💰 50,000 جنيه</span><br>
-          التسجيل مفتوح حتى الجمعة القادمة.<br><br>
-          ما يشترط: حساب من رتبة Diamond فأعلى.
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button class="btn btn-primary btn-sm">✅ سجّل الآن</button>
-          <button class="btn btn-ghost btn-sm">📋 قراءة القواعد</button>
-        </div>
-        <div class="post-actions">
-          <button class="action-btn" onclick="likePost(3,this)">❤️ <span class="like-count">512</span></button>
-          <button class="action-btn" onclick="showComments(3)">💬 143 تعليق</button>
-          <button class="action-btn" onclick="sharePost(3)">↗️ مشاركة</button>
-          <button class="action-btn-edit" onclick="openEditModal('post-3', 'نعلن عن انطلاق Pro League Season 3!')">✏️ تعديل</button>
-        </div>
-      </div>
-
-      <!-- POST 4 -->
-      <div class="post fade-up" data-type="clips" id="post-4">
-        <div class="post-header">
-          <div class="avatar" style="background:linear-gradient(135deg,#22c55e,#16a34a);">🎮</div>
-          <div class="info">
-            <div class="name">NightHunter99 <span class="game-tag">FC25</span></div>
-            <div class="meta">منذ ساعتين</div>
-          </div>
-          <span class="post-tag tag-clip">🎬 كليب</span>
-        </div>
-        <div class="post-body">
-          هدف من منتصف الملعب 😤🔥 ما في أحسن منه في الـ FC25!
-        </div>
-        <div class="post-img">
-          <div class="post-img-overlay">⚽</div>
-        </div>
-        <div class="post-actions">
-          <button class="action-btn liked" onclick="likePost(4,this)">❤️ <span class="like-count">891</span></button>
-          <button class="action-btn" onclick="showComments(4)">💬 220 تعليق</button>
-          <button class="action-btn saved" onclick="savePost(4,this)">🔖 محفوظ</button>
-          <button class="action-btn" onclick="sharePost(4)">↗️ مشاركة</button>
-          <button class="action-btn-edit" onclick="openEditModal('post-4', 'هدف من منتصف الملعب 😤🔥 ما في أحسن منه في الـ FC25!')">✏️ تعديل</button>
-        </div>
-      </div>
-
-      <!-- POST 5 - REVIEW -->
-      <div class="post fade-up" data-type="review" id="post-5">
-        <div class="post-header">
-          <div class="avatar" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">⭐</div>
-          <div class="info">
-            <div class="name">GamingCritic</div>
-            <div class="meta">منذ 3 ساعات</div>
-          </div>
-          <span class="post-tag tag-review">⭐ تقييم</span>
-        </div>
-        <div class="post-body">
-          تقييمي لـ <strong>Elden Ring</strong>:<br>
-          ⭐⭐⭐⭐⭐ 9.5/10<br><br>
-          من أفضل الألعاب التي لعبتها في حياتي. صعوبة مثالية، قصة عميقة، وبيئة رائعة. الـ Boss fights أسطورية! 👑
-        </div>
-        <div class="post-actions">
-          <button class="action-btn" onclick="likePost(5,this)">❤️ <span class="like-count">276</span></button>
-          <button class="action-btn" onclick="showComments(5)">💬 64 تعليق</button>
-          <button class="action-btn" onclick="sharePost(5)">↗️ مشاركة</button>
-          <button class="action-btn-edit" onclick="openEditModal('post-5', 'تقييمي لـ Elden Ring: 9.5/10')">✏️ تعديل</button>
-        </div>
-      </div>
-
-    </div><!-- end feedContainer -->
-
-    <button class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="loadMore()">⬇️ تحميل المزيد</button>
   </main>
 
-  <!-- RIGHT SIDEBAR -->
   <aside class="right-sidebar">
-
-    <!-- XP/LEVEL -->
-    <div class="xp-section">
+    <div class="xp-section" id="xpSection" style="display:none;">
       <div class="xp-top">
-        <span class="xp-level">💎 Diamond II</span>
-        <span class="xp-pts">4,280 / 5,000 XP</span>
+        <span class="xp-level" id="xpLevel">💎 المستوى 1</span>
+        <span class="xp-pts" id="xpPts">—</span>
       </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
-      <div style="font-size:11px;color:var(--text3);text-align:center;">720 XP للمستوى التالي</div>
+      <div class="progress-bar"><div class="progress-fill" id="xpFill" style="width:0%"></div></div>
+      <div style="font-size:10px;color:var(--text3);text-align:center;" id="xpNext"></div>
     </div>
 
-    <!-- TRENDING -->
-    <div class="card" style="padding:14px;">
-      <div class="card-header">
-        <div class="card-title">🔥 الأكثر تداولاً</div>
-      </div>
+    <div class="card" style="padding:13px;">
+      <div class="card-header"><div class="card-title">🔥 الأكثر تداولاً</div></div>
       <div>
-        <span class="trending-tag">#Valorant</span>
-        <span class="trending-tag">#ProLeague</span>
-        <span class="trending-tag">#GTAVI</span>
-        <span class="trending-tag">#FC25</span>
-        <span class="trending-tag">#EldenRing</span>
-        <span class="trending-tag">#PUBG</span>
-        <span class="trending-tag">#FreeFireAR</span>
+        <span class="trending-tag" onclick="filterByTag('Valorant')">#Valorant</span>
+        <span class="trending-tag" onclick="filterByTag('ProLeague')">#ProLeague</span>
+        <span class="trending-tag" onclick="filterByTag('GTAVI')">#GTAVI</span>
+        <span class="trending-tag" onclick="filterByTag('FC25')">#FC25</span>
+        <span class="trending-tag" onclick="filterByTag('PUBG')">#PUBG</span>
+        <span class="trending-tag" onclick="filterByTag('EldenRing')">#EldenRing</span>
       </div>
     </div>
 
-    <!-- LIVE STREAMS -->
-    <div class="card" style="padding:14px;">
+    <div class="card" style="padding:13px;">
       <div class="card-header">
-        <div class="card-title"><span class="live-badge"><span class="live-dot"></span>مباشر الآن</span></div>
-        <a class="section-link" href="#">الكل</a>
+        <div class="card-title"><span class="live-badge"><span class="live-dot"></span>مباشر</span></div>
+        <a class="section-link" onclick="setPage('live')">الكل</a>
       </div>
-      <div class="stream-item">
-        <div class="stream-thumb">🎯</div>
-        <div class="stream-info">
-          <div class="stream-name">ProGamer_X</div>
-          <div class="stream-game">Valorant • Ranked</div>
-        </div>
-        <div class="stream-viewers">2.1K 👁️</div>
-      </div>
-      <div class="stream-item">
-        <div class="stream-thumb">⚽</div>
-        <div class="stream-info">
-          <div class="stream-name">FootballKing</div>
-          <div class="stream-game">FC25 • Pro</div>
-        </div>
-        <div class="stream-viewers">841 👁️</div>
-      </div>
-      <div class="stream-item">
-        <div class="stream-thumb">🏹</div>
-        <div class="stream-info">
-          <div class="stream-name">ShadowArcher</div>
-          <div class="stream-game">Elden Ring • NG+</div>
-        </div>
-        <div class="stream-viewers">392 👁️</div>
-      </div>
+      <div id="sideStreams"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
     </div>
 
-    <!-- TOURNAMENTS -->
-    <div class="card" style="padding:14px;">
+    <div class="card" style="padding:13px;">
       <div class="card-header">
-        <div class="card-title">🏆 البطولات النشطة</div>
-        <a class="section-link" href="#">الكل</a>
+        <div class="card-title">🏆 بطولات</div>
+        <a class="section-link" onclick="setPage('tourney')">الكل</a>
       </div>
-      <div class="tourney-card">
-        <div class="tourney-title">Pro League Season 3</div>
-        <div class="tourney-meta">
-          <span>🎮 Valorant</span>
-          <span class="tourney-prize">💰 50,000 جنيه</span>
-        </div>
-        <div style="margin-top:6px;">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">التسجيل: 128/256</div>
-          <div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div>
-        </div>
-      </div>
-      <div class="tourney-card">
-        <div class="tourney-title">Arabic Cup</div>
-        <div class="tourney-meta">
-          <span>🎮 FC25</span>
-          <span class="tourney-prize">💰 15,000 جنيه</span>
-        </div>
-        <div style="margin-top:6px;">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">التسجيل: 94/128</div>
-          <div class="progress-bar"><div class="progress-fill" style="width:73%;background:linear-gradient(90deg,var(--gold),#fbbf24);"></div></div>
-        </div>
-      </div>
+      <div id="sideTourneys"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
     </div>
 
-    <!-- LEADERBOARD -->
-    <div class="card" style="padding:14px;">
+    <div class="card" style="padding:13px;">
+      <div class="card-header"><div class="card-title">👑 المتصدرون</div></div>
+      <div id="sideLeaderboard"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
+    </div>
+
+    <div class="card" style="padding:13px;" id="achSection" style="display:none;">
+      <div class="card-header"><div class="card-title">🎯 إنجازاتي</div></div>
+      <div class="achievement"><div class="ach-icon">🎯</div><div><div class="ach-name">القناص</div><div class="ach-desc">50 headshot</div></div></div>
+      <div class="achievement"><div class="ach-icon">🔥</div><div><div class="ach-name">On Fire</div><div class="ach-desc">7 wins</div></div></div>
+    </div>
+
+    <div class="card" style="padding:13px;">
       <div class="card-header">
-        <div class="card-title">👑 المتصدرون</div>
-        <a class="section-link" href="#">الكل</a>
+        <div class="card-title">📺 فيديوهات</div>
+        <a class="section-link" onclick="setPage('youtube')">الكل</a>
       </div>
-      <div class="leaderboard-item">
-        <div class="rank top1">🥇</div>
-        <div class="avatar" style="width:32px;height:32px;font-size:13px;background:linear-gradient(135deg,#f59e0b,#ef4444);">🎯</div>
-        <div class="lb-info">
-          <div class="lb-name">ProGamer_X</div>
-          <div class="lb-pts">Valorant</div>
-        </div>
-        <div class="lb-score">12,440</div>
-      </div>
-      <div class="leaderboard-item">
-        <div class="rank top2">🥈</div>
-        <div class="avatar" style="width:32px;height:32px;font-size:13px;background:linear-gradient(135deg,#94a3b8,#64748b);">🏹</div>
-        <div class="lb-info">
-          <div class="lb-name">ShadowKill</div>
-          <div class="lb-pts">PUBG</div>
-        </div>
-        <div class="lb-score">11,890</div>
-      </div>
-      <div class="leaderboard-item">
-        <div class="rank top3">🥉</div>
-        <div class="avatar" style="width:32px;height:32px;font-size:13px;background:linear-gradient(135deg,#22c55e,#16a34a);">⚽</div>
-        <div class="lb-info">
-          <div class="lb-name">FootballKing</div>
-          <div class="lb-pts">FC25</div>
-        </div>
-        <div class="lb-score">10,250</div>
-      </div>
-      <div class="leaderboard-item">
-        <div class="rank">4</div>
-        <div class="avatar" style="width:32px;height:32px;font-size:13px;background:linear-gradient(135deg,#6366f1,#818cf8);">🎮</div>
-        <div class="lb-info">
-          <div class="lb-name">NightHunter99</div>
-          <div class="lb-pts">Valorant</div>
-        </div>
-        <div class="lb-score">9,880</div>
-      </div>
+      <div id="sideYT"><div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div></div>
     </div>
-
-    <!-- ACHIEVEMENTS -->
-    <div class="card" style="padding:14px;">
-      <div class="card-header">
-        <div class="card-title">🎯 إنجازاتي الأخيرة</div>
-      </div>
-      <div class="achievement">
-        <div class="ach-icon">🎯</div>
-        <div class="ach-info">
-          <div class="ach-name">القناص الأسطوري</div>
-          <div class="ach-desc">50 headshot في Valorant</div>
-        </div>
-      </div>
-      <div class="achievement">
-        <div class="ach-icon">🔥</div>
-        <div class="ach-info">
-          <div class="ach-name">On Fire</div>
-          <div class="ach-desc">7 انتصارات متتالية</div>
-        </div>
-      </div>
-      <div class="achievement" style="background:rgba(192,132,252,0.06);border-color:rgba(192,132,252,0.15);">
-        <div class="ach-icon">👑</div>
-        <div class="ach-info">
-          <div class="ach-name">ملك المنصة</div>
-          <div class="ach-desc">100 منشور - قريب!</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ONLINE USERS -->
-    <div class="card" style="padding:14px;">
-      <div class="card-header">
-        <div class="card-title">👥 المتصلون الآن</div>
-      </div>
-      <div class="user-mini">
-        <div class="avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,#f59e0b,#ef4444);">🎯</div>
-        <div style="flex:1"><div class="uname">ProGamer_X</div><div class="ugame">يلعب Valorant</div></div>
-        <div class="online-dot"></div>
-      </div>
-      <div class="user-mini">
-        <div class="avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,#22c55e,#16a34a);">⚽</div>
-        <div style="flex:1"><div class="uname">FootballKing</div><div class="ugame">بث مباشر 🔴</div></div>
-        <div class="online-dot"></div>
-      </div>
-      <div class="user-mini">
-        <div class="avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,#6366f1,#c084fc);">🎮</div>
-        <div style="flex:1"><div class="uname">NightHunter99</div><div class="ugame">يلعب FC25</div></div>
-        <div class="online-dot"></div>
-      </div>
-      <div class="user-mini">
-        <div class="avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,#94a3b8,#64748b);">🏹</div>
-        <div style="flex:1"><div class="uname">ShadowArcher</div><div class="ugame">غير نشط</div></div>
-        <div class="offline-dot"></div>
-      </div>
-    </div>
-
   </aside>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // === NOTIFICATIONS ===
-  function toggleNotif() {
-    const p = document.getElementById('notifPanel');
-    p.classList.toggle('open');
-    document.getElementById('notifDot').style.display = 'none';
-  }
-  function markAllRead() {
-    document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
-    document.querySelectorAll('.notif-unread-dot').forEach(el => el.remove());
-    showToast('✅ تم تعيين الكل كمقروء', 'success');
-  }
-  document.addEventListener('click', function(e) {
-    const panel = document.getElementById('notifPanel');
-    if (panel.classList.contains('open') && !panel.contains(e.target) && !e.target.closest('.notif-btn')) {
-      panel.classList.remove('open');
-    }
-  });
+const SUPABASE_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const YT_KEY='AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let currentUser=null,currentProfile=null,feedOffset=0,currentEditId=null,currentFeedFilter='all';
+const FEED_LIMIT=10;
 
-  // === TOAST ===
-  function showToast(msg, type = '') {
-    const c = document.getElementById('toastContainer');
-    const t = document.createElement('div');
-    t.className = 'toast ' + type;
-    t.innerHTML = msg;
-    c.appendChild(t);
-    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = '0.3s'; setTimeout(() => t.remove(), 300); }, 2800);
-  }
+sb.auth.onAuthStateChange(async(e,session)=>{
+  currentUser=session?.user||null;
+  if(currentUser){await loadProfile();renderNavUser();loadNotifications();}
+  else{currentProfile=null;renderNavGuest();}
+});
 
-  // === POST EDITOR ===
-  function openPostEditor(type) {
-    const editor = document.getElementById('postEditor');
-    editor.style.display = 'block';
-    editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    document.getElementById('postContent').focus();
-    // Set type
-    document.querySelectorAll('#postTypesRow .post-type-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.tag === type);
-    });
+async function loadProfile(){
+  if(!currentUser)return;
+  const{data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  currentProfile=data;
+  if(data?.roles?.includes('admin'))document.getElementById('sideAdminSection').style.display='block';
+  if(data){
+    document.getElementById('xpSection').style.display='block';
+    document.getElementById('achSection').style.display='block';
+    const xp=data.xp||0,level=Math.floor(xp/1000)+1,pct=((xp%1000)/1000*100).toFixed(0);
+    document.getElementById('xpLevel').textContent='💎 المستوى '+level;
+    document.getElementById('xpPts').textContent=xp+' XP';
+    document.getElementById('xpFill').style.width=pct+'%';
+    document.getElementById('xpNext').textContent=(1000-(xp%1000))+' XP للمستوى التالي';
   }
-  function closePostEditor() {
-    document.getElementById('postEditor').style.display = 'none';
-    document.getElementById('postContent').value = '';
+}
+
+function renderNavUser(){
+  const name=currentProfile?.username||currentUser?.email?.split('@')[0]||'لاعب';
+  const avatar=currentProfile?.avatar_url;
+  document.getElementById('navAuthArea').innerHTML=`
+    <div class="nav-user" onclick="openAuth('profile')">
+      ${avatar?`<img src="${avatar}" alt="">`:`<div class="avatar" style="width:28px;height:28px;font-size:12px;">🎮</div>`}
+      <span>${name}</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()">خروج</button>`;
+}
+
+function renderNavGuest(){
+  document.getElementById('navAuthArea').innerHTML=`
+    <button class="btn btn-ghost btn-sm" onclick="openAuth('login')">دخول</button>
+    <button class="btn btn-primary btn-sm" onclick="openAuth('register')">انضم الآن</button>`;
+  document.getElementById('xpSection').style.display='none';
+  document.getElementById('sideAdminSection').style.display='none';
+}
+
+function openAuth(type){
+  document.getElementById('authModal').classList.add('open');
+  if(type==='register')switchToRegister();else switchToLogin();
+}
+function closeAuth(){document.getElementById('authModal').classList.remove('open');}
+function switchToLogin(){
+  document.getElementById('loginForm').style.display='block';
+  document.getElementById('registerForm').style.display='none';
+  document.getElementById('authTitle').textContent='🔐 تسجيل الدخول';
+}
+function switchToRegister(){
+  document.getElementById('loginForm').style.display='none';
+  document.getElementById('registerForm').style.display='block';
+  document.getElementById('authTitle').textContent='✨ إنشاء حساب';
+}
+
+async function signInEmail(){
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  if(!email||!pass){showToast('⚠️ أكمل البيانات','error');return;}
+  const{error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){showToast('❌ '+(error.message==='Invalid login credentials'?'بيانات خاطئة':error.message),'error');}
+  else{showToast('✅ مرحباً بك!','success');closeAuth();loadFeed();}
+}
+
+async function signUpEmail(){
+  const username=document.getElementById('regUsername').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPass').value;
+  if(!username||!email||!pass){showToast('⚠️ أكمل البيانات','error');return;}
+  const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{username}}});
+  if(error){showToast('❌ '+error.message,'error');return;}
+  if(data.user){await sb.from('profiles').upsert({id:data.user.id,username,email,roles:['user']});}
+  showToast('🎉 تم إنشاء حسابك!','success');closeAuth();
+}
+
+async function signInWithGoogle(){
+  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});
+  if(error)showToast('❌ خطأ: '+error.message,'error');
+}
+
+async function signOut(){
+  await sb.auth.signOut();
+  showToast('👋 تم تسجيل الخروج');
+  loadFeed();
+}
+
+function checkAuth(action){
+  if(!currentUser){openAuth('login');showToast('⚠️ سجّل الدخول أولاً');return false;}
+  return true;
+}
+
+async function loadFeed(reset=true){
+  if(reset){feedOffset=0;document.getElementById('feedContainer').innerHTML='<div class="loader">جاري...<span class="spinner"></span></div>';}
+  let query=sb.from('posts').select(`*,profiles(username,avatar_url,roles)`).order('created_at',{ascending:false}).range(feedOffset,feedOffset+FEED_LIMIT-1);
+  if(currentFeedFilter!=='all')query=query.eq('type',currentFeedFilter);
+  const{data,error}=await query;
+  const container=document.getElementById('feedContainer');
+  if(error){container.innerHTML='<div class="loader">⚠️ خطأ</div>';return;}
+  if(reset)container.innerHTML='';
+  if(!data||data.length===0){
+    if(reset)container.innerHTML='<div class="loader" style="padding:30px;">لا توجد منشورات 🎮</div>';
+    document.getElementById('loadMoreBtn').style.display='none';
+    return;
   }
-  function selectPostType(btn) {
-    document.querySelectorAll('#postTypesRow .post-type-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  data.forEach(post=>container.insertAdjacentHTML('beforeend',renderPost(post)));
+  feedOffset+=data.length;
+  document.getElementById('loadMoreBtn').style.display=data.length<FEED_LIMIT?'none':'block';
+}
+
+function loadMorePosts(){loadFeed(false);}
+
+function renderPost(p){
+  const profile=p.profiles||{};
+  const name=profile.username||'لاعب';
+  const avatar=profile.avatar_url;
+  const avatarHTML=avatar?`<img src="${avatar}" alt="">`:'🎮';
+  const isAdmin=profile.roles?.includes('admin');
+  const isOwner=currentUser&&p.user_id===currentUser.id;
+  const tagMap={clip:'🎬 كليب',news:'📰 خبر',tourney:'🏆 بطولة',question:'❓ سؤال',review:'⭐ تقييم',screen:'📸 لقطة'};
+  const tagClass={clip:'tag-clip',news:'tag-news',tourney:'tag-tourney',question:'tag-question',review:'tag-review',screen:'tag-clip'};
+  const type=p.type||'clip';
+  const timeAgo=getTimeAgo(p.created_at);
+  const mediaHTML=p.media_url?`<div class="post-media" onclick="window.open('${p.media_url}','_blank')"><div class="post-media-icon">▶️</div></div>`:'';
+  const editBtn=isOwner?`<button class="action-btn-edit" onclick="openEditModal('${p.id}',\`${(p.content||'').replace(/`/g,"'")}\`)">✏️</button>`:'';
+  const deleteBtn=(isOwner||isAdmin)?`<button class="action-btn" style="color:var(--red);" onclick="deletePost('${p.id}')">🗑️</button>`:'';
+  const likes=p.likes_count||0;
+  const comments=p.comments_count||0;
+  return`<div class="post" data-type="${type}" id="post-${p.id}">
+    <div class="post-header">
+      <div class="avatar">${avatarHTML}</div>
+      <div class="info">
+        <div class="name">${name} ${isAdmin?'<span style="color:var(--gold)">⭐</span>':''}</div>
+        <div class="meta">${timeAgo}</div>
+      </div>
+      <span class="post-tag ${tagClass[type]||'tag-clip'}">${tagMap[type]||type}</span>
+    </div>
+    <div class="post-body">${(p.content||'').replace(/\n/g,'<br>').replace(/(#\w+)/g,'<span style="color:var(--accent2)">$1</span>').replace(/(@\w+)/g,'<span style="color:var(--accent3)">$1</span>')}</div>
+    ${mediaHTML}
+    <div class="post-actions">
+      <button class="action-btn" onclick="likePost('${p.id}',this)">❤️ <span class="like-count">${likes}</span></button>
+      <button class="action-btn">💬 ${comments}</button>
+      <button class="action-btn" onclick="sharePost('${p.id}')">↗️</button>
+      <button class="action-btn" onclick="savePost('${p.id}',this)">🔖</button>
+      ${editBtn}${deleteBtn}
+    </div>
+  </div>`;
+}
+
+async function publishPost(){
+  if(!currentUser){openAuth('login');showToast('⚠️ سجّل الدخول');return;}
+  const content=document.getElementById('postContent').value.trim();
+  if(!content){showToast('⚠️ اكتب شيئاً!','error');return;}
+  const type=document.querySelector('#postTypesRow .post-type-btn.active')?.dataset.tag||'clip';
+  const{data,error}=await sb.from('posts').insert({content,type,user_id:currentUser.id,posted_by:currentProfile?.username||currentUser.email}).select('*,profiles(username,avatar_url,roles)').single();
+  if(error){showToast('❌ '+error.message,'error');return;}
+  document.getElementById('feedContainer').insertAdjacentHTML('afterbegin',renderPost(data));
+  closeEditor();
+  showToast('🎉 تم النشر!','success');
+  await sb.from('site_visits').insert({user_id:currentUser.id,page:'post_created'}).catch(()=>{});
+}
+
+async function deletePost(id){
+  if(!confirm('حذف المنشور؟'))return;
+  const{error}=await sb.from('posts').delete().eq('id',id);
+  if(error){showToast('❌ '+error.message,'error');return;}
+  document.getElementById('post-'+id)?.remove();
+  showToast('🗑️ تم الحذف','success');
+}
+
+function openEditModal(id,content){
+  currentEditId=id;
+  document.getElementById('editContent').value=content;
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal(){document.getElementById('editModal').classList.remove('open');currentEditId=null;}
+
+async function saveEdit(){
+  const content=document.getElementById('editContent').value.trim();
+  if(!content||!currentEditId)return;
+  const type=document.querySelector('#editTagsRow .post-type-btn.active')?.dataset.tag;
+  const updateData={content};
+  if(type)updateData.type=type;
+  const{error}=await sb.from('posts').update(updateData).eq('id',currentEditId);
+  if(error){showToast('❌ '+error.message,'error');return;}
+  const postEl=document.getElementById('post-'+currentEditId);
+  if(postEl){const body=postEl.querySelector('.post-body');if(body)body.innerHTML=content.replace(/\n/g,'<br>')+' <span style="font-size:10px;color:var(--text3);">(معدّل)</span>';}
+  closeEditModal();
+  showToast('✅ تم التعديل','success');
+}
+
+async function likePost(id,btn){
+  if(!currentUser){openAuth('login');return;}
+  const c=btn.querySelector('.like-count');
+  const count=parseInt(c.textContent)||0;
+  if(btn.classList.contains('liked')){
+    btn.classList.remove('liked');c.textContent=count-1;
+    await sb.from('posts').update({likes_count:count-1}).eq('id',id);
+  }else{
+    btn.classList.add('liked');c.textContent=count+1;
+    await sb.from('posts').update({likes_count:count+1}).eq('id',id);
   }
-  function insertText(text) {
-    const ta = document.getElementById('postContent');
-    const pos = ta.selectionStart;
-    ta.value = ta.value.slice(0, pos) + text + ta.value.slice(pos);
-    ta.focus();
+}
+
+function savePost(id,btn){
+  if(!currentUser){openAuth('login');return;}
+  btn.classList.toggle('saved');
+  showToast(btn.classList.contains('saved')?'🔖 حفظ':'🔖 إلغاء','success');
+}
+
+function sharePost(id){
+  const url=window.location.origin+window.location.pathname+'?post='+id;
+  navigator.clipboard?.writeText(url).then(()=>showToast('🔗 نسخ الرابط','success')).catch(()=>showToast('🔗 '+url));
+}
+
+function filterFeed(type,btn){
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  currentFeedFilter=type;
+  loadFeed();
+}
+
+function filterByTag(tag){
+  setPage('home');
+  document.getElementById('postContent').value='#'+tag+' ';
+  openEditor('clip');
+}
+
+async function loadTournaments(){
+  const{data,error}=await sb.from('tournament_registrations').select('*').order('created_at',{ascending:false}).limit(10);
+  const side=document.getElementById('sideTourneys');
+  if(error||!data||data.length===0){side.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا توجد بطولات</div>';return;}
+  const unique=[...new Map(data.map(r=>[r.post_id,r])).values()].slice(0,3);
+  side.innerHTML=unique.map(t=>`
+    <div class="tourney-card">
+      <div class="tourney-title">بطولة #${t.post_id||'مفتوحة'}</div>
+      <div class="tourney-meta"><span>👤 ${t.username||'لاعب'}</span><span class="tourney-prize">🏆</span></div>
+    </div>`).join('');
+  const grid=document.getElementById('tourneyGrid');
+  grid.innerHTML=data.map(t=>`
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px;">🏆 بطولة #${t.post_id||'—'}</div>
+      <div style="font-size:13px;color:var(--text2);">اللاعب: <strong>${t.username||'—'}</strong></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:5px;">${getTimeAgo(t.created_at)}</div>
+      ${currentUser?`<button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="registerTourney('${t.post_id}')">✅ تسجيل</button>`:`<button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="openAuth('login')">سجّل للمشاركة</button>`}
+    </div>`).join('');
+}
+
+async function registerTourney(postId){
+  if(!currentUser||!currentProfile){openAuth('login');return;}
+  const{error}=await sb.from('tournament_registrations').insert({post_id:postId,user_id:currentUser.id,username:currentProfile.username});
+  if(error){showToast('❌ '+(error.code==='23505'?'مسجّل بالفعل!':error.message),'error');return;}
+  showToast('✅ تم التسجيل!','success');
+}
+
+async function loadLeaderboard(){
+  const{data}=await sb.from('profiles').select('username,avatar_url,xp').order('xp',{ascending:false}).limit(5);
+  const el=document.getElementById('sideLeaderboard');
+  if(!data||data.length===0){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا يوجد</div>';return;}
+  const medals=['🥇','🥈','🥉','4','5'];
+  const classes=['top1','top2','top3','',''];
+  el.innerHTML=data.map((u,i)=>`
+    <div class="leaderboard-item">
+      <div class="rank ${classes[i]}">${medals[i]}</div>
+      <div class="avatar" style="width:30px;height:30px;font-size:12px;">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`:'🎮'}</div>
+      <div class="lb-info"><div class="lb-name">${u.username||'لاعب'}</div></div>
+      <div class="lb-score">${(u.xp||0).toLocaleString('ar')}</div>
+    </div>`).join('');
+}
+
+async function loadStreams(){
+  const{data}=await sb.from('posts').select('*,profiles(username,avatar_url)').eq('type','live').order('created_at',{ascending:false}).limit(4);
+  const el=document.getElementById('sideStreams');
+  const liveEl=document.getElementById('liveGrid');
+  const streams=data&&data.length>0?data:[];
+  if(streams.length===0){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا يوجد بث</div>';
+    if(liveEl)liveEl.innerHTML='<div class="loader" style="padding:40px;">لا يوجد بث 📡</div>';
+    return;
   }
-  const emojis = ['😂','🔥','💀','👑','🎮','⚡','💯','🏆','😤','🤯'];
-  let emojiIdx = 0;
-  function insertEmoji() { insertText(emojis[emojiIdx++ % emojis.length]); }
-  function publishPost() {
-    const content = document.getElementById('postContent').value.trim();
-    if (!content) { showToast('⚠️ اكتب شيئاً أولاً!', 'error'); return; }
-    const activeType = document.querySelector('#postTypesRow .post-type-btn.active');
-    const tag = activeType ? activeType.dataset.tag : 'clip';
-    const tagMap = { clip:'🎬 كليب', news:'📰 خبر', tourney:'🏆 بطولة', question:'❓ سؤال', review:'⭐ تقييم' };
-    const tagClass = { clip:'tag-clip', news:'tag-news', tourney:'tag-tourney', question:'tag-question', review:'tag-review' };
-    const id = 'post-dyn-' + Date.now();
-    const newPost = `
-      <div class="post" data-type="${tag}" id="${id}" style="border-color:var(--accent);animation:modal-in 0.3s ease;">
-        <div class="post-header">
-          <div class="avatar">🎮</div>
-          <div class="info">
-            <div class="name">أنت <span class="verify">✅</span></div>
-            <div class="meta">الآن</div>
+  const icons=['🎯','⚽','🏹','🎮'];
+  el.innerHTML=streams.map((s,i)=>`
+    <div class="stream-item">
+      <div class="stream-thumb">${icons[i%4]}</div>
+      <div class="stream-info">
+        <div class="stream-name">${s.profiles?.username||'لاعب'}</div>
+        <div class="stream-game">بث مباشر</div>
+      </div>
+      <div class="stream-viewers"><span class="live-badge" style="font-size:9px;"><span class="live-dot"></span>LIVE</span></div>
+    </div>`).join('');
+  if(liveEl)liveEl.innerHTML=streams.map((s,i)=>`
+    <div class="card">
+      <div class="card-title">${icons[i%4]} ${s.profiles?.username||'لاعب'}</div>
+      <div class="post-body" style="margin-top:8px;">${s.content||''}</div>
+      <div class="post-media" style="height:120px;"><div class="post-media-icon">📡</div></div>
+    </div>`).join('');
+}
+
+async function loadNotifications(){
+  const el=document.getElementById('notifList');
+  el.innerHTML=`
+    <div class="notif-item unread"><div class="notif-icon">👋</div><div style="flex:1"><div class="notif-text">مرحباً بك في <strong>Virtux</strong>!</div><div class="notif-time">الآن</div></div><div class="notif-udot"></div></div>
+    <div class="notif-item"><div class="notif-icon">🏆</div><div style="flex:1"><div class="notif-text">البطولات مفتوحة</div><div class="notif-time">منذ ساعة</div></div></div>
+    <div style="padding:10px 15px;text-align:center;"><button class="btn btn-ghost btn-sm" style="width:100%;">الكل</button></div>`;
+}
+
+function toggleNotif(){
+  const p=document.getElementById('notifPanel');
+  p.classList.toggle('open');
+  document.getElementById('notifDot').style.display='none';
+}
+function markAllRead(){
+  document.querySelectorAll('.notif-item.unread').forEach(el=>el.classList.remove('unread'));
+  document.querySelectorAll('.notif-udot').forEach(el=>el.remove());
+  showToast('✅ تم');
+}
+
+async function loadStats(){
+  const{count:postCount}=await sb.from('posts').select('*',{count:'exact',head:true});
+  const{count:visitCount}=await sb.from('site_visits').select('*',{count:'exact',head:true});
+  if(postCount!==null)document.getElementById('statPosts').textContent=postCount;
+  if(visitCount!==null)document.getElementById('statOnline').textContent=visitCount;
+  await sb.from('site_visits').insert({page:'home',user_id:currentUser?.id||null}).catch(()=>{});
+}
+
+async function loadYouTube(query='العاب عربي 2025'){
+  const el=document.getElementById('ytGrid');
+  const sideEl=document.getElementById('sideYT');
+  if(el)el.innerHTML='<div class="loader">جاري...<span class="spinner"></span></div>';
+  try{
+    const res=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=12&key=${YT_KEY}&relevanceLanguage=ar&order=date`);
+    const json=await res.json();
+    if(json.error){if(el)el.innerHTML='<div class="loader">⚠️ '+json.error.message+'</div>';return;}
+    const items=json.items||[];
+    if(el)el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">`+
+      items.map(v=>`
+        <div class="yt-item" onclick="window.open('https://youtube.com/watch?v=${v.id.videoId}','_blank')">
+          <img class="yt-thumb" src="${v.snippet.thumbnails.medium.url}" alt="" style="height:110px;width:100%;object-fit:cover;">
+          <div class="yt-info">
+            <div class="yt-title">${v.snippet.title}</div>
+            <div class="yt-ch">📺 ${v.snippet.channelTitle}</div>
           </div>
-          <span class="post-tag ${tagClass[tag]}">${tagMap[tag]}</span>
-        </div>
-        <div class="post-body">${content.replace(/\n/g,'<br>')}</div>
-        <div class="post-actions">
-          <button class="action-btn" onclick="likePost('${id}',this)">❤️ <span class="like-count">0</span></button>
-          <button class="action-btn" onclick="sharePost('${id}')">↗️ مشاركة</button>
-          <button class="action-btn-edit" onclick="openEditModal('${id}', \`${content.replace(/`/g,"'")}\`)">✏️ تعديل</button>
-        </div>
-      </div>`;
-    const feed = document.getElementById('feedContainer');
-    feed.insertAdjacentHTML('afterbegin', newPost);
-    closePostEditor();
-    showToast('🎉 تم نشر منشورك بنجاح!', 'success');
-    // Update stats
-    const el = document.getElementById('statsOnline');
-    if (el) el.textContent = (parseInt(el.textContent.replace(',','')) + 1).toLocaleString('ar');
+        </div>`).join('')+'</div>';
+    if(sideEl)sideEl.innerHTML='<div class="yt-grid">'+items.slice(0,4).map(v=>`
+      <div class="yt-item" onclick="window.open('https://youtube.com/watch?v=${v.id.videoId}','_blank')">
+        <img class="yt-thumb" src="${v.snippet.thumbnails.default.url}" alt="" style="height:70px;">
+        <div class="yt-info"><div class="yt-title">${v.snippet.title}</div><div class="yt-ch">${v.snippet.channelTitle}</div></div>
+      </div>`).join('')+'</div>';
+  }catch(e){
+    if(el)el.innerHTML='<div class="loader">⚠️ خطأ</div>';
   }
+}
 
-  // === EDIT MODAL ===
-  let currentEditId = '';
-  function openEditModal(postId, content) {
-    currentEditId = postId;
-    document.getElementById('editContent').value = content;
-    document.getElementById('editModal').classList.add('open');
-  }
-  function closeEditModal() {
-    document.getElementById('editModal').classList.remove('open');
-    currentEditId = '';
-  }
-  function selectEditTag(btn, tag) {
-    document.querySelectorAll('#editTagsRow .post-type-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  function addToEdit(text) {
-    const ta = document.getElementById('editContent');
-    ta.value += text;
-    ta.focus();
-  }
-  function saveEdit() {
-    const newContent = document.getElementById('editContent').value.trim();
-    if (!newContent) { showToast('⚠️ المحتوى فارغ!', 'error'); return; }
-    if (currentEditId) {
-      const post = document.getElementById(currentEditId);
-      if (post) {
-        const body = post.querySelector('.post-body');
-        if (body) { body.innerHTML = newContent.replace(/\n/g,'<br>') + ' <span style="font-size:11px;color:var(--text3);margin-right:6px;">(تم التعديل)</span>'; }
-      }
+function searchYT(){
+  const q=document.getElementById('ytSearch').value.trim()||'العاب عربي';
+  loadYouTube(q);
+}
+
+const pages=['Home','Live','Tourney','Youtube'];
+function setPage(name,linkEl){
+  pages.forEach(p=>{const el=document.getElementById('page'+p.charAt(0).toUpperCase()+p.slice(1));if(el)el.style.display='none';});
+  const target=document.getElementById('page'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(target)target.style.display='block';
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  if(linkEl)linkEl.classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));
+  if(name==='youtube')loadYouTube();
+  if(name==='live')loadStreams();
+  if(name==='tourney')loadTournaments();
+}
+
+function openEditor(type){
+  if(!currentUser){openAuth('login');showToast('⚠️ سجّل الدخول');return;}
+  const ed=document.getElementById('postEditor');
+  ed.style.display='block';
+  ed.scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.querySelectorAll('#postTypesRow .post-type-btn').forEach(b=>b.classList.toggle('active',b.dataset.tag===type));
+  document.getElementById('postContent').focus();
+}
+function closeEditor(){document.getElementById('postEditor').style.display='none';document.getElementById('postContent').value='';}
+function ins(text){
+  const ta=document.getElementById('postContent');
+  const p=ta.selectionStart;
+  ta.value=ta.value.slice(0,p)+text+ta.value.slice(p);
+  ta.focus();
+}
+function appendTo(id,text){
+  const ta=document.getElementById(id);
+  ta.value+=text;
+  ta.focus();
+}
+function selTag(btn,rowId){
+  document.querySelectorAll('#'+rowId+' .post-type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function showToast(msg,type=''){
+  const c=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  t.innerHTML=msg;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(20px)';t.style.transition='0.3s';setTimeout(()=>t.remove(),300);},2800);
+}
+
+function getTimeAgo(dateStr){
+  if(!dateStr)return'';
+  const diff=(Date.now()-new Date(dateStr))/1000;
+  if(diff<60)return'الآن';
+  if(diff<3600)return'منذ '+Math.floor(diff/60)+' دقيقة';
+  if(diff<86400)return'منذ '+Math.floor(diff/3600)+' ساعة';
+  return'منذ '+Math.floor(diff/86400)+' يوم';
+}
+
+document.addEventListener('click',e=>{
+  const panel=document.getElementById('notifPanel');
+  if(panel.classList.contains('open')&&!panel.contains(e.target)&&!e.target.closest('#notifBtn'))panel.classList.remove('open');
+  if(document.getElementById('editModal').classList.contains('open')&&e.target===document.getElementById('editModal'))closeEditModal();
+  if(document.getElementById('authModal').classList.contains('open')&&e.target===document.getElementById('authModal'))closeAuth();
+});
+
+sb.channel('posts-channel').on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},async payload=>{
+  if(payload.new.user_id!==currentUser?.id){
+    const{data}=await sb.from('posts').select('*,profiles(username,avatar_url,roles)').eq('id',payload.new.id).single();
+    if(data&&(currentFeedFilter==='all'||currentFeedFilter===data.type)){
+      document.getElementById('feedContainer').insertAdjacentHTML('afterbegin',renderPost(data));
+      showToast('🆕 منشور جديد من '+(data.profiles?.username||'لاعب'));
     }
-    closeEditModal();
-    showToast('✅ تم تعديل المنشور', 'success');
   }
+}).subscribe();
 
-  // === POST ACTIONS ===
-  function likePost(id, btn) {
-    const c = btn.querySelector('.like-count');
-    const count = parseInt(c.textContent.replace(',',''));
-    if (btn.classList.contains('liked')) { btn.classList.remove('liked'); c.textContent = count - 1; }
-    else { btn.classList.add('liked'); c.textContent = count + 1; showToast('❤️ أعجبك هذا المنشور'); }
-  }
-  function savePost(id, btn) {
-    if (btn.classList.contains('saved')) { btn.classList.remove('saved'); btn.innerHTML = '🔖 حفظ'; showToast('🔖 إلغاء الحفظ'); }
-    else { btn.classList.add('saved'); btn.innerHTML = '🔖 محفوظ'; showToast('🔖 تم حفظ المنشور', 'success'); }
-  }
-  function sharePost(id) { showToast('🔗 تم نسخ رابط المنشور', 'success'); }
-  function showComments(id) { showToast('💬 قسم التعليقات قادم قريباً!'); }
-
-  // === FEED FILTER ===
-  function filterFeed(type, btn) {
-    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    const posts = document.querySelectorAll('#feedContainer .post');
-    posts.forEach(p => {
-      if (type === 'all' || type === 'following') { p.style.display = 'block'; }
-      else if (type === 'clips') { p.style.display = (p.dataset.type === 'clip' || p.dataset.type === 'clips') ? 'block' : 'none'; }
-      else if (type === 'news') { p.style.display = p.dataset.type === 'news' ? 'block' : 'none'; }
-      else if (type === 'tourney') { p.style.display = p.dataset.type === 'tourney' ? 'block' : 'none'; }
-    });
-  }
-
-  // === POLL ===
-  function votePoll(btn, pct) {
-    const container = document.getElementById('pollContainer');
-    if (container.dataset.voted) return;
-    container.dataset.voted = '1';
-    container.querySelectorAll('.poll-option').forEach(opt => {
-      opt.classList.add('voted');
-      opt.querySelector('.poll-fill').style.width = '0%';
-    });
-    btn.querySelector('.poll-fill').style.width = pct + '%';
-    container.querySelectorAll('.poll-pct').forEach(el => el.style.display = 'block');
-    showToast('✅ تم تسجيل صوتك!', 'success');
-  }
-
-  // === TABS (sidebar) ===
-  function setTab(tab) {
-    showToast('🔄 جاري الانتقال إلى ' + tab);
-  }
-  function openLogin() { showToast('🔐 نافذة تسجيل الدخول قادمة'); }
-  function openRegister() { showToast('✨ نافذة التسجيل قادمة'); }
-  function loadMore() { showToast('⬇️ جاري تحميل المزيد...'); }
-
-  // === SCROLL ANIMATIONS ===
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
-
-  // === ANIMATE STATS ===
-  function animateCount(el, target, duration = 1500) {
-    let start = 0; const step = target / (duration / 16);
-    const timer = setInterval(() => {
-      start = Math.min(start + step, target);
-      el.textContent = Math.floor(start).toLocaleString('ar');
-      if (start >= target) clearInterval(timer);
-    }, 16);
-  }
-  setTimeout(() => {
-    const el = document.getElementById('statsOnline');
-    if (el) animateCount(el, 1247);
-  }, 600);
-
-  // Close edit modal on overlay click
-  document.getElementById('editModal').addEventListener('click', function(e) {
-    if (e.target === this) closeEditModal();
-  });
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  currentUser=session?.user||null;
+  if(currentUser){await loadProfile();renderNavUser();}
+  loadFeed();
+  loadTournaments();
+  loadLeaderboard();
+  loadStreams();
+  loadStats();
+  loadYouTube();
+  loadNotifications();
+})();
 </script>
 </body>
 </html>
