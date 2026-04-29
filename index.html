@@ -364,7 +364,7 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
     </div>
     <div class="sidebar-section">
       <div class="sidebar-title"><span class="ar">حسابي</span><span class="en">My Account</span></div>
-      <div class="sidebar-item" onclick="checkAuth('profile')"><span class="icon">👤</span> <span class="ar">الملف الشخصي</span><span class="en">Profile</span></div>
+      <div class="sidebar-item" onclick="goToProfile()"><span class="icon">👤</span> <span class="ar">الملف الشخصي</span><span class="en">Profile</span></div>
       <div class="sidebar-item" onclick="checkAuth('stats')"><span class="icon">📊</span> <span class="ar">إحصائياتي</span><span class="en">My Stats</span></div>
       <div class="sidebar-item" onclick="checkAuth('achievements')"><span class="icon">🎯</span> <span class="ar">إنجازاتي</span><span class="en">Achievements</span></div>
       <div class="sidebar-item" onclick="checkAuth('messages')"><span class="icon">💬</span> <span class="ar">رسائلي</span><span class="en">Messages</span><span class="badge badge-red">5</span></div>
@@ -562,8 +562,9 @@ async function loadProfile(){
     document.getElementById('xpSection').style.display='block';
     document.getElementById('achSection').style.display='block';
     const xp=data.xp||0,level=Math.floor(xp/1000)+1,pct=((xp%1000)/1000*100).toFixed(0);
-    document.getElementById('xpLevel').textContent='💎 المستوى '+level;
-    document.getElementById('xpPts').textContent=xp+' XP';
+    const lvlIcons=['💎','⭐','🔥','👑','🎯','💪','🏆','🌟','⚡','🎪'];
+    document.getElementById('xpLevel').textContent=(lvlIcons[Math.min(level-1,9)]||'💎')+' المستوى '+level;
+    document.getElementById('xpPts').textContent=xp.toLocaleString('ar')+' XP';
     document.getElementById('xpFill').style.width=pct+'%';
     document.getElementById('xpNext').textContent=(1000-(xp%1000))+' XP للمستوى التالي';
   }
@@ -573,11 +574,11 @@ function renderNavUser(){
   const name=currentProfile?.username||currentUser?.email?.split('@')[0]||'لاعب';
   const avatar=currentProfile?.avatar_url;
   document.getElementById('navAuthArea').innerHTML=`
-    <div class="nav-user" onclick="openAuth('profile')">
+    <a href="profile.html" class="nav-user" style="text-decoration:none;">
       ${avatar?`<img src="${avatar}" alt="">`:`<div class="avatar" style="width:28px;height:28px;font-size:12px;">🎮</div>`}
       <span>${name}</span>
-    </div>
-    <button class="btn btn-ghost btn-sm" onclick="signOut()">خروج</button>`;
+    </a>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()">🚪 خروج</button>`;
 }
 
 function renderNavGuest(){
@@ -640,6 +641,11 @@ function checkAuth(action){
   return true;
 }
 
+function goToProfile(){
+  if(!currentUser){openAuth('login');showToast('⚠️ سجّل الدخول للوصول لملفك الشخصي');return;}
+  window.location.href='profile.html';
+}
+
 async function loadFeed(reset=true){
   if(reset){feedOffset=0;document.getElementById('feedContainer').innerHTML='<div class="loader">جاري...<span class="spinner"></span></div>';}
   let query=sb.from('posts').select(`*,profiles(username,avatar_url,roles)`).order('created_at',{ascending:false}).range(feedOffset,feedOffset+FEED_LIMIT-1);
@@ -680,7 +686,7 @@ function renderPost(p){
     <div class="post-header">
       <div class="avatar">${avatarHTML}</div>
       <div class="info">
-        <div class="name">${name} ${isAdmin?'<span style="color:var(--gold)">⭐</span>':''}</div>
+        <div class="name"><a href="profile.html?uid=${p.user_id}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color=''"> ${name}</a> ${isAdmin?'<span style="color:var(--gold)">⭐</span>':''}</div>
         <div class="meta">${timeAgo}</div>
       </div>
       <span class="post-tag ${tagClass[type]||'tag-clip'}">${tagMap[type]||type}</span>
@@ -689,7 +695,7 @@ function renderPost(p){
     ${mediaHTML}
     <div class="post-actions">
       <button class="action-btn" onclick="likePost('${p.id}',this)">❤️ <span class="like-count">${likes}</span></button>
-      <button class="action-btn">💬 ${comments}</button>
+      <button class="action-btn" onclick="window.location.href='post.html?id=${p.id}'">💬 ${comments}</button>
       <button class="action-btn" onclick="sharePost('${p.id}')">↗️</button>
       <button class="action-btn" onclick="savePost('${p.id}',this)">🔖</button>
       ${editBtn}${deleteBtn}
@@ -906,7 +912,7 @@ function searchYT(){
   loadYouTube(q);
 }
 
-const pages=['Home','Live','Tourney','Youtube'];
+const pages=['Home','Live','Tourney','Youtube','Profile'];
 function setPage(name,linkEl){
   pages.forEach(p=>{const el=document.getElementById('page'+p.charAt(0).toUpperCase()+p.slice(1));if(el)el.style.display='none';});
   const target=document.getElementById('page'+name.charAt(0).toUpperCase()+name.slice(1));

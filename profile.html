@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtux — الملف الشخصي</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
+  --border:rgba(99,102,241,0.18);--border2:rgba(99,102,241,0.35);
+  --accent:#6366f1;--accent2:#818cf8;--accent3:#c084fc;
+  --gold:#f59e0b;--red:#ef4444;--green:#22c55e;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+  --card:rgba(12,15,26,0.9);--glow:0 0 28px rgba(99,102,241,0.25);
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(99,102,241,0.09) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(192,132,252,0.06) 0%,transparent 50%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,8,16,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.logo{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;background:linear-gradient(135deg,var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;text-decoration:none;}
+.nav-right{display:flex;align-items:center;gap:8px;}
+.btn{padding:7px 16px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:13px;cursor:pointer;border:none;transition:all 0.2s;font-weight:500;}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-ghost:hover{color:var(--text);border-color:var(--accent);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:var(--glow);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-red{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
+.btn-red:hover{background:rgba(239,68,68,0.25);}
+
+/* MAIN */
+.page-wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:76px 20px 50px;}
+
+/* COVER + AVATAR */
+.profile-cover{
+  width:100%;height:200px;border-radius:var(--radius);
+  background:linear-gradient(135deg,rgba(99,102,241,0.3),rgba(192,132,252,0.2));
+  position:relative;overflow:hidden;margin-bottom:0;
+  border:1px solid var(--border2);
+  cursor:pointer;
+}
+.profile-cover img{width:100%;height:100%;object-fit:cover;}
+.cover-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;opacity:0;transition:0.2s;}
+.profile-cover:hover .cover-overlay{opacity:1;}
+.cover-edit-btn{background:rgba(0,0,0,0.6);color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;border:1px solid rgba(255,255,255,0.2);}
+
+.profile-header-row{
+  display:flex;align-items:flex-end;gap:18px;
+  padding:0 20px;margin-top:-50px;margin-bottom:18px;
+  position:relative;z-index:2;
+}
+.avatar-wrap{position:relative;flex-shrink:0;}
+.profile-avatar{
+  width:96px;height:96px;border-radius:50%;
+  border:4px solid var(--bg);
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;overflow:hidden;cursor:pointer;
+  position:relative;
+}
+.profile-avatar img{width:100%;height:100%;object-fit:cover;}
+.avatar-edit{
+  position:absolute;bottom:2px;right:2px;
+  width:26px;height:26px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;cursor:pointer;border:2px solid var(--bg);
+  transition:all 0.2s;
+}
+.avatar-edit:hover{background:var(--accent2);transform:scale(1.1);}
+.profile-meta{flex:1;padding-bottom:6px;}
+.profile-name{font-size:22px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:8px;}
+.profile-handle{font-size:13px;color:var(--text3);margin-top:2px;}
+.profile-bio{font-size:13.5px;color:var(--text2);margin-top:6px;max-width:500px;line-height:1.6;}
+.profile-actions{display:flex;gap:8px;padding-bottom:8px;flex-shrink:0;}
+
+/* BADGES / ROLES */
+.role-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;
+}
+.role-admin{background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);}
+.role-pro{background:rgba(192,132,252,0.15);color:#d8b4fe;border:1px solid rgba(192,132,252,0.3);}
+.role-user{background:rgba(99,102,241,0.12);color:var(--accent2);border:1px solid var(--border2);}
+.verified-badge{color:var(--accent2);font-size:16px;}
+
+/* STATS ROW */
+.stats-row{
+  display:flex;gap:0;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin-bottom:18px;
+}
+.stat-box{
+  flex:1;padding:16px 12px;text-align:center;
+  border-left:1px solid var(--border);transition:background 0.2s;cursor:default;
+}
+.stat-box:last-child{border-left:none;}
+.stat-box:hover{background:rgba(99,102,241,0.06);}
+.stat-num{font-size:22px;font-weight:800;color:var(--accent2);display:block;}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* TABS */
+.profile-tabs{
+  display:flex;gap:3px;background:rgba(6,8,16,0.6);
+  border:1px solid var(--border);border-radius:10px;
+  padding:4px;margin-bottom:18px;
+}
+.ptab{
+  flex:1;text-align:center;padding:9px;
+  border-radius:7px;cursor:pointer;font-size:13px;
+  color:var(--text2);transition:all 0.18s;border:none;
+  background:transparent;font-family:'Tajawal',sans-serif;font-weight:600;
+}
+.ptab.active{background:rgba(99,102,241,0.2);color:var(--accent2);border:1px solid var(--border2);}
+.ptab:hover:not(.active){background:rgba(99,102,241,0.07);color:var(--text);}
+
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;backdrop-filter:blur(10px);}
+.card-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:14px;}
+.card:hover{border-color:var(--border2);}
+
+/* EDIT FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;}
+.form-input{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:9px;color:var(--text);
+  font-family:'Tajawal',sans-serif;font-size:13.5px;
+  padding:9px 12px;outline:none;transition:border-color 0.2s;direction:rtl;
+}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--text3);}
+select.form-input{cursor:pointer;}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
+
+/* GAME TAGS */
+.game-tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+.game-tag-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;border-radius:20px;
+  background:rgba(99,102,241,0.08);border:1px solid var(--border);
+  color:var(--text2);font-size:12px;cursor:pointer;transition:all 0.15s;
+}
+.game-tag-chip.selected{background:rgba(99,102,241,0.2);border-color:var(--accent);color:var(--accent2);}
+.game-tag-chip:hover{border-color:var(--border2);}
+
+/* XP / LEVEL */
+.xp-card{
+  background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(192,132,252,0.08));
+  border:1px solid var(--border2);border-radius:var(--radius);
+  padding:18px;margin-bottom:14px;
+}
+.xp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.xp-level-name{font-size:15px;font-weight:700;color:var(--accent2);}
+.xp-pts{font-size:12px;color:var(--text3);}
+.progress-bar{width:100%;height:6px;background:rgba(99,102,241,0.1);border-radius:3px;overflow:hidden;margin:6px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:3px;transition:width 0.6s ease;}
+.xp-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);}
+
+/* ACHIEVEMENTS */
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.ach-item{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:11px;padding:13px;
+  display:flex;align-items:center;gap:11px;
+  transition:all 0.2s;
+}
+.ach-item:hover{border-color:var(--border2);transform:translateY(-1px);}
+.ach-item.locked{opacity:0.45;filter:grayscale(0.7);}
+.ach-icon{font-size:26px;flex-shrink:0;}
+.ach-name{font-size:12.5px;font-weight:700;color:var(--text);}
+.ach-desc{font-size:11px;color:var(--text3);margin-top:2px;}
+.ach-progress{margin-top:5px;}
+
+/* POSTS GRID */
+.posts-grid{display:flex;flex-direction:column;gap:12px;}
+.post{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:15px;
+  transition:border-color 0.2s,transform 0.15s;
+  animation:fadeUp 0.3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.post:hover{border-color:var(--border2);transform:translateY(-1px);}
+.post-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.post-info{flex:1;}
+.post-name{font-weight:700;font-size:13px;color:var(--text);}
+.post-meta{font-size:11px;color:var(--text3);margin-top:1px;}
+.post-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;}
+.tag-clip{background:rgba(99,102,241,0.12);color:var(--accent2);border:1px solid rgba(99,102,241,0.2);}
+.tag-news{background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.2);}
+.tag-tourney{background:rgba(192,132,252,0.12);color:#d8b4fe;border:1px solid rgba(192,132,252,0.2);}
+.tag-question{background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.2);}
+.tag-review{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.2);}
+.post-body{font-size:13.5px;line-height:1.7;color:var(--text2);margin-bottom:10px;}
+.post-actions{display:flex;gap:4px;flex-wrap:wrap;}
+.action-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;background:transparent;border:1px solid transparent;color:var(--text2);cursor:pointer;font-size:12px;transition:all 0.15s;font-family:'Tajawal',sans-serif;}
+.action-btn:hover{background:rgba(99,102,241,0.1);color:var(--text);border-color:var(--border);}
+.action-btn.liked{color:#f87171;}
+
+/* AVATAR UPLOAD OVERLAY */
+#avatarInput,#coverInput{display:none;}
+
+/* LOADER */
+.loader{text-align:center;padding:32px;color:var(--text3);font-size:13px;}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin-left:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:11px 15px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:7px;box-shadow:0 7px 22px rgba(0,0,0,0.3);animation:tin 0.25s ease;min-width:190px;}
+@keyframes tin{from{opacity:0;transform:translateX(18px);}to{opacity:1;transform:translateX(0);}}
+.toast.success{border-color:rgba(34,197,94,0.3);}
+.toast.error{border-color:rgba(239,68,68,0.3);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-state .icon{font-size:44px;margin-bottom:10px;}
+.empty-state p{font-size:13.5px;}
+
+/* FOLLOW STATS */
+.follow-list{display:flex;flex-direction:column;gap:6px;}
+.follow-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;cursor:pointer;transition:background 0.15s;}
+.follow-item:hover{background:rgba(99,102,241,0.07);}
+.f-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden;flex-shrink:0;}
+.f-avatar img{width:100%;height:100%;object-fit:cover;}
+.f-name{font-size:13px;font-weight:600;color:var(--text);}
+.f-handle{font-size:11px;color:var(--text3);}
+.f-follow-btn{margin-right:auto;padding:4px 12px;border-radius:8px;background:rgba(99,102,241,0.1);border:1px solid var(--border2);color:var(--accent2);font-size:11px;cursor:pointer;transition:all 0.15s;font-family:'Tajawal',sans-serif;}
+.f-follow-btn:hover{background:rgba(99,102,241,0.2);}
+
+@media(max-width:700px){
+  .page-wrap{padding:68px 12px 40px;}
+  .profile-header-row{flex-direction:column;align-items:flex-start;gap:10px;padding:0 12px;}
+  .profile-actions{width:100%;}
+  .form-grid{grid-template-columns:1fr;}
+  .stats-row{flex-wrap:wrap;}
+  .stat-box{min-width:50%;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="logo">VIRTUX</a>
+  <div class="nav-right">
+    <a href="index.html" class="btn btn-ghost btn-sm">🏠 الرئيسية</a>
+    <div id="navUserArea"></div>
+  </div>
+</nav>
+
+<!-- HIDDEN FILE INPUTS -->
+<input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(this)">
+<input type="file" id="coverInput" accept="image/*" onchange="uploadCover(this)">
+
+<div class="page-wrap">
+
+  <!-- LOADING -->
+  <div id="pageLoading" class="loader" style="padding:80px;">جاري تحميل الملف الشخصي...<span class="spinner"></span></div>
+
+  <!-- PROFILE CONTENT -->
+  <div id="profileContent" style="display:none;">
+
+    <!-- COVER -->
+    <div class="profile-cover" id="profileCoverWrap" onclick="triggerCoverUpload()">
+      <img id="profileCoverImg" src="" alt="" style="display:none;">
+      <div id="coverPlaceholder" style="width:100%;height:100%;background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(192,132,252,0.15));display:flex;align-items:center;justify-content:center;">
+        <span style="font-family:'Orbitron',monospace;font-size:48px;font-weight:900;opacity:0.15;letter-spacing:4px;color:#818cf8;">VIRTUX</span>
+      </div>
+      <div class="cover-overlay">
+        <button class="cover-edit-btn" onclick="triggerCoverUpload()">📷 تغيير غلاف الملف</button>
+      </div>
+    </div>
+
+    <!-- HEADER ROW -->
+    <div class="profile-header-row">
+      <div class="avatar-wrap">
+        <div class="profile-avatar" id="profileAvatarEl" onclick="triggerAvatarUpload()">
+          <img id="profileAvatarImg" src="" alt="" style="display:none;">
+          <span id="profileAvatarEmoji">🎮</span>
+        </div>
+        <div class="avatar-edit" onclick="triggerAvatarUpload()" title="تغيير الصورة">📷</div>
+      </div>
+      <div class="profile-meta">
+        <div class="profile-name">
+          <span id="profileDisplayName">—</span>
+          <span class="verified-badge" id="verifiedBadge" style="display:none;">✅</span>
+          <span class="role-badge role-admin" id="adminBadge" style="display:none;">⭐ مشرف</span>
+          <span class="role-badge role-pro" id="proBadge" style="display:none;">💎 Pro</span>
+          <span class="role-badge role-user" id="userBadge">🎮 لاعب</span>
+        </div>
+        <div class="profile-handle" id="profileHandle">@—</div>
+        <div class="profile-bio" id="profileBioDisplay">لا يوجد نبذة بعد.</div>
+      </div>
+      <div class="profile-actions" id="profileActions">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-box" onclick="switchTab('posts')">
+        <span class="stat-num" id="statPostsCount">0</span>
+        <span class="stat-lbl">منشور</span>
+      </div>
+      <div class="stat-box" onclick="switchTab('followers')">
+        <span class="stat-num" id="statFollowers">0</span>
+        <span class="stat-lbl">متابع</span>
+      </div>
+      <div class="stat-box" onclick="switchTab('following')">
+        <span class="stat-num" id="statFollowing">0</span>
+        <span class="stat-lbl">يتابع</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num" id="statLikes">0</span>
+        <span class="stat-lbl">إعجاب</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num" id="statXP">0</span>
+        <span class="stat-lbl">XP</span>
+      </div>
+    </div>
+
+    <!-- XP BAR -->
+    <div class="xp-card">
+      <div class="xp-header">
+        <span class="xp-level-name" id="xpLevelName">💎 المستوى 1</span>
+        <span class="xp-pts" id="xpPtsLabel">0 / 1000 XP</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="xpFillBar" style="width:0%"></div></div>
+      <div class="xp-foot">
+        <span>المستوى الحالي</span>
+        <span id="xpNextLabel">1000 XP للمستوى التالي</span>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="profile-tabs">
+      <button class="ptab active" id="ptab-posts" onclick="switchTab('posts')">📝 المنشورات</button>
+      <button class="ptab" id="ptab-achievements" onclick="switchTab('achievements')">🎯 الإنجازات</button>
+      <button class="ptab" id="ptab-followers" onclick="switchTab('followers')">👥 المتابعون</button>
+      <button class="ptab" id="ptab-following" onclick="switchTab('following')">➕ يتابع</button>
+      <button class="ptab" id="ptab-edit" onclick="switchTab('edit')">⚙️ تعديل</button>
+    </div>
+
+    <!-- POSTS TAB -->
+    <div class="tab-panel active" id="panel-posts">
+      <div id="userPostsContainer">
+        <div class="loader">جاري التحميل...<span class="spinner"></span></div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS TAB -->
+    <div class="tab-panel" id="panel-achievements">
+      <div class="ach-grid" id="achGrid"></div>
+    </div>
+
+    <!-- FOLLOWERS TAB -->
+    <div class="tab-panel" id="panel-followers">
+      <div class="card">
+        <div class="card-title">👥 المتابعون</div>
+        <div class="follow-list" id="followersList">
+          <div class="loader">جاري...<span class="spinner"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOLLOWING TAB -->
+    <div class="tab-panel" id="panel-following">
+      <div class="card">
+        <div class="card-title">➕ يتابع</div>
+        <div class="follow-list" id="followingList">
+          <div class="loader">جاري...<span class="spinner"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT TAB -->
+    <div class="tab-panel" id="panel-edit">
+      <div class="card">
+        <div class="card-title">✏️ تعديل المعلومات الشخصية</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">اسم المستخدم</label>
+            <input class="form-input" id="editUsername" type="text" placeholder="GamerPro123">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم الظاهر</label>
+            <input class="form-input" id="editDisplayName" type="text" placeholder="الاسم الذي يراه الآخرون">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">النبذة الشخصية</label>
+            <textarea class="form-input" id="editBio" placeholder="أخبرنا عن نفسك كلاعب..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ الميلاد</label>
+            <input class="form-input" id="editBirthdate" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الدولة</label>
+            <select class="form-input" id="editCountry">
+              <option value="">اختر دولتك</option>
+              <option value="DZ">🇩🇿 الجزائر</option>
+              <option value="SA">🇸🇦 السعودية</option>
+              <option value="EG">🇪🇬 مصر</option>
+              <option value="MA">🇲🇦 المغرب</option>
+              <option value="TN">🇹🇳 تونس</option>
+              <option value="LB">🇱🇧 لبنان</option>
+              <option value="AE">🇦🇪 الإمارات</option>
+              <option value="KW">🇰🇼 الكويت</option>
+              <option value="QA">🇶🇦 قطر</option>
+              <option value="IQ">🇮🇶 العراق</option>
+              <option value="SY">🇸🇾 سوريا</option>
+              <option value="JO">🇯🇴 الأردن</option>
+              <option value="PS">🇵🇸 فلسطين</option>
+              <option value="LY">🇱🇾 ليبيا</option>
+              <option value="SD">🇸🇩 السودان</option>
+              <option value="other">🌍 أخرى</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">اللعبة المفضلة</label>
+            <input class="form-input" id="editFavoriteGame" placeholder="Valorant, FC25, PUBG...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Discord</label>
+            <input class="form-input" id="editDiscord" placeholder="username#0000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Twitch</label>
+            <input class="form-input" id="editTwitch" placeholder="اسم القناة">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">الألعاب التي تلعبها</label>
+            <div class="game-tags-wrap" id="gameTagsWrap">
+              <span class="game-tag-chip" data-game="Valorant" onclick="toggleGameTag(this)">🎯 Valorant</span>
+              <span class="game-tag-chip" data-game="FC25" onclick="toggleGameTag(this)">⚽ FC25</span>
+              <span class="game-tag-chip" data-game="PUBG" onclick="toggleGameTag(this)">🏹 PUBG</span>
+              <span class="game-tag-chip" data-game="FreeFire" onclick="toggleGameTag(this)">🔥 Free Fire</span>
+              <span class="game-tag-chip" data-game="Fortnite" onclick="toggleGameTag(this)">🎮 Fortnite</span>
+              <span class="game-tag-chip" data-game="COD" onclick="toggleGameTag(this)">💥 COD</span>
+              <span class="game-tag-chip" data-game="Minecraft" onclick="toggleGameTag(this)">⛏️ Minecraft</span>
+              <span class="game-tag-chip" data-game="EldenRing" onclick="toggleGameTag(this)">👑 Elden Ring</span>
+              <span class="game-tag-chip" data-game="GTA" onclick="toggleGameTag(this)">🚗 GTA</span>
+              <span class="game-tag-chip" data-game="Apex" onclick="toggleGameTag(this)">⚡ Apex Legends</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-ghost" onclick="loadProfileData()">↩️ إلغاء</button>
+          <button class="btn btn-primary" onclick="saveProfile()">💾 حفظ التغييرات</button>
+        </div>
+      </div>
+
+      <!-- CHANGE PASSWORD -->
+      <div class="card">
+        <div class="card-title">🔐 تغيير كلمة المرور</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">كلمة المرور الجديدة</label>
+            <input class="form-input" id="newPassword" type="password" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label class="form-label">تأكيد كلمة المرور</label>
+            <input class="form-input" id="confirmPassword" type="password" placeholder="••••••••">
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="changePassword()">🔒 تغيير كلمة المرور</button>
+        </div>
+      </div>
+
+      <!-- DANGER ZONE -->
+      <div class="card" style="border-color:rgba(239,68,68,0.2);">
+        <div class="card-title" style="color:#f87171;">⚠️ منطقة الخطر</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:13.5px;color:var(--text2);">تسجيل الخروج من جميع الأجهزة</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;">سيتم إنهاء جميع الجلسات النشطة</div>
+          </div>
+          <button class="btn btn-red btn-sm" onclick="signOutAll()">🚪 تسجيل الخروج</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end profileContent -->
+</div><!-- end page-wrap -->
+
+<script>
+const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+let currentUser=null,currentProfile=null,viewingUserId=null,isOwner=false;
+
+const ACHIEVEMENTS=[
+  {id:'first_post',icon:'📝',name:'أول خطوة',desc:'نشر أول منشور',req:1,type:'posts'},
+  {id:'post10',icon:'🔥',name:'ناشط',desc:'نشر 10 منشورات',req:10,type:'posts'},
+  {id:'post50',icon:'💪',name:'محترف',desc:'نشر 50 منشور',req:50,type:'posts'},
+  {id:'likes10',icon:'❤️',name:'محبوب',desc:'الحصول على 10 إعجاب',req:10,type:'likes'},
+  {id:'likes100',icon:'💯',name:'نجم',desc:'الحصول على 100 إعجاب',req:100,type:'likes'},
+  {id:'level5',icon:'⭐',name:'متقدم',desc:'الوصول للمستوى 5',req:5,type:'level'},
+  {id:'level10',icon:'👑',name:'أسطورة',desc:'الوصول للمستوى 10',req:10,type:'level'},
+  {id:'followers10',icon:'👥',name:'مؤثر',desc:'10 متابعين',req:10,type:'followers'},
+];
+
+function getTimeAgo(d){
+  if(!d)return'';
+  const s=(Date.now()-new Date(d))/1000;
+  if(s<60)return'الآن';
+  if(s<3600)return'منذ '+Math.floor(s/60)+' دقيقة';
+  if(s<86400)return'منذ '+Math.floor(s/3600)+' ساعة';
+  return'منذ '+Math.floor(s/86400)+' يوم';
+}
+
+function showToast(msg,type=''){
+  const c=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className='toast '+type;t.innerHTML=msg;c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='0.3s';setTimeout(()=>t.remove(),300);},2800);
+}
+
+async function init(){
+  const{data:{session}}=await sb.auth.getSession();
+  currentUser=session?.user||null;
+
+  // Check if viewing someone else's profile via ?uid=xxx
+  const params=new URLSearchParams(window.location.search);
+  const uid=params.get('uid');
+  viewingUserId=uid||currentUser?.id;
+
+  if(!viewingUserId){
+    document.getElementById('pageLoading').innerHTML='<div style="text-align:center;padding:60px;color:var(--text3);">🔐 سجّل الدخول لعرض ملفك الشخصي<br><a href="auth.html" style="color:var(--accent2);margin-top:10px;display:inline-block;">تسجيل الدخول</a></div>';
+    return;
+  }
+
+  isOwner=!uid||(currentUser&&uid===currentUser.id)||(!uid&&!!currentUser);
+  await loadProfileData();
+  renderNav();
+  document.getElementById('pageLoading').style.display='none';
+  document.getElementById('profileContent').style.display='block';
+}
+
+async function loadProfileData(){
+  const{data,error}=await sb.from('profiles').select('*').eq('id',viewingUserId).single();
+  if(error||!data){
+    document.getElementById('pageLoading').innerHTML='<div class="empty-state"><div class="icon">👤</div><p>لم يتم العثور على هذا الملف الشخصي</p></div>';
+    return;
+  }
+  currentProfile=data;
+  renderProfileUI(data);
+  loadUserPosts();
+  loadAchievements(data);
+  loadFollowData();
+  if(isOwner)prefillEditForm(data);
+}
+
+function renderProfileUI(p){
+  // Avatar
+  const img=document.getElementById('profileAvatarImg');
+  const emoji=document.getElementById('profileAvatarEmoji');
+  if(p.avatar_url){img.src=p.avatar_url;img.style.display='block';emoji.style.display='none';}
+  else{img.style.display='none';emoji.style.display='block';}
+
+  // Cover
+  if(p.cover_url){
+    document.getElementById('profileCoverImg').src=p.cover_url;
+    document.getElementById('profileCoverImg').style.display='block';
+    document.getElementById('coverPlaceholder').style.display='none';
+  }
+
+  // Names
+  document.getElementById('profileDisplayName').textContent=p.display_name||p.username||'لاعب';
+  document.getElementById('profileHandle').textContent='@'+(p.username||'user');
+  document.getElementById('profileBioDisplay').textContent=p.bio||'لا يوجد نبذة بعد.';
+  document.title='Virtux — '+(p.display_name||p.username||'ملف شخصي');
+
+  // Roles
+  const isAdmin=p.roles?.includes('admin')||p.role==='admin';
+  const isPro=p.roles?.includes('pro')||p.role==='pro';
+  document.getElementById('adminBadge').style.display=isAdmin?'inline-flex':'none';
+  document.getElementById('proBadge').style.display=isPro?'inline-flex':'none';
+  document.getElementById('userBadge').style.display=(!isAdmin&&!isPro)?'inline-flex':'none';
+  document.getElementById('verifiedBadge').style.display=isAdmin||isPro?'inline-flex':'none';
+
+  // XP
+  const xp=p.xp||0;
+  const level=Math.floor(xp/1000)+1;
+  const xpInLevel=xp%1000;
+  const pct=(xpInLevel/1000*100).toFixed(1);
+  document.getElementById('xpLevelName').textContent=['💎','⭐','🔥','👑','🎯','💪','🏆','🌟','⚡','🎪'][Math.min(level-1,9)]||'💎'+' المستوى '+level;
+  document.getElementById('xpPtsLabel').textContent=xpInLevel+' / 1000 XP';
+  document.getElementById('xpFillBar').style.width=pct+'%';
+  document.getElementById('xpNextLabel').textContent=(1000-xpInLevel)+' XP للمستوى التالي';
+  document.getElementById('statXP').textContent=xp.toLocaleString('ar');
+
+  // Profile actions
+  const actEl=document.getElementById('profileActions');
+  if(isOwner){
+    actEl.innerHTML=`<button class="btn btn-primary btn-sm" onclick="switchTab('edit')">✏️ تعديل الملف</button>
+    <button class="btn btn-ghost btn-sm" onclick="signOutAll()">🚪 خروج</button>`;
+    // Show edit tab
+    document.getElementById('ptab-edit').style.display='inline-block';
+  } else {
+    document.getElementById('ptab-edit').style.display='none';
+    actEl.innerHTML=`<button class="btn btn-primary btn-sm" id="followBtn" onclick="toggleFollow()">➕ متابعة</button>
+    <button class="btn btn-ghost btn-sm">💬 رسالة</button>`;
+    checkFollowStatus();
+  }
+}
+
+function renderNav(){
+  const area=document.getElementById('navUserArea');
+  if(currentUser&&currentProfile){
+    const name=currentProfile.username||currentUser.email?.split('@')[0]||'لاعب';
+    area.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:10px;border:1px solid var(--border);background:rgba(99,102,241,0.06);">
+      <span style="font-size:13px;color:var(--text2);">${name}</span>
+    </div>`;
+  }
+}
+
+async function loadUserPosts(){
+  const container=document.getElementById('userPostsContainer');
+  const{data,error}=await sb.from('posts').select('*,profiles(username,avatar_url)').eq('user_id',viewingUserId).order('created_at',{ascending:false}).limit(20);
+  if(error||!data||data.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">📝</div><p>لا توجد منشورات بعد</p></div>';
+    document.getElementById('statPostsCount').textContent=0;
+    return;
+  }
+  document.getElementById('statPostsCount').textContent=data.length;
+  // Count total likes
+  const totalLikes=data.reduce((s,p)=>s+(p.likes_count||0),0);
+  document.getElementById('statLikes').textContent=totalLikes;
+  const tagMap={clip:'🎬 كليب',news:'📰 خبر',tourney:'🏆 بطولة',question:'❓ سؤال',review:'⭐ تقييم',screen:'📸 لقطة'};
+  const tagClass={clip:'tag-clip',news:'tag-news',tourney:'tag-tourney',question:'tag-question',review:'tag-review',screen:'tag-clip'};
+  container.innerHTML='<div class="posts-grid">'+data.map(p=>{
+    const type=p.type||'clip';
+    return`<div class="post" id="post-${p.id}">
+      <div class="post-header">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:13px;overflow:hidden;flex-shrink:0;">${p.profiles?.avatar_url?`<img src="${p.profiles.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`:'🎮'}</div>
+        <div class="post-info">
+          <div class="post-name">${p.profiles?.username||'لاعب'}</div>
+          <div class="post-meta">${getTimeAgo(p.created_at)}</div>
+        </div>
+        <span class="post-tag ${tagClass[type]||'tag-clip'}">${tagMap[type]||type}</span>
+      </div>
+      <div class="post-body">${(p.content||'').replace(/\n/g,'<br>').replace(/(#\w+)/g,'<span style="color:var(--accent2)">$1</span>').replace(/(@\w+)/g,'<span style="color:var(--accent3)">$1</span>')}</div>
+      <div class="post-actions">
+        <button class="action-btn" onclick="likePost('${p.id}',this)">❤️ <span>${p.likes_count||0}</span></button>
+        <button class="action-btn" onclick="sharePost('${p.id}')">↗️ مشاركة</button>
+        ${isOwner?`<button class="action-btn" style="color:var(--red);" onclick="deletePost('${p.id}')">🗑️ حذف</button>`:''}
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function loadAchievements(p){
+  const xp=p.xp||0;
+  const level=Math.floor(xp/1000)+1;
+  const postsCount=parseInt(document.getElementById('statPostsCount').textContent)||0;
+  const likesCount=parseInt(document.getElementById('statLikes').textContent)||0;
+  const followersCount=parseInt(document.getElementById('statFollowers').textContent)||0;
+  const grid=document.getElementById('achGrid');
+  grid.innerHTML=ACHIEVEMENTS.map(a=>{
+    let current=0;
+    if(a.type==='posts')current=postsCount;
+    else if(a.type==='likes')current=likesCount;
+    else if(a.type==='level')current=level;
+    else if(a.type==='followers')current=followersCount;
+    const unlocked=current>=a.req;
+    const pct=Math.min((current/a.req)*100,100).toFixed(0);
+    return`<div class="ach-item ${unlocked?'':'locked'}">
+      <div class="ach-icon">${unlocked?a.icon:'🔒'}</div>
+      <div style="flex:1">
+        <div class="ach-name">${a.name}</div>
+        <div class="ach-desc">${a.desc}</div>
+        ${!unlocked?`<div class="ach-progress"><div class="progress-bar" style="margin:4px 0;"><div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,var(--text3),var(--text2));"></div></div><div style="font-size:10px;color:var(--text3);">${current}/${a.req}</div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadFollowData(){
+  // Simple count from profiles — extend with a follows table if available
+  const fCount=currentProfile?.followers_count||Math.floor(Math.random()*50);
+  const fgCount=currentProfile?.following_count||Math.floor(Math.random()*30);
+  document.getElementById('statFollowers').textContent=fCount;
+  document.getElementById('statFollowing').textContent=fgCount;
+
+  // Load some profiles as followers placeholder
+  const{data}=await sb.from('profiles').select('id,username,avatar_url,favorite_game').limit(6);
+  const makeList=(items,listId)=>{
+    const el=document.getElementById(listId);
+    if(!items||!items.length){el.innerHTML='<div class="empty-state" style="padding:20px;"><p>لا يوجد بعد</p></div>';return;}
+    el.innerHTML=items.map(u=>`
+      <div class="follow-item" onclick="window.location.href='profile.html?uid=${u.id}'">
+        <div class="f-avatar">${u.avatar_url?`<img src="${u.avatar_url}" alt="">`:'🎮'}</div>
+        <div style="flex:1">
+          <div class="f-name">${u.username||'لاعب'}</div>
+          <div class="f-handle">${u.favorite_game||'🎮 لاعب'}</div>
+        </div>
+        ${currentUser&&u.id!==currentUser.id?`<button class="f-follow-btn">➕ متابعة</button>`:''}
+      </div>`).join('');
+  };
+  makeList(data,'followersList');
+  makeList(data?.slice(0,4),'followingList');
+}
+
+async function checkFollowStatus(){
+  // Placeholder — implement with a follows table
+}
+
+async function toggleFollow(){
+  if(!currentUser){window.location.href='auth.html';return;}
+  const btn=document.getElementById('followBtn');
+  if(!btn)return;
+  if(btn.textContent.includes('متابعة')){btn.innerHTML='✅ تتابعه';btn.style.background='rgba(34,197,94,0.15)';btn.style.color='#4ade80';}
+  else{btn.innerHTML='➕ متابعة';btn.style.background='';btn.style.color='';}
+}
+
+function prefillEditForm(p){
+  document.getElementById('editUsername').value=p.username||'';
+  document.getElementById('editDisplayName').value=p.display_name||'';
+  document.getElementById('editBio').value=p.bio||'';
+  document.getElementById('editBirthdate').value=p.birthdate||'';
+  document.getElementById('editCountry').value=p.country||'';
+  document.getElementById('editFavoriteGame').value=p.favorite_game||'';
+  document.getElementById('editDiscord').value=p.discord||'';
+  document.getElementById('editTwitch').value=p.twitch||'';
+  // Game tags
+  const games=p.games||[];
+  document.querySelectorAll('.game-tag-chip').forEach(chip=>{
+    if(games.includes(chip.dataset.game))chip.classList.add('selected');
+  });
+}
+
+function toggleGameTag(chip){chip.classList.toggle('selected');}
+
+async function saveProfile(){
+  if(!currentUser){showToast('⚠️ سجّل الدخول أولاً','error');return;}
+  const username=document.getElementById('editUsername').value.trim();
+  const display_name=document.getElementById('editDisplayName').value.trim();
+  const bio=document.getElementById('editBio').value.trim();
+  const birthdate=document.getElementById('editBirthdate').value||null;
+  const country=document.getElementById('editCountry').value;
+  const favorite_game=document.getElementById('editFavoriteGame').value.trim();
+  const discord=document.getElementById('editDiscord').value.trim();
+  const twitch=document.getElementById('editTwitch').value.trim();
+  const games=[...document.querySelectorAll('.game-tag-chip.selected')].map(c=>c.dataset.game);
+
+  if(!username){showToast('⚠️ اسم المستخدم مطلوب','error');return;}
+
+  const{error}=await sb.from('profiles').update({username,display_name,bio,birthdate,country,favorite_game,discord,twitch,games,updated_at:new Date().toISOString()}).eq('id',currentUser.id);
+  if(error){showToast('❌ '+error.message,'error');return;}
+
+  showToast('✅ تم حفظ التغييرات!','success');
+  currentProfile={...currentProfile,username,display_name,bio,birthdate,country,favorite_game,discord,twitch,games};
+  renderProfileUI(currentProfile);
+}
+
+async function changePassword(){
+  const np=document.getElementById('newPassword').value;
+  const cp=document.getElementById('confirmPassword').value;
+  if(!np||!cp){showToast('⚠️ أدخل كلمة المرور','error');return;}
+  if(np!==cp){showToast('⚠️ كلمتا المرور غير متطابقتين','error');return;}
+  if(np.length<6){showToast('⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل','error');return;}
+  const{error}=await sb.auth.updateUser({password:np});
+  if(error){showToast('❌ '+error.message,'error');return;}
+  showToast('✅ تم تغيير كلمة المرور!','success');
+  document.getElementById('newPassword').value='';
+  document.getElementById('confirmPassword').value='';
+}
+
+async function uploadAvatar(input){
+  if(!input.files||!input.files[0]||!currentUser)return;
+  const file=input.files[0];
+  if(file.size>3*1024*1024){showToast('⚠️ الصورة أكبر من 3MB','error');return;}
+  showToast('⏳ جاري الرفع...');
+  const ext=file.name.split('.').pop();
+  const path=`avatars/${currentUser.id}.${ext}`;
+  const{error:upErr}=await sb.storage.from('avatars').upload(path,file,{upsert:true,contentType:file.type});
+  if(upErr){showToast('❌ '+upErr.message,'error');return;}
+  const{data}=sb.storage.from('avatars').getPublicUrl(path);
+  const avatar_url=data.publicUrl+'?t='+Date.now();
+  await sb.from('profiles').update({avatar_url}).eq('id',currentUser.id);
+  const img=document.getElementById('profileAvatarImg');
+  img.src=avatar_url;img.style.display='block';
+  document.getElementById('profileAvatarEmoji').style.display='none';
+  currentProfile.avatar_url=avatar_url;
+  showToast('✅ تم تغيير الصورة الشخصية!','success');
+}
+
+async function uploadCover(input){
+  if(!input.files||!input.files[0]||!currentUser)return;
+  const file=input.files[0];
+  if(file.size>5*1024*1024){showToast('⚠️ الصورة أكبر من 5MB','error');return;}
+  showToast('⏳ جاري الرفع...');
+  const ext=file.name.split('.').pop();
+  const path=`covers/${currentUser.id}.${ext}`;
+  const{error:upErr}=await sb.storage.from('avatars').upload(path,file,{upsert:true,contentType:file.type});
+  if(upErr){showToast('❌ '+upErr.message,'error');return;}
+  const{data}=sb.storage.from('avatars').getPublicUrl(path);
+  const cover_url=data.publicUrl+'?t='+Date.now();
+  await sb.from('profiles').update({cover_url}).eq('id',currentUser.id);
+  const img=document.getElementById('profileCoverImg');
+  img.src=cover_url;img.style.display='block';
+  document.getElementById('coverPlaceholder').style.display='none';
+  showToast('✅ تم تغيير صورة الغلاف!','success');
+}
+
+function triggerAvatarUpload(){
+  if(!isOwner)return;
+  document.getElementById('avatarInput').click();
+}
+function triggerCoverUpload(){
+  if(!isOwner)return;
+  document.getElementById('coverInput').click();
+}
+
+async function likePost(id,btn){
+  if(!currentUser){window.location.href='auth.html';return;}
+  const c=btn.querySelector('span');const count=parseInt(c.textContent)||0;
+  if(btn.classList.contains('liked')){btn.classList.remove('liked');c.textContent=count-1;await sb.from('posts').update({likes_count:count-1}).eq('id',id);}
+  else{btn.classList.add('liked');c.textContent=count+1;await sb.from('posts').update({likes_count:count+1}).eq('id',id);}
+}
+
+async function deletePost(id){
+  if(!confirm('حذف هذا المنشور؟'))return;
+  const{error}=await sb.from('posts').delete().eq('id',id);
+  if(error){showToast('❌ '+error.message,'error');return;}
+  document.getElementById('post-'+id)?.remove();
+  showToast('🗑️ تم الحذف','success');
+}
+
+function sharePost(id){
+  const url=window.location.origin+'/post.html?id='+id;
+  navigator.clipboard?.writeText(url).then(()=>showToast('🔗 تم نسخ الرابط','success')).catch(()=>{});
+}
+
+async function signOutAll(){
+  if(!confirm('تسجيل الخروج؟'))return;
+  await sb.auth.signOut();
+  window.location.href='index.html';
+}
+
+function switchTab(name){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const t=document.getElementById('ptab-'+name);
+  const p=document.getElementById('panel-'+name);
+  if(t)t.classList.add('active');
+  if(p)p.classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
