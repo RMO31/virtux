@@ -1,1838 +1,1145 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
-      --border:rgba(99,102,241,0.18);--border2:rgba(99,102,241,0.35);
-      --accent:#6366f1;--accent2:#818cf8;--accent3:#c084fc;
-      --gold:#f59e0b;--red:#ef4444;--green:#22c55e;
-      --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
-    }
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Poppins',sans-serif;background:#0a0000;color:#fff;min-height:100vh;overflow:hidden}
-    #bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
-    #loginPage,#adminPage{position:relative;z-index:1}
-    #loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh;background:transparent}
-    .login-box{background:rgba(12,15,26,0.95);border:1px solid rgba(99,102,241,0.35);border-radius:14px;padding:36px 32px;width:340px;text-align:center;backdrop-filter:blur(6px);box-shadow:0 0 40px rgba(200,0,0,0.2)}
-    .login-box h1{color:#818cf8;font-size:24px;margin-bottom:6px}
-    .login-box p{color:#776;font-size:13px;margin-bottom:24px}
-    .login-box input{width:100%;padding:10px 14px;border-radius:9px;border:1px solid rgba(99,102,241,0.25);background:rgba(17,21,37,0.8);color:#e2e8f0;font-size:14px;margin-bottom:12px}
-    .login-box input:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.12)}
-    .btn-login{width:100%;padding:10px;background:linear-gradient(135deg,#6366f1,#c084fc);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:"Tajawal",sans-serif;}
-    .btn-login:hover{opacity:0.9;transform:translateY(-1px);}
-    .err{color:#f87171;font-size:12px;margin-top:8px;display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:8px 12px;}
-    #adminPage{display:none;height:100vh;flex-direction:column;background:transparent}
-    .topbar{background:rgba(6,8,16,0.96);border-bottom:1px solid rgba(99,102,241,0.2);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);}
-    .topbar h1{color:#ff3333;font-size:16px}
-    .topbar-right{display:flex;align-items:center;gap:10px}
-    .conn{font-size:12px;padding:3px 10px;border-radius:7px;background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.25);}
-    .conn.fail{background:rgba(239,68,68,0.1);color:#f87171;border-color:rgba(239,68,68,0.25);}
-    .btn-logout{background:transparent;border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:"Tajawal",sans-serif;}
-    .btn-logout:hover{background:#f55;color:#fff}
-    .body{display:flex;flex:1;height:calc(100vh - 46px)}
-    .sidebar{width:190px;background:rgba(8,10,18,0.92);border-right:1px solid rgba(99,102,241,0.15);padding:12px 8px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;backdrop-filter:blur(3px)}
-    .sb-btn{background:transparent;border:none;color:#94a3b8;padding:9px 12px;border-radius:9px;font-size:13px;cursor:pointer;text-align:right;font-family:"Tajawal",sans-serif;}
-    .sb-btn:hover,.sb-btn.active{background:rgba(99,102,241,0.12);color:#818cf8;}
-    .sb-btn.active{border-right:3px solid #6366f1;border-left:none;}
-    .sb-sec{font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:1px;padding:10px 12px 3px;}
-    .main{flex:1;padding:20px;overflow-y:auto;background:rgba(6,8,16,0.7);backdrop-filter:blur(8px);}
-    .ap{display:none}
-    .ap.active{display:block}
-    .page-title{font-size:18px;color:#ff3333;font-weight:700;margin-bottom:16px}
-    .card{background:rgba(12,15,26,0.85);border:1px solid rgba(99,102,241,0.15);border-radius:14px;padding:18px;margin-bottom:18px;backdrop-filter:blur(10px);}
-    .card h3{color:#818cf8;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;}
-    .fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-    .fg input,.fg select,.fg textarea{padding:9px 12px;border-radius:9px;border:1px solid rgba(99,102,241,0.2);background:rgba(17,21,37,0.8);color:#e2e8f0;font-size:13px;width:100%;font-family:"Tajawal",sans-serif;}
-    .full{grid-column:1/-1}
-    .btn-pub{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;border-radius:9px;padding:9px 22px;font-size:13px;font-weight:700;cursor:pointer;font-family:"Tajawal",sans-serif;}
-    .btn-pub:hover{opacity:0.88;transform:translateY(-1px);}
-    .btn-pub:disabled{background:#333;color:#666;cursor:not-allowed}
-    .ok{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#4ade80;border-radius:9px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-    .er{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;border-radius:9px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none}
-    .img-upload{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .img-upload input[type=file]{display:none}
-    .img-upload label{background:#3a0000;color:#ff3333;border:1px solid #440000;border-radius:7px;padding:8px 12px;font-size:12px;cursor:pointer}
-    .img-preview{width:40px;height:40px;border-radius:6px;object-fit:cover;display:none}
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:18px}
-    .stat-card{background:rgba(12,15,26,0.85);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:14px;text-align:center;backdrop-filter:blur(8px);}
-    .stat-number{font-size:28px;font-weight:700;color:#818cf8;}
-    .stat-label{font-size:11px;color:#887;margin-top:4px}
-    .posts-list{display:flex;flex-direction:column;gap:8px}
-    .pi{background:rgba(17,21,37,0.7);border:1px solid rgba(99,102,241,0.12);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
-    .pi-icon{width:40px;height:40px;border-radius:6px;object-fit:cover;display:flex;align-items:center;justify-content:center;background:#2a0000;font-size:20px}
-    .pi-info{flex:1}
-    .pi-title{font-size:13px;font-weight:600;color:#ddd}
-    .pi-meta{font-size:11px;color:#776;margin-top:2px}
-    .pi-tag{display:inline-block;font-size:10px;background:#2a0000;color:#ff3333;border-radius:3px;padding:1px 7px;margin-top:3px}
-    .btn-edit{background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:#818cf8;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:"Tajawal",sans-serif;}
-    .btn-del{background:transparent;border:1px solid rgba(239,68,68,0.3);color:#f87171;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:"Tajawal",sans-serif;}
-    .btn-edit:hover{background:rgba(99,102,241,0.2);color:#c7d2fe;}
-    .btn-del:hover{background:rgba(239,68,68,0.15);color:#fca5a5;}
-    .empty{text-align:center;color:#554;padding:30px;font-size:13px}
-    .loading{text-align:center;color:#776;padding:20px;font-size:13px}
-    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center}
-    .modal-overlay.open{display:flex}
-    .modal-box{background:rgba(12,15,26,0.98);border:1px solid rgba(99,102,241,0.35);border-radius:16px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto}
-    .modal-top{background:rgba(6,8,16,0.6);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(99,102,241,0.15);}
-    .modal-top h2{font-size:16px;color:#818cf8;}
-    .modal-close{background:transparent;border:1px solid #556;color:#aaa;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:16px}
-    .modal-body{padding:18px}
-    .channel-card-admin{background:#1a0000;border:1px solid #330000;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
-    .channel-avatar-admin{width:50px;height:50px;border-radius:50%;object-fit:cover}
-    .channel-info-admin{flex:1}
-    .channel-name-admin{font-size:13px;font-weight:600;color:#ff3333}
-    .channel-sub-admin{font-size:11px;color:#aaa}
-    .channel-link-admin{color:#cc0000;font-size:11px;text-decoration:none}
-    .preview-panel{background:#1a0000;border:1px solid #330000;border-radius:12px;padding:16px;margin-top:16px;display:flex;flex-direction:column;align-items:center}
-    .preview-media{width:100%;max-height:200px;object-fit:contain;border-radius:8px;margin-bottom:12px}
-    .preview-buttons{display:flex;gap:8px;justify-content:center}
-    .form-with-preview{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
-    @media (max-width:768px){.form-with-preview{grid-template-columns:1fr}}
-    .role-search-input{width:100%;padding:10px;margin-bottom:10px;border-radius:7px;border:1px solid #440000;background:#1a0000;color:#fff}
-    .role-search-results{max-height:200px;overflow-y:auto;margin-bottom:10px}
-    .role-search-result-item{background:#1a0000;border:1px solid #330000;border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
-    .role-buttons button{margin-left:5px;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer}
-    .recent-member-item{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #330000}
-    .recent-avatar{width:36px;height:36px;border-radius:50%;background:#3a0000;display:flex;align-items:center;justify-content:center;font-size:16px}
-    .news-item{display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #330000}
-    .news-text{flex:1;font-size:13px}
-    .news-link{font-size:11px;color:#cc0000;text-decoration:none}
-    body{
-      font-family:'Tajawal',sans-serif;
-      background:
-        radial-gradient(ellipse 70% 50% at 20% 10%,rgba(99,102,241,0.1) 0%,transparent 60%),
-        radial-gradient(ellipse 50% 40% at 80% 80%,rgba(192,132,252,0.07) 0%,transparent 50%),
-        #060810;
-    }
-    .login-box,
-    .topbar,
-    .sidebar,
-    .main,
-    .card,
-    .stat-card,
-    .pi,
-    .modal-box,
-    .channel-card-admin,
-    .preview-panel{
-      backdrop-filter:blur(18px);
-      box-shadow:0 16px 40px rgba(0,0,0,.24);
-    }
-    .login-box{
-      width:min(420px,92vw);
-      border-radius:24px;
-      padding:40px 34px;
-      border-color:rgba(255,102,102,.35);
-      background:linear-gradient(145deg, rgba(255,70,70,0.10), transparent 35%), rgba(14,4,6,0.86);
-    }
-    .login-box h1{
-      font-family:'Orbitron',sans-serif;
-      font-size:28px;
-      letter-spacing:1px;
-      color:#fff2f2;
-    }
-    .login-box p{color:#b89ea2}
-    .login-box input,
-    .fg input,.fg select,.fg textarea,
-    .role-search-input{
-      border-radius:12px;
-      border-color:rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
-    }
-    .btn-login,
-    .btn-pub{
-      background:linear-gradient(135deg,#ff5645,#ffb347);
-      color:#180a06;
-      border-radius:12px;
-      box-shadow:0 14px 26px rgba(255,86,69,.22);
-    }
-    .topbar{
-      padding:14px 22px;
-      background:rgba(10,4,6,0.74);
-      border-bottom-color:rgba(255,94,94,.28);
-    }
-    .topbar h1{
-      font-family:'Orbitron',sans-serif;
-      font-size:18px;
-      color:#fff;
-      letter-spacing:1px;
-    }
-    .sidebar{
-      width:220px;
-      background:rgba(12,5,7,0.78);
-      border-right-color:rgba(255,255,255,.08);
-      padding:14px 10px;
-    }
-    .sb-btn{
-      border-radius:12px;
-      padding:11px 14px;
-      color:#d8c4c7;
-      transition:.2s ease;
-    }
-    .sb-btn:hover,.sb-btn.active{
-      background:linear-gradient(135deg, rgba(255,87,87,.18), rgba(255,179,71,.10));
-      color:#fff;
-    }
-    .main{
-      background:rgba(8,5,7,0.62);
-      padding:24px;
-    }
-    .page-title{
-      color:#fff;
-      font-size:24px;
-      font-weight:800;
-    }
-    .card,
-    .stat-card,
-    .pi,
-    .channel-card-admin,
-    .preview-panel,
-    .modal-box{
-      background:rgba(20,8,10,0.82);
-      border-color:rgba(255,255,255,.07);
-      border-radius:18px;
-    }
-    .card h3,.channel-name-admin,.stat-number,.modal-top h2{color:#ffd2b8}
-    .stat-number{text-shadow:0 0 18px rgba(255,120,80,.18)}
-    .modal-top{
-      background:rgba(0,0,0,.24);
-      border-bottom-color:rgba(255,255,255,.07);
-    }
-    .btn-edit,.btn-del,.btn-logout,.modal-close{border-radius:10px}
-    .btn-edit{
-      background:rgba(255,98,98,.08);
-      border-color:rgba(255,120,120,.4);
-    }
-    .btn-del{
-      background:rgba(255,255,255,.02);
-      border-color:rgba(255,120,120,.35);
-    }
-    @media (max-width:768px){
-      .sidebar{width:188px}
-      .main{padding:18px}
-    }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtux — لوحة الإدارة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
+  --border:rgba(99,102,241,0.18);--border2:rgba(99,102,241,0.35);
+  --accent:#6366f1;--accent2:#818cf8;--accent3:#c084fc;
+  --gold:#f59e0b;--red:#ef4444;--green:#22c55e;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+  --card:rgba(12,15,26,0.92);--glow:0 0 24px rgba(99,102,241,0.22);
+  --sidebar:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(99,102,241,0.08) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(192,132,252,0.05) 0%,transparent 50%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
+
+/* LOGIN */
+#loginPage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:var(--bg);}
+.login-box{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:40px 34px;width:min(420px,92vw);text-align:center;backdrop-filter:blur(20px);box-shadow:0 24px 80px rgba(0,0,0,0.5),var(--glow);}
+.login-logo{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:24px;}
+.login-box input{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Tajawal',sans-serif;font-size:14px;margin-bottom:12px;outline:none;transition:border-color 0.2s;direction:ltr;text-align:center;}
+.login-box input:focus{border-color:var(--accent);}
+.btn-login{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.2s;box-shadow:0 12px 28px rgba(99,102,241,0.25);}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 16px 36px rgba(99,102,241,0.35);}
+.login-err{color:#f87171;font-size:12px;margin-top:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:8px 12px;display:none;}
+
+/* LAYOUT */
+#adminPage{display:none;height:100vh;flex-direction:column;position:relative;z-index:1;}
+
+/* TOPBAR */
+.topbar{height:56px;background:rgba(6,8,16,0.96);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;backdrop-filter:blur(20px);flex-shrink:0;gap:12px;}
+.topbar-logo{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;background:linear-gradient(135deg,var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.conn-badge{font-size:11px;padding:3px 10px;border-radius:7px;font-weight:600;}
+.conn-ok{background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.25);}
+.conn-err{background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
+.btn-sm{padding:5px 12px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;border:none;transition:all 0.2s;font-weight:500;}
+.btn-ghost-sm{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-ghost-sm:hover{color:var(--text);border-color:var(--accent);}
+.btn-red-sm{background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
+.btn-red-sm:hover{background:rgba(239,68,68,0.2);}
+.btn-primary-sm{background:var(--accent);color:#fff;}
+.btn-primary-sm:hover{background:var(--accent2);transform:translateY(-1px);}
+
+/* BODY LAYOUT */
+.admin-body{display:flex;flex:1;height:calc(100vh - 56px);overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);background:rgba(8,10,18,0.92);border-left:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;flex-shrink:0;}
+.sb-sec{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding:10px 10px 3px;}
+.sb-btn{background:transparent;border:none;color:var(--text2);padding:9px 12px;border-radius:9px;font-size:13px;cursor:pointer;text-align:right;font-family:'Tajawal',sans-serif;width:100%;display:flex;align-items:center;gap:8px;transition:all 0.18s;}
+.sb-btn:hover{background:rgba(99,102,241,0.1);color:var(--text);}
+.sb-btn.active{background:rgba(99,102,241,0.15);color:var(--accent2);border-right:3px solid var(--accent);}
+.sb-btn .sb-icon{font-size:15px;flex-shrink:0;}
+.sb-badge{margin-right:auto;background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700;}
+.sb-badge-gold{background:var(--gold);color:#000;}
+
+/* MAIN */
+.main-content{flex:1;overflow-y:auto;padding:22px 24px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px;backdrop-filter:blur(10px);}
+.card:hover{border-color:var(--border2);}
+.card-title{font-size:13px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:18px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.stat-num{font-size:28px;font-weight:800;color:var(--accent2);}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:3px;}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{padding:10px 12px;text-align:right;color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border);font-weight:600;}
+.data-table td{padding:10px 12px;border-bottom:1px solid rgba(99,102,241,0.08);vertical-align:middle;}
+.data-table tr:hover td{background:rgba(99,102,241,0.04);}
+.data-table tr:last-child td{border-bottom:none;}
+
+/* POST ITEM */
+.post-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;transition:border-color 0.2s;}
+.post-item:hover{border-color:var(--border2);}
+.post-thumb{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(192,132,252,0.1));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
+.post-thumb img{width:100%;height:100%;object-fit:cover;}
+.post-info{flex:1;min-width:0;}
+.post-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.post-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+.post-actions{display:flex;gap:6px;flex-shrink:0;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
+.badge-admin{background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);}
+.badge-pro{background:rgba(192,132,252,0.15);color:#d8b4fe;border:1px solid rgba(192,132,252,0.3);}
+.badge-vip{background:rgba(99,102,241,0.15);color:var(--accent2);border:1px solid var(--border2);}
+.badge-user{background:rgba(71,85,105,0.2);color:var(--text3);border:1px solid var(--border);}
+.badge-mod{background:rgba(245,158,11,0.1);color:#fbbf24;border:1px solid rgba(245,158,11,0.2);}
+.badge-pending{background:rgba(245,158,11,0.1);color:#fbbf24;border:1px solid rgba(245,158,11,0.2);}
+.badge-approved{background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.2);}
+.badge-rejected{background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);}
+.tag-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(99,102,241,0.1);color:var(--accent2);border:1px solid var(--border2);}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.form-full{grid-column:1/-1;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.8px;}
+.form-input{background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color 0.2s;direction:rtl;width:100%;}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--text3);}
+select.form-input{cursor:pointer;}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+
+/* BUTTONS */
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;border:none;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.2s;}
+.btn-primary:hover{opacity:0.88;transform:translateY(-1px);}
+.btn-primary:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed;transform:none;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:9px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.2s;}
+.btn-ghost:hover{color:var(--text);border-color:var(--accent);}
+.btn-danger{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.15s;}
+.btn-danger:hover{background:rgba(239,68,68,0.2);}
+.btn-edit{background:rgba(99,102,241,0.1);border:1px solid var(--border2);color:var(--accent2);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.15s;}
+.btn-edit:hover{background:rgba(99,102,241,0.2);}
+.btn-approve{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#4ade80;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all 0.15s;}
+.btn-approve:hover{background:rgba(34,197,94,0.2);}
+
+/* MSG */
+.msg-ok{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#4ade80;border-radius:9px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none;}
+.msg-err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;border-radius:9px;padding:9px 14px;font-size:13px;margin-bottom:12px;display:none;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:2000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.5),var(--glow);animation:mIn 0.2s ease;}
+@keyframes mIn{from{opacity:0;transform:translateY(16px)scale(0.97);}to{opacity:1;transform:translateY(0)scale(1);}}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;font-weight:700;color:var(--text);}
+.modal-close{background:transparent;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;transition:all 0.15s;}
+.modal-close:hover{border-color:var(--red);color:var(--red);}
+.modal-body{padding:20px;}
+
+/* SEARCH */
+.search-input{background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Tajawal',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color 0.2s;direction:rtl;width:100%;margin-bottom:12px;}
+.search-input:focus{border-color:var(--accent);}
+
+/* LOADER */
+.loader{text-align:center;padding:30px;color:var(--text3);font-size:13px;}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin-left:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:13px;}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:22px;left:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:7px;box-shadow:0 7px 22px rgba(0,0,0,0.3);animation:tIn 0.25s ease;min-width:180px;}
+@keyframes tIn{from{opacity:0;transform:translateX(-16px);}to{opacity:1;transform:translateX(0);}}
+.toast.ok{border-color:rgba(34,197,94,0.3);}
+.toast.err{border-color:rgba(239,68,68,0.3);}
+
+/* ROLE CHIPS */
+.role-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.role-chip{padding:3px 9px;border-radius:8px;font-size:11px;cursor:pointer;border:1px solid;transition:all 0.15s;font-family:'Tajawal',sans-serif;}
+.role-chip.on{opacity:1;}
+.role-chip.off{opacity:0.35;}
+.role-chip:hover{opacity:1!important;}
+
+/* PROGRESS */
+.progress-bar{width:100%;height:5px;background:rgba(99,102,241,0.1);border-radius:3px;overflow:hidden;margin:4px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:3px;}
+
+/* IMAGE UPLOAD */
+.upload-area{border:2px dashed var(--border2);border-radius:10px;padding:18px;text-align:center;cursor:pointer;transition:all 0.2s;font-size:12px;color:var(--text3);}
+.upload-area:hover{border-color:var(--accent);color:var(--accent2);}
+.upload-area input[type=file]{display:none;}
+.preview-img{max-width:100%;max-height:180px;border-radius:8px;margin-top:8px;display:none;}
+
+/* YT */
+.yt-item{display:flex;gap:10px;align-items:center;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;transition:border-color 0.2s;}
+.yt-item:hover{border-color:var(--border2);}
+.yt-thumb{width:60px;height:40px;border-radius:6px;object-fit:cover;background:rgba(99,102,241,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;}
+.yt-thumb img{width:100%;height:100%;object-fit:cover;}
+.yt-info{flex:1;min-width:0;}
+.yt-title{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.yt-meta{font-size:11px;color:var(--text3);}
+
+@media(max-width:900px){
+  .sidebar{width:180px;}
+  .main-content{padding:14px;}
+}
+</style>
 </head>
 <body>
-<canvas id="bgCanvas"></canvas>
 
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- LOGIN -->
 <div id="loginPage">
   <div class="login-box">
-    <div style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;background:linear-gradient(135deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;margin-bottom:4px;">VIRTUX</div><div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">⚙️ لوحة الإدارة</div>
-    <p>أدخل كلمة المرور</p>
-    <input type="password" id="pw" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')login()">
-    <button class="btn-login" onclick="login()">دخول</button>
-    <div class="err" id="loginErr">كلمة المرور خاطئة!</div>
+    <div class="login-logo">VIRTUX</div>
+    <div class="login-sub">⚙️ لوحة تحكم الإدارة</div>
+    <input type="password" id="pw" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-login" onclick="doLogin()">🚀 دخول</button>
+    <div class="login-err" id="loginErr">❌ كلمة المرور خاطئة</div>
   </div>
 </div>
 
+<!-- ADMIN PAGE -->
 <div id="adminPage">
+  <!-- TOPBAR -->
   <div class="topbar">
-    <div style="font-family:'Orbitron',monospace;font-size:17px;font-weight:900;background:linear-gradient(135deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;">VIRTUX <span style="-webkit-text-fill-color:#475569;font-size:13px;font-family:'Tajawal',sans-serif;font-weight:400;">Admin Panel</span></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="topbar-logo">VIRTUX</div>
+      <span style="font-size:12px;color:var(--text3);">Admin Panel</span>
+    </div>
     <div class="topbar-right">
-      <span class="conn" id="connStatus">جارٍ الاتصال...</span>
-      <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
+      <span class="conn-badge conn-ok" id="connStatus">● متصل</span>
+      <a href="index.html" target="_blank" class="btn-sm btn-ghost-sm">🌐 الموقع</a>
+      <button class="btn-sm btn-red-sm" onclick="doLogout()">🚪 خروج</button>
     </div>
   </div>
-  <div class="body">
-    <div class="sidebar">
-      <button class="sb-btn active" id="sb-dashboard" onclick="showPage('dashboard')">📊 Dashboard</button>
-      <div class="sb-sec">الأقسام</div>
-      <button class="sb-btn" id="sb-home" onclick="showPage('home')">🏠 Home</button>
-      <button class="sb-btn" id="sb-live" onclick="showPage('live')">🔴 Live</button>
-      <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
-      <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
-      <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <button class="sb-btn" id="sb-ranks" onclick="showPage('ranks')">💎 الميزات والرتب</button>
-      <div class="sb-sec">أخبار</div>
-      <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
-      <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
-      <div class="sb-sec">يوتيوب</div>
-      <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
-      <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <!-- تم حذف زر "🔴 Lives" المكرر -->
-      <div class="sb-sec">تعاون</div>
-      <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
-    </div>
-    <div class="main" id="mainContainer"></div>
-  </div>
-</div>
 
+  <!-- BODY -->
+  <div class="admin-body">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <button class="sb-btn active" id="sb-dashboard" onclick="nav('dashboard')"><span class="sb-icon">📊</span> لوحة التحكم</button>
+
+      <div class="sb-sec">إدارة المحتوى</div>
+      <button class="sb-btn" id="sb-posts" onclick="nav('posts')"><span class="sb-icon">📝</span> المنشورات<span class="sb-badge" id="sb-posts-count"></span></button>
+      <button class="sb-btn" id="sb-create-post" onclick="nav('create-post')"><span class="sb-icon">➕</span> نشر منشور</button>
+
+      <div class="sb-sec">المستخدمون</div>
+      <button class="sb-btn" id="sb-users" onclick="nav('users')"><span class="sb-icon">👥</span> المستخدمون<span class="sb-badge" id="sb-users-count"></span></button>
+      <button class="sb-btn" id="sb-roles" onclick="nav('roles')"><span class="sb-icon">🎖️</span> إدارة الرتب</button>
+
+      <div class="sb-sec">البطولات والدفع</div>
+      <button class="sb-btn" id="sb-tournaments" onclick="nav('tournaments')"><span class="sb-icon">🏆</span> التسجيلات</button>
+      <button class="sb-btn" id="sb-payments" onclick="nav('payments')"><span class="sb-icon">💳</span> طلبات الدفع<span class="sb-badge sb-badge-gold" id="sb-pay-count"></span></button>
+
+      <div class="sb-sec">يوتيوب</div>
+      <button class="sb-btn" id="sb-youtube" onclick="nav('youtube')"><span class="sb-icon">▶️</span> فيديوهات يوتيوب</button>
+
+      <div class="sb-sec">إحصائيات</div>
+      <button class="sb-btn" id="sb-stats" onclick="nav('stats')"><span class="sb-icon">📈</span> الإحصائيات</button>
+      <button class="sb-btn" id="sb-visits" onclick="nav('visits')"><span class="sb-icon">👁️</span> الزيارات</button>
+
+      <div class="sb-sec">الموقع</div>
+      <button class="sb-btn" id="sb-site-settings" onclick="nav('site-settings')"><span class="sb-icon">⚙️</span> إعدادات الموقع</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-content" id="mainContent">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title">📊 لوحة التحكم</div>
+        <div class="stats-grid" id="dashStats">
+          <div class="loader">جاري...<span class="spinner"></span></div>
+        </div>
+        <div id="dashPending"></div>
+        <div id="dashRecentPosts"></div>
+        <div id="dashRecentUsers"></div>
+      </div>
+
+      <!-- ===== POSTS ===== -->
+      <div class="page" id="page-posts">
+        <div class="page-title">📝 المنشورات</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+            <input class="search-input" id="postsSearch" placeholder="🔍 بحث في المنشورات..." style="max-width:280px;margin-bottom:0;" oninput="filterPostsList(this.value)">
+            <select class="form-input" id="postsTypeFilter" style="width:auto;padding:9px 12px;" onchange="filterPostsList(document.getElementById('postsSearch').value)">
+              <option value="">كل الأنواع</option>
+              <option value="clip">🎬 كليب</option>
+              <option value="news">📰 خبر</option>
+              <option value="tourney">🏆 بطولة</option>
+              <option value="question">❓ سؤال</option>
+              <option value="review">⭐ تقييم</option>
+              <option value="live">🔴 بث</option>
+              <option value="screen">📸 لقطة</option>
+            </select>
+            <button class="btn-primary" onclick="nav('create-post')" style="margin-right:auto;">➕ منشور جديد</button>
+          </div>
+          <div id="postsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+        </div>
+      </div>
+
+      <!-- ===== CREATE POST ===== -->
+      <div class="page" id="page-create-post">
+        <div class="page-title">➕ نشر منشور جديد</div>
+        <div class="card">
+          <div class="msg-ok" id="createOk">✅ تم النشر بنجاح!</div>
+          <div class="msg-err" id="createErr"></div>
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <label class="form-label">المحتوى *</label>
+              <textarea class="form-input" id="cpContent" placeholder="اكتب محتوى المنشور... يدعم الهاشتاقات #game والمنشنات @user" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">نوع المنشور</label>
+              <select class="form-input" id="cpType">
+                <option value="news">📰 خبر</option>
+                <option value="clip">🎬 كليب</option>
+                <option value="tourney">🏆 بطولة</option>
+                <option value="question">❓ سؤال</option>
+                <option value="review">⭐ تقييم</option>
+                <option value="live">🔴 بث مباشر</option>
+                <option value="screen">📸 لقطة شاشة</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رابط وسائط (صورة/فيديو)</label>
+              <input class="form-input" id="cpMediaUrl" placeholder="https://...">
+            </div>
+            <div class="form-group form-full">
+              <label class="form-label">تعليق من الإدارة (اختياري)</label>
+              <input class="form-input" id="cpAdminNote" placeholder="ملاحظة أو تعليق إضافي من الإدارة">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-ghost" onclick="clearCreateForm()">↩️ مسح</button>
+            <button class="btn-primary" onclick="adminCreatePost()" id="btnCreatePost">📤 نشر الآن</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== USERS ===== -->
+      <div class="page" id="page-users">
+        <div class="page-title">👥 إدارة المستخدمين</div>
+        <div class="card">
+          <input class="search-input" id="usersSearch" placeholder="🔍 بحث باسم المستخدم أو البريد..." oninput="filterUsers(this.value)">
+          <div id="usersList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+        </div>
+      </div>
+
+      <!-- ===== ROLES ===== -->
+      <div class="page" id="page-roles">
+        <div class="page-title">🎖️ إدارة الرتب والصلاحيات</div>
+        <div class="card">
+          <div class="card-title">🔍 ابحث عن مستخدم لتغيير رتبته</div>
+          <input class="search-input" id="roleSearch" placeholder="اسم المستخدم أو البريد..." oninput="searchForRole(this.value)">
+          <div id="roleSearchResults"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 شرح الرتب</div>
+          <div id="rolesGuide"></div>
+        </div>
+      </div>
+
+      <!-- ===== TOURNAMENTS ===== -->
+      <div class="page" id="page-tournaments">
+        <div class="page-title">🏆 تسجيلات البطولات</div>
+        <div class="card">
+          <div id="tournamentsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+        </div>
+      </div>
+
+      <!-- ===== PAYMENTS ===== -->
+      <div class="page" id="page-payments">
+        <div class="page-title">💳 طلبات الدفع</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <button class="btn-ghost" onclick="loadPayments('all')" id="payFilterAll" style="border-color:var(--accent);color:var(--accent2);">الكل</button>
+          <button class="btn-ghost" onclick="loadPayments('pending')" id="payFilterPending">⏳ معلق</button>
+          <button class="btn-ghost" onclick="loadPayments('approved')" id="payFilterApproved">✅ مقبول</button>
+          <button class="btn-ghost" onclick="loadPayments('rejected')" id="payFilterRejected">❌ مرفوض</button>
+        </div>
+        <div id="paymentsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+      </div>
+
+      <!-- ===== YOUTUBE ===== -->
+      <div class="page" id="page-youtube">
+        <div class="page-title">▶️ فيديوهات يوتيوب</div>
+        <div class="card">
+          <div class="card-title">➕ إضافة فيديو يوتيوب</div>
+          <div class="msg-ok" id="ytOk">✅ تم الإضافة!</div>
+          <div class="msg-err" id="ytErr"></div>
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <label class="form-label">رابط الفيديو أو القناة</label>
+              <input class="form-input" id="ytUrl" placeholder="https://youtube.com/watch?v=... أو https://youtube.com/@channel">
+            </div>
+            <div class="form-group">
+              <label class="form-label">نوع</label>
+              <select class="form-input" id="ytType">
+                <option value="single">🎬 فيديو واحد</option>
+                <option value="channel">📺 قناة (أحدث فيديو)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">تصنيف</label>
+              <select class="form-input" id="ytTag">
+                <option value="clip">🎬 كليب لعبة</option>
+                <option value="news">📰 خبر</option>
+                <option value="review">⭐ تقييم</option>
+                <option value="tourney">🏆 بطولة</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="addYTPost()" id="btnAddYT">➕ إضافة</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 الفيديوهات المضافة من يوتيوب</div>
+          <div id="ytPostsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+        </div>
+      </div>
+
+      <!-- ===== STATS ===== -->
+      <div class="page" id="page-stats">
+        <div class="page-title">📈 الإحصائيات</div>
+        <div id="statsContent"><div class="loader">جاري...<span class="spinner"></span></div></div>
+      </div>
+
+      <!-- ===== VISITS ===== -->
+      <div class="page" id="page-visits">
+        <div class="page-title">👁️ الزيارات والنشاط</div>
+        <div id="visitsContent"><div class="loader">جاري...<span class="spinner"></span></div></div>
+      </div>
+
+      <!-- ===== SITE SETTINGS ===== -->
+      <div class="page" id="page-site-settings">
+        <div class="page-title">⚙️ إعدادات الموقع</div>
+        <div class="card">
+          <div class="card-title">🔗 روابط الموقع</div>
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <label class="form-label">رابط الموقع الرئيسي</label>
+              <input class="form-input" id="siteUrl" value="https://rmo31.github.io/virtux/" readonly>
+            </div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="index.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">🏠 الصفحة الرئيسية</a>
+            <a href="auth.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">🔐 صفحة الدخول</a>
+            <a href="profile.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">👤 الملف الشخصي</a>
+            <a href="post.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">📄 صفحة المنشور</a>
+            <a href="supabase_setup.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">🗄️ إعداد DB</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 معلومات المشروع</div>
+          <table class="data-table">
+            <tr><td style="color:var(--text3);">Supabase Project ID</td><td>eyqcpkhjzpmawqtilhgl</td></tr>
+            <tr><td style="color:var(--text3);">YouTube API</td><td>مفعّل ✅</td></tr>
+            <tr><td style="color:var(--text3);">Google OAuth</td><td>مفعّل ✅</td></tr>
+            <tr><td style="color:var(--text3);">الجداول</td><td>posts · profiles · tournament_registrations · payment_requests · site_visits</td></tr>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- end mainContent -->
+  </div><!-- end admin-body -->
+</div><!-- end adminPage -->
+
+<!-- EDIT POST MODAL -->
 <div class="modal-overlay" id="editModal">
-  <div class="modal-box">
-    <div class="modal-top"><h2>✏️ تعديل المنشور</h2><button class="modal-close" onclick="closeEditModal()">✕</button></div>
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✏️ تعديل المنشور</div>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
     <div class="modal-body" id="editModalBody"></div>
   </div>
 </div>
 
-<script>
-// ==================== إعدادات Supabase ====================
-const SUPABASE_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-const YOUTUBE_API_KEY = 'AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
-const ADMIN_PASSWORD = 'virtux2025';
-
-let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let currentEditPost = null;
-
-function escapeHtml(str) {
-  if (!str && str !== 0) return '';
-  return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m] || m);
-}
-
-// ==================== تسجيل الدخول ====================
-async function checkConn() {
-  try {
-    let res = await fetch(`${SUPABASE_URL}/rest/v1/posts?limit=1`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
-    let el = document.getElementById('connStatus');
-    if (res.ok) { el.textContent = '✅ متصل'; el.className = 'conn'; }
-    else { el.textContent = '❌ خطأ'; el.className = 'conn fail'; }
-  } catch(e) { 
-    document.getElementById('connStatus').textContent = '❌ لا إنترنت';
-    document.getElementById('connStatus').className = 'conn fail';
-  }
-}
-
-function login() {
-  if (document.getElementById('pw').value === ADMIN_PASSWORD) {
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('adminPage').style.display = 'flex';
-    checkConn();
-    buildPages();
-    showPage('dashboard');
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-  }
-}
-function logout() { window.location.reload(); }
-
-// ==================== بناء الصفحات ====================
-function buildPages() {
-  let main = document.getElementById('mainContainer');
-  main.innerHTML = '';
-  // removed 'yt-lives' from rooms list
-  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact', 'ranks'];
-  rooms.forEach(room => {
-    let div = document.createElement('div');
-    div.className = 'ap';
-    div.id = `ap-${room}`;
-    div.innerHTML = `<div class="page-title">${getRoomTitle(room)}</div><div id="content-${room}">جاري التحميل...</div>`;
-    main.appendChild(div);
-  });
-}
-function getRoomTitle(room) {
-  let titles = {
-    dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
-    subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
-    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
-    projects:'🌐 Collaboration', contact:'📞 Contact', ranks:'💎 الميزات والرتب'
-  };
-  return titles[room] || room;
-}
-function showPage(id) {
-  document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
-  let target = document.getElementById(`ap-${id}`);
-  if (target) target.classList.add('active');
-  let btn = document.getElementById(`sb-${id}`);
-  if (btn) btn.classList.add('active');
-  if (id === 'dashboard') loadDashboard();
-  else if (id === 'contact') loadContact();
-  else if (id === 'ranks') loadRanks();
-  else loadContentPage(id);
-}
-function loadContact() {
-  let container = document.getElementById('content-contact');
-  container.innerHTML = `<div class="card"><h3>معلومات الاتصال</h3><p>بريد: admin@virtux.gg</p><p>ديسكورد: virtux_official</p></div>`;
-}
-
-// ==================== Dashboard ====================
-async function loadDashboard() {
-  let container = document.getElementById('content-dashboard');
-  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
-  try {
-    let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    if (!users) users = [];
-    let total = users.length;
-    // Helper: get roles array from user (supports both roles[] array and single role string)
-    function getRoles(u) {
-      if (Array.isArray(u.roles) && u.roles.length) return u.roles;
-      if (u.role) return [u.role];
-      return ['user'];
-    }
-    function hasRole(u, r) { return getRoles(u).includes(r); }
-
-    let vipCount       = users.filter(u => hasRole(u,'vip')).length;
-    let memberCount    = users.filter(u => hasRole(u,'member')).length;
-    let modCount       = users.filter(u => hasRole(u,'moderator')).length;
-    let youtuberCount  = users.filter(u => hasRole(u,'youtuber')).length;
-    let ytVipCount     = users.filter(u => hasRole(u,'youtuber_vip')).length;
-    let guestCount     = users.filter(u => hasRole(u,'guest')).length;
-    let userCount      = users.filter(u => { let r=getRoles(u); return r.length===0||(r.length===1&&r[0]==='user'); }).length;
-
-    let statsHtml = `<div class="stats-grid">
-      <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">👥 إجمالي</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#d4e800">${vipCount}</div><div class="stat-label">👑 VIP</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#4caf90">${memberCount}</div><div class="stat-label">⭐ Member</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff9800">${modCount}</div><div class="stat-label">🛡️ Mod</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff6b35">${ytVipCount}</div><div class="stat-label">🔥 Youtuber VIP</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#aaa">${guestCount}</div><div class="stat-label">🛡️ GUEST</div></div>
-      <div class="stat-card"><div class="stat-number">${userCount}</div><div class="stat-label">👤 عادي</div></div>
-    </div>`;
-
-    let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
-    if (users.length) {
-      let recent = users.slice(0, 5);
-      recentMembersHtml += `<div class="posts-list">`;
-      recent.forEach(u => {
-        let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
-        let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
-        let date = new Date(u.created_at).toLocaleDateString('ar-EG');
-        recentMembersHtml += `<div class="recent-member-item">
-          <div class="recent-avatar">👤</div>
-          <div class="pi-info">
-            <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
-            <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
-            <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;">${u.role?.toUpperCase() || 'USER'}</span>
-          </div>
-        </div>`;
-      });
-      recentMembersHtml += `</div>`;
-    } else {
-      recentMembersHtml += `<div class="empty">لا يوجد مستخدمون بعد.</div>`;
-    }
-    recentMembersHtml += `</div>`;
-
-    let { data: payReqs, error: payErr } = await supabaseClient
-      .from('payment_requests')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
-    
-    let payReqsHtml = `<div class="card"><h3>💳 طلبات الدفع المعلقة (Paysera)</h3>`;
-    if (!payErr && payReqs && payReqs.length > 0) {
-      payReqsHtml += `<div class="posts-list">`;
-      payReqs.forEach(req => {
-        let date = new Date(req.created_at).toLocaleString('ar-EG');
-        payReqsHtml += `<div class="pi">
-          <div class="pi-icon">💰</div>
-          <div class="pi-info" style="flex:1;">
-            <div class="pi-title">${escapeHtml(req.username)} <span style="color:#aaa;font-weight:normal;">(صاحب الحساب: ${escapeHtml(req.bank_name)})</span></div>
-            <div class="pi-meta">${escapeHtml(req.plan_name)} • ${req.price ? '$'+req.price : 'تبرع'} • ${date}</div>
-            <span class="pi-tag">ID: ${req.user_id || 'غير معروف'}</span>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn-pub" style="background:#4caf90;padding:5px 12px;font-size:11px;" onclick="approvePayment(${req.id}, '${req.user_id}', '${req.plan_key}')">✅ قبول وتفعيل</button>
-            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="rejectPayment(${req.id})">❌ رفض</button>
-          </div>
-        </div>`;
-      });
-      payReqsHtml += `</div>`;
-    } else {
-      payReqsHtml += `<div class="empty">لا توجد طلبات دفع معلقة.</div>`;
-    }
-    payReqsHtml += `</div>`;
-
-    let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
-      <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
-      <div id="roleSearchResults" class="role-search-results"></div>
-      <div style="margin-top:10px;">
-        <button class="btn-edit" onclick="refreshDashboard()" style="width:100%;">🔄 تحديث البيانات</button>
-      </div>
-    </div>`;
-
-    let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
-      <div class="fg">
-        <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
-        <input class="full" id="newsUrl" placeholder="رابط (اختياري)">
-      </div>
-      <button class="btn-pub" onclick="addNews()">➕ إضافة خبر</button>
-      <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
-    </div>`;
-
-    const ROLE_META = {
-      vip:          { label:'👑 VIP',          color:'#d4e800', bg:'#2a2000' },
-      member:       { label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e' },
-      moderator:    { label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f' },
-      youtuber:     { label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f' },
-      youtuber_vip: { label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f' },
-      guest:        { label:'🛡️ Guest',        color:'#aaa',    bg:'#222' },
-      user:         { label:'👤 User',           color:'#aabbcc', bg:'#0f1e55' },
-    };
-    window._ROLE_META = ROLE_META;
-
-    let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
-      const uid = u.id;
-      const userRoles = getRoles(u);
-      const badgesHtml = userRoles.map(r => {
-        const m = ROLE_META[r] || ROLE_META.user;
-        return `<span style="display:inline-block;font-size:10px;background:${m.bg};color:${m.color};border-radius:4px;padding:2px 7px;margin:2px;">${m.label}</span>`;
-      }).join('');
-      const toggleBtns = Object.keys(ROLE_META).map(r => {
-        const has = userRoles.includes(r);
-        const m = ROLE_META[r];
-        return has
-          ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,false).then(()=>loadDashboard())">✕ ${m.label}</button>`
-          : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,true).then(()=>loadDashboard())">${m.label}</button>`;
-      }).join('');
-      const expiryStr = u.expiry_date ? `<div style="font-size:10px;color:#f55;margin-top:2px;">⏳ ينتهي في: ${new Date(u.expiry_date).toLocaleDateString('ar-EG')}</div>` : '';
-      return `<div class="pi" id="user-${uid}">
-        <div class="pi-icon">👤</div>
-        <div class="pi-info" style="flex:1;">
-          <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
-          <div class="pi-meta">${escapeHtml(u.email)} • ${new Date(u.created_at).toLocaleDateString()}</div>
-          <div style="margin-top:4px;">${badgesHtml}</div>
-          ${expiryStr}
-        </div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:260px;">
-          ${toggleBtns}
-          <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser(&quot;${uid}&quot;).then(()=>loadDashboard())">🗑️ حذف</button>
-        </div>
-      </div>`;
-    }).join('') + `</div></div>`;
-
-    container.innerHTML = statsHtml + payReqsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
-    loadNewsList();
-  } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
-}
-
-// دوال إدارة الأخبار
-async function loadNewsList() {
-  let { data: news, error } = await supabaseClient.from('posts')
-    .select('*')
-    .eq('room', 'ticker')
-    .order('id', { ascending: false });
-  if (error) return;
-  let container = document.getElementById('newsList');
-  if (!container) return;
-  if (!news || news.length === 0) {
-    container.innerHTML = '<div class="empty">لا توجد أخبار. أضف خبراً الآن.</div>';
-    return;
-  }
-  container.innerHTML = news.map(item => `
-    <div class="news-item" id="news-${item.id}">
-      <div class="news-text">${escapeHtml(item.title)}</div>
-      ${item.url ? `<a href="${item.url}" target="_blank" class="news-link">رابط</a>` : ''}
-      <button class="btn-edit" onclick="editNews(${item.id})">✏️</button>
-      <button class="btn-del" onclick="deleteNews(${item.id})">🗑️</button>
+<!-- EDIT USER MODAL -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="userModalTitle">👤 تعديل المستخدم</div>
+      <button class="modal-close" onclick="closeUserModal()">✕</button>
     </div>
-  `).join('');
+    <div class="modal-body" id="userModalBody"></div>
+  </div>
+</div>
+
+<script>
+// ==================== CONFIG ====================
+const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const YT_KEY='AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
+const ADMIN_PASS='virtux2025';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+let allPosts=[],allUsers=[];
+let currentEditPost=null;
+
+const ROLES={
+  admin:{label:'⭐ Admin',color:'#f59e0b',bg:'rgba(245,158,11,0.15)',cls:'badge-admin'},
+  moderator:{label:'🛡️ Mod',color:'#818cf8',bg:'rgba(99,102,241,0.15)',cls:'badge-vip'},
+  pro:{label:'💎 Pro',color:'#d8b4fe',bg:'rgba(192,132,252,0.15)',cls:'badge-pro'},
+  vip:{label:'👑 VIP',color:'#f59e0b',bg:'rgba(245,158,11,0.12)',cls:'badge-mod'},
+  youtuber:{label:'🎬 Youtuber',color:'#f87171',bg:'rgba(239,68,68,0.12)',cls:'badge-vip'},
+  member:{label:'⭐ Member',color:'#4ade80',bg:'rgba(34,197,94,0.12)',cls:'badge-approved'},
+  user:{label:'👤 User',color:'#94a3b8',bg:'rgba(71,85,105,0.15)',cls:'badge-user'},
+};
+const TAG_MAP={clip:'🎬 كليب',news:'📰 خبر',tourney:'🏆 بطولة',question:'❓ سؤال',review:'⭐ تقييم',live:'🔴 بث',screen:'📸 لقطة'};
+const TYPE_COLORS={clip:'tag-badge',news:'badge-pending',tourney:'badge-pro',question:'badge-approved',review:'badge-vip',live:'badge-admin'};
+
+// ==================== UTILS ====================
+function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]||m));}
+function ago(d){if(!d)return'';const s=(Date.now()-new Date(d))/1000;if(s<60)return'الآن';if(s<3600)return'منذ '+Math.floor(s/60)+' د';if(s<86400)return'منذ '+Math.floor(s/3600)+' س';return new Date(d).toLocaleDateString('ar-EG');}
+function showToast(msg,type=''){const w=document.getElementById('toastWrap');const t=document.createElement('div');t.className='toast '+type;t.innerHTML=msg;w.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='0.3s';setTimeout(()=>t.remove(),300);},2600);}
+function getRoles(u){if(Array.isArray(u.roles)&&u.roles.length)return u.roles;if(u.role)return[u.role];return['user'];}
+function roleBadge(r){const m=ROLES[r]||ROLES.user;return`<span class="badge ${m.cls}">${m.label}</span>`;}
+function tagBadge(type){return`<span class="badge tag-badge">${TAG_MAP[type]||type||'—'}</span>`;}
+
+// ==================== LOGIN ====================
+function doLogin(){
+  if(document.getElementById('pw').value===ADMIN_PASS){
+    document.getElementById('loginPage').style.display='none';
+    document.getElementById('adminPage').style.display='flex';
+    checkConn();loadDashboard();loadSideCounts();
+  }else{document.getElementById('loginErr').style.display='block';}
 }
-async function addNews() {
-  let title = document.getElementById('newsTitle').value.trim();
-  let url = document.getElementById('newsUrl').value.trim();
-  if (!title) { alert('يرجى إدخال نص الخبر'); return; }
-  let { error } = await supabaseClient.from('posts').insert({ title, url: url||null, room:'ticker', tag:'news', icon:'📢', content:null });
-  if (error) { alert('فشل إضافة الخبر: '+error.message); return; }
-  document.getElementById('newsTitle').value = ''; document.getElementById('newsUrl').value = '';
-  loadNewsList();
-}
-async function deleteNews(id) { if(!confirm('حذف الخبر؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadNewsList(); }
-async function editNews(id) {
-  let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
-  if (error) return;
-  let newTitle = prompt('تعديل نص الخبر:', data.title);
-  if (newTitle === null) return;
-  let newUrl = prompt('تعديل الرابط (اختياري):', data.url||'');
-  await supabaseClient.from('posts').update({ title: newTitle, url: newUrl||null }).eq('id', id);
-  loadNewsList();
-}
-async function searchUsersForRole(query) {
-  let resultsDiv = document.getElementById('roleSearchResults');
-  if (!query || query.length < 2) { resultsDiv.innerHTML = ''; return; }
-  try {
-    let { data: users, error } = await supabaseClient.from('profiles')
-      .select('id,username,email,role,roles')
-      .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
-    if (error) throw error;
-    if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
-    const RM = window._ROLE_META || { 
-      vip:          {label:'👑 VIP',          color:'#d4e800', bg:'#2a2000'}, 
-      member:       {label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e'}, 
-      moderator:    {label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f'}, 
-      youtuber:     {label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f'}, 
-      youtuber_vip: {label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f'}, 
-      guest:        {label:'🛡️ Guest',        color:'#aaa',    bg:'#222'},
-      user:         {label:'👤 User',           color:'#aabbcc', bg:'#0f1e55'} 
-    };
-    resultsDiv.innerHTML = users.map(u => {
-      const id = u.id;
-      const uRoles = Array.isArray(u.roles) && u.roles.length ? u.roles : (u.role ? [u.role] : ['user']);
-      const badges = uRoles.map(r => { const m=RM[r]||RM.user; return `<span style="font-size:10px;background:${m.bg};color:${m.color};border-radius:4px;padding:2px 6px;margin:2px;display:inline-block;">${m.label}</span>`; }).join('');
-      const toggleBtns = Object.keys(RM).map(r => {
-        const has = uRoles.includes(r); const m = RM[r];
-        return has
-          ? `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,false).then(()=>loadDashboard())">✕ ${m.label}</button>`
-          : `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,true).then(()=>loadDashboard())">${m.label}</button>`;
-      }).join('');
-      return `<div class="role-search-result-item">
-        <div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)}</small><br><div style="margin-top:4px;">${badges}</div></div>
-        <div class="role-buttons" style="flex-wrap:wrap;gap:4px;">${toggleBtns}<button class="btn-del" style="font-size:10px;padding:2px 7px;" onclick="deleteUser(&quot;${id}&quot;).then(()=>loadDashboard())">🗑️ حذف</button></div>
-      </div>`;
-    }).join('');
-  } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
-}
-function refreshDashboard() { loadDashboard(); }
-async function setRole(userId, role) {
-  // Legacy: just call toggleRole add
-  await toggleRole(userId, role, true);
-}
-async function toggleRole(userId, role, add, expiryDate = null) {
-  try {
-    console.log(`toggleRole called: userId=${userId}, role=${role}, add=${add}`);
-    // Fetch current roles
-    const { data: prof, error: fetchErr } = await supabaseClient
-      .from('profiles').select('role,roles').eq('id', userId).single();
-    if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم: ' + fetchErr.message); console.error('Fetch error:', fetchErr); return false; }
+function doLogout(){window.location.reload();}
 
-    console.log('Current profile data:', prof);
-
-    let currentRoles = Array.isArray(prof.roles) && prof.roles.length
-      ? [...prof.roles]
-      : (prof.role ? [prof.role] : ['user']);
-
-    console.log('Current roles before change:', currentRoles);
-
-    if (add) {
-      // Simply add the role if not already present
-      if (!currentRoles.includes(role)) currentRoles.push(role);
-      // Always ensure 'user' is present as a base role
-      if (!currentRoles.includes('user')) currentRoles.unshift('user');
-    } else {
-      currentRoles = currentRoles.filter(r => r !== role);
-      // Always ensure 'user' remains as base role
-      if (!currentRoles.includes('user')) currentRoles.unshift('user');
-    }
-
-    const primaryRole = currentRoles[0];
-    console.log('New roles:', currentRoles, 'Primary:', primaryRole);
-
-    const { data: updateData, error } = await supabaseClient.from('profiles')
-      .update({ roles: currentRoles, role: primaryRole, expiry_date: add ? expiryDate : null })
-      .eq('id', userId)
-      .select();
-    if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error('Update error:', error); return false; }
-
-    console.log('Update result:', updateData);
-
-    if (!updateData || updateData.length === 0) {
-      alert('⚠️ لم يتم تحديث أي صف. تأكد أن RLS policy تسمح بالتحديث في جدول profiles.');
-      console.warn('No rows updated. Check RLS policies on profiles table.');
-      return false;
-    }
-
-    console.log('✅ Role updated successfully');
-    return true;
-  } catch(e) { alert('❌ خطأ: ' + e.message); console.error('toggleRole error:', e); return false; }
-}
-async function deleteUser(userId) {
-  if (!confirm('حذف المستخدم نهائياً؟ لا يمكن التراجع')) return;
-  try {
-    const { error } = await supabaseClient.from('profiles').delete().eq('id', userId);
-    if (error) { alert('❌ فشل الحذف: ' + error.message + '\n\nتأكد أن RLS policy تسمح بالحذف للأدمن'); console.error(error); return; }
-    alert('✅ تم حذف المستخدم');
-    await loadDashboard();
-  } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
+async function checkConn(){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/posts?limit=1`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    const el=document.getElementById('connStatus');
+    if(r.ok){el.textContent='● متصل';el.className='conn-badge conn-ok';}
+    else{el.textContent='● خطأ';el.className='conn-badge conn-err';}
+  }catch(e){document.getElementById('connStatus').textContent='● لا إنترنت';document.getElementById('connStatus').className='conn-badge conn-err';}
 }
 
-async function approvePayment(reqId, userId, planKey) {
-  if (!confirm('هل تأكدت من وصول المبلغ في حسابك البنكي Paysera؟')) return;
-  try {
-    let { error: err1 } = await supabaseClient.from('payment_requests').update({ status: 'approved' }).eq('id', reqId);
-    if (err1) throw err1;
-    if (userId && userId !== 'null' && planKey) {
-      let expiry = null;
-      if (['vip', 'member', 'youtuber_vip'].includes(planKey)) {
-        expiry = new Date();
-        expiry.setDate(expiry.getDate() + 30);
-        expiry = expiry.toISOString();
-      }
-      let success = await toggleRole(userId, planKey, true, expiry);
-      if (success) {
-        alert('✅ تم قبول الطلب وتفعيل الرتبة بنجاح.');
-      } else {
-        alert('⚠️ تم قبول الطلب ولكن فشل تفعيل الرتبة. قم بتفعيلها يدوياً.');
-      }
-    } else {
-      alert('✅ تم قبول الطلب بنجاح (لا يوجد User ID).');
-    }
-    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
-    if (currentPage === 'ranks') loadRanks();
-    else loadDashboard();
-  } catch(e) {
-    alert('❌ حدث خطأ: ' + e.message);
+// ==================== NAV ====================
+function nav(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  const p=document.getElementById('page-'+page);if(p)p.classList.add('active');
+  const b=document.getElementById('sb-'+page);if(b)b.classList.add('active');
+  if(page==='dashboard')loadDashboard();
+  else if(page==='posts')loadPosts();
+  else if(page==='users')loadUsers();
+  else if(page==='roles')loadRolesPage();
+  else if(page==='tournaments')loadTournaments();
+  else if(page==='payments')loadPayments('all');
+  else if(page==='youtube')loadYTPage();
+  else if(page==='stats')loadStats();
+  else if(page==='visits')loadVisits();
+}
+
+async function loadSideCounts(){
+  const{count:pc}=await sb.from('posts').select('*',{count:'exact',head:true});
+  const{count:uc}=await sb.from('profiles').select('*',{count:'exact',head:true});
+  const{count:payc}=await sb.from('payment_requests').select('*',{count:'exact',head:true}).eq('status','pending');
+  if(pc)document.getElementById('sb-posts-count').textContent=pc;
+  if(uc)document.getElementById('sb-users-count').textContent=uc;
+  if(payc&&payc>0)document.getElementById('sb-pay-count').textContent=payc;
+  else document.getElementById('sb-pay-count').style.display='none';
+}
+
+// ==================== DASHBOARD ====================
+async function loadDashboard(){
+  // Stats
+  const[{count:posts},{count:users},{count:visits},{count:tourney},{count:pendingPay}]=await Promise.all([
+    sb.from('posts').select('*',{count:'exact',head:true}),
+    sb.from('profiles').select('*',{count:'exact',head:true}),
+    sb.from('site_visits').select('*',{count:'exact',head:true}),
+    sb.from('tournament_registrations').select('*',{count:'exact',head:true}),
+    sb.from('payment_requests').select('*',{count:'exact',head:true}).eq('status','pending'),
+  ]);
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat-card" onclick="nav('posts')"><div class="stat-num" style="color:var(--accent2)">${posts||0}</div><div class="stat-lbl">📝 منشور</div></div>
+    <div class="stat-card" onclick="nav('users')"><div class="stat-num" style="color:#4ade80">${users||0}</div><div class="stat-lbl">👥 مستخدم</div></div>
+    <div class="stat-card" onclick="nav('visits')"><div class="stat-num" style="color:#fbbf24">${visits||0}</div><div class="stat-lbl">👁️ زيارة</div></div>
+    <div class="stat-card" onclick="nav('tournaments')"><div class="stat-num" style="color:#d8b4fe">${tourney||0}</div><div class="stat-lbl">🏆 تسجيل بطولة</div></div>
+    <div class="stat-card" onclick="nav('payments')"><div class="stat-num" style="color:${pendingPay?'#f87171':'var(--accent2)'}">${pendingPay||0}</div><div class="stat-lbl">💳 دفع معلق</div></div>`;
+
+  // Pending payments
+  const{data:pending}=await sb.from('payment_requests').select('*').eq('status','pending').order('created_at',{ascending:false}).limit(5);
+  if(pending&&pending.length){
+    document.getElementById('dashPending').innerHTML=`<div class="card">
+      <div class="card-title">⚠️ طلبات دفع تنتظر الموافقة (${pending.length})</div>
+      ${pending.map(p=>`<div class="post-item">
+        <div class="post-thumb">💰</div>
+        <div class="post-info">
+          <div class="post-name">${esc(p.username)} — ${esc(p.plan_name||p.plan_key)}</div>
+          <div class="post-meta">${esc(p.bank_name||'')} • ${p.price?'$'+p.price:''} • ${ago(p.created_at)}</div>
+        </div>
+        <div class="post-actions">
+          <button class="btn-approve" onclick="approvePayment(${p.id},'${p.user_id}','${p.plan_key}')">✅ قبول</button>
+          <button class="btn-danger" onclick="rejectPayment(${p.id})">❌ رفض</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }else{document.getElementById('dashPending').innerHTML='';}
+
+  // Recent posts
+  const{data:rPosts}=await sb.from('posts').select('*,profiles(username)').order('created_at',{ascending:false}).limit(5);
+  if(rPosts&&rPosts.length){
+    document.getElementById('dashRecentPosts').innerHTML=`<div class="card">
+      <div class="card-title">🆕 آخر المنشورات</div>
+      ${rPosts.map(p=>`<div class="post-item">
+        <div class="post-thumb">${getTypeIcon(p.type)}</div>
+        <div class="post-info">
+          <div class="post-name">${esc(p.content||'').slice(0,60)||'—'}</div>
+          <div class="post-meta">${esc(p.profiles?.username||p.posted_by||'—')} • ${tagBadge(p.type)} • ${ago(p.created_at)}</div>
+        </div>
+        <div class="post-actions">
+          <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️</button>
+          <button class="btn-danger" onclick="deletePost('${p.id}',true)">🗑️</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Recent users
+  const{data:rUsers}=await sb.from('profiles').select('*').order('created_at',{ascending:false}).limit(5);
+  if(rUsers&&rUsers.length){
+    document.getElementById('dashRecentUsers').innerHTML=`<div class="card">
+      <div class="card-title">🆕 آخر المستخدمين المسجلين</div>
+      ${rUsers.map(u=>`<div class="post-item">
+        <div class="post-thumb">${u.avatar_url?`<img src="${u.avatar_url}" alt="">`:'👤'}</div>
+        <div class="post-info">
+          <div class="post-name">${esc(u.username||u.email||'—')}</div>
+          <div class="post-meta">${esc(u.email||'')} • ${getRoles(u).map(r=>roleBadge(r)).join(' ')} • ${ago(u.created_at)}</div>
+        </div>
+        <div class="post-actions">
+          <button class="btn-edit" onclick="openUserModal('${u.id}')">✏️</button>
+          <button class="btn-danger" onclick="deleteUser('${u.id}')">🗑️</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
   }
 }
 
-async function rejectPayment(reqId) {
-  if (!confirm('هل تريد رفض هذا الطلب؟')) return;
-  try {
-    let { error } = await supabaseClient.from('payment_requests').update({ status: 'rejected' }).eq('id', reqId);
-    if (error) throw error;
-    alert('✅ تم رفض الطلب.');
-    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
-    if (currentPage === 'ranks') loadRanks();
-    else loadDashboard();
-  } catch(e) {
-    alert('❌ حدث خطأ: ' + e.message);
-  }
+function getTypeIcon(type){const m={clip:'🎬',news:'📰',tourney:'🏆',question:'❓',review:'⭐',live:'🔴',screen:'📸'};return m[type]||'📝';}
+
+// ==================== POSTS ====================
+async function loadPosts(){
+  const{data,error}=await sb.from('posts').select('*,profiles(username,avatar_url)').order('created_at',{ascending:false}).limit(100);
+  if(error){document.getElementById('postsList').innerHTML='<div class="empty">❌ '+esc(error.message)+'</div>';return;}
+  allPosts=data||[];
+  renderPosts(allPosts);
 }
 
-async function loadRanks() {
-  let container = document.getElementById('content-ranks');
-  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
-  try {
-    let { data: reqs, error } = await supabaseClient
-      .from('payment_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    
-    let html = `<div class="card"><h3>💎 سجل الميزات والرتب</h3>`;
-    if (reqs && reqs.length) {
-      html += `<div class="posts-list">`;
-      reqs.forEach(req => {
-        let date = new Date(req.created_at).toLocaleString('ar-EG');
-        let statusBadge = '';
-        if (req.status === 'approved') statusBadge = `<span style="background:#0f3d2e;color:#4caf90;padding:2px 8px;border-radius:4px;font-size:11px;">مفعلة تلقائياً / مقبولة</span>`;
-        else if (req.status === 'pending') statusBadge = `<span style="background:#3d2e0f;color:#ff9800;padding:2px 8px;border-radius:4px;font-size:11px;">قيد الانتظار</span>`;
-        else statusBadge = `<span style="background:#3d0f0f;color:#f55;padding:2px 8px;border-radius:4px;font-size:11px;">مرفوضة</span>`;
-        
-        html += `<div class="pi">
-          <div class="pi-icon">💎</div>
-          <div class="pi-info" style="flex:1;">
-            <div class="pi-title">${escapeHtml(req.username)} <span style="color:#aaa;font-weight:normal;">(الجهة: ${escapeHtml(req.bank_name)})</span></div>
-            <div class="pi-meta">${escapeHtml(req.plan_name)} • ${req.price ? '$'+req.price : 'تبرع'} • ${date}</div>
-            <div style="margin-top:4px;">${statusBadge} <span class="pi-tag">ID: ${req.user_id || 'غير معروف'}</span></div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            ${req.status === 'pending' ? `<button class="btn-pub" style="background:#4caf90;padding:5px 12px;font-size:11px;" onclick="approvePayment(${req.id}, '${req.user_id}', '${req.plan_key}')">✅ قبول وتفعيل</button>
-            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="rejectPayment(${req.id})">❌ رفض</button>` : ''}
-            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="deletePaymentReq(${req.id})">🗑️ حذف السجل</button>
-          </div>
-        </div>`;
-      });
-      html += `</div>`;
-    } else {
-      html += `<div class="empty">لا يوجد سجل للميزات والرتب حتى الآن.</div>`;
-    }
-    html += `</div>`;
-    container.innerHTML = html;
-  } catch(e) {
-    container.innerHTML = `<div class="empty" style="color:red; text-align:center;">خطأ في التحميل: ${escapeHtml(e.message || e)}</div>`;
-    console.error(e);
-  }
-}
-
-async function deletePaymentReq(reqId) {
-  if (!confirm('حذف هذا السجل نهائياً؟')) return;
-  try {
-    let { error } = await supabaseClient.from('payment_requests').delete().eq('id', reqId);
-    if (error) throw error;
-    alert('✅ تم حذف السجل.');
-    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
-    if (currentPage === 'ranks') loadRanks();
-    else loadDashboard();
-  } catch(e) { alert('❌ حدث خطأ: ' + e.message); }
-}
-
-// ==================== تحميل صفحة المحتوى ====================
-async function loadContentPage(room) {
-  let container = document.getElementById(`content-${room}`);
-  if (!container) return;
-  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
-  try {
-    let { data: posts, error } = await supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false });
-    if (error) throw error;
-    let addForm = getAddForm(room);
-    let postsHtml = '';
-    if (posts && posts.length) {
-      if (room === 'yt-channels') {
-        postsHtml = `<div class="card"><h3>📋 القنوات</h3><div class="posts-list">` + posts.map(p => {
-          let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
-          return `<div class="channel-card-admin">
-            ${avatar}
-            <div class="channel-info-admin">
-              <div class="channel-name-admin">${escapeHtml(p.title)}</div>
-              <div class="channel-sub-admin">${escapeHtml(p.description || '')}</div>
-              <a href="${p.url}" target="_blank" class="channel-link-admin">زيارة القناة</a>
-            </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
-              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️</button>
-            </div>
-          </div>`;
-        }).join('') + `</div></div>`;
-      } else {
-        postsHtml = `<div class="card"><h3>📋 المنشورات</h3><div class="posts-list">` + posts.map(p => {
-          let media = '';
-          const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
-          const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
-          if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
-          else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
-          else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
-          else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
-          return `<div class="pi" id="pi-${p.id}">
-            <div style="width:80px; flex-shrink:0;">${media}</div>
-            <div class="pi-info">
-              <div class="pi-title">${escapeHtml(p.title)}</div>
-              <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
-              <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
-            </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
-              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️ حذف</button>
-            </div>
-          </div>`;
-        }).join('') + `</div></div>`;
-      }
-    } else postsHtml = '<div class="card"><div class="empty">لا توجد منشورات.</div></div>';
-    container.innerHTML = addForm + postsHtml;
-  } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
-}
-
-// ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
-function getAddForm(room) {
-  if (room === 'home') {
-    return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}"><option value="Article">📄 مقال (نص)</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option></select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="المقال الكامل (نص طويل)" rows="8"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+function renderPosts(posts){
+  const el=document.getElementById('postsList');
+  if(!posts||!posts.length){el.innerHTML='<div class="empty">لا توجد منشورات</div>';return;}
+  el.innerHTML=posts.map(p=>`
+    <div class="post-item" id="pi-${p.id}">
+      <div class="post-thumb">${p.profiles?.avatar_url?`<img src="${p.profiles.avatar_url}" alt="">`:(getTypeIcon(p.type))}</div>
+      <div class="post-info">
+        <div class="post-name">${esc((p.content||'').slice(0,70))||'—'}</div>
+        <div class="post-meta">
+          ${esc(p.profiles?.username||p.posted_by||'—')} •
+          ${tagBadge(p.type)} •
+          ❤️${p.likes_count||0} •
+          💬${p.comments_count||0} •
+          ${ago(p.created_at)}
         </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
+      </div>
+      <div class="post-actions">
+        <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️ تعديل</button>
+        <button class="btn-danger" onclick="deletePost('${p.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function filterPostsList(q){
+  const typeF=document.getElementById('postsTypeFilter')?.value||'';
+  const filtered=allPosts.filter(p=>{
+    const matchQ=!q||(p.content||'').toLowerCase().includes(q.toLowerCase())||(p.posted_by||'').toLowerCase().includes(q.toLowerCase());
+    const matchT=!typeF||p.type===typeF;
+    return matchQ&&matchT;
+  });
+  renderPosts(filtered);
+}
+
+async function openEditPost(id){
+  const{data,error}=await sb.from('posts').select('*').eq('id',id).single();
+  if(error){showToast('❌ '+error.message,'err');return;}
+  currentEditPost=data;
+  document.getElementById('editModalBody').innerHTML=`
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label class="form-label">المحتوى</label>
+        <textarea class="form-input" id="ep-content" rows="4">${esc(data.content||'')}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">النوع</label>
+        <select class="form-input" id="ep-type">
+          ${Object.entries(TAG_MAP).map(([k,v])=>`<option value="${k}" ${data.type===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رابط وسائط</label>
+        <input class="form-input" id="ep-media" value="${esc(data.media_url||'')}">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px;">
+      <button class="btn-danger" onclick="deletePost('${data.id}',false,true)">🗑️ حذف</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ghost" onclick="closeEditModal()">إلغاء</button>
+        <button class="btn-primary" onclick="saveEditPost()">💾 حفظ</button>
       </div>
     </div>`;
-  } else if (room === 'highlights') {
-    return `<div class="card"><h3>➕ إضافة مقطع مميز (يوتيوب/صورة)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان (اختياري)"><input id="desc-${room}" placeholder="اللاعب / اللعبة (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div style="font-size:11px; color:#888; display:flex; align-items:center;">📹 للفيديو، استخدم رابط يوتيوب بالأسفل</div>
-          </div>
-          <div class="fg"><select id="tag-${room}"><option value="Video">🎬 يوتيوب Video</option><option value="Photo">📷 Photo</option><option value="Pro">🏅 Pro</option><option value="Tournament">🏆 بطولة</option></select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو رابط صورة مصغرة)"><textarea class="full" id="content-${room}" placeholder="رابط إضافي (TikTok/Insta...) اختياري" rows="4"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
-  } else if (room === 'projects') {
-    return `<div class="card"><h3>➕ إضافة مشروع (فيديو/صورة/نص)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="اسم المشروع *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}"><option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option></select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط المشروع (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="تفاصيل المشروع" rows="4"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
-  } else if (room === 'gaming-news' || room === 'youtube-news') {
-    let tagOptions = room === 'gaming-news' ? `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>` : `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-    return `<div class="card"><h3>➕ إضافة خبر (مع دعم الفيديو)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="عنوان الخبر *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى الخبر الطويل" rows="6"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
-  } else if (room === 'live' || room === 'tournaments') {
-    let tagOptions = room === 'live' ? `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>` : `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-    return `<div class="card"><h3>➕ إضافة منشور (مع دعم الفيديو)</h3>
-      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
-      <div class="form-with-preview">
-        <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
-          <div class="fg">
-            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
-            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
-          </div>
-          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-        </div>
-        <div class="preview-panel">
-          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
-          <img id="preview-img-${room}" class="preview-media" style="display:none;">
-          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
-          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
-          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
-        </div>
-      </div>
-    </div>`;
-  } else if (room === 'yt-channels') {
-    return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"><textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
-  } else if (room === 'subscribers') {
-    setTimeout(() => loadSubscribersAdmin(), 80);
-    return `<div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <h3 style="margin:0;">👥 المستخدمون حسب الرتبة</h3>
-        <button class="btn-edit" onclick="loadSubscribersAdmin()" style="font-size:12px;padding:5px 14px;">🔄 تحديث</button>
-      </div>
-      <div id="subscribers-admin-view" style="margin-top:14px;">
-        <div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>
-      </div>
-    </div>`;
-  } else if (room === 'yt-videos') {
-    return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
-  } else {
-    let tagOptions = '';
-    if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'tournaments') tagOptions = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'gaming-news') tagOptions = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
-    else if (room === 'youtube-news') tagOptions = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
-    else tagOptions = `<option value="default">عام</option>`;
-    return `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}">${tagOptions}</select><input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
-  }
-}
-
-// ==================== دوال مساعدة للمعاينة والإضافة ====================
-function clearMedia(room) {
-  if (room !== 'highlights' && room !== 'home' && room !== 'projects' && room !== 'gaming-news' && room !== 'youtube-news' && room !== 'live' && room !== 'tournaments') return;
-  const previewImg = document.getElementById(`preview-img-${room}`);
-  const previewVideo = document.getElementById(`preview-video-${room}`);
-  const previewText = document.getElementById(`preview-text-${room}`);
-  if (previewImg) previewImg.style.display = 'none';
-  if (previewVideo) previewVideo.style.display = 'none';
-  if (previewText) previewText.style.display = 'block';
-  document.getElementById(`url-${room}`).value = '';
-  document.getElementById(`icon-${room}`).value = '';
-  document.getElementById(`imgfile-${room}`).value = '';
-  document.getElementById(`videofile-${room}`).value = '';
-  delete document.getElementById(`icon-${room}`)._imgData;
-}
-function handleImageUpload(room) {
-  const fileInput = document.getElementById(`imgfile-${room}`);
-  const file = fileInput?.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const previewImg = document.getElementById(`preview-img-${room}`);
-    const previewVideo = document.getElementById(`preview-video-${room}`);
-    const previewText = document.getElementById(`preview-text-${room}`);
-    if (previewImg) { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
-    if (previewVideo) previewVideo.style.display = 'none';
-    if (previewText) previewText.style.display = 'none';
-    const iconField = document.getElementById(`icon-${room}`);
-    iconField.value = '🖼️';
-    iconField._imgData = e.target.result;
-    document.getElementById(`url-${room}`).value = '';
-  };
-  reader.readAsDataURL(file);
-}
-async function uploadVideoToBucket(room) {
-  let fileInput = document.getElementById(`videofile-${room}`);
-  let file = fileInput?.files[0];
-  if (!file) { alert('لم تختر ملفاً'); return; }
-  if (!file.type.startsWith('video/')) { alert('الملف المختار ليس فيديو'); return; }
-  let fileName = Date.now() + '_' + file.name;
-  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-  let filePath = `highlights/${fileName}`;
-  let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
-  let btn = document.querySelector(`#ap-${room} .btn-pub`);
-  if (btn) btn.disabled = true;
-  try {
-    let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
-    if (res.ok) {
-      let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
-      document.getElementById(`url-${room}`).value = publicUrl;
-      let titleField = document.getElementById(`title-${room}`);
-      if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
-      const previewImg = document.getElementById(`preview-img-${room}`);
-      const previewVideo = document.getElementById(`preview-video-${room}`);
-      const previewText = document.getElementById(`preview-text-${room}`);
-      if (previewImg) previewImg.style.display = 'none';
-      if (previewVideo) { previewVideo.src = publicUrl; previewVideo.style.display = 'block'; }
-      if (previewText) previewText.style.display = 'none';
-      document.getElementById(`icon-${room}`).value = '';
-      delete document.getElementById(`icon-${room}`)._imgData;
-      alert('✅ تم رفع الفيديو! الرابط جاهز.');
-    } else { let errText = await res.text(); alert('❌ فشل الرفع: ' + errText); }
-  } catch(e) { alert('خطأ: ' + e.message); }
-  finally { if (btn) btn.disabled = false; }
-}
-async function addPost(room) {
-  const titleEl = document.getElementById(`title-${room}`);
-  const urlEl = document.getElementById(`url-${room}`);
-  const descEl = document.getElementById(`desc-${room}`);
-  const contentEl = document.getElementById(`content-${room}`);
-  const iconEl = document.getElementById(`icon-${room}`);
-  const tagEl = document.getElementById(`tag-${room}`);
-  function getSafeValue(el) { if (!el) return ''; if (el.value === undefined) return ''; return (el.value || '').trim(); }
-  let title = getSafeValue(titleEl);
-  let url = getSafeValue(urlEl);
-  let desc = getSafeValue(descEl);
-  let content = getSafeValue(contentEl);
-  let icon = getSafeValue(iconEl);
-  let tag = tagEl ? tagEl.value : room;
-  let imgData = iconEl?._imgData || '';
-  if (imgData) icon = imgData;
-  const hasImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-  const hasVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
-  if (room === 'highlights') {
-    const isYT = url && (url.includes('youtube.com') || url.includes('youtu.be'));
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!isYT) { showError(room, '❌ يرجى استخدام رابط يوتيوب للفيديوهات في أبرز اللحظات.'); return; } }
-    else { if (!hasImage && !isYT) { showError(room, '❌ في Pro / Tournament، يجب رفع صورة أو إضافة رابط يوتيوب.'); return; } }
-  } else if (room === 'home') {
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
-    else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المقال فارغ. أدخل عنواناً أو محتوى.'); return; } }
-  } else if (room === 'projects') {
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
-    else { if (!title && !url && !icon && !content) { showError(room, '❌ المشروع فارغ. أدخل عنواناً أو وسائط.'); return; } }
-  } else if (room === 'gaming-news' || room === 'youtube-news' || room === 'live' || room === 'tournaments') {
-    if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
-    else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
-    else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو محتوى.'); return; } }
-  } else {
-    if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
-  }
-  if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : (room === 'home' ? '📄 مقال' : (room === 'projects' ? '🌐 مشروع' : (room === 'gaming-news' ? '📰 خبر' : (room === 'youtube-news' ? '▶️ خبر' : (room === 'live' ? '🔴 بث' : (room === 'tournaments' ? '🏆 بطولة' : '📄 منشور'))))));
-  const body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
-  const btn = document.querySelector(`#ap-${room} .btn-pub`);
-  if (btn) btn.disabled = true;
-  try {
-    const { error } = await supabaseClient.from('posts').insert(body);
-    if (error) throw error;
-    const okDiv = document.getElementById(`ok-${room}`);
-    if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
-    if (titleEl) titleEl.value = '';
-    if (descEl) descEl.value = '';
-    if (urlEl) urlEl.value = '';
-    if (iconEl) iconEl.value = '';
-    if (contentEl) contentEl.value = '';
-    const fileInput = document.getElementById(`imgfile-${room}`);
-    if (fileInput) fileInput.value = '';
-    const videoInput = document.getElementById(`videofile-${room}`);
-    if (videoInput) videoInput.value = '';
-    const previewImg = document.getElementById(`preview-img-${room}`);
-    const previewVideo = document.getElementById(`preview-video-${room}`);
-    const previewText = document.getElementById(`preview-text-${room}`);
-    if (previewImg) previewImg.style.display = 'none';
-    if (previewVideo) previewVideo.style.display = 'none';
-    if (previewText) previewText.style.display = 'block';
-    loadContentPage(room);
-    loadDashboard();
-  } catch (e) { showError(room, e.message); }
-  finally { if (btn) btn.disabled = false; }
-}
-function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
-async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
-
-// ==================== دوال التعديل المصححة ====================
-function getTagOptionsForEdit(room, currentTag) {
-  let opts = '';
-  if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
-  else if (room === 'home') opts = `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`;
-  else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-  else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>`;
-  else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
-  else if (room === 'subscribers') opts = `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`;
-  else if (room === 'yt-channels') opts = `<option value="Channel">📺 Channel</option>`;
-  else if (room === 'yt-videos') opts = `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`;
-  else opts = `<option value="default">عام</option>`;
-  return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
-}
-
-async function openEditModal(id) {
-  let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
-  if (error) {
-    console.error('خطأ في جلب المنشور:', error);
-    alert('فشل تحميل بيانات المنشور');
-    return;
-  }
-  currentEditPost = data;
-  let modalBody = document.getElementById('editModalBody');
-  let tagOptions = getTagOptionsForEdit(data.room, data.tag);
-  modalBody.innerHTML = `
-    <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
-    <div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
-    <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div>
-    <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div>
-    <div class="fg"><select id="edit-tag">${tagOptions}</select></div>
-    <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div>
-    <div class="fg"><div class="img-upload"><input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()"><label for="edit-imgfile">📁 رفع صورة جديدة</label><img id="edit-imgpreview" class="img-preview" src=""></div></div>
-    <div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div>
-    <button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button>
-    <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${currentEditPost.id}, '${currentEditPost.room}'); closeEditModal();">🗑️ حذف المنشور</button>
-  `;
   document.getElementById('editModal').classList.add('open');
 }
 
-function previewEditImg() {
-  let file = document.getElementById('edit-imgfile').files[0];
-  if (!file) return;
-  let reader = new FileReader();
-  reader.onload = e => {
-    let preview = document.getElementById('edit-imgpreview');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    document.getElementById('edit-icon').value = '🖼️';
-    document.getElementById('edit-icon')._imgData = e.target.result;
-  };
-  reader.readAsDataURL(file);
+function closeEditModal(){document.getElementById('editModal').classList.remove('open');currentEditPost=null;}
+
+async function saveEditPost(){
+  if(!currentEditPost)return;
+  const content=document.getElementById('ep-content').value.trim();
+  const type=document.getElementById('ep-type').value;
+  const media_url=document.getElementById('ep-media').value.trim();
+  const{error}=await sb.from('posts').update({content,type,media_url:media_url||null}).eq('id',currentEditPost.id);
+  if(error){showToast('❌ '+error.message,'err');return;}
+  closeEditModal();showToast('✅ تم التعديل','ok');
+  loadPosts();loadDashboard();
 }
 
-async function uploadEditVideo() {
-  let file = document.getElementById('edit-videofile').files[0];
-  if (!file) return;
-  if (!file.type.startsWith('video/')) {
-    alert('الملف المختار ليس فيديو');
-    return;
-  }
-  let fileName = Date.now() + '_' + file.name;
-  fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
-  let filePath = `highlights/${fileName}`;
-  let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
-  try {
-    let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
-    if (res.ok) {
-      let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
-      document.getElementById('edit-url').value = publicUrl;
-      let titleField = document.getElementById('edit-title');
-      if (titleField && !titleField.value.trim()) {
-        titleField.value = file.name.replace(/\.[^/.]+$/, '');
-      }
-      alert('✅ تم رفع الفيديو الجديد! الرابط جاهز.');
-    } else {
-      let errText = await res.text();
-      alert('❌ فشل الرفع: ' + errText);
-    }
-  } catch(e) {
-    alert('خطأ: ' + e.message);
-  }
+async function deletePost(id,refresh=true,closeModal=false){
+  if(!confirm('حذف هذا المنشور نهائياً؟'))return;
+  const{error}=await sb.from('posts').delete().eq('id',id);
+  if(error){showToast('❌ '+error.message,'err');return;}
+  if(closeModal)closeEditModal();
+  showToast('🗑️ تم الحذف','ok');
+  document.getElementById('pi-'+id)?.remove();
+  if(refresh){loadDashboard();loadSideCounts();}
 }
 
-async function saveEditPost() {
-  if (!currentEditPost) {
-    alert('لا يوجد منشور قيد التعديل');
-    return;
-  }
-  let updated = {
-    title: document.getElementById('edit-title').value,
-    description: document.getElementById('edit-desc').value,
-    icon: document.getElementById('edit-icon').value,
-    url: document.getElementById('edit-url').value,
-    tag: document.getElementById('edit-tag').value,
-    content: document.getElementById('edit-content').value
-  };
-  let imgData = document.getElementById('edit-icon')._imgData;
-  if (imgData) updated.icon = imgData;
-  try {
-    const { error } = await supabaseClient.from('posts').update(updated).eq('id', currentEditPost.id);
-    if (error) throw error;
-    closeEditModal();
-    loadContentPage(currentEditPost.room);
-    loadDashboard();
-    alert('✅ تم التعديل بنجاح');
-  } catch (e) {
-    console.error(e);
-    alert('❌ فشل التعديل: ' + e.message);
-  }
+// ==================== CREATE POST ====================
+async function adminCreatePost(){
+  const content=document.getElementById('cpContent').value.trim();
+  const type=document.getElementById('cpType').value;
+  const media_url=document.getElementById('cpMediaUrl').value.trim();
+  const note=document.getElementById('cpAdminNote').value.trim();
+  if(!content){showErr('createErr','⚠️ المحتوى مطلوب');return;}
+  const btn=document.getElementById('btnCreatePost');
+  btn.disabled=true;btn.textContent='⏳ جاري النشر...';
+  const finalContent=note?content+'\n\n📌 '+note:content;
+  const{error}=await sb.from('posts').insert({content:finalContent,type,media_url:media_url||null,posted_by:'Admin ⭐',roles:['admin']});
+  btn.disabled=false;btn.textContent='📤 نشر الآن';
+  if(error){showErr('createErr','❌ '+error.message);return;}
+  showOk('createOk','✅ تم النشر بنجاح!');
+  clearCreateForm();loadSideCounts();
 }
 
-function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
-
-// ==================== دوال يوتيوب والمستخدمين ====================
-async function fetchYouTubeChannelInfo(url) {
-  try { let handle = url.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url }; return null; } catch(e) { return null; }
-}
-async function addYouTubeChannel(room) {
-  let url = document.getElementById(`url-${room}`).value.trim();
-  if (!url) { alert('أدخل رابط القناة'); return; }
-  let btn = document.querySelector(`#ap-${room} .btn-pub`) || document.querySelector('.btn-pub');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ جارٍ الإضافة...'; }
-  try {
-    let info = await fetchYouTubeChannelInfo(url);
-    if (!info) { alert('تعذر جلب معلومات القناة'); return; }
-    let extraContent = document.getElementById(`content-${room}`)?.value.trim() || '';
-    let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'), room: room, content: extraContent };
-    let { error } = await supabaseClient.from('posts').insert(body);
-    if (error) throw error;
-
-    // ── جلب فوري: فيديوهات + بث مباشر + قبل بث ──
-    let handle = url.split('@')[1]?.split(/[\/?]/)[0];
-    if (handle) {
-      if (btn) btn.textContent = '📥 جاري تنزيل المحتوى...';
-      let chInfo = await getChannelId(handle);
-      if (chInfo) {
-        // فيديوهات
-        let videos = await fetchLatestVideos(chInfo.id, 5);
-        let vCount = 0;
-        for (let v of videos) { if (await saveToDb(v, 'yt-videos', 'Video')) vCount++; }
-        // بث مباشر
-        let live = await fetchLiveStream(chInfo.id);
-        let lCount = 0;
-        if (live) { if (await saveToDb(live, 'live', 'Live Now')) lCount++; }
-        // قبل بث
-        let upcoming = await fetchUpcomingStream(chInfo.id);
-        let uCount = 0;
-        if (upcoming) { if (await saveToDb(upcoming, 'live', 'Pre Lives')) uCount++; }
-        console.log(`✅ ${chInfo.title}: ${vCount} فيديو | ${lCount} بث | ${uCount} قبل بث`);
-      }
-    }
-
-    document.getElementById(`url-${room}`).value = '';
-    if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = '';
-    let okDiv = document.getElementById(`ok-${room}`);
-    if (okDiv) { okDiv.style.display = 'block'; okDiv.textContent = '✅ تمت الإضافة وتنزيل المحتوى!'; setTimeout(() => { okDiv.style.display='none'; okDiv.textContent='✅ تمت الإضافة!'; }, 3500); }
-    loadContentPage(room);
-    if (document.getElementById('content-yt-videos')) loadContentPage('yt-videos');
-    if (document.getElementById('content-live'))      loadContentPage('live');
-    loadDashboard();
-  } catch(e) { alert('خطأ: ' + e.message); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = '➕ إضافة'; } }
-}
-async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
-async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
-async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
-
-// ══════════════════════════════════════════════════════════════════
-// 🔄 AUTO-FETCH ENGINE — فيديوهات + بث مباشر + قبل البث
-// ══════════════════════════════════════════════════════════════════
-
-async function getChannelId(handle) {
-  try {
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${handle}&key=${YOUTUBE_API_KEY}`);
-    let d = await res.json();
-    if (d.items?.[0]) return { id: d.items[0].id, title: d.items[0].snippet.title };
-  } catch(e) {}
-  return null;
+function clearCreateForm(){
+  document.getElementById('cpContent').value='';
+  document.getElementById('cpMediaUrl').value='';
+  document.getElementById('cpAdminNote').value='';
 }
 
-// جلب آخر فيديوهات عادية
-async function fetchLatestVideos(channelId, maxResults = 5, publishedAfter = null) {
-  try {
-    let extra = publishedAfter ? `&publishedAfter=${encodeURIComponent(publishedAfter)}` : '';
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=${maxResults}&order=date&type=video&eventType=none${extra}&key=${YOUTUBE_API_KEY}`);
-    let d = await res.json();
-    return (d.items || []).map(v => ({
-      videoId:     v.id.videoId,
-      title:       v.snippet.title,
-      channelName: v.snippet.channelTitle,
-      thumbnail:   v.snippet.thumbnails?.high?.url || '',
-      publishedAt: v.snippet.publishedAt,
-      videoUrl:    `https://www.youtube.com/watch?v=${v.id.videoId}`,
-      type:        'video'
-    }));
-  } catch(e) { return []; }
+// ==================== USERS ====================
+async function loadUsers(){
+  const{data,error}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
+  if(error){document.getElementById('usersList').innerHTML='<div class="empty">❌ '+esc(error.message)+'</div>';return;}
+  allUsers=data||[];
+  renderUsers(allUsers);
 }
 
-// جلب بث مباشر حالي
-async function fetchLiveStream(channelId) {
-  try {
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${YOUTUBE_API_KEY}`);
-    let d = await res.json();
-    if (!d.items?.length) return null;
-    let v = d.items[0];
-    return {
-      videoId:     v.id.videoId,
-      title:       v.snippet.title,
-      channelName: v.snippet.channelTitle,
-      thumbnail:   v.snippet.thumbnails?.high?.url || '',
-      publishedAt: v.snippet.publishedAt,
-      videoUrl:    `https://www.youtube.com/watch?v=${v.id.videoId}`,
-      type:        'live'
-    };
-  } catch(e) { return null; }
+function renderUsers(users){
+  const el=document.getElementById('usersList');
+  if(!users||!users.length){el.innerHTML='<div class="empty">لا يوجد مستخدمون</div>';return;}
+  el.innerHTML=`<table class="data-table">
+    <thead><tr>
+      <th>المستخدم</th><th>البريد</th><th>الرتبة</th><th>XP</th><th>تاريخ التسجيل</th><th>إجراء</th>
+    </tr></thead>
+    <tbody>${users.map(u=>`<tr id="ur-${u.id}">
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:12px;overflow:hidden;flex-shrink:0;">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`:'👤'}</div>
+        <span style="font-weight:600;">${esc(u.username||'—')}</span>
+      </div></td>
+      <td style="color:var(--text3);font-size:12px;">${esc(u.email||'—')}</td>
+      <td>${getRoles(u).map(r=>roleBadge(r)).join(' ')}</td>
+      <td style="color:var(--accent2);font-weight:700;">${(u.xp||0).toLocaleString()}</td>
+      <td style="color:var(--text3);font-size:11px;">${ago(u.created_at)}</td>
+      <td><div style="display:flex;gap:5px;">
+        <button class="btn-edit" onclick="openUserModal('${u.id}')">✏️</button>
+        <button class="btn-danger" onclick="deleteUser('${u.id}')">🗑️</button>
+      </div></td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
-// جلب بث قادم (scheduled)
-async function fetchUpcomingStream(channelId) {
-  try {
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=upcoming&type=video&key=${YOUTUBE_API_KEY}`);
-    let d = await res.json();
-    if (!d.items?.length) return null;
-    let v = d.items[0];
-    return {
-      videoId:     v.id.videoId,
-      title:       v.snippet.title,
-      channelName: v.snippet.channelTitle,
-      thumbnail:   v.snippet.thumbnails?.high?.url || '',
-      publishedAt: v.snippet.publishedAt,
-      videoUrl:    `https://www.youtube.com/watch?v=${v.id.videoId}`,
-      type:        'upcoming'
-    };
-  } catch(e) { return null; }
+function filterUsers(q){
+  const filtered=allUsers.filter(u=>!q||(u.username||'').toLowerCase().includes(q.toLowerCase())||(u.email||'').toLowerCase().includes(q.toLowerCase()));
+  renderUsers(filtered);
 }
 
-// حفظ في DB مع منع التكرار
-async function saveToDb(item, room, tag) {
-  let { data: existing } = await supabaseClient.from('posts')
-    .select('id').eq('url', item.videoUrl).limit(1);
-  if (existing?.length) return false;
-  await supabaseClient.from('posts').insert({
-    title:       item.title,
-    description: item.channelName,
-    icon:        item.thumbnail || (tag === 'Live Now' ? '🔴' : tag === 'Pre Lives' ? '⏰' : '📹'),
-    url:         item.videoUrl,
-    tag:         tag,
-    room:        room,
-    content:     item.publishedAt || ''
-  });
-  return true;
-}
-
-// الفحص الشامل لكل القنوات
-async function autoCheckAllChannels() {
-  try {
-    let { data: channels } = await supabaseClient.from('posts')
-      .select('*').eq('room', 'yt-channels').eq('tag', 'Channel');
-    if (!channels?.length) return;
-
-    let newVideos = 0, newLive = 0, newUpcoming = 0;
-
-    for (let ch of channels) {
-      let handle = ch.url?.split('@')[1]?.split(/[\/?]/)[0];
-      if (!handle) continue;
-      let chInfo = await getChannelId(handle);
-      if (!chInfo) continue;
-
-      // ── فيديوهات عادية ──
-      let { data: lastVid } = await supabaseClient.from('posts')
-        .select('content').eq('room', 'yt-videos').eq('description', chInfo.title)
-        .eq('tag', 'Video').order('id', { ascending: false }).limit(1);
-      let publishedAfter = lastVid?.[0]?.content || null;
-      let videos = await fetchLatestVideos(chInfo.id, 10, publishedAfter);
-      for (let v of videos) { if (await saveToDb(v, 'yt-videos', 'Video')) newVideos++; }
-
-      // ── بث مباشر حالي → يُحفظ في غرفة live بـ tag "Live Now" ──
-      let live = await fetchLiveStream(chInfo.id);
-      if (live) { if (await saveToDb(live, 'live', 'Live Now')) newLive++; }
-
-      // ── بث قادم → يُحفظ في غرفة live بـ tag "Pre Lives" ──
-      let upcoming = await fetchUpcomingStream(chInfo.id);
-      if (upcoming) { if (await saveToDb(upcoming, 'live', 'Pre Lives')) newUpcoming++; }
-    }
-
-    let total = newVideos + newLive + newUpcoming;
-    if (total > 0) {
-      console.log(`✅ جديد: ${newVideos} فيديو | ${newLive} بث مباشر | ${newUpcoming} قبل بث`);
-      if (document.getElementById('content-yt-videos')) loadContentPage('yt-videos');
-      if (document.getElementById('content-live'))      loadContentPage('live');
-    }
-  } catch(e) { console.error('autoCheck error:', e); }
-}
-
-let _autoCheckInterval = null;
-function startAutoCheck() {
-  if (_autoCheckInterval) clearInterval(_autoCheckInterval);
-  autoCheckAllChannels();
-  _autoCheckInterval = setInterval(autoCheckAllChannels, 15 * 60 * 1000);
-}
-
-// تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
-
-// ==================== غرفة Subscribers ====================
-async function loadSubscribersAdmin() {
-  const container = document.getElementById('subscribers-admin-view');
-  if (!container) return;
-  container.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>';
-  try {
-    const { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    if (!users || !users.length) { container.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">لا يوجد مستخدمون</div>'; return; }
-    const RM = window._ROLE_META || { vip:{label:'👑 VIP',color:'#d4e800',bg:'#2a2000'}, member:{label:'⭐ Member',color:'#4caf90',bg:'#0f3d2e'}, moderator:{label:'🛡️ Mod',color:'#ff9800',bg:'#3d2e0f'}, youtuber:{label:'🎬 Youtuber',color:'#ff4444',bg:'#3d0f0f'}, youtuber_vip:{label:'🔥 Youtuber VIP',color:'#ff6b35',bg:'#3d1a0f'}, user:{label:'👤 User',color:'#aabbcc',bg:'#1a1a2e'} };
-    function getRoles(u) { if (Array.isArray(u.roles) && u.roles.length) return u.roles; if (u.role) return [u.role]; return ['user']; }
-    const roleOrder = ['vip','youtuber_vip','youtuber','moderator','member','user'];
-    const grouped = {};
-    roleOrder.forEach(r => grouped[r] = []);
-    users.forEach(u => {
-      const roles = getRoles(u);
-      let placed = false;
-      for (const r of roleOrder) { if (roles.includes(r)) { grouped[r].push(u); placed = true; break; } }
-      if (!placed) grouped['user'].push(u);
-    });
-
-    // Search bar for subscribers
-    let html = `<div style="margin-bottom:14px;">
-      <input type="text" id="subsSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد..." oninput="filterSubscribersList(this.value)">
+async function openUserModal(id){
+  const u=allUsers.find(x=>x.id===id)||((await sb.from('profiles').select('*').eq('id',id).single()).data);
+  if(!u)return;
+  document.getElementById('userModalTitle').textContent='👤 '+( u.username||u.email);
+  const roles=getRoles(u);
+  document.getElementById('userModalBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div><div class="form-label" style="margin-bottom:4px;">اسم المستخدم</div><input class="form-input" id="um-username" value="${esc(u.username||'')}"></div>
+      <div><div class="form-label" style="margin-bottom:4px;">الاسم الظاهر</div><input class="form-input" id="um-display" value="${esc(u.display_name||'')}"></div>
+      <div><div class="form-label" style="margin-bottom:4px;">البريد الإلكتروني</div><input class="form-input" id="um-email" value="${esc(u.email||'')}" readonly style="opacity:0.6;"></div>
+      <div><div class="form-label" style="margin-bottom:4px;">XP</div><input class="form-input" id="um-xp" type="number" value="${u.xp||0}"></div>
+      <div style="grid-column:1/-1"><div class="form-label" style="margin-bottom:6px;">الرتب الحالية</div>
+        <div class="role-chips" id="um-roles-chips">
+          ${Object.entries(ROLES).map(([k,m])=>`
+            <span class="role-chip ${roles.includes(k)?'on':'off'}" data-role="${k}"
+              style="color:${m.color};background:${m.bg};border-color:${m.color};"
+              onclick="toggleRoleChip(this,'${u.id}')">
+              ${m.label}
+            </span>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn-ghost" onclick="closeUserModal()">إلغاء</button>
+      <button class="btn-primary" onclick="saveUserModal('${u.id}')">💾 حفظ</button>
     </div>`;
-
-    roleOrder.forEach(r => {
-      const m = RM[r] || RM.user;
-      const list = grouped[r];
-      if (!list.length) return;
-      html += `<div class="subs-role-group" data-role="${r}" style="margin-bottom:18px;"><div style="font-size:14px;font-weight:700;color:${m.color};margin-bottom:8px;padding:6px 10px;background:${m.bg};border-radius:8px;border:1px solid ${m.color}33;">${m.label} (${list.length})</div>`;
-      html += '<div class="posts-list">';
-      list.forEach(u => {
-        const uid = u.id;
-        const roles = getRoles(u);
-        const badges = roles.map(rr => { const mm = RM[rr]||RM.user; return `<span style="font-size:10px;background:${mm.bg};color:${mm.color};border-radius:4px;padding:2px 6px;margin:2px;display:inline-block;">${mm.label}</span>`; }).join('');
-        const date = new Date(u.created_at).toLocaleDateString('ar-EG');
-        const toggleBtns = Object.keys(RM).map(rr => {
-          const has = roles.includes(rr);
-          const mm = RM[rr];
-          return has
-            ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${mm.color};background:${mm.bg};color:${mm.color};cursor:pointer;" onclick="toggleRole('${uid}','${rr}',false).then(()=>loadSubscribersAdmin())">✕ ${mm.label}</button>`
-            : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole('${uid}','${rr}',true).then(()=>loadSubscribersAdmin())">${mm.label}</button>`;
-        }).join('');
-        html += `<div class="pi subs-user-item" data-username="${escapeHtml(u.username||'')}" data-email="${escapeHtml(u.email||'')}">
-          <div class="pi-icon">👤</div>
-          <div class="pi-info" style="flex:1;">
-            <div class="pi-title">${escapeHtml(u.username||u.email)}</div>
-            <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
-            <div style="margin-top:4px;">${badges}</div>
-          </div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:280px;">
-            ${toggleBtns}
-            <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser('${uid}').then(()=>loadSubscribersAdmin())">🗑️ حذف</button>
-          </div>
-        </div>`;
-      });
-      html += '</div></div>';
-    });
-    container.innerHTML = html;
-  } catch(e) { container.innerHTML = '<div style="color:#f55;text-align:center;padding:24px;">❌ خطأ في التحميل</div>'; console.error(e); }
+  document.getElementById('userModal').classList.add('open');
 }
 
-function filterSubscribersList(query) {
-  const items = document.querySelectorAll('.subs-user-item');
-  const q = query.toLowerCase().trim();
-  items.forEach(item => {
-    const username = (item.dataset.username || '').toLowerCase();
-    const email = (item.dataset.email || '').toLowerCase();
-    if (!q || username.includes(q) || email.includes(q)) {
-      item.style.display = '';
-    } else {
-      item.style.display = 'none';
-    }
-  });
-  // Show/hide role groups if all children hidden
-  document.querySelectorAll('.subs-role-group').forEach(group => {
-    const visible = group.querySelectorAll('.subs-user-item:not([style*="display: none"])');
-    group.style.display = visible.length ? '' : 'none';
-  });
+function closeUserModal(){document.getElementById('userModal').classList.remove('open');}
+
+function toggleRoleChip(chip,uid){
+  chip.classList.toggle('on');
+  chip.classList.toggle('off');
 }
-window.filterSubscribersList = filterSubscribersList;
 
-async function searchUsers(query) { let resultsDiv = document.getElementById('user-search-results'); if (!query || query.length < 2) { resultsDiv.style.display = 'none'; return; } let { data: users, error } = await supabaseClient.from('profiles').select('id,username,email').ilike('username', `%${query}%`); if (!users || !users.length) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<div style="padding:10px;">لا يوجد مستخدم</div>'; return; } resultsDiv.style.display = 'block'; resultsDiv.innerHTML = users.map(u => `<div onclick="selectUser('${u.id}','${u.username}')" style="padding:10px;cursor:pointer;border-bottom:1px solid #1e2d6b;">${escapeHtml(u.username)} (${u.email})</div>`).join(''); }
-function selectUser(id, username) { document.getElementById('sub-user-id').value = id; document.getElementById('sub-user-selected').value = username; document.getElementById('user-search-results').style.display = 'none'; }
-async function addUserSubscriber() { let userId = document.getElementById('sub-user-id').value; let username = document.getElementById('sub-user-selected').value; let role = document.getElementById('sub-user-role').value; if (!userId || !username) { alert('اختر مستخدم أولاً'); return; } let body = { title: username, description: role, room: 'subscribers', icon: '👤', tag: role, url: '' }; await supabaseClient.from('posts').insert(body); loadContentPage('subscribers'); }
+async function saveUserModal(id){
+  const username=document.getElementById('um-username').value.trim();
+  const display_name=document.getElementById('um-display').value.trim();
+  const xp=parseInt(document.getElementById('um-xp').value)||0;
+  const roles=[...document.querySelectorAll('#um-roles-chips .role-chip.on')].map(c=>c.dataset.role);
+  if(!roles.length)roles.push('user');
+  const{error}=await sb.from('profiles').update({username,display_name,xp,roles,role:roles[0]}).eq('id',id);
+  if(error){showToast('❌ '+error.message,'err');return;}
+  closeUserModal();showToast('✅ تم تحديث المستخدم','ok');
+  loadUsers();loadDashboard();loadSideCounts();
+}
 
-// ربط الدوال
-window.startAutoCheck = startAutoCheck; window.autoCheckAllChannels = autoCheckAllChannels;
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList; window.approvePayment = approvePayment; window.rejectPayment = rejectPayment;
-</script>
+async function deleteUser(id){
+  if(!confirm('حذف هذا المستخدم نهائياً؟'))return;
+  const{error}=await sb.from('profiles').delete().eq('id',id);
+  if(error){showToast('❌ '+error.message,'err');return;}
+  document.getElementById('ur-'+id)?.remove();
+  showToast('🗑️ تم حذف المستخدم','ok');
+  loadSideCounts();
+}
 
-<script>
-// ===== 3D SPACE TUNNEL + FLOATING CUBES BACKGROUND =====
-(function() {
-  const canvas = document.getElementById('bgCanvas');
-  if (!canvas) return;
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-  if (!gl) {
-    // Fallback: 2D canvas 3D effect
-    fallback2D(canvas);
-    return;
-  }
+// ==================== ROLES ====================
+async function loadRolesPage(){
+  document.getElementById('rolesGuide').innerHTML=`
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      ${Object.entries(ROLES).map(([k,m])=>`<div style="background:${m.bg};border:1px solid ${m.color}33;border-radius:10px;padding:10px 14px;min-width:140px;">
+        <div style="font-weight:700;color:${m.color};">${m.label}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">role: "${k}"</div>
+      </div>`).join('')}
+    </div>`;
+}
 
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  }
-  resize();
-  window.addEventListener('resize', resize);
+async function searchForRole(q){
+  const el=document.getElementById('roleSearchResults');
+  if(!q||q.length<2){el.innerHTML='';return;}
+  const{data}=await sb.from('profiles').select('id,username,email,role,roles,xp').or(`username.ilike.%${q}%,email.ilike.%${q}%`).limit(8);
+  if(!data||!data.length){el.innerHTML='<div class="empty">لا يوجد مستخدم مطابق</div>';return;}
+  el.innerHTML=data.map(u=>{
+    const roles=getRoles(u);
+    return`<div class="post-item" style="margin-bottom:8px;">
+      <div class="post-thumb">👤</div>
+      <div class="post-info">
+        <div class="post-name">${esc(u.username||u.email)}</div>
+        <div class="post-meta">${esc(u.email||'')} • ${roles.map(r=>roleBadge(r)).join(' ')}</div>
+      </div>
+      <div class="post-actions">
+        <button class="btn-edit" onclick="openUserModal('${u.id}')">✏️ تعديل الرتبة</button>
+      </div>
+    </div>`;
+  }).join('');
+  // Preload into allUsers for modal
+  data.forEach(u=>{if(!allUsers.find(x=>x.id===u.id))allUsers.push(u);});
+}
 
-  // Vertex shader
-  const vsSource = `
-    attribute vec3 aPos;
-    attribute vec3 aColor;
-    uniform mat4 uMVP;
-    varying vec3 vColor;
-    varying float vDepth;
-    void main() {
-      vec4 pos = uMVP * vec4(aPos, 1.0);
-      gl_Position = pos;
-      vColor = aColor;
-      vDepth = pos.z;
+// ==================== TOURNAMENTS ====================
+async function loadTournaments(){
+  const{data,error}=await sb.from('tournament_registrations').select('*').order('created_at',{ascending:false});
+  const el=document.getElementById('tournamentsList');
+  if(error||!data||!data.length){el.innerHTML='<div class="empty">لا توجد تسجيلات بعد</div>';return;}
+  // Group by post_id
+  const grouped={};
+  data.forEach(r=>{const k=r.post_id||'unset';if(!grouped[k])grouped[k]=[];grouped[k].push(r);});
+  el.innerHTML=Object.entries(grouped).map(([key,regs])=>`
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">🏆 بطولة #${esc(key)} — ${regs.length} لاعب</div>
+      <table class="data-table">
+        <thead><tr><th>اللاعب</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+        <tbody>${regs.map(r=>`<tr>
+          <td><span style="font-weight:600;">${esc(r.username||'—')}</span></td>
+          <td style="color:var(--text3);font-size:11px;">${ago(r.created_at)}</td>
+          <td><button class="btn-danger" onclick="deleteTourneyReg(${r.id})">🗑️ إلغاء التسجيل</button></td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('');
+}
+
+async function deleteTourneyReg(id){
+  if(!confirm('إلغاء تسجيل هذا اللاعب؟'))return;
+  const{error}=await sb.from('tournament_registrations').delete().eq('id',id);
+  if(error){showToast('❌ '+error.message,'err');return;}
+  showToast('✅ تم إلغاء التسجيل','ok');loadTournaments();
+}
+
+// ==================== PAYMENTS ====================
+async function loadPayments(statusFilter='all'){
+  // Update active filter btn
+  ['all','pending','approved','rejected'].forEach(f=>{
+    const b=document.getElementById('payFilter'+f.charAt(0).toUpperCase()+f.slice(1));
+    if(b)b.style.borderColor=f===statusFilter?'var(--accent)':'';
+    if(b)b.style.color=f===statusFilter?'var(--accent2)':'';
+  });
+  let query=sb.from('payment_requests').select('*').order('created_at',{ascending:false});
+  if(statusFilter!=='all')query=query.eq('status',statusFilter);
+  const{data,error}=await query;
+  const el=document.getElementById('paymentsList');
+  if(error||!data||!data.length){el.innerHTML='<div class="empty">لا توجد طلبات دفع</div>';return;}
+  el.innerHTML=data.map(p=>`
+    <div class="post-item" id="pay-${p.id}">
+      <div class="post-thumb">💰</div>
+      <div class="post-info">
+        <div class="post-name">${esc(p.username)} — ${esc(p.plan_name||p.plan_key)}</div>
+        <div class="post-meta">
+          ${esc(p.bank_name||'—')} •
+          ${p.price?'$'+p.price:''} •
+          <span class="badge badge-${p.status==='approved'?'approved':p.status==='rejected'?'rejected':'pending'}">${p.status==='approved'?'✅ مقبول':p.status==='rejected'?'❌ مرفوض':'⏳ معلق'}</span> •
+          ${ago(p.created_at)}
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">User ID: ${esc(p.user_id||'—')}</div>
+      </div>
+      <div class="post-actions" style="flex-direction:column;gap:5px;">
+        ${p.status==='pending'?`
+          <button class="btn-approve" onclick="approvePayment(${p.id},'${p.user_id}','${p.plan_key}')">✅ قبول وتفعيل</button>
+          <button class="btn-danger" onclick="rejectPayment(${p.id})">❌ رفض</button>`:
+          `<button class="btn-danger" onclick="deletePayment(${p.id})">🗑️ حذف السجل</button>`}
+      </div>
+    </div>`).join('');
+}
+
+async function approvePayment(reqId,userId,planKey){
+  if(!confirm('تأكدت من وصول المبلغ وتريد تفعيل الرتبة؟'))return;
+  const{error}=await sb.from('payment_requests').update({status:'approved'}).eq('id',reqId);
+  if(error){showToast('❌ '+error.message,'err');return;}
+  // Grant role
+  if(userId&&planKey){
+    const{data:prof}=await sb.from('profiles').select('roles,role').eq('id',userId).single();
+    if(prof){
+      const roles=Array.isArray(prof.roles)&&prof.roles.length?[...prof.roles]:(prof.role?[prof.role]:['user']);
+      if(!roles.includes(planKey))roles.push(planKey);
+      await sb.from('profiles').update({roles,role:roles[0]}).eq('id',userId);
     }
-  `;
-  const fsSource = `
-    precision mediump float;
-    varying vec3 vColor;
-    varying float vDepth;
-    void main() {
-      float fog = clamp(1.0 - vDepth * 0.18, 0.0, 1.0);
-      gl_FragColor = vec4(vColor * fog, fog * 0.92);
+  }
+  showToast('✅ تم القبول وتفعيل الرتبة','ok');
+  loadPayments('all');loadDashboard();loadSideCounts();
+}
+
+async function rejectPayment(reqId){
+  if(!confirm('رفض هذا الطلب؟'))return;
+  const{error}=await sb.from('payment_requests').update({status:'rejected'}).eq('id',reqId);
+  if(error){showToast('❌ '+error.message,'err');return;}
+  showToast('✅ تم الرفض','ok');loadPayments('all');loadSideCounts();
+}
+
+async function deletePayment(reqId){
+  if(!confirm('حذف هذا السجل نهائياً؟'))return;
+  await sb.from('payment_requests').delete().eq('id',reqId);
+  document.getElementById('pay-'+reqId)?.remove();
+  showToast('🗑️ تم الحذف','ok');
+}
+
+// ==================== YOUTUBE ====================
+async function addYTPost(){
+  const url=document.getElementById('ytUrl').value.trim();
+  const type=document.getElementById('ytType').value;
+  const tag=document.getElementById('ytTag').value;
+  if(!url){showErr('ytErr','⚠️ أدخل الرابط');return;}
+  const btn=document.getElementById('btnAddYT');
+  btn.disabled=true;btn.textContent='⏳ جاري الجلب...';
+  try{
+    let info=null;
+    if(type==='single'){
+      const vid=url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+      if(!vid)throw new Error('رابط فيديو غير صحيح');
+      const r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YT_KEY}`);
+      const d=await r.json();
+      if(!d.items?.[0])throw new Error('الفيديو غير موجود');
+      const v=d.items[0].snippet;
+      info={content:`🎬 ${v.title}\n📺 ${v.channelTitle}`,media_url:`https://youtube.com/watch?v=${vid}`,type:tag};
+    }else{
+      const handle=url.split('@')[1]?.split(/[/?]/)[0];
+      if(!handle)throw new Error('رابط القناة غير صحيح');
+      const r=await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${handle}&key=${YT_KEY}`);
+      const d=await r.json();
+      if(!d.items?.[0])throw new Error('القناة غير موجودة');
+      const ch=d.items[0];
+      // Get latest video
+      const vr=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${ch.id}&maxResults=1&order=date&type=video&key=${YT_KEY}`);
+      const vd=await vr.json();
+      if(!vd.items?.[0])throw new Error('لا توجد فيديوهات في القناة');
+      const v=vd.items[0];
+      info={content:`🎬 ${v.snippet.title}\n📺 ${ch.snippet.title}`,media_url:`https://youtube.com/watch?v=${v.id.videoId}`,type:tag};
     }
-  `;
+    const{error}=await sb.from('posts').insert({...info,posted_by:'YouTube Bot'});
+    if(error)throw error;
+    showOk('ytOk','✅ تم إضافة الفيديو!');
+    document.getElementById('ytUrl').value='';
+    loadYTPage();loadSideCounts();
+  }catch(e){showErr('ytErr','❌ '+e.message);}
+  btn.disabled=false;btn.textContent='➕ إضافة';
+}
 
-  function compileShader(type, src) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    return s;
-  }
+async function loadYTPage(){
+  const{data}=await sb.from('posts').select('*,profiles(username)').in('type',['clip','review']).not('media_url','is',null).order('created_at',{ascending:false}).limit(30);
+  const el=document.getElementById('ytPostsList');
+  if(!data||!data.length){el.innerHTML='<div class="empty">لا توجد فيديوهات مضافة بعد</div>';return;}
+  el.innerHTML=data.map(p=>{
+    const vid=p.media_url?.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+    const thumb=vid?`https://img.youtube.com/vi/${vid}/mqdefault.jpg`:null;
+    return`<div class="yt-item">
+      <div class="yt-thumb">${thumb?`<img src="${thumb}" alt="">`:'▶️'}</div>
+      <div class="yt-info">
+        <div class="yt-title">${esc((p.content||'').split('\n')[0])}</div>
+        <div class="yt-meta">${tagBadge(p.type)} • ${ago(p.created_at)}</div>
+      </div>
+      <div style="display:flex;gap:5px;">
+        ${p.media_url?`<a href="${p.media_url}" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:11px;padding:5px 10px;">▶️</a>`:''}
+        <button class="btn-danger" onclick="deletePost('${p.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-  const prog = gl.createProgram();
-  gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSource));
-  gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSource));
-  gl.linkProgram(prog);
-  gl.useProgram(prog);
+// ==================== STATS ====================
+async function loadStats(){
+  const[{count:posts},{count:users},{count:visits},{count:likes},{count:tourney},{count:pay}]=await Promise.all([
+    sb.from('posts').select('*',{count:'exact',head:true}),
+    sb.from('profiles').select('*',{count:'exact',head:true}),
+    sb.from('site_visits').select('*',{count:'exact',head:true}),
+    sb.from('posts').select('*',{count:'exact',head:true}).gt('likes_count',0),
+    sb.from('tournament_registrations').select('*',{count:'exact',head:true}),
+    sb.from('payment_requests').select('*',{count:'exact',head:true}).eq('status','approved'),
+  ]);
 
-  const aPos = gl.getAttribLocation(prog, 'aPos');
-  const aColor = gl.getAttribLocation(prog, 'aColor');
-  const uMVP = gl.getUniformLocation(prog, 'uMVP');
+  // Posts by type
+  const{data:typeData}=await sb.from('posts').select('type').order('type');
+  const typeCounts={};
+  (typeData||[]).forEach(p=>{typeCounts[p.type]=(typeCounts[p.type]||0)+1;});
 
-  // Math helpers
-  function mat4() { return new Float32Array(16); }
-  function identity(m) {
-    m[0]=1;m[1]=0;m[2]=0;m[3]=0;
-    m[4]=0;m[5]=1;m[6]=0;m[7]=0;
-    m[8]=0;m[9]=0;m[10]=1;m[11]=0;
-    m[12]=0;m[13]=0;m[14]=0;m[15]=1;
-    return m;
-  }
-  function perspective(m, fov, aspect, near, far) {
-    const f = 1.0 / Math.tan(fov / 2);
-    const nf = 1 / (near - far);
-    m[0]=f/aspect; m[1]=0; m[2]=0; m[3]=0;
-    m[4]=0; m[5]=f; m[6]=0; m[7]=0;
-    m[8]=0; m[9]=0; m[10]=(far+near)*nf; m[11]=-1;
-    m[12]=0; m[13]=0; m[14]=2*far*near*nf; m[15]=0;
-    return m;
-  }
-  function multiply(out, a, b) {
-    for(let i=0;i<4;i++) for(let j=0;j<4;j++) {
-      out[j*4+i]=0;
-      for(let k=0;k<4;k++) out[j*4+i]+=a[k*4+i]*b[j*4+k];
-    }
-    return out;
-  }
-  function rotateY(m, angle) {
-    const c=Math.cos(angle), s=Math.sin(angle);
-    const r=identity(mat4());
-    r[0]=c; r[2]=s; r[8]=-s; r[10]=c;
-    return multiply(mat4(), m, r);
-  }
-  function rotateX(m, angle) {
-    const c=Math.cos(angle), s=Math.sin(angle);
-    const r=identity(mat4());
-    r[5]=c; r[6]=-s; r[9]=s; r[10]=c;
-    return multiply(mat4(), m, r);
-  }
-  function translate(m, tx, ty, tz) {
-    const r=identity(mat4());
-    r[12]=tx; r[13]=ty; r[14]=tz;
-    return multiply(mat4(), m, r);
-  }
+  // Top users by XP
+  const{data:topXP}=await sb.from('profiles').select('username,xp').order('xp',{ascending:false}).limit(5);
 
-  // Cube geometry
-  function makeCubeEdges(cx, cy, cz, size, r, g, b) {
-    const s = size/2;
-    const verts = [
-      [cx-s,cy-s,cz-s],[cx+s,cy-s,cz-s],[cx+s,cy+s,cz-s],[cx-s,cy+s,cz-s],
-      [cx-s,cy-s,cz+s],[cx+s,cy-s,cz+s],[cx+s,cy+s,cz+s],[cx-s,cy+s,cz+s]
-    ];
-    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-    const pos = [], col = [];
-    edges.forEach(([a,b]) => {
-      pos.push(...verts[a], ...verts[b]);
-      col.push(r,g,b, r,g,b);
-    });
-    return {pos, col};
-  }
+  document.getElementById('statsContent').innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${posts||0}</div><div class="stat-lbl">📝 إجمالي المنشورات</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${users||0}</div><div class="stat-lbl">👥 إجمالي المستخدمين</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#fbbf24">${visits||0}</div><div class="stat-lbl">👁️ إجمالي الزيارات</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#f87171">${likes||0}</div><div class="stat-lbl">❤️ منشورات مُعجب بها</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#d8b4fe">${tourney||0}</div><div class="stat-lbl">🏆 تسجيلات بطولة</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${pay||0}</div><div class="stat-lbl">💳 مدفوعات مقبولة</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card">
+        <div class="card-title">📊 المنشورات حسب النوع</div>
+        ${Object.entries(typeCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="min-width:90px;font-size:12px;">${tagBadge(k)}</span>
+            <div class="progress-bar" style="flex:1;height:6px;"><div class="progress-fill" style="width:${Math.round(v/(posts||1)*100)}%"></div></div>
+            <span style="font-size:12px;color:var(--accent2);min-width:24px;text-align:left;">${v}</span>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">🏅 أعلى مستخدمين XP</div>
+        ${(topXP||[]).map((u,i)=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:16px;">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
+            <span style="flex:1;font-size:13px;font-weight:600;">${esc(u.username||'—')}</span>
+            <span style="color:var(--accent2);font-weight:700;font-size:13px;">${(u.xp||0).toLocaleString()} XP</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
 
-  // Generate floating cubes
-  function randomColor() {
-    const palettes = [
-      [0.9, 0.0, 0.0],   // red
-      [1.0, 0.2, 0.1],   // bright red
-      [0.7, 0.0, 0.0],   // dark red
-      [0.5, 0.0, 0.0],   // deep red
-      [1.0, 0.1, 0.0],   // red-orange
-      [0.8, 0.05, 0.05],  // crimson
-    ];
-    return palettes[Math.floor(Math.random()*palettes.length)];
-  }
+// ==================== VISITS ====================
+async function loadVisits(){
+  const{data,error}=await sb.from('site_visits').select('*').order('created_at',{ascending:false}).limit(50);
+  const el=document.getElementById('visitsContent');
+  if(error||!data||!data.length){el.innerHTML='<div class="card"><div class="empty">لا توجد بيانات زيارات</div></div>';return;}
+  // Count by page
+  const pageCounts={};
+  data.forEach(v=>{pageCounts[v.page||'home']=(pageCounts[v.page||'home']||0)+1;});
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${data.length}</div><div class="stat-lbl">📊 الزيارات المحملة</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${new Set(data.map(v=>v.user_id).filter(Boolean)).size}</div><div class="stat-lbl">👤 مستخدمون فريدون</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📄 الصفحات الأكثر زيارة</div>
+      ${Object.entries(pageCounts).sort((a,b)=>b[1]-a[1]).map(([page,count])=>`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+          <span style="min-width:130px;font-size:12px;color:var(--text2);">${esc(page)}</span>
+          <div class="progress-bar" style="flex:1;"><div class="progress-fill" style="width:${Math.round(count/data.length*100)}%"></div></div>
+          <span style="font-size:12px;color:var(--accent2);min-width:24px;">${count}</span>
+        </div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="card-title">🕐 آخر الزيارات</div>
+      <table class="data-table">
+        <thead><tr><th>الصفحة</th><th>المستخدم</th><th>الوقت</th></tr></thead>
+        <tbody>${data.slice(0,20).map(v=>`<tr>
+          <td><span class="tag-badge" style="font-size:11px;">${esc(v.page||'home')}</span></td>
+          <td style="font-size:11px;color:var(--text3);">${esc(v.user_id?v.user_id.slice(0,8)+'...':'زائر')}</td>
+          <td style="font-size:11px;color:var(--text3);">${ago(v.created_at)}</td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
 
-  const numCubes = 60;
-  const cubes = Array.from({length: numCubes}, () => ({
-    x: (Math.random()-0.5)*20,
-    y: (Math.random()-0.5)*20,
-    z: -Math.random()*40,
-    size: 0.3 + Math.random()*1.2,
-    rx: Math.random()*Math.PI*2,
-    ry: Math.random()*Math.PI*2,
-    rz: Math.random()*Math.PI*2,
-    drx: (Math.random()-0.5)*0.015,
-    dry: (Math.random()-0.5)*0.02,
-    drz: (Math.random()-0.5)*0.012,
-    speed: 0.04 + Math.random()*0.06,
-    color: randomColor()
-  }));
+// ==================== HELPERS ====================
+function showOk(id,msg){const el=document.getElementById(id);if(!el)return;el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
+function showErr(id,msg){const el=document.getElementById(id);if(!el){showToast(msg,'err');return;}el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',4000);}
 
-  // Star particles (3D)
-  const stars3d = Array.from({length:300}, () => ({
-    x: (Math.random()-0.5)*50,
-    y: (Math.random()-0.5)*50,
-    z: -Math.random()*60
-  }));
-
-  // Grid tunnel rings
-  const tunnelRings = Array.from({length:20}, (_, i) => ({
-    z: -i*3.5,
-    angle: i*0.1
-  }));
-
-  gl.enable(gl.DEPTH_TEST);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-  let t = 0;
-
-  function buildAndDrawBuffer(positions, colors, mode) {
-    if(positions.length === 0) return;
-    const posBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aPos);
-
-    const colBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aColor);
-
-    gl.drawArrays(mode, 0, positions.length/3);
-    gl.deleteBuffer(posBuf);
-    gl.deleteBuffer(colBuf);
-  }
-
-  function drawCubeEdges(cube, proj, view) {
-    const s = cube.size/2;
-    const verts = [
-      [-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],
-      [-s,-s,s],[s,-s,s],[s,s,s],[-s,s,s]
-    ];
-    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-
-    let model = identity(mat4());
-    model = rotateX(model, cube.rx);
-    model = rotateY(model, cube.ry);
-    model[12] = cube.x; model[13] = cube.y; model[14] = cube.z;
-
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-
-    const pos=[], col=[];
-    const [r,g,b] = cube.color;
-    edges.forEach(([a,bb]) => {
-      pos.push(...verts[a], ...verts[bb]);
-      col.push(r,g,b, r,g,b);
-    });
-    buildAndDrawBuffer(pos, col, gl.LINES);
-  }
-
-  function drawTunnelRing(ring, proj, view) {
-    const segs = 16;
-    const radius = 6 + Math.sin(t*0.5+ring.z*0.1)*1.5;
-    const pos=[], col=[];
-    for(let i=0; i<segs; i++) {
-      const a1 = (i/segs)*Math.PI*2 + ring.angle;
-      const a2 = ((i+1)/segs)*Math.PI*2 + ring.angle;
-      pos.push(Math.cos(a1)*radius, Math.sin(a1)*radius, ring.z);
-      pos.push(Math.cos(a2)*radius, Math.sin(a2)*radius, ring.z);
-      const glow = 0.3+0.5*Math.abs(Math.sin(t*0.8+i*0.4));
-      col.push(glow, glow*0.1, 0);
-      col.push(glow, glow*0.1, 0);
-    }
-    let model = identity(mat4());
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-    buildAndDrawBuffer(pos, col, gl.LINES);
-  }
-
-  function drawStars(proj, view) {
-    const pos=[], col=[];
-    stars3d.forEach(s => {
-      pos.push(s.x, s.y, s.z);
-      const br = 0.5+0.5*Math.sin(t*2+s.x+s.y);
-      col.push(br, br, br);
-    });
-    let model = identity(mat4());
-    const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-    gl.uniformMatrix4fv(uMVP, false, mvp);
-    gl.vertexAttribPointer;
-    const posBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aPos);
-    const colBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(col), gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aColor);
-    gl.drawArrays(gl.POINTS, 0, pos.length/3);
-    gl.deleteBuffer(posBuf);
-    gl.deleteBuffer(colBuf);
-  }
-
-  function animate() {
-    t += 0.016;
-    const W = canvas.width, H = canvas.height;
-    gl.clearColor(0.04, 0.0, 0.0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    const proj = perspective(mat4(), 0.9, W/H, 0.1, 80);
-    const camZ = t * 0.4;
-    const camX = Math.sin(t*0.15)*1.2;
-    const camY = Math.cos(t*0.12)*0.8;
-
-    let view = identity(mat4());
-    view[12] = -camX; view[13] = -camY; view[14] = 2;
-
-    // Draw stars
-    drawStars(proj, view);
-
-    // Draw tunnel rings
-    tunnelRings.forEach(ring => {
-      ring.z += 0.04;
-      ring.angle += 0.004;
-      if(ring.z > 4) ring.z -= 20*3.5/tunnelRings.length + 70;
-      drawTunnelRing(ring, proj, view);
-    });
-
-    // Draw cubes
-    cubes.forEach(cube => {
-      cube.z += cube.speed;
-      cube.rx += cube.drx;
-      cube.ry += cube.dry;
-      cube.rz += cube.drz;
-      if(cube.z > 5) {
-        cube.z = -40 - Math.random()*20;
-        cube.x = (Math.random()-0.5)*20;
-        cube.y = (Math.random()-0.5)*20;
-        cube.color = randomColor();
-      }
-      drawCubeEdges(cube, proj, view);
-    });
-
-    // Draw connecting lines between nearby cubes
-    const linPos=[], linCol=[];
-    for(let i=0; i<cubes.length; i++) {
-      for(let j=i+1; j<cubes.length; j++) {
-        const dx=cubes[i].x-cubes[j].x, dy=cubes[i].y-cubes[j].y, dz=cubes[i].z-cubes[j].z;
-        const dist=Math.sqrt(dx*dx+dy*dy+dz*dz);
-        if(dist < 3.5) {
-          const alpha = (1-dist/3.5)*0.4;
-          linPos.push(cubes[i].x,cubes[i].y,cubes[i].z, cubes[j].x,cubes[j].y,cubes[j].z);
-          linCol.push(alpha,alpha*0.1,0, alpha,alpha*0.1,0);
-        }
-      }
-    }
-    if(linPos.length > 0) {
-      let model = identity(mat4());
-      const mvp = multiply(mat4(), proj, multiply(mat4(), view, model));
-      gl.uniformMatrix4fv(uMVP, false, mvp);
-      buildAndDrawBuffer(linPos, linCol, gl.LINES);
-    }
-
-    requestAnimationFrame(animate);
-  }
-
-  animate();
-
-  // 2D fallback
-  function fallback2D(c) {
-    const ctx = c.getContext('2d');
-    function resz() { c.width=window.innerWidth; c.height=window.innerHeight; }
-    resz(); window.addEventListener('resize', resz);
-    const pts = Array.from({length:120}, ()=>({
-      x:Math.random(), y:Math.random(),
-      vx:(Math.random()-0.5)*0.002, vy:(Math.random()-0.5)*0.002,
-      r:Math.random()*2+1,
-      c:`hsl(${Math.random()*20},100%,${50+Math.random()*30}%)`
-    }));
-    function frame() {
-      ctx.fillStyle='rgba(10,0,0,0.18)';
-      ctx.fillRect(0,0,c.width,c.height);
-      pts.forEach(p=>{
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.x<0||p.x>1) p.vx*=-1;
-        if(p.y<0||p.y>1) p.vy*=-1;
-        ctx.fillStyle=p.c;
-        ctx.beginPath();
-        ctx.arc(p.x*c.width,p.y*c.height,p.r,0,Math.PI*2);
-        ctx.fill();
-      });
-      pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{
-        const dx=(a.x-b.x)*c.width, dy=(a.y-b.y)*c.height;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<120){ctx.strokeStyle=`rgba(220,30,0,${(1-d/120)*0.3})`;ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(a.x*c.width,a.y*c.height);ctx.lineTo(b.x*c.width,b.y*c.height);ctx.stroke();}
-      }));
-      requestAnimationFrame(frame);
-    }
-    frame();
-  }
-})();
-
-// بدء الفحص التلقائي كل 15 دقيقة
-setTimeout(startAutoCheck, 3000);
+// Close modals on overlay click
+document.addEventListener('click',e=>{
+  if(e.target===document.getElementById('editModal'))closeEditModal();
+  if(e.target===document.getElementById('userModal'))closeUserModal();
+});
+document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 </script>
 </body>
+</html>
