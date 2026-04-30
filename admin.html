@@ -520,12 +520,15 @@ function tagBadge(type){return`<span class="badge tag-badge">${TAG_MAP[type]||ty
 // ==================== LOGIN ====================
 function doLogin(){
   if(document.getElementById('pw').value===ADMIN_PASS){
+    saveAdminSession();
     document.getElementById('loginPage').style.display='none';
     document.getElementById('adminPage').style.display='flex';
     checkConn();loadDashboard();loadSideCounts();
-  }else{document.getElementById('loginErr').style.display='block';}
+  }else{
+    document.getElementById('loginErr').style.display='block';
+  }
 }
-function doLogout(){window.location.reload();}
+function doLogout(){sessionStorage.removeItem('vx_admin');window.location.reload();}
 
 async function checkConn(){
   try{
@@ -600,15 +603,15 @@ async function loadDashboard(){
   }else{document.getElementById('dashPending').innerHTML='';}
 
   // Recent posts
-  const{data:rPosts}=await sb.from('posts').select('*,profiles(username)').order('created_at',{ascending:false}).limit(5);
+  const{data:rPosts}=await sb.from('posts').select('id,content,type,likes_count,created_at,posted_by,user_id,profiles(username,avatar_url)').order('created_at',{ascending:false}).limit(5);
   if(rPosts&&rPosts.length){
     document.getElementById('dashRecentPosts').innerHTML=`<div class="card">
       <div class="card-title">🆕 آخر المنشورات</div>
       ${rPosts.map(p=>`<div class="post-item">
         <div class="post-thumb">${getTypeIcon(p.type)}</div>
         <div class="post-info">
-          <div class="post-name">${esc(p.content||'').slice(0,60)||'—'}</div>
-          <div class="post-meta">${esc(p.profiles?.username||p.posted_by||'—')} • ${tagBadge(p.type)} • ${ago(p.created_at)}</div>
+          <div class="post-name">${esc((p.content||'').replace(/\n/g,' ').slice(0,65))||'—'}</div>
+          <div class="post-meta"><span style="color:var(--accent2);">${esc(p.profiles?.username||p.posted_by||'لاعب')}</span> • ${tagBadge(p.type)} • ❤️${p.likes_count||0} • ${ago(p.created_at)}</div>
         </div>
         <div class="post-actions">
           <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️</button>
@@ -642,7 +645,10 @@ function getTypeIcon(type){const m={clip:'🎬',news:'📰',tourney:'🏆',quest
 
 // ==================== POSTS ====================
 async function loadPosts(){
-  const{data,error}=await sb.from('posts').select('*,profiles(username,avatar_url)').order('created_at',{ascending:false}).limit(100);
+  const{data,error}=await sb.from('posts')
+    .select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by,profiles(username,avatar_url)')
+    .order('created_at',{ascending:false})
+    .limit(200);
   if(error){document.getElementById('postsList').innerHTML='<div class="empty">❌ '+esc(error.message)+'</div>';return;}
   allPosts=data||[];
   renderPosts(allPosts);
@@ -651,24 +657,32 @@ async function loadPosts(){
 function renderPosts(posts){
   const el=document.getElementById('postsList');
   if(!posts||!posts.length){el.innerHTML='<div class="empty">لا توجد منشورات</div>';return;}
-  el.innerHTML=posts.map(p=>`
-    <div class="post-item" id="pi-${p.id}">
-      <div class="post-thumb">${p.profiles?.avatar_url?`<img src="${p.profiles.avatar_url}" alt="">`:(getTypeIcon(p.type))}</div>
+  el.innerHTML=posts.map(p=>{
+    const authorName=p.profiles?.username||p.posted_by||'لاعب';
+    const authorAvatar=p.profiles?.avatar_url;
+    const thumbHTML=authorAvatar
+      ?`<img src="${authorAvatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`
+      :`<span style="font-size:18px;">${getTypeIcon(p.type)}</span>`;
+    const isAdmin=p.posted_by?.includes('Admin');
+    const contentPreview=esc((p.content||'').replace(/\n/g,' ').slice(0,80))||'—';
+    return`<div class="post-item" id="pi-${p.id}">
+      <div class="post-thumb">${thumbHTML}</div>
       <div class="post-info">
-        <div class="post-name">${esc((p.content||'').slice(0,70))||'—'}</div>
+        <div class="post-name">${contentPreview}</div>
         <div class="post-meta">
-          ${esc(p.profiles?.username||p.posted_by||'—')} •
+          <span style="color:var(--accent2);font-weight:600;">${esc(authorName)}</span>${isAdmin?' ⭐':''} •
           ${tagBadge(p.type)} •
-          ❤️${p.likes_count||0} •
-          💬${p.comments_count||0} •
-          ${ago(p.created_at)}
+          ❤️ ${p.likes_count||0} •
+          💬 ${p.comments_count||0} •
+          <span style="color:var(--text3);">${ago(p.created_at)}</span>
         </div>
       </div>
       <div class="post-actions">
-        <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️ تعديل</button>
+        <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️</button>
         <button class="btn-danger" onclick="deletePost('${p.id}')">🗑️</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function filterPostsList(q){
@@ -685,11 +699,17 @@ async function openEditPost(id){
   const{data,error}=await sb.from('posts').select('*').eq('id',id).single();
   if(error){showToast('❌ '+error.message,'err');return;}
   currentEditPost=data;
+  const safeContent = (data.content||'').replace(/`/g,"'").replace(/\\/g,'\\\\');
   document.getElementById('editModalBody').innerHTML=`
+    <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:12px;color:var(--text3);">المنشور بواسطة:</span>
+      <span style="font-size:13px;font-weight:600;color:var(--accent2);">${esc(data.profiles?.username||data.posted_by||'—')}</span>
+      <span style="font-size:11px;color:var(--text3);">${ago(data.created_at)}</span>
+    </div>
     <div class="form-grid">
       <div class="form-group form-full">
         <label class="form-label">المحتوى</label>
-        <textarea class="form-input" id="ep-content" rows="4">${esc(data.content||'')}</textarea>
+        <textarea class="form-input" id="ep-content" rows="5">${esc(data.content||'')}</textarea>
       </div>
       <div class="form-group">
         <label class="form-label">النوع</label>
@@ -698,15 +718,21 @@ async function openEditPost(id){
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">رابط وسائط</label>
-        <input class="form-input" id="ep-media" value="${esc(data.media_url||'')}">
+        <label class="form-label">رابط وسائط (اختياري)</label>
+        <input class="form-input" id="ep-media" value="${esc(data.media_url||'')}" placeholder="https://...">
+      </div>
+      <div class="form-group form-full" style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:9px;border:1px solid var(--border);">
+        <span style="font-size:12px;color:var(--text3);">الإعجابات:</span>
+        <span style="color:var(--accent2);font-weight:700;">❤️ ${data.likes_count||0}</span>
+        <span style="font-size:12px;color:var(--text3);">التعليقات:</span>
+        <span style="color:var(--accent2);font-weight:700;">💬 ${data.comments_count||0}</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px;">
-      <button class="btn-danger" onclick="deletePost('${data.id}',false,true)">🗑️ حذف</button>
+      <button class="btn-danger" onclick="deletePost('${data.id}',false,true)">🗑️ حذف المنشور</button>
       <div style="display:flex;gap:8px;">
         <button class="btn-ghost" onclick="closeEditModal()">إلغاء</button>
-        <button class="btn-primary" onclick="saveEditPost()">💾 حفظ</button>
+        <button class="btn-primary" onclick="saveEditPost()">💾 حفظ التعديل</button>
       </div>
     </div>`;
   document.getElementById('editModal').classList.add('open');
@@ -715,14 +741,26 @@ async function openEditPost(id){
 function closeEditModal(){document.getElementById('editModal').classList.remove('open');currentEditPost=null;}
 
 async function saveEditPost(){
-  if(!currentEditPost)return;
-  const content=document.getElementById('ep-content').value.trim();
-  const type=document.getElementById('ep-type').value;
-  const media_url=document.getElementById('ep-media').value.trim();
-  const{error}=await sb.from('posts').update({content,type,media_url:media_url||null}).eq('id',currentEditPost.id);
+  if(!currentEditPost){showToast('❌ لا يوجد منشور للتعديل','err');return;}
+  const content=document.getElementById('ep-content')?.value.trim();
+  const type=document.getElementById('ep-type')?.value;
+  const media_url=document.getElementById('ep-media')?.value.trim();
+  if(!content){showToast('⚠️ المحتوى لا يمكن أن يكون فارغاً','err');return;}
+  const updateData={content,type};
+  if(media_url!==undefined)updateData.media_url=media_url||null;
+  const{error}=await sb.from('posts').update(updateData).eq('id',currentEditPost.id);
   if(error){showToast('❌ '+error.message,'err');return;}
-  closeEditModal();showToast('✅ تم التعديل','ok');
-  loadPosts();loadDashboard();
+  // تحديث العنصر في القائمة مباشرة بدون إعادة تحميل
+  const el=document.getElementById('pi-'+currentEditPost.id);
+  if(el){
+    const nameEl=el.querySelector('.post-name');
+    if(nameEl)nameEl.textContent=content.replace(/\n/g,' ').slice(0,80)||'—';
+  }
+  // تحديث allPosts
+  const idx=allPosts.findIndex(p=>p.id===currentEditPost.id);
+  if(idx!==-1){allPosts[idx]={...allPosts[idx],content,type,media_url:media_url||null};}
+  closeEditModal();
+  showToast('✅ تم حفظ التعديل','ok');
 }
 
 async function deletePost(id,refresh=true,closeModal=false){
@@ -833,15 +871,33 @@ function toggleRoleChip(chip,uid){
 }
 
 async function saveUserModal(id){
-  const username=document.getElementById('um-username').value.trim();
-  const display_name=document.getElementById('um-display').value.trim();
-  const xp=parseInt(document.getElementById('um-xp').value)||0;
+  const usernameEl=document.getElementById('um-username');
+  const displayEl=document.getElementById('um-display');
+  const xpEl=document.getElementById('um-xp');
+  if(!usernameEl){showToast('❌ خطأ في تحميل النموذج','err');return;}
+  const username=usernameEl.value.trim();
+  const display_name=displayEl?.value.trim()||'';
+  const xp=parseInt(xpEl?.value)||0;
   const roles=[...document.querySelectorAll('#um-roles-chips .role-chip.on')].map(c=>c.dataset.role);
   if(!roles.length)roles.push('user');
-  const{error}=await sb.from('profiles').update({username,display_name,xp,roles,role:roles[0]}).eq('id',id);
-  if(error){showToast('❌ '+error.message,'err');return;}
-  closeUserModal();showToast('✅ تم تحديث المستخدم','ok');
-  loadUsers();loadDashboard();loadSideCounts();
+  if(!username){showToast('⚠️ اسم المستخدم مطلوب','err');return;}
+  const{error}=await sb.from('profiles').update({
+    username,
+    display_name:display_name||null,
+    xp,
+    roles,
+    role:roles[0],
+    updated_at:new Date().toISOString()
+  }).eq('id',id);
+  if(error){showToast('❌ '+error.message+' (تأكد من صلاحيات RLS)','err');return;}
+  // تحديث allUsers محلياً
+  const uidx=allUsers.findIndex(u=>u.id===id);
+  if(uidx!==-1){allUsers[uidx]={...allUsers[uidx],username,display_name,xp,roles,role:roles[0]};}
+  closeUserModal();
+  showToast('✅ تم تحديث بيانات المستخدم بنجاح','ok');
+  loadUsers();
+  loadDashboard();
+  loadSideCounts();
 }
 
 async function deleteUser(id){
@@ -1140,6 +1196,17 @@ document.addEventListener('click',e=>{
   if(e.target===document.getElementById('userModal'))closeUserModal();
 });
 document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// حفظ حالة تسجيل دخول الأدمن في الجلسة
+function saveAdminSession(){sessionStorage.setItem('vx_admin','1');}
+function checkAdminSession(){
+  if(sessionStorage.getItem('vx_admin')==='1'){
+    document.getElementById('loginPage').style.display='none';
+    document.getElementById('adminPage').style.display='flex';
+    checkConn();loadDashboard();loadSideCounts();
+  }
+}
+checkAdminSession();
 </script>
 </body>
 </html>
