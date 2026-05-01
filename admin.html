@@ -5,7 +5,165 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Virtux — لوحة الإدارة</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ===================================================
+// POSTS SLIDER - سلسلة منشورات تفاعلية
+// ===================================================
+const sliderState = {
+  posts: [],
+  currentPage: 0,
+  perPage: 3, // منشورات لكل صفحة
+  containerId: '',
+};
+
+function buildPostsSlider(posts, containerId) {
+  sliderState.posts = posts;
+  sliderState.currentPage = 0;
+  sliderState.containerId = containerId;
+  renderSlider();
+
+  // ===== Scroll wheel support (زر الوسط) =====
+  const wrap = document.getElementById(containerId);
+  if (wrap) {
+    wrap.removeEventListener('wheel', handleSliderWheel);
+    wrap.addEventListener('wheel', handleSliderWheel, {passive:false});
+  }
+}
+
+function handleSliderWheel(e) {
+  e.preventDefault();
+  if (e.deltaY > 0) {
+    sliderNext();
+  } else {
+    sliderPrev();
+  }
+}
+
+function renderSlider() {
+  const {posts, currentPage, perPage, containerId} = sliderState;
+  const totalPages = Math.ceil(posts.length / perPage);
+  const start = currentPage * perPage;
+  const pagePosts = posts.slice(start, start + perPage);
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const postsHTML = pagePosts.map(p => {
+    const author = p.profiles?.username || p.posted_by || 'لاعب';
+    const avatar = p.profiles?.avatar_url;
+    const content = (p.content || '').trim();
+    const typeIcon = getTypeIcon(p.type);
+    const typeColors = {
+      clip:'rgba(99,102,241,0.2)',news:'rgba(245,158,11,0.15)',
+      tourney:'rgba(192,132,252,0.2)',question:'rgba(34,197,94,0.15)',
+      review:'rgba(239,68,68,0.15)',live:'rgba(239,68,68,0.2)',screen:'rgba(99,102,241,0.15)'
+    };
+    const iconBg = typeColors[p.type] || 'rgba(99,102,241,0.15)';
+    return `<div class="slide-post" onclick="openEditPost('${p.id}')">
+      <div class="slide-post-top">
+        <div class="slide-post-icon" style="background:${iconBg};">${typeIcon}</div>
+        <div class="slide-post-meta">
+          <div class="slide-post-author">
+            ${avatar ? `<img src="${avatar}" style="width:16px;height:16px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-left:4px;">` : ''}
+            ${esc(author)}
+          </div>
+          <div class="slide-post-time">${ago(p.created_at)}</div>
+        </div>
+        ${tagBadge(p.type)}
+      </div>
+      <div class="slide-post-content">${content ? esc(content).replace(/\n/g,'<br>') : '<span style="color:var(--text3);font-style:italic;">لا يوجد محتوى</span>'}</div>
+      <div class="slide-post-footer">
+        <span class="slide-stat">❤️ ${p.likes_count||0}</span>
+        <span class="slide-stat">💬 ${p.comments_count||0}</span>
+        <div class="slide-actions" onclick="event.stopPropagation()">
+          <button class="slide-edit-btn" onclick="openEditPost('${p.id}')">✏️ تعديل</button>
+          <button class="slide-del-btn" onclick="deletePost('${p.id}',true)">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // dots
+  let dotsHTML = '';
+  for (let i = 0; i < totalPages; i++) {
+    dotsHTML += `<div class="slider-dot ${i===currentPage?'active':''}" onclick="sliderGoTo(${i})"></div>`;
+  }
+
+  el.innerHTML = `
+    <div class="slider-header">
+      <div class="card-title">📝 المنشورات
+        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:6px;">(${posts.length} إجمالي)</span>
+      </div>
+      <div class="slider-controls">
+        <button class="slider-btn" id="sliderPrevBtn" onclick="sliderPrev()" ${currentPage===0?'disabled':''}>▲</button>
+        <span class="slider-counter">${currentPage+1} / ${totalPages}</span>
+        <button class="slider-btn" id="sliderNextBtn" onclick="sliderNext()" ${currentPage>=totalPages-1?'disabled':''}>▼</button>
+        <button class="slider-btn" onclick="nav('posts')" title="عرض الكل" style="width:auto;padding:0 10px;font-size:11px;">الكل ←</button>
+      </div>
+    </div>
+    <div class="slider-track-wrap">
+      <div class="slider-track" id="sliderTrack">
+        ${postsHTML || '<div class="slider-empty">لا توجد منشورات</div>'}
+      </div>
+    </div>
+    <div class="slider-dots">${dotsHTML}</div>
+  `;
+}
+
+function sliderNext() {
+  const totalPages = Math.ceil(sliderState.posts.length / sliderState.perPage);
+  if (sliderState.currentPage < totalPages - 1) {
+    sliderState.currentPage++;
+    animateSlider('down');
+    renderSlider();
+    reAttachWheel();
+  }
+}
+
+function sliderPrev() {
+  if (sliderState.currentPage > 0) {
+    sliderState.currentPage--;
+    animateSlider('up');
+    renderSlider();
+    reAttachWheel();
+  }
+}
+
+function sliderGoTo(page) {
+  const dir = page > sliderState.currentPage ? 'down' : 'up';
+  sliderState.currentPage = page;
+  animateSlider(dir);
+  renderSlider();
+  reAttachWheel();
+}
+
+function animateSlider(dir) {
+  const track = document.getElementById('sliderTrack');
+  if (!track) return;
+  const from = dir === 'down' ? '20px' : '-20px';
+  track.style.transition = 'none';
+  track.style.opacity = '0';
+  track.style.transform = `translateY(${from})`;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      track.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      track.style.opacity = '1';
+      track.style.transform = 'translateY(0)';
+    });
+  });
+}
+
+function reAttachWheel() {
+  const wrap = document.getElementById(sliderState.containerId);
+  if (wrap) {
+    wrap.removeEventListener('wheel', handleSliderWheel);
+    wrap.addEventListener('wheel', handleSliderWheel, {passive:false});
+  }
+}
+
+// Override deletePost in slider context to refresh slider
+const _origDeletePost = deletePost;
+
+</script>
 <style>
 :root{
   --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
@@ -96,7 +254,7 @@ body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(r
 .post-thumb{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(192,132,252,0.1));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
 .post-thumb img{width:100%;height:100%;object-fit:cover;}
 .post-info{flex:1;min-width:0;}
-.post-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.post-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .post-meta{font-size:11px;color:var(--text3);margin-top:2px;}
 .post-actions{display:flex;gap:6px;flex-shrink:0;}
 
@@ -199,6 +357,40 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
   .sidebar{width:180px;}
   .main-content{padding:14px;}
 }
+
+/* ===== POSTS SLIDER ===== */
+.posts-slider-wrap{position:relative;overflow:hidden;border-radius:14px;border:1px solid var(--border);background:var(--card);backdrop-filter:blur(10px);}
+.slider-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.slider-header .card-title{margin-bottom:0;}
+.slider-controls{display:flex;align-items:center;gap:8px;}
+.slider-btn{background:rgba(99,102,241,0.1);border:1px solid var(--border2);color:var(--accent2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.slider-btn:hover{background:rgba(99,102,241,0.25);transform:scale(1.08);}
+.slider-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
+.slider-counter{font-size:11px;color:var(--text3);min-width:40px;text-align:center;}
+.slider-track-wrap{overflow:hidden;position:relative;}
+.slider-track{transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);}
+.slide-post{padding:12px 16px;border-bottom:1px solid var(--border);transition:background 0.18s;cursor:pointer;animation:slideIn 0.3s ease;}
+.slide-post:last-child{border-bottom:none;}
+.slide-post:hover{background:rgba(99,102,241,0.05);}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.slide-post-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.slide-post-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(192,132,252,0.15));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.slide-post-meta{flex:1;min-width:0;}
+.slide-post-author{font-size:12px;font-weight:700;color:var(--accent2);}
+.slide-post-time{font-size:10.5px;color:var(--text3);}
+.slide-post-content{font-size:13px;color:var(--text2);line-height:1.6;padding:0 4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.slide-post-footer{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.slide-stat{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px;}
+.slide-actions{display:flex;gap:6px;margin-right:auto;}
+.slide-edit-btn{background:rgba(99,102,241,0.1);border:1px solid var(--border2);color:var(--accent2);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;transition:all 0.15s;font-family:'Tajawal',sans-serif;}
+.slide-edit-btn:hover{background:rgba(99,102,241,0.2);}
+.slide-del-btn{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;transition:all 0.15s;font-family:'Tajawal',sans-serif;}
+.slide-del-btn:hover{background:rgba(239,68,68,0.18);}
+.slider-dots{display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;}
+.slider-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);cursor:pointer;transition:all 0.2s;}
+.slider-dot.active{background:var(--accent);width:18px;border-radius:3px;}
+.slider-empty{text-align:center;padding:36px;color:var(--text3);font-size:13px;}
+
 </style>
 </head>
 <body>
@@ -271,7 +463,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
           <div class="loader">جاري...<span class="spinner"></span></div>
         </div>
         <div id="dashPending"></div>
-        <div id="dashRecentPosts"></div>
+        <div id="dashRecentPosts" class="posts-slider-wrap"></div>
         <div id="dashRecentUsers"></div>
       </div>
 
@@ -600,27 +792,14 @@ async function loadDashboard(){
   }else{document.getElementById('dashPending').innerHTML='';}
 
   // Recent posts - بدون join
-  const{data:rPostsRaw}=await sb.from('posts').select('id,content,type,likes_count,created_at,posted_by,user_id').order('created_at',{ascending:false}).limit(5);
+  // جلب المنشورات للـ slider - نجلب أكثر
+  const{data:rPostsRaw}=await sb.from('posts').select('id,content,type,likes_count,comments_count,created_at,posted_by,user_id').order('created_at',{ascending:false}).limit(50);
   if(rPostsRaw&&rPostsRaw.length){
-    // جلب profiles منفصل
     const rpIds=[...new Set(rPostsRaw.filter(p=>p.user_id).map(p=>p.user_id))];
     let rpMap={};
-    if(rpIds.length){const{data:rpProfs}=await sb.from('profiles').select('id,username').in('id',rpIds);if(rpProfs)rpProfs.forEach(p=>{rpMap[p.id]=p;});}
+    if(rpIds.length){const{data:rpProfs}=await sb.from('profiles').select('id,username,avatar_url').in('id',rpIds);if(rpProfs)rpProfs.forEach(p=>{rpMap[p.id]=p;});}
     const rPosts=rPostsRaw.map(p=>({...p,profiles:rpMap[p.user_id]||null}));
-    document.getElementById('dashRecentPosts').innerHTML=`<div class="card">
-      <div class="card-title">🆕 آخر المنشورات</div>
-      ${rPosts.map(p=>`<div class="post-item">
-        <div class="post-thumb" style="font-size:20px;">${getTypeIcon(p.type)}</div>
-        <div class="post-info">
-          <div class="post-name">${esc((p.content||'').replace(/\n/g,' ').slice(0,65))||'—'}</div>
-          <div class="post-meta"><span style="color:var(--accent2);">${esc(p.profiles?.username||p.posted_by||'لاعب')}</span> • ${tagBadge(p.type)} • ❤️${p.likes_count||0} • ${ago(p.created_at)}</div>
-        </div>
-        <div class="post-actions">
-          <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️</button>
-          <button class="btn-danger" onclick="deletePost('${p.id}',true)">🗑️</button>
-        </div>
-      </div>`).join('')}
-    </div>`;
+    buildPostsSlider(rPosts, 'dashRecentPosts');
   }
 
   // Recent users
@@ -668,24 +847,35 @@ async function loadPosts(){
 function renderPosts(posts){
   const el=document.getElementById('postsList');
   if(!posts||!posts.length){el.innerHTML='<div class="empty">لا توجد منشورات</div>';return;}
-  el.innerHTML=posts.map(p=>`
-    <div class="post-item" id="pi-${p.id}">
-      <div class="post-thumb">${p.profiles?.avatar_url?`<img src="${p.profiles.avatar_url}" alt="">`:(getTypeIcon(p.type))}</div>
-      <div class="post-info">
-        <div class="post-name">${esc((p.content||'').slice(0,70))||'—'}</div>
-        <div class="post-meta">
-          ${esc(p.profiles?.username||p.posted_by||'—')} •
-          ${tagBadge(p.type)} •
-          ❤️${p.likes_count||0} •
-          💬${p.comments_count||0} •
-          ${ago(p.created_at)}
+  el.innerHTML=posts.map(p=>{
+    const authorName=p.profiles?.username||p.posted_by||'لاعب';
+    const authorAvatar=p.profiles?.avatar_url;
+    const isAdmin=!!(p.posted_by?.includes('Admin'));
+    const content=(p.content||'').replace(/\n/g,' ').trim();
+    const preview=content.slice(0,130)||(p.media_url?'🔗 رابط وسائط':'—');
+    return `<div class="post-item" id="pi-${p.id}" style="align-items:flex-start;gap:12px;">
+      <div class="post-thumb" style="margin-top:3px;flex-shrink:0;">
+        ${authorAvatar
+          ?`<img src="${authorAvatar}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;">`
+          :`<div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(192,132,252,0.15));display:flex;align-items:center;justify-content:center;font-size:20px;">${getTypeIcon(p.type)}</div>`}
+      </div>
+      <div class="post-info" style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:600;color:var(--text);line-height:1.55;margin-bottom:5px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(preview)}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;">
+          <span style="color:var(--accent2);font-weight:700;">${esc(authorName)}</span>
+          ${isAdmin?'<span style="color:var(--gold);">⭐</span>':''}
+          ${tagBadge(p.type)}
+          <span style="color:var(--text3);">❤️ ${p.likes_count||0}</span>
+          <span style="color:var(--text3);">💬 ${p.comments_count||0}</span>
+          <span style="color:var(--text3);">${ago(p.created_at)}</span>
         </div>
       </div>
-      <div class="post-actions">
-        <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️ تعديل</button>
+      <div style="display:flex;gap:5px;flex-shrink:0;margin-top:2px;">
+        <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️</button>
         <button class="btn-danger" onclick="deletePost('${p.id}')">🗑️</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function filterPostsList(q){
@@ -1164,6 +1354,164 @@ document.addEventListener('click',e=>{
   if(e.target===document.getElementById('userModal'))closeUserModal();
 });
 document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// ===================================================
+// POSTS SLIDER - سلسلة منشورات تفاعلية
+// ===================================================
+const sliderState = {
+  posts: [],
+  currentPage: 0,
+  perPage: 3, // منشورات لكل صفحة
+  containerId: '',
+};
+
+function buildPostsSlider(posts, containerId) {
+  sliderState.posts = posts;
+  sliderState.currentPage = 0;
+  sliderState.containerId = containerId;
+  renderSlider();
+
+  // ===== Scroll wheel support (زر الوسط) =====
+  const wrap = document.getElementById(containerId);
+  if (wrap) {
+    wrap.removeEventListener('wheel', handleSliderWheel);
+    wrap.addEventListener('wheel', handleSliderWheel, {passive:false});
+  }
+}
+
+function handleSliderWheel(e) {
+  e.preventDefault();
+  if (e.deltaY > 0) {
+    sliderNext();
+  } else {
+    sliderPrev();
+  }
+}
+
+function renderSlider() {
+  const {posts, currentPage, perPage, containerId} = sliderState;
+  const totalPages = Math.ceil(posts.length / perPage);
+  const start = currentPage * perPage;
+  const pagePosts = posts.slice(start, start + perPage);
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const postsHTML = pagePosts.map(p => {
+    const author = p.profiles?.username || p.posted_by || 'لاعب';
+    const avatar = p.profiles?.avatar_url;
+    const content = (p.content || '').trim();
+    const typeIcon = getTypeIcon(p.type);
+    const typeColors = {
+      clip:'rgba(99,102,241,0.2)',news:'rgba(245,158,11,0.15)',
+      tourney:'rgba(192,132,252,0.2)',question:'rgba(34,197,94,0.15)',
+      review:'rgba(239,68,68,0.15)',live:'rgba(239,68,68,0.2)',screen:'rgba(99,102,241,0.15)'
+    };
+    const iconBg = typeColors[p.type] || 'rgba(99,102,241,0.15)';
+    return `<div class="slide-post" onclick="openEditPost('${p.id}')">
+      <div class="slide-post-top">
+        <div class="slide-post-icon" style="background:${iconBg};">${typeIcon}</div>
+        <div class="slide-post-meta">
+          <div class="slide-post-author">
+            ${avatar ? `<img src="${avatar}" style="width:16px;height:16px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-left:4px;">` : ''}
+            ${esc(author)}
+          </div>
+          <div class="slide-post-time">${ago(p.created_at)}</div>
+        </div>
+        ${tagBadge(p.type)}
+      </div>
+      <div class="slide-post-content">${content ? esc(content).replace(/\n/g,'<br>') : '<span style="color:var(--text3);font-style:italic;">لا يوجد محتوى</span>'}</div>
+      <div class="slide-post-footer">
+        <span class="slide-stat">❤️ ${p.likes_count||0}</span>
+        <span class="slide-stat">💬 ${p.comments_count||0}</span>
+        <div class="slide-actions" onclick="event.stopPropagation()">
+          <button class="slide-edit-btn" onclick="openEditPost('${p.id}')">✏️ تعديل</button>
+          <button class="slide-del-btn" onclick="deletePost('${p.id}',true)">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // dots
+  let dotsHTML = '';
+  for (let i = 0; i < totalPages; i++) {
+    dotsHTML += `<div class="slider-dot ${i===currentPage?'active':''}" onclick="sliderGoTo(${i})"></div>`;
+  }
+
+  el.innerHTML = `
+    <div class="slider-header">
+      <div class="card-title">📝 المنشورات
+        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:6px;">(${posts.length} إجمالي)</span>
+      </div>
+      <div class="slider-controls">
+        <button class="slider-btn" id="sliderPrevBtn" onclick="sliderPrev()" ${currentPage===0?'disabled':''}>▲</button>
+        <span class="slider-counter">${currentPage+1} / ${totalPages}</span>
+        <button class="slider-btn" id="sliderNextBtn" onclick="sliderNext()" ${currentPage>=totalPages-1?'disabled':''}>▼</button>
+        <button class="slider-btn" onclick="nav('posts')" title="عرض الكل" style="width:auto;padding:0 10px;font-size:11px;">الكل ←</button>
+      </div>
+    </div>
+    <div class="slider-track-wrap">
+      <div class="slider-track" id="sliderTrack">
+        ${postsHTML || '<div class="slider-empty">لا توجد منشورات</div>'}
+      </div>
+    </div>
+    <div class="slider-dots">${dotsHTML}</div>
+  `;
+}
+
+function sliderNext() {
+  const totalPages = Math.ceil(sliderState.posts.length / sliderState.perPage);
+  if (sliderState.currentPage < totalPages - 1) {
+    sliderState.currentPage++;
+    animateSlider('down');
+    renderSlider();
+    reAttachWheel();
+  }
+}
+
+function sliderPrev() {
+  if (sliderState.currentPage > 0) {
+    sliderState.currentPage--;
+    animateSlider('up');
+    renderSlider();
+    reAttachWheel();
+  }
+}
+
+function sliderGoTo(page) {
+  const dir = page > sliderState.currentPage ? 'down' : 'up';
+  sliderState.currentPage = page;
+  animateSlider(dir);
+  renderSlider();
+  reAttachWheel();
+}
+
+function animateSlider(dir) {
+  const track = document.getElementById('sliderTrack');
+  if (!track) return;
+  const from = dir === 'down' ? '20px' : '-20px';
+  track.style.transition = 'none';
+  track.style.opacity = '0';
+  track.style.transform = `translateY(${from})`;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      track.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      track.style.opacity = '1';
+      track.style.transform = 'translateY(0)';
+    });
+  });
+}
+
+function reAttachWheel() {
+  const wrap = document.getElementById(sliderState.containerId);
+  if (wrap) {
+    wrap.removeEventListener('wheel', handleSliderWheel);
+    wrap.addEventListener('wheel', handleSliderWheel, {passive:false});
+  }
+}
+
+// Override deletePost in slider context to refresh slider
+const _origDeletePost = deletePost;
+
 </script>
 </body>
 </html>
