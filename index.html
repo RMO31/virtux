@@ -38,7 +38,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,8,16,0.94
 .nav-links{display:flex;align-items:center;gap:2px;list-style:none;}
 .nav-links a{color:var(--text2);text-decoration:none;padding:6px 13px;border-radius:8px;font-size:13.5px;transition:all 0.2s;}
 .nav-links a:hover,.nav-links a.active{color:var(--text);background:rgba(99,102,241,0.12);}
-.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0;direction:ltr;}
 .lang-toggle{background:rgba(99,102,241,0.1);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;cursor:pointer;color:var(--accent2);font-size:12px;font-weight:700;transition:all 0.2s;}
 .lang-toggle:hover{background:var(--accent);color:#fff;}
 .btn{padding:7px 16px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:13.5px;cursor:pointer;border:none;transition:all 0.2s;font-weight:500;}
@@ -58,7 +58,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,8,16,0.94
 .live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;}
 .live-dot{width:6px;height:6px;background:var(--red);border-radius:50%;animation:pdot 1.2s infinite;}
 
-.nav-user{display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:rgba(99,102,241,0.06);transition:all 0.2s;}
+..nav-user{display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:rgba(99,102,241,0.06);transition:all 0.2s;text-decoration:none;color:var(--text2);}
 .nav-user:hover{border-color:var(--border2);background:rgba(99,102,241,0.12);}
 .nav-user img{width:28px;height:28px;border-radius:50%;object-fit:cover;}
 .nav-user span{font-size:13px;color:var(--text2);}
@@ -66,7 +66,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,8,16,0.94
 /* LAYOUT */
 .wrapper{display:flex;margin-top:60px;min-height:calc(100vh - 60px);position:relative;z-index:1;}
 .sidebar{width:215px;min-width:215px;background:rgba(10,13,22,0.7);border-left:1px solid var(--border);padding:18px 10px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
-main{flex:1;padding:22px 18px;max-width:1100px;min-width:0;}
+main{flex:1;padding:22px 18px;min-width:0;max-width:none;}
 .right-sidebar{width:290px;min-width:290px;padding:18px 12px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
 
 .sidebar-section{margin-bottom:22px;}
@@ -346,7 +346,7 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
   <div class="nav-right">
     <button class="lang-toggle" onclick="toggleLang()" id="langBtn">AR/EN</button>
     <button class="notif-btn" onclick="toggleNotif()" id="notifBtn">🔔<span class="notif-dot" id="notifDot"></span></button>
-    <div id="navAuthArea">
+    <div id="navAuthArea" style="display:flex;align-items:center;gap:8px;direction:ltr;">
       <button class="btn btn-ghost btn-sm" onclick="openAuth('login')">دخول (Login)</button>
       <button class="btn btn-primary btn-sm" onclick="openAuth('register')">انضم الآن (Join Now)</button>
     </div>
@@ -544,27 +544,15 @@ const SUPABASE_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const YT_KEY='AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
-  auth:{
-    persistSession:true,
-    storageKey:'virtux-auth-v2',
-    autoRefreshToken:true,
-    detectSessionInUrl:true,
-    storage:window.localStorage
-  }
+  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}
 });
 let currentUser=null,currentProfile=null,feedOffset=0,currentEditId=null,currentFeedFilter='all';
 const FEED_LIMIT=10;
 
 sb.auth.onAuthStateChange(async(e,session)=>{
   currentUser=session?.user||null;
-  if(currentUser){
-    await loadProfile();
-    renderNavUser();
-    loadNotifications();
-  }else{
-    currentProfile=null;
-    renderNavGuest();
-  }
+  if(currentUser){await loadProfile();renderNavUser();loadNotifications();}
+  else{currentProfile=null;renderNavGuest();}
 });
 
 async function loadProfile(){
@@ -588,11 +576,11 @@ function renderNavUser(){
   const name=currentProfile?.username||currentUser?.email?.split('@')[0]||'لاعب';
   const avatar=currentProfile?.avatar_url;
   document.getElementById('navAuthArea').innerHTML=`
-    <button class="btn btn-ghost btn-sm" onclick="signOut()">🚪 خروج</button>
-    <a href="profile.html" class="nav-user" style="text-decoration:none;">
-      ${avatar?`<img src="${avatar}" alt="">`:`<div class="avatar" style="width:28px;height:28px;font-size:12px;">🎮</div>`}
-      <span>${name}</span>
-    </a>`;
+    <a href="profile.html" class="nav-user">
+      <div class="avatar" style="width:28px;height:28px;font-size:13px;flex-shrink:0;">${avatar?`<img src="${avatar}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`:'🎮'}</div>
+      <span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">${name}</span>
+    </a>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()">🚪 خروج</button>`;
 }
 
 function renderNavGuest(){
@@ -662,9 +650,17 @@ function goToProfile(){
 
 async function loadFeed(reset=true){
   if(reset){feedOffset=0;document.getElementById('feedContainer').innerHTML='<div class="loader">جاري...<span class="spinner"></span></div>';}
-  let query=sb.from('posts').select(`*,profiles(username,avatar_url,roles)`).order('created_at',{ascending:false}).range(feedOffset,feedOffset+FEED_LIMIT-1);
+  let query=sb.from('posts').select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by').order('created_at',{ascending:false}).range(feedOffset,feedOffset+FEED_LIMIT-1);
   if(currentFeedFilter!=='all')query=query.eq('type',currentFeedFilter);
-  const{data,error}=await query;
+  const{data:rawData,error}=await query;
+  // جلب profiles منفصل
+  let data=null;
+  if(rawData&&rawData.length){
+    const uids=[...new Set(rawData.filter(p=>p.user_id).map(p=>p.user_id))];
+    let pMap={};
+    if(uids.length){const{data:profs}=await sb.from('profiles').select('id,username,avatar_url,roles').in('id',uids);if(profs)profs.forEach(p=>{pMap[p.id]=p;});}
+    data=rawData.map(p=>({...p,profiles:pMap[p.user_id]||null}));
+  }else{data=rawData;}
   const container=document.getElementById('feedContainer');
   if(error){container.innerHTML='<div class="loader">⚠️ خطأ</div>';return;}
   if(reset)container.innerHTML='';
@@ -682,10 +678,10 @@ function loadMorePosts(){loadFeed(false);}
 
 function renderPost(p){
   const profile=p.profiles||{};
-  const name=profile.username||p.posted_by||'لاعب';
+  const name=profile.username||'لاعب';
   const avatar=profile.avatar_url;
   const avatarHTML=avatar?`<img src="${avatar}" alt="">`:'🎮';
-  const isAdmin=profile.roles?.includes('admin')||p.posted_by?.includes('Admin');
+  const isAdmin=profile.roles?.includes('admin');
   const isOwner=currentUser&&p.user_id===currentUser.id;
   const tagMap={clip:'🎬 كليب',news:'📰 خبر',tourney:'🏆 بطولة',question:'❓ سؤال',review:'⭐ تقييم',screen:'📸 لقطة'};
   const tagClass={clip:'tag-clip',news:'tag-news',tourney:'tag-tourney',question:'tag-question',review:'tag-review',screen:'tag-clip'};
@@ -722,7 +718,9 @@ async function publishPost(){
   const content=document.getElementById('postContent').value.trim();
   if(!content){showToast('⚠️ اكتب شيئاً!','error');return;}
   const type=document.querySelector('#postTypesRow .post-type-btn.active')?.dataset.tag||'clip';
-  const{data,error}=await sb.from('posts').insert({content,type,user_id:currentUser.id,posted_by:currentProfile?.username||currentUser.email}).select('*,profiles(username,avatar_url,roles)').single();
+  const{data,error}=await sb.from('posts').insert({content,type,user_id:currentUser.id,posted_by:currentProfile?.username||currentUser.email}).select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by').single();
+  // جلب profile المستخدم الحالي
+  if(!error&&data){data={...data,profiles:{username:currentProfile?.username,avatar_url:currentProfile?.avatar_url,roles:currentProfile?.roles}}}
   if(error){showToast('❌ '+error.message,'error');return;}
   document.getElementById('feedContainer').insertAdjacentHTML('afterbegin',renderPost(data));
   closeEditor();
@@ -991,7 +989,11 @@ document.addEventListener('click',e=>{
 
 sb.channel('posts-channel').on('postgres_changes',{event:'INSERT',schema:'public',table:'posts'},async payload=>{
   if(payload.new.user_id!==currentUser?.id){
-    const{data}=await sb.from('posts').select('*,profiles(username,avatar_url,roles)').eq('id',payload.new.id).single();
+    // جلب بدون join
+    const{data:pd}=await sb.from('posts').select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by').eq('id',payload.new.id).single();
+    let pProf=null;
+    if(pd?.user_id){const{data:pp}=await sb.from('profiles').select('username,avatar_url,roles').eq('id',pd.user_id).single();pProf=pp;}
+    const data=pd?{...pd,profiles:pProf}:null;
     if(data&&(currentFeedFilter==='all'||currentFeedFilter===data.type)){
       document.getElementById('feedContainer').insertAdjacentHTML('afterbegin',renderPost(data));
       showToast('🆕 منشور جديد من '+(data.profiles?.username||'لاعب'));
@@ -1010,22 +1012,16 @@ function toggleLang(){
 (async()=>{
   const savedLang=localStorage.getItem('virtux_lang');
   if(savedLang)document.body.className=savedLang;
-
-  // استرجاع الجلسة المحفوظة أولاً (تمنع logout عند الريفريش)
   const{data:{session}}=await sb.auth.getSession();
   currentUser=session?.user||null;
-  if(currentUser){
-    await loadProfile();
-    renderNavUser();
-    loadNotifications();
-  }
-
+  if(currentUser){await loadProfile();renderNavUser();}
   loadFeed();
   loadTournaments();
   loadLeaderboard();
   loadStreams();
   loadStats();
   loadYouTube();
+  loadNotifications();
 })();
 </script>
 </body>

@@ -278,13 +278,13 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
   <div id="profileContent" style="display:none;">
 
     <!-- COVER -->
-    <div class="profile-cover" id="profileCoverWrap" onclick="triggerCoverUpload()">
+    <div class="profile-cover" id="profileCoverWrap">
       <img id="profileCoverImg" src="" alt="" style="display:none;">
       <div id="coverPlaceholder" style="width:100%;height:100%;background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(192,132,252,0.15));display:flex;align-items:center;justify-content:center;">
         <span style="font-family:'Orbitron',monospace;font-size:48px;font-weight:900;opacity:0.15;letter-spacing:4px;color:#818cf8;">VIRTUX</span>
       </div>
       <div class="cover-overlay">
-        <button class="cover-edit-btn" onclick="triggerCoverUpload()">📷 تغيير غلاف الملف</button>
+        <button class="cover-edit-btn" onclick="event.stopPropagation();triggerCoverUpload()">📷 تغيير غلاف الملف</button>
       </div>
     </div>
 
@@ -295,7 +295,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
           <img id="profileAvatarImg" src="" alt="" style="display:none;">
           <span id="profileAvatarEmoji">🎮</span>
         </div>
-        <div class="avatar-edit" onclick="triggerAvatarUpload()" title="تغيير الصورة">📷</div>
+        <div class="avatar-edit" onclick="event.stopPropagation();triggerAvatarUpload()" title="تغيير الصورة">📷</div>
       </div>
       <div class="profile-meta">
         <div class="profile-name">
@@ -766,8 +766,17 @@ async function saveProfile(){
 
   if(!username){showToast('⚠️ اسم المستخدم مطلوب','error');return;}
 
-  const{error}=await sb.from('profiles').update({username,display_name,bio,birthdate,country,favorite_game,discord,twitch,games,updated_at:new Date().toISOString()}).eq('id',currentUser.id);
-  if(error){showToast('❌ '+error.message,'error');return;}
+  // نحاول الحفظ بالأعمدة الكاملة أولاً، إذا فشل نحاول بالأعمدة الأساسية فقط
+  const fullData={username,display_name,bio,birthdate:birthdate||null,country:country||null,favorite_game:favorite_game||null,discord:discord||null,twitch:twitch||null,games:games||[],updated_at:new Date().toISOString()};
+  let{error}=await sb.from('profiles').update(fullData).eq('id',currentUser.id);
+  if(error&&error.message&&error.message.includes('column')){
+    // عمود غير موجود - نحاول بالأعمدة الأساسية فقط
+    const basicData={username,updated_at:new Date().toISOString()};
+    if(display_name)basicData.display_name=display_name;
+    const{error:e2}=await sb.from('profiles').update(basicData).eq('id',currentUser.id);
+    if(e2){showToast('❌ '+e2.message,'error');return;}
+    showToast('⚠️ تم الحفظ جزئياً - بعض الأعمدة غير موجودة. شغّل supabase_setup.html','error');
+  } else if(error){showToast('❌ '+error.message,'error');return;}
 
   showToast('✅ تم حفظ التغييرات!','success');
   currentProfile={...currentProfile,username,display_name,bio,birthdate,country,favorite_game,discord,twitch,games};
@@ -826,11 +835,15 @@ async function uploadCover(input){
 
 function triggerAvatarUpload(){
   if(!isOwner)return;
-  document.getElementById('avatarInput').click();
+  const inp=document.getElementById('avatarInput');
+  inp.value=''; // reset لمنع التكرار
+  inp.click();
 }
 function triggerCoverUpload(){
   if(!isOwner)return;
-  document.getElementById('coverInput').click();
+  const inp=document.getElementById('coverInput');
+  inp.value=''; // reset لمنع التكرار
+  inp.click();
 }
 
 async function likePost(id,btn){
