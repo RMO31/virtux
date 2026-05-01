@@ -837,11 +837,6 @@ function filterByTag(tag){
   openEditor('clip');
 }
 
-  const{error}=await sb.from('tournament_registrations').insert({post_id:postId,user_id:currentUser.id,username:currentProfile.username});
-  if(error){showToast('❌ '+(error.code==='23505'?'مسجّل بالفعل!':error.message),'error');return;}
-  showToast('✅ تم التسجيل!','success');
-}
-
 async function loadLeaderboard(){
   const{data}=await sb.from('profiles').select('username,avatar_url,xp').order('xp',{ascending:false}).limit(5);
   const el=document.getElementById('sideLeaderboard');
