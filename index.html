@@ -5,7 +5,111 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Virtux — مجتمع الألعاب العربي</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ===================================================
+// FILE UPLOAD - رفع الملفات للـ post editor
+// ===================================================
+let _uploadedMediaUrl = null;
+let _uploadedMediaType = null;
+
+function triggerMediaUpload(){
+  if(!currentUser){openAuth('login');showToast('⚠️ سجّل الدخول أولاً');return;}
+  const inp = document.getElementById('postMediaInput');
+  if(inp){inp.value='';inp.click();}
+}
+
+async function handleMediaUpload(input){
+  if(!input.files||!input.files[0])return;
+  const file = input.files[0];
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  if(file.size > maxSize){showToast('⚠️ الملف أكبر من 50MB','error');return;}
+
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+  if(!isImage && !isVideo){showToast('⚠️ نوع الملف غير مدعوم (صور وفيديوهات فقط)','error');return;}
+
+  // Show preview locally first
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const preview = document.getElementById('uploadPreview');
+    const img = document.getElementById('uploadPreviewImg');
+    const vid = document.getElementById('uploadPreviewVideo');
+    preview.style.display = 'block';
+    if(isImage){
+      img.src = e.target.result; img.style.display='block';
+      vid.style.display='none';
+    }else{
+      vid.src = e.target.result; vid.style.display='block';
+      img.style.display='none';
+    }
+    _uploadedMediaType = isVideo ? 'video' : 'image';
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to Supabase Storage
+  const status = document.getElementById('uploadStatus');
+  const progress = document.getElementById('uploadProgress');
+  const fill = document.getElementById('uploadProgressFill');
+  status.textContent = 'جاري الرفع...'; status.style.display='block';
+  progress.style.display='block'; fill.style.width='20%';
+
+  try{
+    const bucket = isVideo ? 'videos' : 'avatars';
+    const ext = file.name.split('.').pop();
+    const fileName = `posts/${currentUser.id}_${Date.now()}.${ext}`;
+
+    fill.style.width = '50%';
+    const{data:upData, error:upErr} = await sb.storage.from(bucket).upload(fileName, file, {
+      cacheControl:'3600', upsert:false, contentType:file.type
+    });
+
+    if(upErr){
+      // إذا فشل bucket videos، جرب avatars
+      if(isVideo){
+        const{data:upData2, error:upErr2} = await sb.storage.from('avatars').upload(fileName, file, {
+          cacheControl:'3600', upsert:false, contentType:file.type
+        });
+        if(upErr2)throw upErr2;
+        const{data:urlData}=sb.storage.from('avatars').getPublicUrl(fileName);
+        _uploadedMediaUrl = urlData.publicUrl;
+      }else{
+        throw upErr;
+      }
+    }else{
+      const{data:urlData}=sb.storage.from(bucket).getPublicUrl(fileName);
+      _uploadedMediaUrl = urlData.publicUrl;
+    }
+
+    fill.style.width = '100%';
+    status.textContent = '✅ تم الرفع بنجاح!';
+    status.style.color = 'var(--green)';
+    setTimeout(()=>{progress.style.display='none'; status.style.display='none';}, 2000);
+    showToast('✅ تم رفع الملف بنجاح!','success');
+  }catch(err){
+    fill.style.width = '0%';
+    progress.style.display = 'none';
+    status.style.color = 'var(--red)';
+    status.textContent = '❌ فشل الرفع: ' + err.message;
+    showToast('❌ فشل رفع الملف: '+err.message,'error');
+    _uploadedMediaUrl = null;
+  }
+}
+
+function removeUpload(){
+  _uploadedMediaUrl = null;
+  _uploadedMediaType = null;
+  const preview = document.getElementById('uploadPreview');
+  preview.style.display = 'none';
+  document.getElementById('uploadPreviewImg').src = '';
+  document.getElementById('uploadPreviewVideo').src = '';
+  document.getElementById('uploadProgress').style.display = 'none';
+  document.getElementById('uploadStatus').style.display = 'none';
+  const inp = document.getElementById('postMediaInput');
+  if(inp) inp.value = '';
+  showToast('🗑️ تم إزالة الملف');
+}
+
+</script>
 <style>
 :root {
   --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
@@ -258,6 +362,19 @@ main{flex:1;padding:22px 18px;min-width:0;max-width:none;}
 select.form-select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:6px 10px;font-family:'Tajawal',sans-serif;font-size:13px;outline:none;}
 
 @media(max-width:900px){.sidebar,.right-sidebar{display:none;} nav .nav-links{display:none;} main{max-width:100%;padding:14px 10px;}}
+
+/* FILE UPLOAD IN EDITOR */
+.upload-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;background:rgba(99,102,241,0.08);border:1px dashed var(--border2);color:var(--text2);cursor:pointer;font-size:12px;transition:all 0.18s;font-family:'Tajawal',sans-serif;}
+.upload-btn:hover{background:rgba(99,102,241,0.18);border-style:solid;color:var(--accent2);}
+.upload-btn input{display:none;}
+.upload-preview{display:none;margin-top:8px;position:relative;}
+.upload-preview img{max-width:100%;max-height:200px;border-radius:10px;border:1px solid var(--border);object-fit:contain;}
+.upload-preview-video{max-width:100%;max-height:200px;border-radius:10px;border:1px solid var(--border);}
+.upload-remove{position:absolute;top:6px;right:6px;background:rgba(239,68,68,0.85);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;line-height:1;}
+.upload-progress{width:100%;height:4px;background:rgba(99,102,241,0.1);border-radius:2px;overflow:hidden;margin-top:6px;display:none;}
+.upload-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:2px;width:0%;transition:width 0.3s ease;}
+.upload-status{font-size:11px;color:var(--text3);margin-top:4px;display:none;}
+
 </style>
 </head>
 <body class="lang-bi">
@@ -352,6 +469,7 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
     </div>
   </div>
 </nav>
+<input type="file" id="postMediaInput" accept="image/*,video/mp4,video/webm,video/mov" style="display:none;" onchange="handleMediaUpload(this)">
 
 <div class="wrapper">
   <aside class="sidebar">
@@ -426,7 +544,15 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
           <button class="toolbar-btn" onclick="ins('🔥')">🔥</button>
           <button class="toolbar-btn" onclick="ins('😂')">😂</button>
           <button class="toolbar-btn" onclick="ins('👑')">👑</button>
+          <button class="toolbar-btn upload-btn" onclick="triggerMediaUpload()">📎 <span class="ar">رفع ملف</span><span class="en">Upload</span></button>
         </div>
+        <div class="upload-preview" id="uploadPreview">
+          <img id="uploadPreviewImg" src="" alt="" style="display:none;">
+          <video id="uploadPreviewVideo" class="upload-preview-video" controls style="display:none;"></video>
+          <button class="upload-remove" onclick="removeUpload()">✕</button>
+        </div>
+        <div class="upload-progress" id="uploadProgress"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
+        <div class="upload-status" id="uploadStatus"></div>
         <div class="editor-actions">
           <button class="btn btn-ghost btn-sm" onclick="closeEditor()">إلغاء (Cancel)</button>
           <select class="form-select" style="width:auto;padding:5px 9px;font-size:12px;">
@@ -538,7 +664,111 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
   </aside>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ===================================================
+// FILE UPLOAD - رفع الملفات للـ post editor
+// ===================================================
+let _uploadedMediaUrl = null;
+let _uploadedMediaType = null;
+
+function triggerMediaUpload(){
+  if(!currentUser){openAuth('login');showToast('⚠️ سجّل الدخول أولاً');return;}
+  const inp = document.getElementById('postMediaInput');
+  if(inp){inp.value='';inp.click();}
+}
+
+async function handleMediaUpload(input){
+  if(!input.files||!input.files[0])return;
+  const file = input.files[0];
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  if(file.size > maxSize){showToast('⚠️ الملف أكبر من 50MB','error');return;}
+
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+  if(!isImage && !isVideo){showToast('⚠️ نوع الملف غير مدعوم (صور وفيديوهات فقط)','error');return;}
+
+  // Show preview locally first
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const preview = document.getElementById('uploadPreview');
+    const img = document.getElementById('uploadPreviewImg');
+    const vid = document.getElementById('uploadPreviewVideo');
+    preview.style.display = 'block';
+    if(isImage){
+      img.src = e.target.result; img.style.display='block';
+      vid.style.display='none';
+    }else{
+      vid.src = e.target.result; vid.style.display='block';
+      img.style.display='none';
+    }
+    _uploadedMediaType = isVideo ? 'video' : 'image';
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to Supabase Storage
+  const status = document.getElementById('uploadStatus');
+  const progress = document.getElementById('uploadProgress');
+  const fill = document.getElementById('uploadProgressFill');
+  status.textContent = 'جاري الرفع...'; status.style.display='block';
+  progress.style.display='block'; fill.style.width='20%';
+
+  try{
+    const bucket = isVideo ? 'videos' : 'avatars';
+    const ext = file.name.split('.').pop();
+    const fileName = `posts/${currentUser.id}_${Date.now()}.${ext}`;
+
+    fill.style.width = '50%';
+    const{data:upData, error:upErr} = await sb.storage.from(bucket).upload(fileName, file, {
+      cacheControl:'3600', upsert:false, contentType:file.type
+    });
+
+    if(upErr){
+      // إذا فشل bucket videos، جرب avatars
+      if(isVideo){
+        const{data:upData2, error:upErr2} = await sb.storage.from('avatars').upload(fileName, file, {
+          cacheControl:'3600', upsert:false, contentType:file.type
+        });
+        if(upErr2)throw upErr2;
+        const{data:urlData}=sb.storage.from('avatars').getPublicUrl(fileName);
+        _uploadedMediaUrl = urlData.publicUrl;
+      }else{
+        throw upErr;
+      }
+    }else{
+      const{data:urlData}=sb.storage.from(bucket).getPublicUrl(fileName);
+      _uploadedMediaUrl = urlData.publicUrl;
+    }
+
+    fill.style.width = '100%';
+    status.textContent = '✅ تم الرفع بنجاح!';
+    status.style.color = 'var(--green)';
+    setTimeout(()=>{progress.style.display='none'; status.style.display='none';}, 2000);
+    showToast('✅ تم رفع الملف بنجاح!','success');
+  }catch(err){
+    fill.style.width = '0%';
+    progress.style.display = 'none';
+    status.style.color = 'var(--red)';
+    status.textContent = '❌ فشل الرفع: ' + err.message;
+    showToast('❌ فشل رفع الملف: '+err.message,'error');
+    _uploadedMediaUrl = null;
+  }
+}
+
+function removeUpload(){
+  _uploadedMediaUrl = null;
+  _uploadedMediaType = null;
+  const preview = document.getElementById('uploadPreview');
+  preview.style.display = 'none';
+  document.getElementById('uploadPreviewImg').src = '';
+  document.getElementById('uploadPreviewVideo').src = '';
+  document.getElementById('uploadProgress').style.display = 'none';
+  document.getElementById('uploadStatus').style.display = 'none';
+  const inp = document.getElementById('postMediaInput');
+  if(inp) inp.value = '';
+  showToast('🗑️ تم إزالة الملف');
+}
+
+</script>
 <script>
 const SUPABASE_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
@@ -550,9 +780,28 @@ let currentUser=null,currentProfile=null,feedOffset=0,currentEditId=null,current
 const FEED_LIMIT=10;
 
 sb.auth.onAuthStateChange(async(e,session)=>{
-  currentUser=session?.user||null;
-  if(currentUser){await loadProfile();renderNavUser();loadNotifications();}
-  else{currentProfile=null;renderNavGuest();}
+  // نتعامل فقط مع الأحداث الحقيقية - نتجاهل الأحداث الوهمية عند الريفريش
+  if(e==='SIGNED_IN'||e==='TOKEN_REFRESHED'||e==='USER_UPDATED'){
+    currentUser=session?.user||null;
+    if(currentUser&&(!currentProfile||currentProfile.id!==currentUser.id)){
+      await loadProfile();
+      renderNavUser();
+      loadNotifications();
+    }
+  }else if(e==='SIGNED_OUT'){
+    // تحقق مرة أخرى - قد يكون وهمياً من الريفريش
+    await new Promise(r=>setTimeout(r,200));
+    const{data:{session:s2}}=await sb.auth.getSession();
+    if(s2?.user){
+      // جلسة موجودة - SIGNED_OUT وهمي، تجاهله
+      if(!currentUser){currentUser=s2.user;await loadProfile();renderNavUser();loadNotifications();}
+      return;
+    }
+    // خروج حقيقي
+    currentUser=null;currentProfile=null;
+    renderNavGuest();
+  }
+  // INITIAL_SESSION يُعالج في init() - لا نتدخل هنا
 });
 
 async function loadProfile(){
@@ -687,7 +936,22 @@ function renderPost(p){
   const tagClass={clip:'tag-clip',news:'tag-news',tourney:'tag-tourney',question:'tag-question',review:'tag-review',screen:'tag-clip'};
   const type=p.type||'clip';
   const timeAgo=getTimeAgo(p.created_at);
-  const mediaHTML=p.media_url?`<div class="post-media" onclick="window.open('${p.media_url}','_blank')"><div class="post-media-icon">▶️</div></div>`:'';
+  let mediaHTML='';
+  if(p.media_url){
+    const isVid=p.media_url.match(/\.(mp4|webm|mov)$/i);
+    const isImg=p.media_url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)||(!isVid&&p.media_url.includes('/storage/'));
+    if(isVid){
+      mediaHTML=`<div class="post-media" style="height:auto;padding:0;background:rgba(0,0,0,0.4);">
+        <video src="${p.media_url}" controls style="width:100%;max-height:300px;border-radius:10px;display:block;"></video>
+      </div>`;
+    }else if(isImg){
+      mediaHTML=`<div class="post-media" onclick="window.open('${p.media_url}','_blank')" style="cursor:pointer;height:auto;min-height:120px;padding:0;">
+        <img src="${p.media_url}" style="width:100%;max-height:340px;object-fit:cover;border-radius:10px;display:block;" onerror="this.parentElement.innerHTML='<div style=\"padding:16px;color:var(--text3)\">⚠️ تعذر تحميل الصورة</div>'">
+      </div>`;
+    }else{
+      mediaHTML=`<div class="post-media" onclick="window.open('${p.media_url}','_blank')"><div class="post-media-icon">▶️</div></div>`;
+    }
+  }
   const editBtn=isOwner?`<button class="action-btn-edit" onclick="openEditModal('${p.id}',\`${(p.content||'').replace(/`/g,"'")}\`)">✏️</button>`:'';
   const deleteBtn=(isOwner||isAdmin)?`<button class="action-btn" style="color:var(--red);" onclick="deletePost('${p.id}')">🗑️</button>`:'';
   const likes=p.likes_count||0;
@@ -718,11 +982,14 @@ async function publishPost(){
   const content=document.getElementById('postContent').value.trim();
   if(!content){showToast('⚠️ اكتب شيئاً!','error');return;}
   const type=document.querySelector('#postTypesRow .post-type-btn.active')?.dataset.tag||'clip';
-  const{data,error}=await sb.from('posts').insert({content,type,user_id:currentUser.id,posted_by:currentProfile?.username||currentUser.email}).select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by').single();
+  const postData={content,type,user_id:currentUser.id,posted_by:currentProfile?.username||currentUser.email};
+  if(_uploadedMediaUrl){postData.media_url=_uploadedMediaUrl;}
+  const{data,error}=await sb.from('posts').insert(postData).select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by').single();
   // جلب profile المستخدم الحالي
   if(!error&&data){data={...data,profiles:{username:currentProfile?.username,avatar_url:currentProfile?.avatar_url,roles:currentProfile?.roles}}}
   if(error){showToast('❌ '+error.message,'error');return;}
   document.getElementById('feedContainer').insertAdjacentHTML('afterbegin',renderPost(data));
+  removeUpload(); // مسح الملف المرفوع بعد النشر
   closeEditor();
   showToast('🎉 تم النشر!','success');
   await sb.from('site_visits').insert({user_id:currentUser.id,page:'post_created'}).catch(()=>{});
@@ -837,7 +1104,14 @@ async function loadLeaderboard(){
 }
 
 async function loadStreams(){
-  const{data}=await sb.from('posts').select('*,profiles(username,avatar_url)').eq('type','live').order('created_at',{ascending:false}).limit(4);
+  const{data:streamRaw}=await sb.from('posts').select('id,content,user_id,posted_by,created_at').eq('type','live').order('created_at',{ascending:false}).limit(4);
+  let data=null;
+  if(streamRaw&&streamRaw.length){
+    const sIds=[...new Set(streamRaw.filter(p=>p.user_id).map(p=>p.user_id))];
+    let sMap={};
+    if(sIds.length){const{data:sp}=await sb.from('profiles').select('id,username,avatar_url').in('id',sIds);if(sp)sp.forEach(p=>{sMap[p.id]=p;});}
+    data=streamRaw.map(p=>({...p,profiles:sMap[p.user_id]||null}));
+  }
   const el=document.getElementById('sideStreams');
   const liveEl=document.getElementById('liveGrid');
   const streams=data&&data.length>0?data:[];
@@ -1012,17 +1286,129 @@ function toggleLang(){
 (async()=>{
   const savedLang=localStorage.getItem('virtux_lang');
   if(savedLang)document.body.className=savedLang;
-  const{data:{session}}=await sb.auth.getSession();
-  currentUser=session?.user||null;
-  if(currentUser){await loadProfile();renderNavUser();}
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(session?.user){
+      currentUser=session.user;
+      await loadProfile();
+      renderNavUser();
+      loadNotifications();
+    }else{
+      currentUser=null;
+      renderNavGuest();
+    }
+  }catch(e){currentUser=null;renderNavGuest();}
   loadFeed();
   loadTournaments();
   loadLeaderboard();
   loadStreams();
   loadStats();
   loadYouTube();
-  loadNotifications();
-})();
+})(););
+
+// ===================================================
+// FILE UPLOAD - رفع الملفات للـ post editor
+// ===================================================
+let _uploadedMediaUrl = null;
+let _uploadedMediaType = null;
+
+function triggerMediaUpload(){
+  if(!currentUser){openAuth('login');showToast('⚠️ سجّل الدخول أولاً');return;}
+  const inp = document.getElementById('postMediaInput');
+  if(inp){inp.value='';inp.click();}
+}
+
+async function handleMediaUpload(input){
+  if(!input.files||!input.files[0])return;
+  const file = input.files[0];
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  if(file.size > maxSize){showToast('⚠️ الملف أكبر من 50MB','error');return;}
+
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+  if(!isImage && !isVideo){showToast('⚠️ نوع الملف غير مدعوم (صور وفيديوهات فقط)','error');return;}
+
+  // Show preview locally first
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const preview = document.getElementById('uploadPreview');
+    const img = document.getElementById('uploadPreviewImg');
+    const vid = document.getElementById('uploadPreviewVideo');
+    preview.style.display = 'block';
+    if(isImage){
+      img.src = e.target.result; img.style.display='block';
+      vid.style.display='none';
+    }else{
+      vid.src = e.target.result; vid.style.display='block';
+      img.style.display='none';
+    }
+    _uploadedMediaType = isVideo ? 'video' : 'image';
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to Supabase Storage
+  const status = document.getElementById('uploadStatus');
+  const progress = document.getElementById('uploadProgress');
+  const fill = document.getElementById('uploadProgressFill');
+  status.textContent = 'جاري الرفع...'; status.style.display='block';
+  progress.style.display='block'; fill.style.width='20%';
+
+  try{
+    const bucket = isVideo ? 'videos' : 'avatars';
+    const ext = file.name.split('.').pop();
+    const fileName = `posts/${currentUser.id}_${Date.now()}.${ext}`;
+
+    fill.style.width = '50%';
+    const{data:upData, error:upErr} = await sb.storage.from(bucket).upload(fileName, file, {
+      cacheControl:'3600', upsert:false, contentType:file.type
+    });
+
+    if(upErr){
+      // إذا فشل bucket videos، جرب avatars
+      if(isVideo){
+        const{data:upData2, error:upErr2} = await sb.storage.from('avatars').upload(fileName, file, {
+          cacheControl:'3600', upsert:false, contentType:file.type
+        });
+        if(upErr2)throw upErr2;
+        const{data:urlData}=sb.storage.from('avatars').getPublicUrl(fileName);
+        _uploadedMediaUrl = urlData.publicUrl;
+      }else{
+        throw upErr;
+      }
+    }else{
+      const{data:urlData}=sb.storage.from(bucket).getPublicUrl(fileName);
+      _uploadedMediaUrl = urlData.publicUrl;
+    }
+
+    fill.style.width = '100%';
+    status.textContent = '✅ تم الرفع بنجاح!';
+    status.style.color = 'var(--green)';
+    setTimeout(()=>{progress.style.display='none'; status.style.display='none';}, 2000);
+    showToast('✅ تم رفع الملف بنجاح!','success');
+  }catch(err){
+    fill.style.width = '0%';
+    progress.style.display = 'none';
+    status.style.color = 'var(--red)';
+    status.textContent = '❌ فشل الرفع: ' + err.message;
+    showToast('❌ فشل رفع الملف: '+err.message,'error');
+    _uploadedMediaUrl = null;
+  }
+}
+
+function removeUpload(){
+  _uploadedMediaUrl = null;
+  _uploadedMediaType = null;
+  const preview = document.getElementById('uploadPreview');
+  preview.style.display = 'none';
+  document.getElementById('uploadPreviewImg').src = '';
+  document.getElementById('uploadPreviewVideo').src = '';
+  document.getElementById('uploadProgress').style.display = 'none';
+  document.getElementById('uploadStatus').style.display = 'none';
+  const inp = document.getElementById('postMediaInput');
+  if(inp) inp.value = '';
+  showToast('🗑️ تم إزالة الملف');
+}
+
 </script>
 </body>
 </html>
