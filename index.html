@@ -572,6 +572,10 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
 let currentUser=null,currentProfile=null,feedOffset=0,currentEditId=null,currentFeedFilter='all';
 const FEED_LIMIT=10;
 
+function getAppRedirectUrl(){
+  return new URL('index.html',window.location.href).toString();
+}
+
 let isLoggingOut = false;
 sb.auth.onAuthStateChange(async(e,session)=>{
   if(e==='SIGNED_IN'||e==='TOKEN_REFRESHED'||e==='USER_UPDATED'){
@@ -682,7 +686,7 @@ async function signUpEmail(){
 }
 
 async function signInWithGoogle(){
-  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});
+  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:getAppRedirectUrl()}});
   if(error)showToast('❌ خطأ: '+error.message,'error');
 }
 
@@ -1219,6 +1223,15 @@ let isPageInitialized=false;
 async function initializePage(){
   if(isPageInitialized)return;
   isPageInitialized=true;
+  const url=new URL(window.location.href);
+  if(url.searchParams.get('code')){
+    try{
+      await sb.auth.exchangeCodeForSession(window.location.href);
+      window.history.replaceState({},document.title,getAppRedirectUrl());
+    }catch(e){
+      console.error('OAuth exchange failed',e);
+    }
+  }
   const savedLang=localStorage.getItem('virtux_lang');
   if(savedLang)document.body.className=savedLang;
   try{

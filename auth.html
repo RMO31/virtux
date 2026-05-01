@@ -286,8 +286,12 @@
 const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const db=window.supabase.createClient(SB_URL,SB_KEY,{
-  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}
+  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce',storage:window.localStorage}
 });
+
+function getAppRedirectUrl(){
+  return new URL('index.html',window.location.href).toString();
+}
 
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -386,14 +390,24 @@ async function doRegister(){
 }
 
 async function signInWithGoogle(){
-  const redirectUrl = window.location.href.split('auth.html')[0] + 'index.html';
-  const{error}=await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectUrl}});
+  const{error}=await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:getAppRedirectUrl()}});
   if(error)showMsg('❌ خطأ في Google: '+error.message,'err');
 }
 
-db.auth.getSession().then(({data:{session}})=>{
+(async()=>{
+  const url=new URL(window.location.href);
+  if(url.searchParams.get('code')){
+    try{
+      await db.auth.exchangeCodeForSession(window.location.href);
+      window.history.replaceState({},document.title,getAppRedirectUrl());
+    }catch(e){
+      showMsg('❌ فشل إكمال تسجيل الدخول عبر Google: '+e.message,'err');
+    }
+  }
+
+  const{data:{session}}=await db.auth.getSession();
   if(session)window.location.href='index.html';
-});
+})();
 </script>
 </body>
 </html>
