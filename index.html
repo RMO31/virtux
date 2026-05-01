@@ -1168,6 +1168,28 @@ function removeUpload(){
   showToast('🗑️ تم إزالة الملف');
 }
 
+(async()=>{
+  const savedLang=localStorage.getItem('virtux_lang');
+  if(savedLang)document.body.className=savedLang;
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(session?.user){
+      currentUser=session.user;
+      await loadProfile();
+      renderNavUser();
+      loadNotifications();
+    }else{
+      currentUser=null;
+      renderNavGuest();
+    }
+  }catch(e){currentUser=null;renderNavGuest();}
+  loadFeed();
+  loadStats();
+  loadLeaderboard();
+  loadYouTube();
+  loadStreams();
+})();
+
 </script>
 </body>
 </html>
