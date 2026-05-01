@@ -689,17 +689,29 @@ async function loadFeed(reset=true){
   if(reset){feedOffset=0;document.getElementById('feedContainer').innerHTML='<div class="loader">جاري...<span class="spinner"></span></div>';}
   let query=sb.from('posts').select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by').order('created_at',{ascending:false}).range(feedOffset,feedOffset+FEED_LIMIT-1);
   if(currentFeedFilter!=='all')query=query.eq('type',currentFeedFilter);
-  const{data:rawData,error}=await query;
-  // جلب profiles منفصل
-  let data=null;
-  if(rawData&&rawData.length){
-    const uids=[...new Set(rawData.filter(p=>p.user_id).map(p=>p.user_id))];
-    let pMap={};
-    if(uids.length){const{data:profs}=await sb.from('profiles').select('id,username,avatar_url,roles').in('id',uids);if(profs)profs.forEach(p=>{pMap[p.id]=p;});}
-    data=rawData.map(p=>({...p,profiles:pMap[p.user_id]||null}));
-  }else{data=rawData;}
+  let data=null, error=null;
+  try {
+    const{data:rawData,error:queryError}=await query;
+    error = queryError;
+    if(rawData&&rawData.length){
+      const uids=[...new Set(rawData.filter(p=>p.user_id).map(p=>p.user_id))];
+      let pMap={};
+      if(uids.length){
+        const{data:profs}=await sb.from('profiles').select('id,username,avatar_url,roles').in('id',uids);
+        if(profs)profs.forEach(p=>{pMap[p.id]=p;});
+      }
+      data=rawData.map(p=>({...p,profiles:pMap[p.user_id]||null}));
+    }else{data=rawData;}
+  } catch(e) {
+    console.error('Feed Error:', e);
+    error = e;
+  }
   const container=document.getElementById('feedContainer');
-  if(error){container.innerHTML='<div class="loader">⚠️ خطأ</div>';return;}
+  if(error){
+    container.innerHTML=`<div class="loader">⚠️ حدث خطأ في التحميل: ${error.message||'تعذر الاتصال'}</div>`;
+    console.error(error);
+    return;
+  }
   if(reset)container.innerHTML='';
   if(!data||data.length===0){
     if(reset)container.innerHTML='<div class="loader" style="padding:30px;">لا توجد منشورات 🎮</div>';

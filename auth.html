@@ -286,7 +286,7 @@
 const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const db=window.supabase.createClient(SB_URL,SB_KEY,{
-  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce',storage:window.localStorage}
+  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}
 });
 
 function switchTab(tab){
@@ -391,7 +391,8 @@ async function doRegister(){
 }
 
 async function signInWithGoogle(){
-  const{error}=await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/index.html'}});
+  const redirectUrl = window.location.href.split('auth.html')[0] + 'index.html';
+  const{error}=await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectUrl}});
   if(error)showMsg('❌ خطأ في Google: '+error.message,'err');
 }
 
