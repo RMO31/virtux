@@ -477,7 +477,11 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
         <div class="hero-title">🔴 البث المباشر</div>
         <div class="hero-sub">تابع اللاعبين وصناع المحتوى في الوقت الحقيقي</div>
       </div>
-      <div id="liveGrid"><div class="loader">جاري التحميل...<span class="spinner"></span></div></div>
+      <div style="margin-bottom:12px;display:flex;gap:8px;">
+        <input class="form-input" id="liveSearch" placeholder="ابحث في البث المباشر... (Search...)" style="margin-bottom:0;flex:1;" onkeydown="if(event.key==='Enter')searchLive()">
+        <button class="btn btn-primary" onclick="searchLive()">🔍</button>
+      </div>
+      <div id="liveGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"><div class="loader">جاري التحميل...<span class="spinner"></span></div></div>
     </div>
 
     <div id="pageTourney" style="display:none;">
@@ -899,39 +903,51 @@ async function loadLeaderboard(){
     </div>`).join('');
 }
 
-async function loadStreams(){
-  const{data:streamRaw}=await sb.from('posts').select('id,content,user_id,posted_by,created_at').eq('type','live').order('created_at',{ascending:false}).limit(4);
-  let data=null;
-  if(streamRaw&&streamRaw.length){
-    const sIds=[...new Set(streamRaw.filter(p=>p.user_id).map(p=>p.user_id))];
-    let sMap={};
-    if(sIds.length){const{data:sp}=await sb.from('profiles').select('id,username,avatar_url').in('id',sIds);if(sp)sp.forEach(p=>{sMap[p.id]=p;});}
-    data=streamRaw.map(p=>({...p,profiles:sMap[p.user_id]||null}));
-  }
+function searchLive(){
+  const q=document.getElementById('liveSearch')?.value.trim()||'بث مباشر العاب';
+  loadStreams(q);
+}
+
+async function loadStreams(query='بث مباشر العاب'){
   const el=document.getElementById('sideStreams');
   const liveEl=document.getElementById('liveGrid');
-  const streams=data&&data.length>0?data:[];
-  if(streams.length===0){
-    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا يوجد بث</div>';
-    if(liveEl)liveEl.innerHTML='<div class="loader" style="padding:40px;">لا يوجد بث 📡</div>';
-    return;
+  if(el)el.innerHTML='<div class="loader" style="padding:10px;">جاري...<span class="spinner"></span></div>';
+  if(liveEl)liveEl.innerHTML='<div class="loader" style="padding:40px;">جاري...📡</div>';
+  try{
+    const res=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&eventType=live&maxResults=12&key=${YT_KEY}&relevanceLanguage=ar`);
+    const json=await res.json();
+    if(json.error){
+      if(el)el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">⚠️ خطأ في يوتيوب</div>';
+      if(liveEl)liveEl.innerHTML='<div class="loader" style="padding:40px;">⚠️ خطأ: '+json.error.message+'</div>';
+      return;
+    }
+    const items=json.items||[];
+    if(items.length===0){
+      if(el)el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا يوجد بث حالياً</div>';
+      if(liveEl)liveEl.innerHTML='<div class="loader" style="padding:40px;">لا يوجد بث 📡</div>';
+      return;
+    }
+    if(el)el.innerHTML=items.slice(0,4).map(v=>`
+      <div class="stream-item" onclick="window.open('https://youtube.com/watch?v=${v.id.videoId}','_blank')" style="cursor:pointer;">
+        <img class="stream-thumb" src="${v.snippet.thumbnails.default.url}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+        <div class="stream-info">
+          <div class="stream-name" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.snippet.title}</div>
+          <div class="stream-game" style="font-size:10px;">${v.snippet.channelTitle}</div>
+        </div>
+        <div class="stream-viewers"><span class="live-badge" style="font-size:9px;"><span class="live-dot"></span>LIVE</span></div>
+      </div>`).join('');
+    if(liveEl)liveEl.innerHTML=items.map(v=>`
+      <div class="card" onclick="window.open('https://youtube.com/watch?v=${v.id.videoId}','_blank')" style="cursor:pointer;display:flex;flex-direction:column;">
+        <div class="card-title" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔴 ${v.snippet.channelTitle}</div>
+        <div class="post-body" style="margin-top:8px;font-size:12px;flex:1;">${v.snippet.title}</div>
+        <div class="post-media" style="height:auto;padding:0;margin-top:10px;overflow:hidden;border-radius:10px;">
+          <img src="${v.snippet.thumbnails.medium.url}" style="width:100%;height:140px;object-fit:cover;display:block;">
+        </div>
+      </div>`).join('');
+  }catch(e){
+    if(el)el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">⚠️ خطأ في الاتصال</div>';
+    if(liveEl)liveEl.innerHTML='<div class="loader" style="padding:40px;">⚠️ خطأ في الاتصال</div>';
   }
-  const icons=['🎯','⚽','🏹','🎮'];
-  el.innerHTML=streams.map((s,i)=>`
-    <div class="stream-item">
-      <div class="stream-thumb">${icons[i%4]}</div>
-      <div class="stream-info">
-        <div class="stream-name">${s.profiles?.username||'لاعب'}</div>
-        <div class="stream-game">بث مباشر</div>
-      </div>
-      <div class="stream-viewers"><span class="live-badge" style="font-size:9px;"><span class="live-dot"></span>LIVE</span></div>
-    </div>`).join('');
-  if(liveEl)liveEl.innerHTML=streams.map((s,i)=>`
-    <div class="card">
-      <div class="card-title">${icons[i%4]} ${s.profiles?.username||'لاعب'}</div>
-      <div class="post-body" style="margin-top:8px;">${s.content||''}</div>
-      <div class="post-media" style="height:120px;"><div class="post-media-icon">📡</div></div>
-    </div>`).join('');
 }
 
 async function loadNotifications(){
