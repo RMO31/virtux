@@ -325,17 +325,12 @@ async function doLogin(){
       const{error}=await db.auth.signInWithPassword({email:identifier,password});
       loginError=error;
     }else{
-      const{data:p}=await db.from('profiles').select('email').ilike('username',identifier.trim()).maybeSingle();
-      let emailToTry=p?.email||getDummyEmail(identifier);
-      const{error}=await db.auth.signInWithPassword({email:emailToTry,password});
+      const normalized=identifier.trim().toLowerCase();
+      const{data:p,error:profileErr}=await db.from('profiles').select('email,username').ilike('username',normalized).maybeSingle();
+      if(profileErr)throw profileErr;
+      if(!p?.email)throw new Error('Ù„Ù… ÙŠÙØ¹Ø«Ø± Ø¹Ù„Ù‰ Ø§Ù„Ø­Ø³Ø§Ø¨.');
+      const{error}=await db.auth.signInWithPassword({email:p.email,password});
       loginError=error;
-      if(loginError&&loginError.status!==429&&!p?.email){
-        const fallback=identifier.toLowerCase().replace(/\s+/g,'')+`@virtux.v`;
-        if(fallback!==emailToTry){
-          const{error:retryError}=await db.auth.signInWithPassword({email:fallback,password});
-          loginError=retryError||null;
-        }
-      }
     }
     if(loginError){
       let msg=loginError.message||'فشل تسجيل الدخول';

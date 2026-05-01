@@ -490,6 +490,16 @@ select.form-select{width:100%;background:var(--bg3);border:1px solid var(--borde
       </div>
       <div id="ytGrid"><div class="loader">جاري...<span class="spinner"></span></div></div>
     </div>
+
+    <div id="pageTourney" style="display:none;">
+      <div class="hero-banner">
+        <div class="hero-title">🏆 البطولات والغرف</div>
+        <div class="hero-sub">تابع البطولات المفتوحة والغرف التنافسية داخل المجتمع</div>
+      </div>
+      <div id="tourneyGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">
+        <div class="loader">جاري التحميل...<span class="spinner"></span></div>
+      </div>
+    </div>
   </main>
 
   <aside class="right-sidebar">
@@ -649,8 +659,11 @@ async function signInEmail(){
   if(!email||!pass){showToast('⚠️ أكمل البيانات','error');return;}
   let loginEmail=email;
   if(!email.includes('@')){
-    const{data:profile}=await sb.from('profiles').select('email').ilike('username',email).maybeSingle();
-    loginEmail=profile?.email||email;
+    const normalized=email.trim().toLowerCase();
+    const{data:profile,error:profileErr}=await sb.from('profiles').select('email,username').ilike('username',normalized).maybeSingle();
+    if(profileErr){showToast('❌ '+profileErr.message,'error');return;}
+    if(!profile?.email){showToast('❌ لم يتم العثور على الحساب','error');return;}
+    loginEmail=profile.email;
   }
   const{error}=await sb.auth.signInWithPassword({email:loginEmail,password:pass});
   if(error){showToast('❌ '+(error.message==='Invalid login credentials'?'بيانات خاطئة':error.message),'error');}
@@ -879,6 +892,31 @@ async function loadLeaderboard(){
       <div class="lb-info"><div class="lb-name">${u.username||'لاعب'}</div></div>
       <div class="lb-score">${(u.xp||0).toLocaleString('ar')}</div>
     </div>`).join('');
+}
+
+function loadTourneys(){
+  const tournaments=[
+    {title:'Valorant Night Cup',game:'Valorant',time:'اليوم 9:00 م',prize:'$150',slots:'12/16'},
+    {title:'FC 25 Weekend Room',game:'FC 25',time:'غداً 8:30 م',prize:'$90',slots:'8/16'},
+    {title:'PUBG Squad Arena',game:'PUBG',time:'السبت 7:00 م',prize:'$200',slots:'14/20'},
+    {title:'COD Warzone Rush',game:'Warzone',time:'الأحد 10:00 م',prize:'$120',slots:'10/18'}
+  ];
+  const side=document.getElementById('sideTourneys');
+  const grid=document.getElementById('tourneyGrid');
+  const cardHtml=tournaments.map(t=>`
+    <div class="tourney-card">
+      <div class="tourney-title">🏆 ${t.title}</div>
+      <div class="tourney-meta" style="justify-content:space-between;flex-wrap:wrap;">
+        <span>${t.game}</span>
+        <span>${t.time}</span>
+      </div>
+      <div class="tourney-meta" style="justify-content:space-between;margin-top:8px;flex-wrap:wrap;">
+        <span class="tourney-prize">${t.prize}</span>
+        <span>${t.slots}</span>
+      </div>
+    </div>`).join('');
+  if(side)side.innerHTML=cardHtml;
+  if(grid)grid.innerHTML=cardHtml;
 }
 
 function searchLive(){
@@ -1198,6 +1236,7 @@ async function initializePage(){
   loadFeed();
   loadStats();
   loadLeaderboard();
+  loadTourneys();
   loadYouTube();
   loadStreams();
 }
@@ -1254,6 +1293,7 @@ function setPage(name,linkEl){
   document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));
   if(name==='youtube')loadYouTube();
   if(name==='live')loadStreams();
+  if(name==='tourney')loadTourneys();
 }
 
 </script>
