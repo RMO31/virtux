@@ -557,7 +557,7 @@ const SUPABASE_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const YT_KEY='AIzaSyDzjcK_PXjTcrfMO6iE2S-PKg35ZLL0WJY';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
-  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}
+  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce',storage:window.localStorage}
 });
 let currentUser=null,currentProfile=null,feedOffset=0,currentEditId=null,currentFeedFilter='all';
 const FEED_LIMIT=10;
@@ -581,7 +581,19 @@ sb.auth.onAuthStateChange(async(e,session)=>{
 
 async function loadProfile(){
   if(!currentUser)return;
-  const{data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  let{data,error}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  if(!data || error){
+    // Profile doesn't exist (e.g. new Google user)
+    const newProfile={
+      id:currentUser.id,
+      username:currentUser.user_metadata?.username || currentUser.email.split('@')[0],
+      email:currentUser.email,
+      roles:['user'],
+      xp:0
+    };
+    await sb.from('profiles').insert(newProfile);
+    data=newProfile;
+  }
   currentProfile=data;
   if(data?.roles?.includes('admin'))document.getElementById('sideAdminSection').style.display='block';
   if(data){

@@ -506,7 +506,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
 const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
 const sb=window.supabase.createClient(SB_URL,SB_KEY,{
-  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}
+  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce',storage:window.localStorage}
 });
 
 let currentUser=null,currentProfile=null,viewingUserId=null,isOwner=false;
@@ -560,7 +560,22 @@ async function init(){
 }
 
 async function loadProfileData(){
-  const{data,error}=await sb.from('profiles').select('*').eq('id',viewingUserId).single();
+  let{data,error}=await sb.from('profiles').select('*').eq('id',viewingUserId).single();
+  
+  if((error||!data) && viewingUserId === currentUser?.id){
+    // Create profile if it's the owner and it doesn't exist
+    const newProfile={
+      id:currentUser.id,
+      username:currentUser.user_metadata?.username || currentUser.email.split('@')[0],
+      email:currentUser.email,
+      roles:['user'],
+      xp:0
+    };
+    await sb.from('profiles').insert(newProfile);
+    data=newProfile;
+    error=null;
+  }
+
   if(error||!data){
     document.getElementById('pageLoading').innerHTML='<div class="empty-state"><div class="icon">👤</div><p>لم يتم العثور على هذا الملف الشخصي</p></div>';
     return;
@@ -568,7 +583,18 @@ async function loadProfileData(){
   
   let extraData = {};
   if(currentUser && viewingUserId === currentUser.id) {
-    try { extraData = JSON.parse(localStorage.getItem('virtux_profile_extra') || '{}'); } catch(e){}
+    const userKey = 'virtux_profile_extra_' + currentUser.id;
+    const oldKey = 'virtux_profile_extra';
+    let raw = localStorage.getItem(userKey);
+    if(!raw) {
+       // Migrate from old generic key if it exists
+       raw = localStorage.getItem(oldKey);
+       if(raw) {
+         localStorage.setItem(userKey, raw);
+         // localStorage.removeItem(oldKey); // Keep it for now to be safe
+       }
+    }
+    try { extraData = JSON.parse(raw || '{}'); } catch(e){}
   }
   
   currentProfile={...extraData, ...data};
@@ -777,7 +803,10 @@ async function saveProfile(){
   const fullData={username,display_name,bio,birthdate:birthdate||null,country:country||null,favorite_game:favorite_game||null,discord:discord||null,twitch:twitch||null,games:games||[]};
   
   // دائمًا نحفظ نسخة في التخزين المحلي كاحتياط
-  localStorage.setItem('virtux_profile_extra', JSON.stringify(fullData));
+  if(currentUser){
+    const extraKey = 'virtux_profile_extra_' + currentUser.id;
+    localStorage.setItem(extraKey, JSON.stringify(fullData));
+  }
 
   let{error}=await sb.from('profiles').update(fullData).eq('id',currentUser.id);
   if(error&&error.message&&error.message.includes('column')){
