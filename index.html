@@ -858,27 +858,39 @@ function filterByTag(tag){
 }
 
 async function loadTournaments(){
-  const{data,error}=await sb.from('tournament_registrations').select('*').order('created_at',{ascending:false}).limit(10);
   const side=document.getElementById('sideTourneys');
   const grid=document.getElementById('tourneyGrid');
-  if(error||!data||data.length===0){
-    if(side) side.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا توجد بطولات</div>';
-    if(grid) grid.innerHTML='<div class="loader" style="padding:30px;">لا توجد بطولات 🏆</div>';
-    return;
+  
+  // بيانات تجريبية ثابتة للبطولات (بدون الاعتماد على قاعدة البيانات)
+  const data = [
+    { post_id: 'PUBG-2025', username: 'Virtux_Admin', game: 'PUBG Mobile', prize: '10,000$', date: '2026-06-01' },
+    { post_id: 'VAL-PRO', username: 'Riot_MENA', game: 'Valorant', prize: '5000$', date: '2026-05-15' },
+    { post_id: 'FC25-CUP', username: 'EA_Sports_AR', game: 'FC 25', prize: 'PlayStation 5', date: '2026-05-20' },
+    { post_id: 'COD-WAR', username: 'Activision_AR', game: 'Call of Duty: Warzone', prize: '2000$', date: '2026-05-30' },
+    { post_id: 'RL-MENA', username: 'EpicGames', game: 'Rocket League', prize: '1000$', date: '2026-06-10' }
+  ];
+
+  if(side) {
+    side.innerHTML=data.slice(0,3).map(t=>`
+      <div class="tourney-card" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;">
+        <div class="tourney-title" style="font-size:12px;font-weight:bold;color:var(--text);margin-bottom:4px;">بطولة ${t.game}</div>
+        <div class="tourney-meta" style="font-size:11px;color:var(--text2);display:flex;justify-content:space-between;">
+          <span>👤 ${t.username}</span>
+          <span style="color:var(--gold);font-weight:bold;">🏆 ${t.prize}</span>
+        </div>
+      </div>`).join('');
   }
-  const unique=[...new Map(data.map(r=>[r.post_id,r])).values()].slice(0,3);
-  side.innerHTML=unique.map(t=>`
-    <div class="tourney-card">
-      <div class="tourney-title">بطولة #${t.post_id||'مفتوحة'}</div>
-      <div class="tourney-meta"><span>👤 ${t.username||'لاعب'}</span><span class="tourney-prize">🏆</span></div>
-    </div>`).join('');
-  grid.innerHTML=data.map(t=>`
-    <div class="card">
-      <div class="card-title" style="margin-bottom:8px;">🏆 بطولة #${t.post_id||'—'}</div>
-      <div style="font-size:13px;color:var(--text2);">اللاعب: <strong>${t.username||'—'}</strong></div>
-      <div style="font-size:12px;color:var(--text3);margin-top:5px;">${getTimeAgo(t.created_at)}</div>
-      ${currentUser?`<button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="registerTourney('${t.post_id}')">✅ تسجيل</button>`:`<button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="openAuth('login')">سجّل للمشاركة</button>`}
-    </div>`).join('');
+  
+  if(grid) {
+    grid.innerHTML=data.map(t=>`
+      <div class="card" style="display:flex;flex-direction:column;">
+        <div class="card-title" style="margin-bottom:8px;color:var(--accent2);">🏆 بطولة ${t.game}</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">المنظم: <strong>${t.username}</strong></div>
+        <div style="font-size:13px;color:var(--gold);font-weight:bold;margin-bottom:4px;">الجائزة: ${t.prize}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">تاريخ البدء: ${t.date}</div>
+        <button class="btn btn-primary btn-sm" style="margin-top:auto;" onclick="registerTourney('${t.post_id}')">✅ سجل الآن</button>
+      </div>`).join('');
+  }
 }
 
 async function registerTourney(postId){

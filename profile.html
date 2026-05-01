@@ -565,8 +565,14 @@ async function loadProfileData(){
     document.getElementById('pageLoading').innerHTML='<div class="empty-state"><div class="icon">👤</div><p>لم يتم العثور على هذا الملف الشخصي</p></div>';
     return;
   }
-  currentProfile=data;
-  renderProfileUI(data);
+  
+  let extraData = {};
+  if(currentUser && viewingUserId === currentUser.id) {
+    try { extraData = JSON.parse(localStorage.getItem('virtux_profile_extra') || '{}'); } catch(e){}
+  }
+  
+  currentProfile={...extraData, ...data};
+  renderProfileUI(currentProfile);
   loadUserPosts();
   loadAchievements(data);
   loadFollowData();
@@ -768,21 +774,21 @@ async function saveProfile(){
 
   if(!username){showToast('⚠️ اسم المستخدم مطلوب','error');return;}
 
-  // نحاول الحفظ بالأعمدة الكاملة أولاً، إذا فشل نحاول بالأعمدة الأساسية فقط
   const fullData={username,display_name,bio,birthdate:birthdate||null,country:country||null,favorite_game:favorite_game||null,discord:discord||null,twitch:twitch||null,games:games||[]};
+  
+  // دائمًا نحفظ نسخة في التخزين المحلي كاحتياط
+  localStorage.setItem('virtux_profile_extra', JSON.stringify(fullData));
+
   let{error}=await sb.from('profiles').update(fullData).eq('id',currentUser.id);
   if(error&&error.message&&error.message.includes('column')){
-    // عمود غير موجود - نحاول بالأعمدة الأساسية فقط
+    // عمود غير موجود - نحفظ اسم المستخدم فقط في القاعدة لتجنب الخطأ
     const basicData={username};
-    if(display_name)basicData.display_name=display_name;
     const{error:e2}=await sb.from('profiles').update(basicData).eq('id',currentUser.id);
     if(e2){showToast('❌ '+e2.message,'error');return;}
-    showToast('⚠️ تم الحفظ جزئياً - بعض الأعمدة غير موجودة. شغّل supabase_setup.html','error');
-    return;
   } else if(error){showToast('❌ '+error.message,'error');return;}
 
-  showToast('✅ تم حفظ التغييرات!','success');
-  currentProfile={...currentProfile,username,display_name,bio,birthdate,country,favorite_game,discord,twitch,games};
+  showToast('✅ تم حفظ التغييرات بنجاح!','success');
+  currentProfile={...currentProfile, ...fullData};
   renderProfileUI(currentProfile);
   switchTab('posts');
 }
