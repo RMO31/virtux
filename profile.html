@@ -505,7 +505,9 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
 <script>
 const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const sb=window.supabase.createClient(SB_URL,SB_KEY,{
+  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}
+});
 
 let currentUser=null,currentProfile=null,viewingUserId=null,isOwner=false;
 
@@ -776,11 +778,13 @@ async function saveProfile(){
     const{error:e2}=await sb.from('profiles').update(basicData).eq('id',currentUser.id);
     if(e2){showToast('❌ '+e2.message,'error');return;}
     showToast('⚠️ تم الحفظ جزئياً - بعض الأعمدة غير موجودة. شغّل supabase_setup.html','error');
+    return;
   } else if(error){showToast('❌ '+error.message,'error');return;}
 
   showToast('✅ تم حفظ التغييرات!','success');
   currentProfile={...currentProfile,username,display_name,bio,birthdate,country,favorite_game,discord,twitch,games};
   renderProfileUI(currentProfile);
+  switchTab('posts');
 }
 
 async function changePassword(){
