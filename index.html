@@ -856,7 +856,12 @@ function filterByTag(tag){
 async function loadTournaments(){
   const{data,error}=await sb.from('tournament_registrations').select('*').order('created_at',{ascending:false}).limit(10);
   const side=document.getElementById('sideTourneys');
-  if(error||!data||data.length===0){side.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا توجد بطولات</div>';return;}
+  const grid=document.getElementById('tourneyGrid');
+  if(error||!data||data.length===0){
+    if(side) side.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px;">لا توجد بطولات</div>';
+    if(grid) grid.innerHTML='<div class="loader" style="padding:30px;">لا توجد بطولات 🏆</div>';
+    return;
+  }
   const unique=[...new Map(data.map(r=>[r.post_id,r])).values()].slice(0,3);
   side.innerHTML=unique.map(t=>`
     <div class="tourney-card">
