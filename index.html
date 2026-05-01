@@ -647,7 +647,12 @@ async function signInEmail(){
   const email=document.getElementById('authEmail').value.trim();
   const pass=document.getElementById('authPass').value;
   if(!email||!pass){showToast('⚠️ أكمل البيانات','error');return;}
-  const{error}=await sb.auth.signInWithPassword({email,password:pass});
+  let loginEmail=email;
+  if(!email.includes('@')){
+    const{data:profile}=await sb.from('profiles').select('email').ilike('username',email).maybeSingle();
+    loginEmail=profile?.email||email;
+  }
+  const{error}=await sb.auth.signInWithPassword({email:loginEmail,password:pass});
   if(error){showToast('❌ '+(error.message==='Invalid login credentials'?'بيانات خاطئة':error.message),'error');}
   else{showToast('✅ مرحباً بك!','success');closeAuth();loadFeed();}
 }
@@ -1067,27 +1072,7 @@ function toggleLang(){
   localStorage.setItem('virtux_lang',b.className.match(/lang-\w+/)[0]);
 }
 
-(async()=>{
-  const savedLang=localStorage.getItem('virtux_lang');
-  if(savedLang)document.body.className=savedLang;
-  try{
-    const{data:{session}}=await sb.auth.getSession();
-    if(session?.user){
-      currentUser=session.user;
-      await loadProfile();
-      renderNavUser();
-      loadNotifications();
-    }else{
-      currentUser=null;
-      renderNavGuest();
-    }
-  }catch(e){currentUser=null;renderNavGuest();}
-  loadFeed();
-  loadLeaderboard();
-  loadStreams();
-  loadStats();
-  loadYouTube();
-})();
+
 
 // ===================================================
 // FILE UPLOAD - رفع الملفات للـ post editor
@@ -1192,7 +1177,10 @@ function removeUpload(){
   showToast('🗑️ تم إزالة الملف');
 }
 
-(async()=>{
+let isPageInitialized=false;
+async function initializePage(){
+  if(isPageInitialized)return;
+  isPageInitialized=true;
   const savedLang=localStorage.getItem('virtux_lang');
   if(savedLang)document.body.className=savedLang;
   try{
@@ -1212,7 +1200,61 @@ function removeUpload(){
   loadLeaderboard();
   loadYouTube();
   loadStreams();
-})();
+}
+
+initializePage();
+
+async function signInEmail(){
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  if(!email||!pass){showToast('âš ï¸ Ø£ÙƒÙ…Ù„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª','error');return;}
+  let loginEmail=email;
+  if(!email.includes('@')){
+    const{data:profile}=await sb.from('profiles').select('email').ilike('username',email).maybeSingle();
+    loginEmail=profile?.email||email;
+  }
+  const{error}=await sb.auth.signInWithPassword({email:loginEmail,password:pass});
+  if(error){showToast('âŒ '+(error.message==='Invalid login credentials'?'Ø¨ÙŠØ§Ù†Ø§Øª Ø®Ø§Ø·Ø¦Ø©':error.message),'error');}
+  else{showToast('âœ… Ù…Ø±Ø­Ø¨Ø§Ù‹ Ø¨Ùƒ!','success');closeAuth();loadFeed();}
+}
+
+async function publishPost(){
+  if(!currentUser){openAuth('login');showToast('âš ï¸ Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„');return;}
+  const content=document.getElementById('postContent').value.trim();
+  if(!content&&!_uploadedMediaUrl){showToast('âš ï¸ Ø§ÙƒØªØ¨ Ø´ÙŠØ¦Ø§Ù‹ Ø£Ùˆ Ø§Ø±ÙØ¹ Ù…Ù„ÙØ§Ù‹!','error');return;}
+  const type=document.querySelector('#postTypesRow .post-type-btn.active')?.dataset.tag||'clip';
+  const postData={content,type,user_id:currentUser.id,posted_by:currentProfile?.username||currentUser.email};
+  if(_uploadedMediaUrl){postData.media_url=_uploadedMediaUrl;}
+  const{data:insertedPost,error}=await sb.from('posts').insert(postData).select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by').single();
+  if(error){showToast('âŒ '+error.message,'error');return;}
+  const hydratedPost={...insertedPost,profiles:{username:currentProfile?.username,avatar_url:currentProfile?.avatar_url,roles:currentProfile?.roles}};
+  document.getElementById('feedContainer').insertAdjacentHTML('afterbegin',renderPost(hydratedPost));
+  removeUpload();
+  closeEditor();
+  showToast('ðŸŽ‰ ØªÙ… Ø§Ù„Ù†Ø´Ø±!','success');
+  await sb.from('site_visits').insert({user_id:currentUser.id,page:'post_created'}).catch(()=>{});
+}
+
+function sharePost(id){
+  const url=new URL('post.html',window.location.href);
+  url.searchParams.set('id',id);
+  navigator.clipboard?.writeText(url.toString()).then(()=>showToast('ðŸ”— Ù†Ø³Ø® Ø§Ù„Ø±Ø§Ø¨Ø·','success')).catch(()=>showToast('ðŸ”— '+url.toString()));
+}
+
+function setPage(name,linkEl){
+  pages.forEach(p=>{const el=document.getElementById('page'+p.charAt(0).toUpperCase()+p.slice(1));if(el)el.style.display='none';});
+  let target=document.getElementById('page'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(!target){
+    name='home';
+    target=document.getElementById('pageHome');
+  }
+  if(target)target.style.display='block';
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  if(linkEl)linkEl.classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));
+  if(name==='youtube')loadYouTube();
+  if(name==='live')loadStreams();
+}
 
 </script>
 </body>

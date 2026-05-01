@@ -382,6 +382,98 @@ function copyLink(){
   navigator.clipboard?.writeText(window.location.href).then(()=>alert('✅ تم نسخ الرابط!')).catch(()=>alert('الرابط: '+window.location.href));
 }
 
+async function loadRelated(type,currentId){
+  try{
+    const{data}=await db.from('posts').select('id,content,type,media_url,created_at').eq('type',type).neq('id',currentId).order('created_at',{ascending:false}).limit(4);
+    if(!data||!data.length)return;
+    const section=document.getElementById('relatedSection');
+    const grid=document.getElementById('relatedGrid');
+    section.style.display='block';
+    grid.innerHTML=data.map(r=>{
+      const isImg=r.media_url&&(/\.(jpg|jpeg|png|gif|webp)/i.test(r.media_url)||r.media_url.includes('/storage/'));
+      const isYT=r.media_url&&(r.media_url.includes('youtube.com/watch')||r.media_url.includes('youtu.be'));
+      let thumbHtml='';
+      if(isImg)thumbHtml=`<img src="${r.media_url}" alt="" loading="lazy">`;
+      else if(isYT){const vid=r.media_url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];if(vid)thumbHtml=`<img src="https://img.youtube.com/vi/${vid}/mqdefault.jpg" alt="" loading="lazy">`;}
+      else thumbHtml=`<span style="font-size:28px">${getTagLabel(r.type,r.type).split(' ')[0]||'ðŸ“„'}</span>`;
+      return`<a href="post.html?id=${r.id}" class="related-card">
+        <div class="related-thumb">${thumbHtml}</div>
+        <div class="related-info">
+          <h4>${escapeHtml((r.content||'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†').split('\n')[0])}</h4>
+          <p>${getTimeAgo(r.created_at)}</p>
+        </div>
+      </a>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function loadArticle(){
+  const urlParams=new URLSearchParams(window.location.search);
+  const id=urlParams.get('id');
+  if(!id){
+    document.getElementById('articleContainer').innerHTML=`<div class="state-box"><div style="font-size:40px">ðŸ”</div><div>Ù„Ù… ÙŠØªÙ… ØªØ­Ø¯ÙŠØ¯ Ù…Ù†Ø´ÙˆØ±</div><a href="index.html" style="color:var(--accent2);margin-top:12px;display:inline-block;">Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</a></div>`;
+    return;
+  }
+
+  try{
+    const{data,error}=await db.from('posts').select('*').eq('id',id).single();
+    if(error)throw error;
+    if(!data)throw new Error('Ø§Ù„Ù…Ù†Ø´ÙˆØ± ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯');
+
+    const p=data;
+    const type=p.type||'clip';
+    const title=(p.content||'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†').split('\n')[0].slice(0,80);
+    const bodyText=escapeHtml(p.content||'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø­ØªÙˆÙ‰.').replace(/\n/g,'<br>');
+    const tagLabel=getTagLabel(type,type);
+    const timeStr=getTimeAgo(p.created_at);
+    const author=p.posted_by||'';
+    document.title='Virtux â€” '+title;
+    document.getElementById('breadTag').textContent=tagLabel;
+
+    let mediaHtml='';
+    const mediaUrl=p.media_url||'';
+    const isVideo=mediaUrl&&(/\.(mp4|webm|mov)$/i.test(mediaUrl)||mediaUrl.includes('/storage/v1/object/public/videos/'));
+    const isYT=mediaUrl&&(mediaUrl.includes('youtube.com/watch')||mediaUrl.includes('youtu.be'));
+    const isImg=mediaUrl&&(/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(mediaUrl)||mediaUrl.includes('/storage/'));
+
+    if(isVideo){
+      mediaHtml=`<div class="media-wrap"><video src="${mediaUrl}" controls></video></div>`;
+    }else if(isYT){
+      const vidMatch=mediaUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
+      if(vidMatch)mediaHtml=`<div class="media-wrap" style="min-height:0;"><iframe src="https://www.youtube.com/embed/${vidMatch[1]}?rel=0" allowfullscreen></iframe></div>`;
+    }else if(isImg){
+      mediaHtml=`<div class="media-wrap"><img src="${mediaUrl}" alt="${escapeHtml(title)}" loading="lazy"></div>`;
+    }else{
+      mediaHtml=`<div class="media-wrap" style="min-height:200px;"><div class="media-emoji">${tagLabel.split(' ')[0]||'ðŸ“„'}</div></div>`;
+    }
+
+    document.getElementById('articleContainer').innerHTML=`
+      <div class="article-card">
+        ${mediaHtml}
+        <div class="article-content">
+          <div class="article-tag">${tagLabel}</div>
+          <h1 class="article-title">${escapeHtml(title)}</h1>
+          <div class="article-meta">
+            <span>ðŸ“… ${timeStr}</span>
+            ${author?`<span>âœï¸ ${escapeHtml(author)}</span>`:''}
+            <span>ðŸ·ï¸ ${escapeHtml(type)}</span>
+            <span>â¤ï¸ <span id="likeCnt">${p.likes_count||0}</span></span>
+          </div>
+          <div class="article-body"><p>${bodyText}</p></div>
+        </div>
+        <div class="article-actions">
+          <button class="act-btn" id="likeBtn" onclick="toggleLike('${p.id}')">â¤ï¸ Ø¥Ø¹Ø¬Ø§Ø¨</button>
+          <button class="act-btn" onclick="copyLink()">ðŸ”— Ù…Ø´Ø§Ø±ÙƒØ©</button>
+          <button class="act-btn" onclick="history.back()">â† Ø±Ø¬ÙˆØ¹</button>
+        </div>
+      </div>`;
+
+    loadRelated(type,p.id);
+  }catch(err){
+    document.getElementById('articleContainer').innerHTML=`<div class="state-box"><div style="font-size:40px">âš ï¸</div><div>${escapeHtml(err.message)}</div><a href="index.html" style="color:var(--accent2);margin-top:12px;display:inline-block;">Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</a></div>`;
+  }
+}
+
 loadArticle();
 </script>
 </body>

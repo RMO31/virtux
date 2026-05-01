@@ -920,6 +920,143 @@ function switchTab(name){
   if(p)p.classList.add('active');
 }
 
+function getProfileExtraKey(userId){
+  return 'virtux_profile_extra_' + userId;
+}
+
+function readLocalProfileExtra(userId){
+  if(!userId)return {};
+  try{return JSON.parse(localStorage.getItem(getProfileExtraKey(userId))||'{}');}
+  catch(e){return {};}
+}
+
+function writeLocalProfileExtra(userId,data){
+  if(!userId)return;
+  localStorage.setItem(getProfileExtraKey(userId),JSON.stringify(data||{}));
+}
+
+async function updateProfileRecord(userId,payload){
+  let pending={...payload};
+  let savedKeys=[];
+
+  while(Object.keys(pending).length){
+    const{error}=await sb.from('profiles').update(pending).eq('id',userId);
+    if(!error){
+      savedKeys=savedKeys.concat(Object.keys(pending));
+      return {savedKeys,error:null};
+    }
+    const missingColumn=error.message?.match(/column\s+([a-zA-Z0-9_]+)/i)?.[1];
+    if(!missingColumn||!(missingColumn in pending)){
+      return {savedKeys,error};
+    }
+    delete pending[missingColumn];
+  }
+
+  return {savedKeys,error:null};
+}
+
+async function loadProfileData(){
+  let{data,error}=await sb.from('profiles').select('*').eq('id',viewingUserId).single();
+
+  if((error||!data) && viewingUserId === currentUser?.id){
+    const newProfile={
+      id:currentUser.id,
+      username:currentUser.user_metadata?.username || currentUser.email.split('@')[0],
+      email:currentUser.email,
+      roles:['user'],
+      xp:0
+    };
+    await sb.from('profiles').insert(newProfile);
+    data=newProfile;
+    error=null;
+  }
+
+  if(error||!data){
+    document.getElementById('pageLoading').innerHTML='<div class="empty-state"><div class="icon">ðŸ‘¤</div><p>Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ù‡Ø°Ø§ Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ</p></div>';
+    return;
+  }
+
+  const extraData=currentUser && viewingUserId===currentUser.id ? readLocalProfileExtra(currentUser.id) : {};
+  currentProfile={...extraData,...data};
+  renderProfileUI(currentProfile);
+  if(isOwner)prefillEditForm(currentProfile);
+  await Promise.all([loadUserPosts(),loadFollowData()]);
+  loadAchievements(currentProfile);
+}
+
+async function loadFollowData(){
+  let followersCount=Number(currentProfile?.followers_count)||0;
+  let followingCount=Number(currentProfile?.following_count)||0;
+  let followerProfiles=[];
+  let followingProfiles=[];
+
+  try{
+    const[{count:followerCount,error:followerErr},{count:followingCountDb,error:followingErr},{data:followsData,error:followsErr},{data:followingData,error:followingDataErr}]=await Promise.all([
+      sb.from('follows').select('*',{count:'exact',head:true}).eq('following_id',viewingUserId),
+      sb.from('follows').select('*',{count:'exact',head:true}).eq('follower_id',viewingUserId),
+      sb.from('follows').select('follower_id,profiles!follows_follower_id_fkey(id,username,avatar_url,favorite_game)').eq('following_id',viewingUserId).limit(6),
+      sb.from('follows').select('following_id,profiles!follows_following_id_fkey(id,username,avatar_url,favorite_game)').eq('follower_id',viewingUserId).limit(6)
+    ]);
+    if(!followerErr&&followerCount!==null)followersCount=followerCount;
+    if(!followingErr&&followingCountDb!==null)followingCount=followingCountDb;
+    if(!followsErr)followerProfiles=(followsData||[]).map(row=>row.profiles).filter(Boolean);
+    if(!followingDataErr)followingProfiles=(followingData||[]).map(row=>row.profiles).filter(Boolean);
+  }catch(e){}
+
+  document.getElementById('statFollowers').textContent=followersCount;
+  document.getElementById('statFollowing').textContent=followingCount;
+
+  if(!followerProfiles.length||!followingProfiles.length){
+    const{data}=await sb.from('profiles').select('id,username,avatar_url,favorite_game').limit(6);
+    if(!followerProfiles.length)followerProfiles=data||[];
+    if(!followingProfiles.length)followingProfiles=(data||[]).slice(0,4);
+  }
+
+  const makeList=(items,listId)=>{
+    const el=document.getElementById(listId);
+    if(!items||!items.length){el.innerHTML='<div class="empty-state" style="padding:20px;"><p>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø¨Ø¹Ø¯</p></div>';return;}
+    el.innerHTML=items.map(u=>`
+      <div class="follow-item" onclick="window.location.href='profile.html?uid=${u.id}'">
+        <div class="f-avatar">${u.avatar_url?`<img src="${u.avatar_url}" alt="">`:'ðŸŽ®'}</div>
+        <div style="flex:1">
+          <div class="f-name">${u.username||'Ù„Ø§Ø¹Ø¨'}</div>
+          <div class="f-handle">${u.favorite_game||'ðŸŽ® Ù„Ø§Ø¹Ø¨'}</div>
+        </div>
+        ${currentUser&&u.id!==currentUser.id?`<button class="f-follow-btn">âž• Ù…ØªØ§Ø¨Ø¹Ø©</button>`:''}
+      </div>`).join('');
+  };
+
+  makeList(followerProfiles,'followersList');
+  makeList(followingProfiles,'followingList');
+}
+
+async function saveProfile(){
+  if(!currentUser){showToast('âš ï¸ Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø£ÙˆÙ„Ø§Ù‹','error');return;}
+  const username=document.getElementById('editUsername').value.trim();
+  const display_name=document.getElementById('editDisplayName').value.trim();
+  const bio=document.getElementById('editBio').value.trim();
+  const birthdate=document.getElementById('editBirthdate').value||null;
+  const country=document.getElementById('editCountry').value;
+  const favorite_game=document.getElementById('editFavoriteGame').value.trim();
+  const discord=document.getElementById('editDiscord').value.trim();
+  const twitch=document.getElementById('editTwitch').value.trim();
+  const games=[...document.querySelectorAll('.game-tag-chip.selected')].map(c=>c.dataset.game);
+
+  if(!username){showToast('âš ï¸ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù…Ø·Ù„ÙˆØ¨','error');return;}
+
+  const fullData={username,display_name,bio,birthdate:birthdate||null,country:country||null,favorite_game:favorite_game||null,discord:discord||null,twitch:twitch||null,games};
+  writeLocalProfileExtra(currentUser.id,fullData);
+
+  const result=await updateProfileRecord(currentUser.id,fullData);
+  if(result.error){showToast('âŒ '+result.error.message,'error');return;}
+
+  currentProfile={...currentProfile,...fullData};
+  renderProfileUI(currentProfile);
+  prefillEditForm(currentProfile);
+  showToast('âœ… ØªÙ… Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª Ø¨Ù†Ø¬Ø§Ø­!','success');
+  switchTab('posts');
+}
+
 init();
 </script>
 </body>
