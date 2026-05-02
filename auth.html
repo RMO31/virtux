@@ -1,24 +1,29 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtux - تسجيل الدخول</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <title>Virtux - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
-      --border:rgba(99,102,241,0.18);--border2:rgba(99,102,241,0.35);
-      --accent:#6366f1;--accent2:#818cf8;--accent3:#c084fc;
-      --gold:#f59e0b;--red:#ef4444;--green:#22c55e;
-      --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
-      --card:rgba(12,15,26,0.9);--glow:0 0 32px rgba(99,102,241,0.28);
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#07111f;
+      --panel:rgba(7,16,30,0.84);
+      --line:rgba(120,244,255,0.18);
+      --line-strong:rgba(120,244,255,0.42);
+      --text:#f4f8ff;
+      --muted:#97a6bf;
+      --accent:#78f4ff;
+      --accent-2:#8dff9a;
     }
-    *{margin:0;padding:0;box-sizing:border-box;}
     body{
       font-family:'Tajawal',sans-serif;
-      background:var(--bg);
+      background:
+        radial-gradient(circle at top right, rgba(120,244,255,0.16), transparent 30%),
+        radial-gradient(circle at left center, rgba(141,255,154,0.12), transparent 25%),
+        linear-gradient(135deg, #040915 0%, #091221 50%, #050912 100%);
       color:var(--text);
       min-height:100vh;
       display:flex;
@@ -26,388 +31,421 @@
       position:relative;
       overflow:hidden;
     }
-    body::before{
-      content:'';position:fixed;inset:0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 10%,rgba(99,102,241,0.12) 0%,transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 80%,rgba(192,132,252,0.08) 0%,transparent 50%);
-      pointer-events:none;z-index:0;
-    }
+    body::before,
     body::after{
-      content:'';position:fixed;inset:0;
-      background-image:
-        linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px);
-      background-size:44px 44px;
-      pointer-events:none;z-index:0;
+      content:"";
+      position:fixed;
+      width:38vw;
+      height:38vw;
+      border-radius:50%;
+      pointer-events:none;
+      filter:blur(70px);
+      opacity:.28;
+      z-index:0;
     }
-
-    /* NAV */
-    nav{
-      position:relative;z-index:10;
-      background:rgba(6,8,16,0.94);
-      backdrop-filter:blur(20px);
-      border-bottom:1px solid var(--border);
-      padding:0 24px;height:60px;
-      display:flex;align-items:center;justify-content:space-between;
+    body::before{top:-12vw;right:-8vw;background:#00d9ff;}
+    body::after{bottom:-18vw;left:-10vw;background:#4dff88;}
+    .topbar,.container{position:relative;z-index:1}
+    .topbar{
+      display:flex;
+      align-items:center;
+      padding:18px 26px;
+      background:rgba(4,11,22,0.68);
+      border-bottom:1px solid var(--line);
+      backdrop-filter:blur(18px);
     }
     .logo{
-      font-family:'Orbitron',monospace;font-size:20px;font-weight:900;
-      background:linear-gradient(135deg,var(--accent2),var(--accent3));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      letter-spacing:3px;text-decoration:none;
+      font-family:'Orbitron',sans-serif;
+      font-size:22px;
+      font-weight:700;
+      color:var(--accent);
+      letter-spacing:3px;
+      text-decoration:none;
+      text-shadow:0 0 16px rgba(120,244,255,0.25);
     }
-    .nav-back{
-      display:flex;align-items:center;gap:6px;
-      padding:6px 14px;border-radius:8px;
-      background:rgba(99,102,241,0.08);
-      border:1px solid var(--border2);
-      color:var(--accent2);text-decoration:none;
-      font-size:13px;transition:all 0.2s;
+    .logo span{color:#fff;font-weight:600}
+    .back{
+      margin-left:auto;
+      font-size:13px;
+      color:var(--accent);
+      text-decoration:none;
+      border:1px solid var(--line-strong);
+      padding:8px 14px;
+      border-radius:999px;
+      background:rgba(120,244,255,0.06);
+      transition:.2s ease;
     }
-    .nav-back:hover{background:rgba(99,102,241,0.18);color:var(--text);}
-
-    /* CONTAINER */
+    .back:hover{background:var(--accent);color:#02111d}
     .container{
-      flex:1;display:flex;align-items:center;justify-content:center;
-      padding:40px 20px;position:relative;z-index:1;
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:40px 20px;
     }
-
-    /* AUTH BOX */
     .auth-box{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:20px;
-      padding:36px 32px 30px;
-      width:100%;max-width:460px;
-      backdrop-filter:blur(20px);
-      box-shadow:0 24px 80px rgba(0,0,0,0.5),var(--glow);
-      position:relative;overflow:hidden;
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:38px 32px 30px;
+      width:100%;
+      max-width:470px;
+      backdrop-filter:blur(22px);
+      box-shadow:0 24px 70px rgba(0,0,0,0.45);
+      position:relative;
+      overflow:hidden;
     }
     .auth-box::before{
-      content:'';position:absolute;inset:0;
-      background:linear-gradient(135deg,rgba(99,102,241,0.06),transparent 40%),
-        linear-gradient(315deg,rgba(192,132,252,0.05),transparent 40%);
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        linear-gradient(125deg, rgba(120,244,255,0.12), transparent 28%),
+        linear-gradient(320deg, rgba(141,255,154,0.10), transparent 30%);
       pointer-events:none;
     }
-    .auth-box > *{position:relative;z-index:1;}
-
-    .auth-logo{
-      text-align:center;margin-bottom:6px;
-      font-family:'Orbitron',monospace;font-size:28px;font-weight:900;
-      background:linear-gradient(135deg,var(--accent2),var(--accent3));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      letter-spacing:4px;
+    .auth-box > *{position:relative;z-index:1}
+    .auth-box h1{
+      color:#fff;
+      font-size:30px;
+      margin-bottom:8px;
+      text-align:center;
+      line-height:1.2;
+      font-weight:800;
     }
-    .auth-sub{
-      text-align:center;color:var(--text2);font-size:13.5px;margin-bottom:26px;
+    .auth-box p{
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:26px;
+      text-align:center;
     }
-
-    /* TABS */
     .tabs{
-      display:flex;gap:4px;
-      background:rgba(6,8,16,0.6);
-      border:1px solid var(--border);
-      border-radius:10px;padding:4px;
+      display:flex;
+      gap:8px;
       margin-bottom:24px;
+      padding:6px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      overflow:hidden;
+      background:rgba(255,255,255,0.03);
     }
     .tab{
-      flex:1;padding:10px;text-align:center;
-      font-size:14px;font-weight:700;
-      cursor:pointer;background:transparent;
-      color:var(--text2);border:none;border-radius:7px;
-      font-family:'Tajawal',sans-serif;transition:all 0.2s;
+      flex:1;
+      padding:12px 10px;
+      text-align:center;
+      font-size:14px;
+      cursor:pointer;
+      background:transparent;
+      color:var(--muted);
+      border:none;
+      border-radius:12px;
+      font-family:'Tajawal',sans-serif;
+      font-weight:700;
+      transition:.2s ease;
     }
     .tab.active{
-      background:rgba(99,102,241,0.2);
-      color:var(--accent2);
-      border:1px solid var(--border2);
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#04111d;
+      font-weight:800;
+      box-shadow:0 10px 24px rgba(120,244,255,0.2);
     }
-    .tab:hover:not(.active){background:rgba(99,102,241,0.08);color:var(--text);}
-
-    /* FORM */
-    .form-panel{display:none;}
-    .form-panel.active{display:block;}
-
-    .form-group{margin-bottom:14px;}
+    .form-group{margin-bottom:16px}
     .form-group label{
-      display:block;font-size:11px;font-weight:700;
-      color:var(--accent2);margin-bottom:6px;
-      text-transform:uppercase;letter-spacing:1px;
+      display:block;
+      font-size:12px;
+      color:var(--accent);
+      margin-bottom:7px;
+      text-transform:uppercase;
+      letter-spacing:1px;
+      font-weight:700;
     }
     .form-group input{
-      width:100%;padding:12px 14px;
-      border-radius:10px;
-      border:1px solid var(--border);
-      background:var(--bg3);
-      color:var(--text);
-      font-size:14px;font-family:'Tajawal',sans-serif;
-      outline:none;transition:all 0.2s;direction:rtl;
+      width:100%;
+      padding:14px 16px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:rgba(255,255,255,0.05);
+      color:#fff;
+      font-size:15px;
+      font-family:'Tajawal',sans-serif;
+      transition:.2s ease;
     }
     .form-group input:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 0 3px rgba(99,102,241,0.1);
-      background:rgba(17,21,37,0.9);
+      outline:none;
+      border-color:var(--line-strong);
+      box-shadow:0 0 0 4px rgba(120,244,255,0.08);
+      background:rgba(255,255,255,0.08);
     }
-    .form-group input::placeholder{color:var(--text3);}
-
-    /* GOOGLE BTN */
-    .btn-google{
-      display:flex;align-items:center;justify-content:center;gap:10px;
-      width:100%;padding:12px;border-radius:10px;
-      background:#fff;color:#333;border:none;cursor:pointer;
-      font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;
-      transition:all 0.2s;margin-bottom:14px;
-    }
-    .btn-google:hover{background:#f1f5f9;transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,0,0,0.15);}
-    .btn-google svg{width:18px;height:18px;flex-shrink:0;}
-
-    .divider-or{
-      text-align:center;color:var(--text3);font-size:12px;
-      margin:14px 0;position:relative;
-    }
-    .divider-or::before,.divider-or::after{
-      content:'';position:absolute;top:50%;
-      width:42%;height:1px;background:var(--border);
-    }
-    .divider-or::before{right:0;}
-    .divider-or::after{left:0;}
-
-    /* SUBMIT BTN */
     .btn-auth{
-      width:100%;padding:13px;
-      background:linear-gradient(135deg,var(--accent),var(--accent3));
-      color:#fff;border:none;border-radius:10px;
-      font-size:15px;font-weight:800;cursor:pointer;
-      font-family:'Tajawal',sans-serif;margin-top:6px;
-      transition:all 0.2s;
-      box-shadow:0 14px 30px rgba(99,102,241,0.25);
+      width:100%;
+      padding:14px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#04111d;
+      border:none;
+      border-radius:16px;
+      font-size:16px;
+      font-weight:800;
+      cursor:pointer;
+      font-family:'Tajawal',sans-serif;
+      margin-top:8px;
+      transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+      box-shadow:0 18px 34px rgba(120,244,255,0.18);
     }
-    .btn-auth:hover{transform:translateY(-1px);box-shadow:0 18px 38px rgba(99,102,241,0.35);}
-    .btn-auth:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed;box-shadow:none;}
-
-    /* MSG */
+    .btn-auth:hover{transform:translateY(-1px)}
+    .btn-auth:disabled{background:#445;color:#778;cursor:not-allowed;box-shadow:none}
     .msg{
-      padding:11px 14px;border-radius:10px;
-      font-size:13px;margin-bottom:14px;display:none;
+      padding:12px 14px;
+      border-radius:14px;
+      font-size:13px;
+      margin-bottom:16px;
+      display:none;
     }
-    .msg.ok{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#4ade80;}
-    .msg.err{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;}
-
+    .msg.ok{background:#0f3d2e;border:1px solid #0f6e56;color:#84f4bf}
+    .msg.err{background:#3d0f0f;border:1px solid #6e0f0f;color:#ff9090}
+    .form-panel{display:none}
+    .form-panel.active{display:block}
     .auth-meta{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:12px;margin-top:14px;color:var(--text3);font-size:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:14px;
+      color:var(--muted);
+      font-size:12px;
     }
-    .auth-meta a{color:var(--accent2);text-decoration:none;}
-    .auth-meta a:hover{text-decoration:underline;}
-
-    /* FLOATING ORBS */
-    .orb{
-      position:fixed;border-radius:50%;
-      pointer-events:none;z-index:0;filter:blur(80px);opacity:0.15;
-    }
-    .orb1{width:400px;height:400px;background:var(--accent);top:-100px;left:-100px;}
-    .orb2{width:300px;height:300px;background:var(--accent3);bottom:-80px;right:-80px;}
-
-    @media(max-width:480px){
-      .auth-box{padding:26px 18px 22px;border-radius:16px;}
-      .auth-logo{font-size:22px;}
+    .auth-meta a{color:var(--accent);text-decoration:none}
+    .auth-meta a:hover{text-decoration:underline}
+    @media (max-width:640px){
+      .topbar{padding:16px}
+      .auth-box{padding:30px 20px 24px;border-radius:22px}
+      .auth-box h1{font-size:24px}
+      .auth-meta{flex-direction:column;align-items:flex-start}
     }
   </style>
 </head>
 <body>
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-
-  <nav>
-    <a href="index.html" class="logo">VIRTUX</a>
-    <a href="index.html" class="nav-back">← العودة للموقع</a>
-  </nav>
-
+  <div class="topbar">
+    <a href="index.html" class="logo">VIRT<span>UX</span></a>
+    <a href="index.html" class="back">Back to Site</a>
+  </div>
   <div class="container">
     <div class="auth-box">
-      <div class="auth-logo">VIRTUX</div>
-      <div class="auth-sub">مجتمع الألعاب العربي الأول 🎮</div>
+      <h1>Welcome to Virtux</h1>
+      <p>Modern access for gamers, creators, and community members.</p>
 
       <div class="tabs">
-        <button class="tab active" id="tab-login" onclick="switchTab('login')">تسجيل الدخول</button>
-        <button class="tab" id="tab-register" onclick="switchTab('register')">إنشاء حساب</button>
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="tab" id="tab-register" onclick="switchTab('register')">Register</button>
       </div>
 
       <div class="msg" id="authMsg"></div>
 
-      <!-- LOGIN FORM -->
       <div class="form-panel active" id="panel-login">
-        <button class="btn-google" onclick="signInWithGoogle()">
-          <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          تسجيل الدخول عبر Google
-        </button>
-        <div class="divider-or">أو</div>
         <div class="form-group">
-          <label>البريد الإلكتروني أو اسم المستخدم</label>
-          <input type="text" id="login-email" placeholder="example@domain.com أو اسم المستخدم">
+          <label>Email or Username</label>
+          <input type="text" id="login-email" placeholder="example@domain.com or username">
         </div>
         <div class="form-group">
-          <label>كلمة المرور</label>
-          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()">
         </div>
         <div class="auth-meta">
-          <span>دخول آمن 🔒</span>
-          <a href="javascript:void(0)" onclick="doForgotPassword()">نسيت كلمة المرور؟</a>
+          <span>Secure access for gamers and creators</span>
+          <a href="javascript:void(0)" onclick="doForgotPassword()">Forgot Password?</a>
         </div>
-        <button class="btn-auth" onclick="doLogin()" id="btn-login">🚀 دخول</button>
+        <button class="btn-auth" onclick="doLogin()" id="btn-login">Login</button>
       </div>
 
-      <!-- REGISTER FORM -->
       <div class="form-panel" id="panel-register">
-        <button class="btn-google" onclick="signInWithGoogle()">
-          <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          التسجيل عبر Google
-        </button>
-        <div class="divider-or">أو</div>
         <div class="form-group">
-          <label>اسم المستخدم</label>
-          <input type="text" id="reg-username" placeholder="GamerPro123">
+          <label>Username</label>
+          <input type="text" id="reg-username" placeholder="GamerName123">
         </div>
         <div class="form-group">
-          <label>البريد الإلكتروني</label>
+          <label>Email Address</label>
           <input type="email" id="reg-email" placeholder="example@domain.com">
         </div>
         <div class="form-group">
-          <label>كلمة المرور (6 أحرف على الأقل)</label>
-          <input type="password" id="reg-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doRegister()">
         </div>
-        <button class="btn-auth" onclick="doRegister()" id="btn-register">🎮 إنشاء حساب</button>
+        <button class="btn-auth" onclick="doRegister()" id="btn-register">Create Account</button>
       </div>
     </div>
   </div>
 
 <script>
-const SB_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
-const db=window.supabase.createClient(SB_URL,SB_KEY,{
-  auth:{persistSession:true,storageKey:'virtux-auth-v2',autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce',storage:window.localStorage}
+const SB_URL = 'https://eyqcpkhjzpmawqtilhgl.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
+const db = window.supabase.createClient(SB_URL, SB_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'virtux-auth-v2',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: window.localStorage
+  }
 });
 
-function getAppRedirectUrl(){
-  return new URL('index.html',window.location.href).toString();
-}
-
-function switchTab(tab){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.form-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('panel-'+tab).classList.add('active');
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
   hideMsg();
 }
-function showMsg(text,type){
-  const el=document.getElementById('authMsg');
-  el.innerHTML=text;el.className='msg '+type;el.style.display='block';
-}
-function hideMsg(){document.getElementById('authMsg').style.display='none';}
 
-function getDummyEmail(username){
-  if(!username)return'';
-  const clean=username.trim().toLowerCase();
-  try{
-    const encoder=new TextEncoder();
-    const bytes=encoder.encode(clean);
-    const hex=Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
-    return`ux_${hex}@virtux.v`;
-  }catch(e){return clean.replace(/[^a-z0-9]/g,'')+`@virtux.v`;}
+function showMsg(text, type) {
+  const el = document.getElementById('authMsg');
+  el.innerHTML = text;
+  el.className = 'msg ' + type;
+  el.style.display = 'block';
 }
 
-async function doLogin(){
-  const identifier=document.getElementById('login-email').value.trim();
-  const password=document.getElementById('login-password').value;
-  if(!identifier||!password){showMsg('⚠️ أكمل جميع الحقول','err');return;}
-  const btn=document.getElementById('btn-login');
-  btn.disabled=true;btn.textContent='⏳ جاري الدخول...';
-  try{
-    let loginError=null;
-    if(identifier.includes('@')){
-      const{error}=await db.auth.signInWithPassword({email:identifier,password});
-      loginError=error;
-    }else{
-      const normalized=identifier.trim().toLowerCase();
-      const{data:p,error:profileErr}=await db.from('profiles').select('email,username').ilike('username',normalized).maybeSingle();
-      if(profileErr)throw profileErr;
-      if(!p?.email)throw new Error('Ù„Ù… ÙŠÙØ¹Ø«Ø± Ø¹Ù„Ù‰ Ø§Ù„Ø­Ø³Ø§Ø¨.');
-      const{error}=await db.auth.signInWithPassword({email:p.email,password});
-      loginError=error;
+function hideMsg() {
+  document.getElementById('authMsg').style.display = 'none';
+}
+
+function getDummyEmail(username) {
+  if (!username) return '';
+  const clean = username.trim().toLowerCase();
+  try {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(clean);
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `ux_${hex}@virtux.v`;
+  } catch(e) {
+    return clean.replace(/[^a-z0-9]/g, '') + '@virtux.v';
+  }
+}
+
+async function doLogin() {
+  const identifier = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!identifier || !password) { showMsg('Please fill all fields!', 'err'); return; }
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+
+  try {
+    let loginError = null;
+
+    if (identifier.includes('@')) {
+      const { error } = await db.auth.signInWithPassword({ email: identifier, password });
+      loginError = error;
+    } else {
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+      let emailToTry = p?.email || getDummyEmail(identifier);
+      const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
+      loginError = error;
+
+      if (loginError && loginError.status !== 429 && !p?.email) {
+        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
+        if (fallback !== emailToTry) {
+          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
+          loginError = retryError || null;
+        }
+      }
     }
-    if(loginError){
-      let msg=loginError.message||'فشل تسجيل الدخول';
-      if(loginError.status===429)msg='محاولات كثيرة، انتظر قليلاً.';
-      else if(loginError.message==='Invalid login credentials'||loginError.status===400)msg='بريد/اسم مستخدم أو كلمة مرور خاطئة.';
+
+    if (loginError) {
+      let msg = loginError.message || 'Login failed.';
+      if (loginError.status === 429) {
+        msg = 'Too many attempts. Please wait a few minutes and try again.';
+      } else if (loginError.message === 'Invalid login credentials' || loginError.status === 400) {
+        msg = 'Invalid email/username or password.';
+      }
       throw new Error(msg);
     }
-    showMsg('✅ مرحباً بك! جاري التحويل...','ok');
-    setTimeout(()=>window.location.href='index.html',1200);
-  }catch(err){
-    showMsg('❌ '+( err.message||'فشل'),'err');
-    btn.disabled=false;btn.textContent='🚀 دخول';
+
+    showMsg('✅ Welcome back! Redirecting...', 'ok');
+    setTimeout(() => window.location.href = 'index.html', 1500);
+  } catch (err) {
+    showMsg('❌ ' + (err.message || 'Login failed.'), 'err');
+    btn.disabled = false;
+    btn.textContent = 'Login';
   }
 }
 
-async function doForgotPassword(){
-  const email=prompt('أدخل بريدك الإلكتروني:');
-  if(!email)return;
-  try{
-    const{error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/index.html'});
-    if(error)throw error;
-    alert('✅ تم إرسال رابط إعادة التعيين، تحقق من بريدك.');
-  }catch(e){alert('❌ خطأ: '+e.message);}
-}
-
-async function doRegister(){
-  const username=document.getElementById('reg-username').value.trim();
-  const email=document.getElementById('reg-email').value.trim();
-  const password=document.getElementById('reg-password').value;
-  if(!username||!email||!password){showMsg('⚠️ أكمل جميع الحقول','err');return;}
-  if(!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)){showMsg('⚠️ اسم المستخدم يحتوي على رموز غير مسموحة','err');return;}
-  if(password.length<6){showMsg('⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل','err');return;}
-  const btn=document.getElementById('btn-register');
-  btn.disabled=true;btn.textContent='⏳ جاري الإنشاء...';
-  try{
-    const{data,error}=await db.auth.signUp({email,password,options:{data:{username},emailRedirectTo:window.location.origin+'/index.html'}});
-    if(error){let msg=error.message||'فشل التسجيل';if(msg.includes('rate limit'))msg='تجاوزت الحد، حاول لاحقاً';throw new Error(msg);}
-    if(data.user){
-      await db.from('profiles').upsert({id:data.user.id,username,email,role:'user',roles:['user'],created_at:new Date().toISOString()});
-    }
-    if(data.session){
-      showMsg('🎉 مرحباً! جاري التحويل...','ok');
-      setTimeout(()=>window.location.href='index.html',1200);
-    }else{
-      showMsg('✅ تم إنشاء حسابك! تحقق من بريدك إذا طُلب منك.','ok');
-      btn.disabled=false;btn.textContent='🎮 إنشاء حساب';
-      setTimeout(()=>switchTab('login'),2500);
-    }
-  }catch(e){
-    showMsg('❌ '+( e.message||'فشل'),'err');
-    btn.disabled=false;btn.textContent='🎮 إنشاء حساب';
+async function doForgotPassword() {
+  const email = prompt('Enter your email to receive a reset link:');
+  if (!email) return;
+  try {
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname + '#reset_password=true',
+    });
+    if (error) throw error;
+    alert('Reset link sent! Please check your email.');
+  } catch (e) {
+    alert('Error: ' + e.message);
   }
 }
 
-async function signInWithGoogle(){
-  const{error}=await db.auth.signInWithOAuth({provider:'google',options:{redirectTo:getAppRedirectUrl()}});
-  if(error)showMsg('❌ خطأ في Google: '+error.message,'err');
-}
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!username || !email || !password) { showMsg('Please fill all fields!', 'err'); return; }
 
-(async()=>{
-  const url=new URL(window.location.href);
-  if(url.searchParams.get('code')){
-    try{
-      await db.auth.exchangeCodeForSession(window.location.href);
-      window.history.replaceState({},document.title,getAppRedirectUrl());
-    }catch(e){
-      showMsg('❌ فشل إكمال تسجيل الدخول عبر Google: '+e.message,'err');
-    }
+  if (!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)) {
+    showMsg('Username contains invalid characters.', 'err');
+    return;
   }
 
-  const{data:{session}}=await db.auth.getSession();
-  if(session)window.location.href='index.html';
-})();
+  if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
+
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+
+  try {
+    const { data, error } = await db.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username },
+        emailRedirectTo: window.location.origin + window.location.pathname
+      }
+    });
+
+    if (error) {
+      let msg = error.message || 'Registration failed.';
+      if (msg.includes('rate limit')) msg = 'Registration limit reached. Please try later.';
+      throw new Error(msg);
+    }
+
+    if (data.user) {
+      await db.from('profiles').upsert({
+        id: data.user.id,
+        username,
+        email,
+        role: 'user',
+        roles: ['user'],
+        created_at: new Date().toISOString()
+      });
+    }
+
+    if (data.session) {
+      showMsg('✅ Welcome! Redirecting...', 'ok');
+      setTimeout(() => window.location.href = 'index.html', 1500);
+    } else {
+      showMsg('✅ Account created! If email confirmation is enabled, please check your inbox.', 'ok');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+      setTimeout(() => switchTab('login'), 2500);
+    }
+  } catch (e) {
+    showMsg('❌ ' + (e.message || 'Registration failed.'), 'err');
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+  }
+}
+
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session) window.location.href = 'index.html';
+});
 </script>
 </body>
 </html>
