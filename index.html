@@ -363,6 +363,8 @@
       width: 90%;
       max-width: 500px;
       padding: 25px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     .modal-box h2, .modal-box h3 { color: #e01010; text-align:center; margin-bottom:15px; }
     .modal-box input { width:100%; padding:12px; margin:10px 0; background:#2a2a2a; border:1px solid #444; border-radius:6px; color:white; }
@@ -370,15 +372,33 @@
     .modal-box button.cancel { background:#555; color:white; }
 
     .profile-avatar { text-align:center; margin-bottom:20px; }
-    .profile-avatar img { width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid #e01010; background:#2a2a2a; }
-    .avatar-placeholder { width:100px; height:100px; border-radius:50%; background:#2a2a3a; display:inline-flex; align-items:center; justify-content:center; font-size:48px; border:2px solid #e01010; }
+    .profile-avatar img { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #e01010; background:#2a2a2a; }
+    .avatar-placeholder { width:80px; height:80px; border-radius:50%; background:#2a2a3a; display:inline-flex; align-items:center; justify-content:center; font-size:42px; border:2px solid #e01010; }
     .profile-field { margin-bottom:15px; }
-    .profile-field label { display:block; margin-bottom:5px; color:#e01010; font-weight:500; }
-    .profile-field input, .profile-field select { width:100%; padding:10px; background:#2a2a2a; border:1px solid #444; border-radius:6px; color:white; }
+    .profile-field label { display:block; margin-bottom:5px; color:#e01010; font-weight:500; font-size:13px; }
+    .profile-field input, .profile-field select { width:100%; padding:9px 12px; background:#2a2a2a; border:1px solid #444; border-radius:6px; color:white; font-size:13px; }
     .profile-buttons { display:flex; gap:10px; margin-top:20px; }
     .btn-save { background:#e01010; color:#000; }
     .btn-cancel { background:#555; color:white; }
     .change-password-section { margin-top:20px; padding-top:20px; border-top:1px solid #444; }
+    /* تحسين عرض الرتب المتعددة */
+    .profile-roles-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 5px;
+    }
+    .profile-role-badge {
+      font-size: 10px;
+      background: #2a0000;
+      border: 1px solid #e01010;
+      color: #e01010;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
 
     #upm-modal {
       display: none;
@@ -625,7 +645,7 @@
     <h2>👤 الملف الشخصي</h2>
     <div class="profile-avatar">
       <div id="profileAvatarContainer">
-        <img id="profileAvatarImg" src="" style="display:none; width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid #e01010;">
+        <img id="profileAvatarImg" src="" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #e01010;">
         <div id="profileAvatarPlaceholder" class="avatar-placeholder" style="display:flex;">👤</div>
       </div>
       <div style="margin-top:10px;">
@@ -657,6 +677,10 @@
     <div class="profile-field">
       <label>🎮 اللعبة المفضلة</label>
       <input type="text" id="profileFavoriteGame" placeholder="مثال: Call of Duty, FIFA, etc.">
+    </div>
+    <div class="profile-field">
+      <label>🏷️ الرتب</label>
+      <div id="profileRolesContainer" class="profile-roles-list"></div>
     </div>
     
     <div class="change-password-section">
@@ -2148,6 +2172,20 @@ document.getElementById('profileButton')?.addEventListener('click', async () => 
       document.getElementById('profileBirthPlace').value = profile.birth_place || '';
       document.getElementById('profileCountry').value = profile.country || '';
       document.getElementById('profileFavoriteGame').value = profile.favorite_game || '';
+      // عرض الرتب
+      const rolesDiv = document.getElementById('profileRolesContainer');
+      if (rolesDiv) {
+        const userRolesList = normalizeRoles(profile);
+        const roleLabels = {
+          admin: '🛡️ Admin', moderator: '🔧 Moderator', youtuber_vip: '🔥 YT VIP',
+          youtuber: '🎬 Youtuber', vip: '👑 VIP', member: '⭐ Member', user: '👤 User', guest: '🛡️ Guest'
+        };
+        rolesDiv.innerHTML = userRolesList.map(r => `<span class="profile-role-badge">${roleLabels[r] || r}</span>`).join('');
+        if (profile.expiry_date) {
+          const expiryDate = new Date(profile.expiry_date).toLocaleDateString();
+          rolesDiv.innerHTML += `<span class="profile-role-badge" style="border-color:#ffaa00;">⏳ ينتهي: ${expiryDate}</span>`;
+        }
+      }
       const avatarImg = document.getElementById('profileAvatarImg');
       const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
       if (profile.avatar_url) { avatarImg.src = profile.avatar_url; avatarImg.style.display = 'inline-block'; avatarPlaceholder.style.display = 'none'; }
@@ -2224,10 +2262,12 @@ document.getElementById('changePasswordBtn')?.addEventListener('click', async ()
   if (newPass.length < 6) { errorEl.innerText = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'; return; }
   if (newPass !== confirmPass) { errorEl.innerText = 'كلمة المرور الجديدة غير متطابقة'; return; }
   try {
+    // التحقق من صحة كلمة المرور الحالية عن طريق تسجيل الدخول
     const { data: { session } } = await db.auth.getSession();
     if (!session?.user?.email) throw new Error('لا يوجد جلسة نشطة');
     const { error: signInError } = await db.auth.signInWithPassword({ email: session.user.email, password: oldPass });
     if (signInError) { errorEl.innerText = 'كلمة المرور الحالية غير صحيحة'; return; }
+    // تحديث كلمة المرور
     const { error } = await db.auth.updateUser({ password: newPass });
     if (error) throw error;
     errorEl.style.color = '#cc2222'; errorEl.innerText = '✅ تم تغيير كلمة المرور بنجاح';
