@@ -217,13 +217,13 @@
     .read-more:hover{background:#e6c300}
     
     .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
-    .channels-grid.subscribers-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));align-items:start;gap:18px}
+    .channels-grid.subscribers-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));align-items:start;gap:18px}
     .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
     .channel-card:hover{border-color:#e01010}
     .subscriber-card{position:relative;min-height:176px;padding:14px 12px 16px;justify-content:flex-start;overflow:hidden;isolation:isolate}
     .subscriber-card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:conic-gradient(from 0deg, transparent 0deg, var(--sub-accent, rgba(224,16,16,.85)) 90deg, transparent 170deg, transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.7;animation:subscriber-spin 4.5s linear infinite;pointer-events:none}
     .subscriber-card .channel-avatar{width:78px;height:78px;margin-bottom:10px}
-    .subscriber-card .channel-name{font-size:22px;line-height:1.2;margin-bottom:6px;word-break:break-word}
+    .subscriber-card .channel-name{font-size:20px;line-height:1.2;margin-bottom:6px;word-break:break-word}
     .subscriber-badge{font-size:10px;border-radius:6px;padding:2px 8px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;min-height:20px}
     @keyframes subscriber-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
     .channel-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px}
@@ -381,7 +381,6 @@
     .btn-save { background:#e01010; color:#000; }
     .btn-cancel { background:#555; color:white; }
     .change-password-section { margin-top:16px; padding-top:12px; border-top:1px solid #444; }
-    /* تحسين عرض الرتب المتعددة */
     .profile-roles-list {
       display: flex;
       flex-wrap: wrap;
@@ -399,7 +398,6 @@
       align-items: center;
       gap: 3px;
     }
-    /* تحسين شريط الرتب في الهيدر */
     #user-role-badge {
       display: flex;
       flex-wrap: wrap;
@@ -1267,6 +1265,29 @@ window.openUserModal = function(room) {
         <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
       </div>
     </div>`;
+  } else if (room === 'gaming-news' || room === 'youtube-news') {
+    // نموذج مطور للمقالات الكبيرة مع رفع ملفات
+    formHtml = `<div class="form-with-preview">
+      <div>
+        <div><label>📰 عنوان الخبر *</label><input id="title-${room}" style="${inputStyle}" placeholder="العنوان..."></div>
+        <div style="margin-top:10px;"><label>✍️ المحتوى الكامل (مقـال)</label><textarea id="content-${room}" style="${inputStyle}" rows="8" placeholder="اكتب مقالك هنا..."></textarea></div>
+        <div style="margin-top:10px;"><label>🏷️ التصنيف</label><select id="tag-${room}" style="${inputStyle}"><option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option></select></div>
+        <div style="margin-top:12px;"><label>🔗 رابط إضافي (يوتيوب - فيديو - صورة) optional</label><input id="url-${room}" style="${inputStyle}" placeholder="https://..."></div>
+        <div style="margin-top:12px;"><label>📷 رفع صورة / فيديو من الحاسوب (اختياري)</label>
+          <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label></div>
+          <div class="img-upload" style="margin-top:6px;"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+        </div>
+        <input type="hidden" id="icon-${room}">
+        <input type="hidden" id="desc-${room}">
+      </div>
+      <div class="preview-panel">
+        <h4 style="color:#e01010;">📷 معاينة الوسائط</h4>
+        <img id="preview-img-${room}" class="preview-media" style="display:none;">
+        <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+        <div id="preview-text-${room}" style="color:#aaa; font-size:11px;">لا توجد وسائط</div>
+        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:6px; font-size:11px;">🗑️ حذف</button>
+      </div>
+    </div>`;
   } else {
     formHtml = `<div class="form-with-preview">
       <div>
@@ -1300,6 +1321,12 @@ window.openUserModal = function(room) {
     const thumbInput = document.getElementById(`file-${room}-thumb`);
     if (thumbInput) thumbInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) handleThumbFile(room, file); });
   }
+  if (room === 'gaming-news' || room === 'youtube-news') {
+    const imgInput = document.getElementById(`imgfile-${room}`);
+    if (imgInput) imgInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) handleMediaFile(room, file); });
+    const videoInput = document.getElementById(`videofile-${room}`);
+    if (videoInput) videoInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) handleMediaFile(room, file); });
+  }
   document.getElementById('upm-submit').onclick = () => submitUser(room);
   document.getElementById('upm-modal').classList.add('active');
 };
@@ -1310,12 +1337,14 @@ async function submitUser(room) {
   var urlEl   = document.getElementById('url-'   + room);
   var tagEl   = document.getElementById('tag-'   + room);
   var iconEl  = document.getElementById('icon-'  + room);
+  var contentEl = document.getElementById(`content-${room}`);
   var title = titleEl ? titleEl.value.trim() : '';
   var desc  = descEl  ? descEl.value.trim()  : '';
   var url   = urlEl   ? urlEl.value.trim()   : '';
   if (url) url = cleanUrl(url);
   var tag   = tagEl   ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
   var pickedIcon = iconEl ? iconEl.value : '';
+  var content = contentEl ? contentEl.value.trim() : '';
   var fileIsImage = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('image/'));
   var fileIsVideo = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('video/'));
   if (room === 'highlights' && currentMediaFile && (tag === 'Video' || tag === 'Photo' || !tag)) {
@@ -1327,6 +1356,7 @@ async function submitUser(room) {
   if (room === 'yt-videos' && !url)                       { showUPMError('أدخل رابط يوتيوب'); return; }
   if (room === 'yt-videos' && !isValidYouTubeUrl(url))    { showUPMError('رابط يوتيوب غير صحيح'); return; }
   if (room === 'highlights'&& !url && !currentMediaFile)  { showUPMError('أدخل رابط أو ارفق ملف'); return; }
+  if ((room === 'gaming-news' || room === 'youtube-news') && !title && !content && !url && !currentMediaFile) { showUPMError('أدخل عنواناً أو محتوى المقال أو وسائط'); return; }
   var btn  = document.getElementById('upm-submit');
   var okEl = document.getElementById('upm-ok');
   var errEl = document.getElementById('upm-err');
@@ -1366,7 +1396,7 @@ async function submitUser(room) {
     }
     var socialUrl = null;
     if (room === 'highlights') { var socialUrlEl = document.getElementById('social-url-' + room); socialUrl = socialUrlEl ? (socialUrlEl.value.trim() || null) : null; }
-    var row = { title: title || url || window.t('منشور', 'Post'), description: desc || null, icon: finalIcon, url: finalUrl, tag: tag, room: room, content: socialUrl || null, user_id: window.currentUserId || null };
+    var row = { title: title || url || window.t('منشور', 'Post'), description: desc || null, icon: finalIcon, url: finalUrl, tag: tag, room: room, content: content || socialUrl || null, user_id: window.currentUserId || null };
     var dbr = currentEditPost ? await db.from('posts').update(row).eq('id', currentEditPost.id) : await db.from('posts').insert(row);
     if (dbr.error) { done(false, dbr.error.message); return; }
     done(true);
@@ -1614,52 +1644,130 @@ function renderCardsWithUsers(posts, gridId, room, usersMap, canViewVIP) {
   }).join('');
 }
 
+// ==================== غرفة المشتركين (معدلة بحيث يعرض كل مستخدم مرة واحدة) ====================
 async function loadSubscribersWithVIP(el, posts, roleFilter) {
-  let groupedHtml = '';
   try {
-    let { data: vipUsers, error } = await db.from('profiles')
-      .select('username, avatar_url, role, roles')
+    // جلب جميع المستخدمين من جدول profiles مع معلومات الرتب
+    let { data: profiles, error } = await db.from('profiles')
+      .select('*')
       .order('created_at', { ascending: false });
-    if (error) console.warn('[Subscribers] خطأ بالاستعلام مع roles', error);
-    if (vipUsers && vipUsers.length) {
-      const ROLE_DEFS = [
-        { key: 'admin',       title: '🛡️ الإدارة',         short: 'ADMIN',        color: '#ff0000', bg: '#3d0f0f', border: '#ff0000' },
-        { key: 'moderator',   title: '🔧 المشرفون',         short: 'MOD',          color: '#ff2222', bg: '#2a0000', border: '#ff2222' },
-        { key: 'youtuber_vip',title: '🔥 Youtuber VIP',     short: 'YT VIP',       color: '#ff1111', bg: '#3d1a0f', border: '#ff1111' },
-        { key: 'youtuber',    title: '🎬 يوتيوبرز',         short: 'YOUTUBER',     color: '#cc0000', bg: '#2d0a0a', border: '#cc0000' },
-        { key: 'vip',         title: '👑 VIP',              short: 'VIP',          color: '#e01010', bg: '#1a0000', border: '#e01010' },
-        { key: 'member',      title: '⭐ الأعضاء',          short: 'MEMBER',       color: '#cc2222', bg: '#100000', border: '#cc2222' },
-        { key: 'user',        title: '👤 المستخدمون',        short: 'USER',         color: '#888888', bg: '#111111', border: '#444444' },
-      ];
-      const ROLE_PRIORITY = ['admin','moderator','youtuber_vip','youtuber','vip','member','user'];
-      const getTopRole = (u) => { const rs = normalizeRoles(u); const found = ROLE_PRIORITY.find(r => rs.includes(r)); return found || 'user'; };
-      const userCard = (u, accentColor, topRoleDef) => {
-        const avatar = u.avatar_url ? `<img class="channel-avatar" src="${u.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid ${accentColor};">` : `<div class="channel-avatar" style="border:2px solid ${accentColor};">👤</div>`;
-        const badge = topRoleDef ? `<span class="subscriber-badge" style="background:${topRoleDef.bg};color:${topRoleDef.color};border:1px solid ${topRoleDef.color};">${topRoleDef.short}</span>` : '';
-        return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">${badge}</div></div></div>`;
-      };
-      ROLE_DEFS.forEach(def => {
-        if (roleFilter && def.key !== roleFilter) return;
-        const usersInRole = vipUsers.filter(u => { const rs = normalizeRoles(u); if (def.key === 'user') return rs.includes('user'); return rs.includes(def.key); });
-        if (!usersInRole.length) return;
-        groupedHtml += `<div class="channels-grid subscribers-grid">${usersInRole.map(u => userCard(u, def.color, def)).join('')}</div>`;
-      });
+    if (error) throw error;
+    if (!profiles || profiles.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">لا يوجد مستخدمون مسجلون بعد</div>';
+      return;
     }
-  } catch(e) { console.error(e); }
-  let youtuberHtml = '';
-  if (posts && posts.length) {
-    const youtuberCards = posts.map(p => {
-      const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
-      const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
-      let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
-      const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
-      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
-    }).join('');
-    youtuberHtml = `<div style="margin:24px 0 12px 0;padding:10px 14px;background:#1a0000;border-left:4px solid #e01010;border-radius:6px;"><h3 style="color:#e01010;margin:0;font-size:16px;">${window.t("📺 قنوات يوتيوب","📺 YouTube Channels")}</h3></div><div class="channels-grid">${youtuberCards}</div>`;
+
+    // دالة لجلب الرتب (استخدام normalizeRoles)
+    const getUserRoles = (profile) => {
+      let roles = normalizeRoles(profile);
+      // إزالة 'user' إذا كان هناك رتب أخرى لتجنب التكرار الغير ضروري, لكن نتركها إذا كانت الرتبة الوحيدة
+      if (roles.length > 1 && roles.includes('user')) roles = roles.filter(r => r !== 'user');
+      return roles;
+    };
+
+    // تعريف الألوان والترتيب للرتب
+    const roleMeta = {
+      admin:        { icon: '🛡️', label: 'Admin',     color: '#ff5555', bg: '#3d0f0f' },
+      moderator:    { icon: '🔧', label: 'Mod',       color: '#ffaa44', bg: '#2a2a00' },
+      youtuber_vip: { icon: '🔥', label: 'YT VIP',    color: '#ff6600', bg: '#3d1a0f' },
+      youtuber:     { icon: '🎬', label: 'Youtuber',  color: '#ff4444', bg: '#3d0f0f' },
+      vip:          { icon: '👑', label: 'VIP',       color: '#d4e800', bg: '#2a2000' },
+      member:       { icon: '⭐', label: 'Member',    color: '#4caf90', bg: '#0f3d2e' },
+      guest:        { icon: '🛡️', label: 'Guest',     color: '#999999', bg: '#222222' },
+      user:         { icon: '👤', label: 'User',      color: '#cccccc', bg: '#1a1a2e' }
+    };
+    const roleOrder = ['admin','moderator','youtuber_vip','youtuber','vip','member','guest','user'];
+
+    // تجهيز المستخدمين مع رتبهم
+    let usersWithRoles = profiles.map(profile => {
+      const roles = getUserRoles(profile);
+      const primaryRole = roles[0] || 'user';
+      return { profile, roles, primaryRole };
+    });
+
+    // تطبيق الفلترة حسب الرتبة المطلوبة (إذا وجدت)
+    if (roleFilter) {
+      usersWithRoles = usersWithRoles.filter(u => u.roles.includes(roleFilter));
+    }
+
+    // تجميع حسب الرتبة الأساسية للعرض (ولكن سيعرض كل مستخدم مرة واحدة فقط)
+    // سنقوم بتجميعهم حسب primaryRole لعرضهم في أقسام منفصلة حسب الرتبة العليا
+    const grouped = {};
+    roleOrder.forEach(r => { grouped[r] = []; });
+    usersWithRoles.forEach(u => {
+      const primary = u.primaryRole;
+      if (grouped[primary]) grouped[primary].push(u);
+      else grouped['user'].push(u);
+    });
+
+    let html = '';
+    if (roleFilter) {
+      // إذا كان هناك فلتر، نعرض المستخدمين بدون تجميع
+      html += `<div class="channels-grid subscribers-grid">`;
+      usersWithRoles.forEach(u => {
+        const profile = u.profile;
+        const roles = u.roles;
+        const badges = roles.map(r => {
+          const m = roleMeta[r] || { icon: '🏷️', label: r.toUpperCase(), color: '#ccc', bg: '#333' };
+          return `<span class="subscriber-badge" style="background:${m.bg};color:${m.color};border:1px solid ${m.color};">${m.icon} ${m.label}</span>`;
+        }).join('');
+        const avatar = profile.avatar_url ? `<img class="channel-avatar" src="${profile.avatar_url}" style="width:80px;height:80px;">` : `<div class="channel-avatar" style="background:#2a2a3a;">👤</div>`;
+        html += `<div class="channel-card subscriber-card" style="--sub-accent:${roleMeta[roles[0]]?.color || '#e01010'}">
+          ${avatar}
+          <div class="channel-info">
+            <div class="channel-name">${escapeHtml(profile.username || profile.email || 'مستخدم')}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:6px;">${badges}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    } else {
+      // عرض مجموعات حسب الرتبة الأساسية
+      for (let role of roleOrder) {
+        const usersInGroup = grouped[role];
+        if (!usersInGroup.length) continue;
+        const meta = roleMeta[role] || { icon: '👤', label: role.toUpperCase(), color: '#ccc', bg: '#222' };
+        html += `<div style="margin-bottom:30px;"><div style="font-size:16px;margin-bottom:12px;color:${meta.color};border-bottom:1px solid ${meta.color};display:inline-block;padding-bottom:2px;">${meta.icon} ${meta.label} (${usersInGroup.length})</div>`;
+        html += `<div class="channels-grid subscribers-grid">`;
+        usersInGroup.forEach(u => {
+          const profile = u.profile;
+          const roles = u.roles;
+          const badges = roles.map(r => {
+            const m = roleMeta[r] || { icon: '🏷️', label: r.toUpperCase(), color: '#ccc', bg: '#333' };
+            return `<span class="subscriber-badge" style="background:${m.bg};color:${m.color};border:1px solid ${m.color};">${m.icon} ${m.label}</span>`;
+          }).join('');
+          const avatar = profile.avatar_url ? `<img class="channel-avatar" src="${profile.avatar_url}" style="width:80px;height:80px;">` : `<div class="channel-avatar" style="background:#2a2a3a;">👤</div>`;
+          html += `<div class="channel-card subscriber-card" style="--sub-accent:${meta.color}">
+            ${avatar}
+            <div class="channel-info">
+              <div class="channel-name">${escapeHtml(profile.username || profile.email || 'مستخدم')}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:6px;">${badges}</div>
+            </div>
+          </div>`;
+        });
+        html += `</div></div>`;
+      }
+    }
+
+    // إضافة قسم قنوات اليوتيوب المنشورة (كما هي)
+    let youtuberHtml = '';
+    if (posts && posts.length) {
+      const youtuberCards = posts.map(p => {
+        const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
+        const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
+        const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
+        let subText = p.description || '';
+        if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
+        const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
+        return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
+      }).join('');
+      youtuberHtml = `<div style="margin:24px 0 12px 0;padding:10px 14px;background:#1a0000;border-left:4px solid #e01010;border-radius:6px;"><h3 style="color:#e01010;margin:0;font-size:16px;">${window.t("📺 قنوات يوتيوب","📺 YouTube Channels")}</h3></div><div class="channels-grid">${youtuberCards}</div>`;
+    }
+    el.innerHTML = html + youtuberHtml;
+  } catch(e) {
+    console.error('loadSubscribersWithVIP error:', e);
+    el.innerHTML = '<div class="empty-state">حدث خطأ أثناء تحميل المشتركين</div>';
   }
-  el.innerHTML = ((groupedHtml + youtuberHtml) || window.t('<div style="text-align:center;color:#888;padding:30px;">لا يوجد مشتركون أو قنوات بعد</div>','<div style="text-align:center;color:#888;padding:30px;">No subscribers yet.</div>'));
 }
 
 window.filterSubscribers = function(roleKey, btn) {
@@ -2347,6 +2455,7 @@ window._translateTitleBg = async function(title) {
   } catch(e) {}
 };
 window.setLang = function(lang) {
+  // منع التكرار
   if (window._siteLanguage === lang) return;
   window._siteLanguage = lang;
   const arBtn = document.getElementById('lang-ar-btn');
