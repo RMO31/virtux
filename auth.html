@@ -323,48 +323,49 @@ function getDummyEmail(username) {
 async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!identifier || !password) { showMsg('❌ Fill all fields / أكمل الحقول', 'err'); return; }
+  if (!identifier || !password) { showMsg('Please fill all fields!', 'err'); return; }
 
   const btn = document.getElementById('btn-login');
   btn.disabled = true;
-  btn.textContent = 'جاري الدخول...';
+  btn.textContent = 'Logging in...';
 
   try {
     let loginError = null;
 
     if (identifier.includes('@')) {
-      // Email login
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // Username login → fetch real email first
-      const { data: profile, error: lookupErr } = await db
-        .from('profiles')
-        .select('email')
-        .ilike('username', identifier.trim())
-        .maybeSingle();
-
-      if (lookupErr || !profile?.email) {
-        showMsg('❌ Username not found / اسم المستخدم غير موجود', 'err');
-        btn.disabled = false; btn.textContent = 'Login'; return;
-      }
-      const { error } = await db.auth.signInWithPassword({ email: profile.email, password });
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+      let emailToTry = p?.email || getDummyEmail(identifier);
+      const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
+
+      if (loginError && loginError.status !== 429 && !p?.email) {
+        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
+        if (fallback !== emailToTry) {
+          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
+          loginError = retryError || null;
+        }
+      }
     }
 
     if (loginError) {
       let msg = loginError.message || 'Login failed.';
-      if (loginError.status === 429) msg = 'Too many attempts. Wait a few minutes.';
-      else if (loginError.message === 'Invalid login credentials' || loginError.status === 400)
-        msg = '❌ Wrong password / كلمة مرور خاطئة';
+      if (loginError.status === 429) {
+        msg = 'Too many attempts. Please wait a few minutes and try again.';
+      } else if (loginError.message === 'Invalid login credentials' || loginError.status === 400) {
+        msg = 'Invalid email/username or password.';
+      }
       throw new Error(msg);
     }
 
-    showMsg('✅ Welcome! Redirecting...', 'ok');
-    setTimeout(() => window.location.href = 'index.html', 1200);
+    showMsg('✅ Welcome back! Redirecting...', 'ok');
+    setTimeout(() => window.location.href = 'index.html', 1500);
   } catch (err) {
     showMsg('❌ ' + (err.message || 'Login failed.'), 'err');
-    btn.disabled = false; btn.textContent = 'Login';
+    btn.disabled = false;
+    btn.textContent = 'Login';
   }
 }
 

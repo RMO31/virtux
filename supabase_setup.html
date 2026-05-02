@@ -3,248 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Virtux - إعداد قاعدة البيانات</title>
+<title>Virtux - Database Setup</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
-  --border:rgba(99,102,241,0.18);--border2:rgba(99,102,241,0.35);
-  --accent:#6366f1;--accent2:#818cf8;--accent3:#c084fc;
-  --gold:#f59e0b;--red:#ef4444;--green:#22c55e;
-  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
-  --card:rgba(12,15,26,0.9);--glow:0 0 32px rgba(99,102,241,0.22);
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  font-family:'Tajawal',sans-serif;
-  background:var(--bg);color:var(--text);
-  min-height:100vh;position:relative;
-}
-body::before{
-  content:'';position:fixed;inset:0;
-  background:
-    radial-gradient(ellipse 70% 50% at 20% 10%,rgba(99,102,241,0.1) 0%,transparent 60%),
-    radial-gradient(ellipse 50% 40% at 80% 80%,rgba(192,132,252,0.07) 0%,transparent 50%);
-  pointer-events:none;z-index:0;
-}
-body::after{
-  content:'';position:fixed;inset:0;
-  background-image:
-    linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px);
-  background-size:44px 44px;pointer-events:none;z-index:0;
-}
-
-nav{
-  position:relative;z-index:10;
-  background:rgba(6,8,16,0.94);backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border);
-  padding:0 24px;height:60px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.logo{
-  font-family:'Orbitron',monospace;font-size:20px;font-weight:900;
-  background:linear-gradient(135deg,var(--accent2),var(--accent3));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  letter-spacing:3px;text-decoration:none;
-}
-.nav-back{
-  display:flex;align-items:center;gap:6px;
-  padding:6px 14px;border-radius:8px;
-  background:rgba(99,102,241,0.08);border:1px solid var(--border2);
-  color:var(--accent2);text-decoration:none;font-size:13px;transition:all 0.2s;
-}
-.nav-back:hover{background:rgba(99,102,241,0.18);color:var(--text);}
-
-.wrap{
-  position:relative;z-index:1;
-  max-width:640px;margin:0 auto;
-  padding:32px 20px 60px;
-}
-
-/* HERO */
-.setup-hero{
-  text-align:center;margin-bottom:28px;
-  background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(192,132,252,0.08));
-  border:1px solid var(--border2);border-radius:16px;
-  padding:28px 22px;
-}
-.setup-hero h1{
-  font-family:'Orbitron',monospace;font-size:22px;font-weight:900;
-  background:linear-gradient(135deg,#fff,var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  letter-spacing:2px;margin-bottom:6px;
-}
-.setup-hero p{color:var(--text2);font-size:13px;}
-
-/* CARDS */
-.card{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:14px;padding:20px;margin-bottom:14px;
-  backdrop-filter:blur(12px);
-}
-.card-title{
-  font-size:14px;font-weight:700;color:var(--text);
-  display:flex;align-items:center;gap:8px;margin-bottom:14px;
-}
-.card-title .icon{font-size:18px;}
-
-/* TAGS */
-.tags-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
-.tag-chip{
-  background:rgba(99,102,241,0.08);
-  border:1px solid var(--border);
-  border-radius:8px;padding:4px 11px;
-  font-size:12px;color:var(--text2);
-}
-
-.info-box{
-  background:rgba(99,102,241,0.06);border:1px solid var(--border);
-  border-radius:10px;padding:10px 14px;
-  font-size:12px;color:var(--text3);margin-top:10px;
-}
-
-/* PROGRESS */
-.progress-wrap{
-  background:rgba(99,102,241,0.08);border-radius:999px;
-  height:8px;margin:14px 0 6px;overflow:hidden;
-  border:1px solid var(--border);
-}
-.progress-bar{
-  height:100%;
-  background:linear-gradient(90deg,var(--accent),var(--accent3));
-  border-radius:999px;transition:width 0.4s ease;width:0%;
-}
-.progress-label{font-size:11px;color:var(--text3);}
-
-/* STEPS */
-.steps{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
-.step{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:11px;padding:12px 14px;
-  display:flex;align-items:center;gap:11px;
-  transition:all 0.25s;
-}
-.step:hover{transform:translateY(-1px);}
-.step.running{border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06);}
-.step.ok{border-color:rgba(34,197,94,0.35);background:rgba(34,197,94,0.06);}
-.step.err{border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.06);}
-.step-icon{font-size:18px;width:26px;text-align:center;flex-shrink:0;}
-.step-body{flex:1;}
-.step-name{font-size:13px;font-weight:700;color:var(--text);}
-.step.ok .step-name{color:#4ade80;}
-.step.err .step-name{color:#f87171;}
-.step.running .step-name{color:#fbbf24;}
-.step-msg{font-size:11px;color:var(--text3);margin-top:2px;word-break:break-word;}
-
-/* BTN */
-.btn-run{
-  width:100%;padding:14px;
-  background:linear-gradient(135deg,var(--accent),var(--accent3));
-  color:#fff;border:none;border-radius:12px;
-  font-size:15px;font-weight:800;cursor:pointer;
-  font-family:'Tajawal',sans-serif;
-  transition:all 0.2s;letter-spacing:0.5px;
-  box-shadow:0 14px 30px rgba(99,102,241,0.25);
-  margin-top:6px;
-}
-.btn-run:hover{transform:translateY(-1px);box-shadow:0 18px 38px rgba(99,102,241,0.35);}
-.btn-run:active{transform:scale(0.98);}
-.btn-run:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed;box-shadow:none;}
-
-/* BANNER */
-.banner{
-  border-radius:12px;padding:13px 16px;
-  font-size:13.5px;font-weight:700;text-align:center;
-  margin-top:10px;display:none;
-}
-.banner.success{
-  background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#4ade80;
-}
-.banner.warn{
-  background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;
-}
-
-/* SQL BOX */
-.sql-card{display:none;margin-top:14px;}
-.sql-box{
-  background:var(--bg);border:1px solid var(--border);
-  border-radius:12px;padding:14px;
-  font-size:11.5px;font-family:monospace;
-  color:#86efac;white-space:pre-wrap;
-  max-height:280px;overflow-y:auto;
-  margin-top:12px;line-height:1.65;
-  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
-}
-.copy-btn{
-  background:rgba(99,102,241,0.08);
-  border:1px solid var(--border2);color:var(--accent2);
-  border-radius:9px;padding:7px 14px;font-size:12px;
-  cursor:pointer;margin-top:8px;transition:all 0.2s;
-  font-family:'Tajawal',sans-serif;
-}
-.copy-btn:hover{background:rgba(99,102,241,0.18);}
-
-.spinner{
-  display:inline-block;width:14px;height:14px;
-  border:2px solid var(--border2);border-top-color:var(--accent);
-  border-radius:50%;animation:spin 0.7s linear infinite;
-  vertical-align:middle;margin-left:6px;
-}
-@keyframes spin{to{transform:rotate(360deg);}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Tajawal',sans-serif;background:radial-gradient(circle at top right, rgba(224,16,16,0.16), transparent 28%),radial-gradient(circle at left bottom, rgba(255,145,0,0.12), transparent 26%),linear-gradient(160deg,#09070d 0%,#12060a 50%,#0a0d12 100%);color:#fff;min-height:100vh;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center}
+.wrap{width:100%;max-width:620px}
+.logo{text-align:center;margin-bottom:28px}
+.logo h1{font-size:30px;color:#fff;letter-spacing:3px;font-family:'Orbitron',sans-serif;text-shadow:0 0 18px rgba(224,16,16,.25)}
+.logo p{color:#9fa8b8;font-size:13px;margin-top:6px}
+.card{background:rgba(12,12,20,.82);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:24px 22px;margin-bottom:16px;backdrop-filter:blur(16px);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.card-title{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px;color:#fff}
+.card-title span{font-size:18px}
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 15px;display:flex;align-items:center;gap:12px;transition:border-color .3s,background .3s,transform .2s}
+.step:hover{transform:translateY(-1px)}
+.step.running{border-color:#ffae42;background:rgba(255,174,66,.08)}
+.step.ok{border-color:#4fff9c;background:rgba(79,255,156,.08)}
+.step.err{border-color:#ff7373;background:rgba(255,115,115,.08)}
+.step-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0}
+.step-body{flex:1}
+.step-name{font-size:13px;font-weight:700;color:#eaf0ff}
+.step-msg{font-size:11px;color:#8d95a6;margin-top:3px;word-break:break-word}
+.step.ok .step-name{color:#74ffb1}
+.step.err .step-name{color:#ff9f9f}
+.step.running .step-name{color:#ffc368}
+.progress-wrap{background:rgba(255,255,255,.05);border-radius:999px;height:8px;margin:14px 0 4px;overflow:hidden}
+.progress-bar{height:8px;background:linear-gradient(90deg,#e01010,#ff7b00,#ffcc55);border-radius:999px;transition:width .4s;width:0}
+.progress-label{font-size:11px;color:#98a0ae;text-align:left;direction:ltr}
+.btn{width:100%;padding:15px;background:linear-gradient(135deg,#ff5a36,#ffb547);color:#160b06;font-weight:900;font-size:15px;border:none;border-radius:16px;cursor:pointer;transition:opacity .2s,transform .1s;letter-spacing:.5px;box-shadow:0 16px 34px rgba(255,90,54,.24)}
+.btn:hover{opacity:.85}
+.btn:active{transform:scale(.98)}
+.btn:disabled{background:#333;color:#666;cursor:not-allowed}
+.sql-box{background:#050507;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;font-size:11px;font-family:monospace;color:#85ffa9;white-space:pre-wrap;max-height:260px;overflow-y:auto;margin-top:12px;line-height:1.6}
+.copy-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#e9edf6;border-radius:10px;padding:8px 14px;font-size:11px;cursor:pointer;margin-top:8px;transition:background .2s}
+.copy-btn:hover{background:rgba(255,255,255,.08)}
+.banner{border-radius:16px;padding:14px 16px;font-size:13px;font-weight:700;text-align:center;margin-top:8px;display:none}
+.banner.success{background:rgba(0,26,0,.72);border:1px solid #2f2;color:#86ff86}
+.banner.warn{background:rgba(26,16,0,.78);border:1px solid #fa0;color:#ffc368}
 </style>
 </head>
 <body>
-
-<nav>
-  <a href="index.html" class="logo">VIRTUX</a>
-  <a href="index.html" class="nav-back">← الرئيسية</a>
-</nav>
-
 <div class="wrap">
-  <!-- HERO -->
-  <div class="setup-hero">
-    <h1>🗄️ إعداد قاعدة البيانات</h1>
-    <p>إنشاء جدول payment_requests وكل السياسات المطلوبة تلقائياً</p>
+  <div class="logo">
+    <h1>VIRTUX</h1>
+    <p>Database Setup - payment_requests</p>
   </div>
 
-  <!-- WHAT WILL BE CREATED -->
   <div class="card">
-    <div class="card-title"><span class="icon">📋</span> ما سيتم إنشاؤه</div>
-    <div class="tags-wrap">
-      <span class="tag-chip">🗄️ جدول payment_requests</span>
-      <span class="tag-chip">🔒 سياسات RLS</span>
-      <span class="tag-chip">⚡ Function auto_grant_rank</span>
-      <span class="tag-chip">🔔 Trigger on_payment_approved</span>
-      <span class="tag-chip">👤 جدول profiles</span>
-      <span class="tag-chip">🪣 Storage bucket: avatars</span>
+    <div class="card-title"><span>📋</span> ما سيتم إنشاؤه</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#aaa">
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">🗄️ جدول payment_requests</span>
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">🔒 سياسات RLS</span>
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">⚡ Function auto_grant_rank</span>
+      <span style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:4px 10px;border-radius:10px;">🔔 Trigger on_payment_approved</span>
     </div>
-    <div class="info-box">
-      💡 إذا فشل التشغيل التلقائي، سيظهر SQL كامل يمكنك نسخه وتشغيله في Supabase SQL Editor يدوياً.
+    <div style="margin-top:12px;font-size:12px;color:#9fa8b8;background:rgba(255,255,255,.03);border-radius:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.08)">
+      إذا فشل التشغيل التلقائي، سيظهر SQL كامل لنسخه وتشغيله من داخل Supabase SQL Editor.
     </div>
   </div>
 
-  <!-- STEPS -->
   <div class="card">
-    <div class="card-title"><span class="icon">🚀</span> خطوات الإعداد</div>
+    <div class="card-title"><span>🚀</span> خطوات الإعداد</div>
     <div class="progress-wrap"><div class="progress-bar" id="prog"></div></div>
-    <div class="progress-label" id="prog-label">0 / 8 خطوات</div>
-    <div class="steps" id="steps-list"></div>
+    <div class="progress-label" id="prog-label">0 / 8</div>
+    <div class="steps" id="steps-list" style="margin-top:14px"></div>
   </div>
 
-  <button class="btn-run" id="runBtn" onclick="runSetup()">🚀 تشغيل الإعداد</button>
+  <button class="btn" id="runBtn" onclick="runSetup()">🚀 تشغيل الإعداد</button>
   <div class="banner" id="banner"></div>
 
-  <!-- SQL CARD -->
-  <div class="card sql-card" id="sql-card">
-    <div class="card-title"><span class="icon">📄</span> SQL للتنفيذ اليدوي</div>
-    <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">انسخ هذا الكود وشغله في Supabase → SQL Editor</div>
+  <div class="card" id="sql-card" style="display:none;margin-top:16px">
+    <div class="card-title"><span>📄</span> SQL للتنفيذ اليدوي</div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:6px">انسخ هذا الكود وشغله في Supabase SQL Editor</div>
     <div class="sql-box" id="sql-content"></div>
     <button class="copy-btn" onclick="copySql()">📋 نسخ SQL</button>
   </div>
 </div>
-
 <script>
 const SUPABASE_URL='https://eyqcpkhjzpmawqtilhgl.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5cWNwa2hqenBtYXdxdGlsaGdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODExMDEsImV4cCI6MjA5MDk1NzEwMX0.HKIrJv4o5wwQWwruYnTNu8aRoMTHYuwpOEMQ5XsDcrk';
@@ -274,11 +110,10 @@ const STEPS=[
 const FULL_SQL=STEPS.map(s=>s.sql).join('\n\n');
 const list=document.getElementById('steps-list');
 
-const iconMap={running:'⏳',ok:'✅',err:'❌'};
-
 STEPS.forEach(s=>{
   const d=document.createElement('div');
-  d.className='step';d.id='step-'+s.id;
+  d.className='step';
+  d.id='step-'+s.id;
   d.innerHTML=`<div class="step-icon">${s.icon}</div><div class="step-body"><div class="step-name">${s.name}</div><div class="step-msg" id="msg-${s.id}">في الانتظار...</div></div>`;
   list.appendChild(d);
 });
@@ -287,18 +122,20 @@ function setStep(id,state,msg){
   const el=document.getElementById('step-'+id);
   const m=document.getElementById('msg-'+id);
   el.className='step '+state;
-  el.querySelector('.step-icon').textContent=iconMap[state]||STEPS.find(s=>s.id===id).icon;
-  m.textContent=state==='running'?'جاري التنفيذ...':(msg||(state==='ok'?'✅ تم بنجاح':'❌ فشل'));
+  const icons={running:'⏳',ok:'✅',err:'❌'};
+  el.querySelector('.step-icon').textContent=icons[state]||STEPS.find(s=>s.id===id).icon;
+  m.textContent=state==='running'?'جاري التنفيذ...':(msg||(state==='ok'?'تم بنجاح':'فشل'));
 }
+
 function setProgress(d,t){
   document.getElementById('prog').style.width=(d/t*100)+'%';
-  document.getElementById('prog-label').textContent=d+' / '+t+' خطوات';
+  document.getElementById('prog-label').textContent=d+' / '+t;
 }
 
 async function trySQL(sql){
   try{
-    const{error}=await db.rpc('exec_sql',{query:sql});
-    if(!error)return{ok:true};
+    const { error } = await db.rpc('exec_sql',{query:sql});
+    if(!error) return {ok:true};
   }catch(e){}
   try{
     const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`,{
@@ -306,13 +143,13 @@ async function trySQL(sql){
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
       body:JSON.stringify({query:sql})
     });
-    if(r.ok)return{ok:true};
-    return{ok:false,msg:(await r.text()).slice(0,200)};
-  }catch(e){return{ok:false,msg:e.message};}
+    if(r.ok) return {ok:true};
+    return {ok:false,msg:(await r.text()).slice(0,180)};
+  }catch(e){return {ok:false,msg:e.message};}
 }
 
 async function runSetup(){
-  const FIX_SQL=`
+  const FIX_SQL = `
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   username text unique,
@@ -320,14 +157,15 @@ create table if not exists public.profiles (
   avatar_url text,
   role text default 'user',
   roles text[] default '{user}',
-  xp integer default 0,
   birthdate date,
   birth_place text,
   country text,
   favorite_game text,
   created_at timestamptz default now()
 );
+
 alter table public.profiles enable row level security;
+
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Public profiles are viewable by everyone.') then
     create policy "Public profiles are viewable by everyone." on profiles for select using (true);
@@ -339,39 +177,34 @@ do $$ begin
     create policy "Users can update own profile." on profiles for update using (auth.uid() = id);
   end if;
 end $$;
+
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.profiles (id, username, email, role, roles)
-  values (new.id, coalesce(new.raw_user_meta_data->>'username','user_'||substr(new.id::text,1,5)), new.email,'user','{user}')
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 5)),
+    new.email,
+    'user',
+    '{user}'
+  )
   on conflict (id) do nothing;
   return new;
 end;
 $$ language plpgsql security definer;
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
-insert into storage.buckets (id,name,public) values ('avatars','avatars',true) on conflict (id) do nothing;
-insert into storage.buckets (id,name,public) values ('videos','videos',true) on conflict (id) do nothing;
-insert into storage.buckets (id,name,public) values ('covers','covers',true) on conflict (id) do nothing;
-alter table if exists posts add column if not exists likes_count integer default 0;
-alter table if exists posts add column if not exists comments_count integer default 0;
-alter table if exists posts add column if not exists type text default 'clip';
-alter table if exists posts add column if not exists posted_by text;
 
--- Profile extra columns for profile.html
-alter table public.profiles add column if not exists display_name text;
-alter table public.profiles add column if not exists bio text;
-alter table public.profiles add column if not exists cover_url text;
-alter table public.profiles add column if not exists discord text;
-alter table public.profiles add column if not exists twitch text;
-alter table public.profiles add column if not exists games text[] default '{}';
-alter table public.profiles add column if not exists followers_count integer default 0;
-alter table public.profiles add column if not exists following_count integer default 0;
-alter table public.profiles add column if not exists updated_at timestamptz default now();
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
 `;
 
   const btn=document.getElementById('runBtn');
-  btn.disabled=true;btn.innerHTML='⏳ جاري الإعداد...<span class="spinner"></span>';
+  btn.disabled=true;
+  btn.textContent='⏳ جاري الإعداد...';
   document.getElementById('banner').style.display='none';
   document.getElementById('sql-card').style.display='none';
   let done=0,failed=0;
@@ -382,25 +215,26 @@ alter table public.profiles add column if not exists updated_at timestamptz defa
   for(const s of STEPS){
     setStep(s.id,'running');
     const r=await trySQL(s.sql);
-    done++;setProgress(done,STEPS.length);
-    if(r.ok)setStep(s.id,'ok');
-    else{setStep(s.id,'err',r.msg);failed++;}
-    await new Promise(res=>setTimeout(res,200));
+    done++;
+    setProgress(done,STEPS.length);
+    if(r.ok) setStep(s.id,'ok');
+    else { setStep(s.id,'err',r.msg); failed++; }
+    await new Promise(resolve=>setTimeout(resolve,180));
   }
 
   const b=document.getElementById('banner');
   b.style.display='block';
   if(!failed){
     b.className='banner success';
-    b.innerHTML='🎉 تم إعداد قاعدة البيانات بنجاح! كل شيء جاهز.';
-    btn.innerHTML='✅ تم الإعداد';
-  }else{
+    b.innerHTML='تم الإعداد بنجاح. جدول payment_requests أصبح جاهزًا.';
+    btn.textContent='✅ تم الإعداد';
+  } else {
     b.className='banner warn';
-    b.innerHTML=`⚠️ فشل ${failed} من ${STEPS.length} خطوات. انسخ SQL وشغله يدوياً في Supabase.`;
+    b.innerHTML=`فشل ${failed} من الخطوات. انسخ SQL أدناه وشغله يدويًا في Supabase.`;
     document.getElementById('sql-card').style.display='block';
     document.getElementById('sql-content').textContent=FULL_SQL;
     btn.disabled=false;
-    btn.innerHTML='🔄 إعادة المحاولة';
+    btn.textContent='🔄 إعادة المحاولة';
   }
 }
 
