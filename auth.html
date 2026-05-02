@@ -323,45 +323,55 @@ function getDummyEmail(username) {
 async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!identifier || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  if (!identifier || !password) { showMsg('الرجاء إكمال جميع الحقول / Please fill all fields!', 'err'); return; }
 
   const btn = document.getElementById('btn-login');
   btn.disabled = true;
-  btn.textContent = 'Logging in...';
+  btn.textContent = 'جاري الدخول... / Logging in...';
 
   try {
     let loginError = null;
 
     if (identifier.includes('@')) {
+      // ===== تسجيل بالإيميل =====
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-      let emailToTry = p?.email || getDummyEmail(identifier);
-      const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
-      loginError = error;
+      // ===== تسجيل باسم المستخدم - نبحث عن الإيميل أولاً =====
+      const { data: profile, error: profileErr } = await db
+        .from('profiles')
+        .select('email, id')
+        .ilike('username', identifier.trim())
+        .maybeSingle();
 
-      if (loginError && loginError.status !== 429 && !p?.email) {
-        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
-        if (fallback !== emailToTry) {
-          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
-          loginError = retryError || null;
-        }
+      if (profileErr || !profile?.email) {
+        // لم نجد المستخدم
+        showMsg('❌ اسم المستخدم غير موجود / Username not found', 'err');
+        btn.disabled = false;
+        btn.textContent = 'Login';
+        return;
       }
+
+      // وجدنا الإيميل - نسجل الدخول
+      const { error } = await db.auth.signInWithPassword({ email: profile.email, password });
+      loginError = error;
     }
 
     if (loginError) {
       let msg = loginError.message || 'Login failed.';
       if (loginError.status === 429) {
-        msg = 'Too many attempts. Please wait a few minutes and try again.';
-      } else if (loginError.message === 'Invalid login credentials' || loginError.status === 400) {
-        msg = 'Invalid email/username or password.';
+        msg = 'محاولات كثيرة جداً - انتظر قليلاً / Too many attempts.';
+      } else if (
+        loginError.message === 'Invalid login credentials' ||
+        loginError.status === 400
+      ) {
+        msg = '❌ كلمة المرور خاطئة / Wrong password';
       }
       throw new Error(msg);
     }
 
-    showMsg('✅ Welcome back! Redirecting...', 'ok');
-    setTimeout(() => window.location.href = 'index.html', 1500);
+    showMsg('✅ مرحباً بك! / Welcome back! جاري التحويل...', 'ok');
+    setTimeout(() => window.location.href = 'index.html', 1200);
   } catch (err) {
     showMsg('❌ ' + (err.message || 'Login failed.'), 'err');
     btn.disabled = false;
