@@ -241,7 +241,6 @@
       <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
       <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
       <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <!-- تم حذف زر الميزات والرتب (sb-ranks) -->
       <div class="sb-sec">أخبار</div>
       <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
       <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
@@ -399,8 +398,6 @@ async function loadDashboard() {
     }
     recentMembersHtml += `</div>`;
 
-    // تم حذف قسم payment_requests بالكامل
-
     let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
       <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
       <div id="roleSearchResults" class="role-search-results"></div>
@@ -440,8 +437,8 @@ async function loadDashboard() {
         const has = userRoles.includes(r);
         const m = ROLE_META[r];
         return has
-          ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,false).then(()=>loadDashboard())">✕ ${m.label}</button>`
-          : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${uid}&quot;,&quot;${r}&quot;,true).then(()=>loadDashboard())">${m.label}</button>`;
+          ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRoleWithExpiry('${uid}','${r}',false)">✕ ${m.label}</button>`
+          : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRoleWithExpiry('${uid}','${r}',true)">${m.label}</button>`;
       }).join('');
       const expiryStr = u.expiry_date ? `<div style="font-size:10px;color:#f55;margin-top:2px;">⏳ ينتهي في: ${new Date(u.expiry_date).toLocaleDateString('ar-EG')}</div>` : '';
       return `<div class="pi" id="user-${uid}">
@@ -454,7 +451,7 @@ async function loadDashboard() {
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:260px;">
           ${toggleBtns}
-          <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser(&quot;${uid}&quot;).then(()=>loadDashboard())">🗑️ حذف</button>
+          <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser('${uid}').then(()=>loadDashboard())">🗑️ حذف</button>
         </div>
       </div>`;
     }).join('') + `</div></div>`;
@@ -530,56 +527,105 @@ async function searchUsersForRole(query) {
       const toggleBtns = Object.keys(RM).map(r => {
         const has = uRoles.includes(r); const m = RM[r];
         return has
-          ? `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,false).then(()=>loadDashboard())">✕ ${m.label}</button>`
-          : `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole(&quot;${id}&quot;,&quot;${r}&quot;,true).then(()=>loadDashboard())">${m.label}</button>`;
+          ? `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid ${m.color};background:${m.bg};color:${m.color};cursor:pointer;" onclick="toggleRoleWithExpiry('${id}','${r}',false)">✕ ${m.label}</button>`
+          : `<button style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRoleWithExpiry('${id}','${r}',true)">${m.label}</button>`;
       }).join('');
       return `<div class="role-search-result-item">
         <div><strong>${escapeHtml(u.username||u.email)}</strong><br><small>${escapeHtml(u.email)}</small><br><div style="margin-top:4px;">${badges}</div></div>
-        <div class="role-buttons" style="flex-wrap:wrap;gap:4px;">${toggleBtns}<button class="btn-del" style="font-size:10px;padding:2px 7px;" onclick="deleteUser(&quot;${id}&quot;).then(()=>loadDashboard())">🗑️ حذف</button></div>
+        <div class="role-buttons" style="flex-wrap:wrap;gap:4px;">${toggleBtns}<button class="btn-del" style="font-size:10px;padding:2px 7px;" onclick="deleteUser('${id}').then(()=>loadDashboard())">🗑️ حذف</button></div>
       </div>`;
     }).join('');
   } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
 }
 function refreshDashboard() { loadDashboard(); }
 
+// وظيفة إظهار نافذة إدخال تاريخ الانتهاء (اختياري) ثم استدعاء التعديل الفعلي
+async function toggleRoleWithExpiry(userId, role, add) {
+  if (!add) {
+    // للإزالة لا نحتاج تاريخ انتهاء
+    await toggleRole(userId, role, false, null);
+    await loadDashboard();
+    return;
+  }
+  // للإضافة نسأل عن تاريخ الانتهاء (اختياري)
+  let expiryStr = prompt(`إضافة رتبة "${role}"\nأدخل تاريخ الانتهاء بصيغة YYYY-MM-DD (اتركه فارغاً إذا لا تريد تاريخ انتهاء):`, "");
+  let expiryDate = null;
+  if (expiryStr && expiryStr.trim() !== "") {
+    expiryDate = new Date(expiryStr.trim());
+    if (isNaN(expiryDate.getTime())) {
+      alert("❌ التاريخ غير صحيح. استخدم صيغة YYYY-MM-DD");
+      return;
+    }
+    expiryDate = expiryDate.toISOString();
+  }
+  await toggleRole(userId, role, true, expiryDate);
+  await loadDashboard();
+}
+
+// دالة التعديل الأساسية (مُحسَّنة لدعم RLS والتعامل مع الأخطاء)
 async function toggleRole(userId, role, add, expiryDate = null) {
   try {
-    console.log(`toggleRole called: userId=${userId}, role=${role}, add=${add}`);
+    console.log(`toggleRole: userId=${userId}, role=${role}, add=${add}, expiry=${expiryDate}`);
     const { data: prof, error: fetchErr } = await supabaseClient
-      .from('profiles').select('role,roles').eq('id', userId).single();
-    if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم: ' + fetchErr.message); console.error('Fetch error:', fetchErr); return false; }
+      .from('profiles')
+      .select('id, role, roles, expiry_date')
+      .eq('id', userId)
+      .maybeSingle();
+    if (fetchErr) throw fetchErr;
+    if (!prof) {
+      alert('⚠️ المستخدم غير موجود');
+      return false;
+    }
 
-    let currentRoles = Array.isArray(prof.roles) && prof.roles.length
-      ? [...prof.roles]
-      : (prof.role ? [prof.role] : ['user']);
+    let currentRoles = [];
+    if (prof.roles && Array.isArray(prof.roles)) currentRoles = [...prof.roles];
+    else if (prof.role && typeof prof.role === 'string') currentRoles = [prof.role];
+    else currentRoles = ['user'];
 
     if (add) {
       if (!currentRoles.includes(role)) currentRoles.push(role);
       if (!currentRoles.includes('user')) currentRoles.unshift('user');
     } else {
       currentRoles = currentRoles.filter(r => r !== role);
-      if (!currentRoles.includes('user')) currentRoles.unshift('user');
+      if (currentRoles.length === 0) currentRoles = ['user'];
     }
-
     const primaryRole = currentRoles[0];
-    console.log('New roles:', currentRoles, 'Primary:', primaryRole);
 
-    const { data: updateData, error } = await supabaseClient.from('profiles')
-      .update({ roles: currentRoles, role: primaryRole, expiry_date: add ? expiryDate : null })
+    const updatePayload = {
+      role: primaryRole,
+      roles: currentRoles,
+      expiry_date: add ? expiryDate : null
+    };
+    console.log('Updating with payload:', updatePayload);
+
+    const { data: updateData, error: updateErr } = await supabaseClient
+      .from('profiles')
+      .update(updatePayload)
       .eq('id', userId)
       .select();
-    if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error('Update error:', error); return false; }
 
-    if (!updateData || updateData.length === 0) {
-      alert('⚠️ لم يتم تحديث أي صف. تأكد أن RLS policy تسمح بالتحديث في جدول profiles.');
-      console.warn('No rows updated. Check RLS policies on profiles table.');
+    if (updateErr) {
+      if (updateErr.code === '42501') {
+        alert('❌ فشل التحديث بسبب سياسات الأمان (RLS).\n\nيرجى إضافة سياسة UPDATE في Supabase كما هو موضح في الوثيقة.');
+        console.error('RLS error:', updateErr);
+        return false;
+      }
+      alert('❌ فشل تغيير الرتبة: ' + updateErr.message);
       return false;
     }
-
-    console.log('✅ Role updated successfully');
+    if (!updateData || updateData.length === 0) {
+      alert('⚠️ لم يتم تحديث أي صف. تأكد من وجود عمودي role و roles في جدول profiles.');
+      return false;
+    }
+    alert(`✅ تم ${add ? 'إضافة' : 'إزالة'} الرتبة بنجاح`);
     return true;
-  } catch(e) { alert('❌ خطأ: ' + e.message); console.error('toggleRole error:', e); return false; }
+  } catch (err) {
+    alert('❌ خطأ غير متوقع: ' + err.message);
+    console.error(err);
+    return false;
+  }
 }
+
 async function deleteUser(userId) {
   if (!confirm('حذف المستخدم نهائياً؟ لا يمكن التراجع')) return;
   try {
@@ -590,7 +636,7 @@ async function deleteUser(userId) {
   } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
 }
 
-// ==================== تحميل صفحة المحتوى ====================
+// ==================== تحميل صفحة المحتوى (نفس الكود الأصلي) ====================
 async function loadContentPage(room) {
   let container = document.getElementById(`content-${room}`);
   if (!container) return;
@@ -627,10 +673,8 @@ async function loadContentPage(room) {
           else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
           else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
           
-          // جلب معلومات المستخدم إذا وجد user_id
           let authorHtml = '';
           if (p.user_id) {
-            // سيتم جلب بيانات المستخدمين بشكل جماعي بعد ذلك، ولكن نعرض مؤقتاً
             authorHtml = `<div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;"><span style="font-size:12px; color:#aaa;">👤 ${escapeHtml(p.user_id.substring(0,6))}...</span></div>`;
           }
           
@@ -654,7 +698,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة ====================
+// ==================== نموذج الإضافة لكل غرفة (مبسط مع الاحتفاظ بالمعاينة) ====================
 function getAddForm(room) {
   if (room === 'home') {
     return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
@@ -933,7 +977,7 @@ async function addPost(room) {
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
 async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
 
-// ==================== دوال التعديل المصححة (مع رفع ملفات جديدة) ====================
+// ==================== دوال التعديل ====================
 function getTagOptionsForEdit(room, currentTag) {
   let opts = '';
   if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -1066,7 +1110,7 @@ async function addYouTubeChannel(room) {
     let { error } = await supabaseClient.from('posts').insert(body);
     if (error) throw error;
 
-    // ── جلب فوري: فيديوهات + بث مباشر + قبل بث ──
+    // جلب فوري: فيديوهات + بث مباشر + قبل بث
     let handle = url.split('@')[1]?.split(/[\/?]/)[0];
     if (handle) {
       if (btn) btn.textContent = '📥 جاري تنزيل المحتوى...';
@@ -1113,7 +1157,6 @@ async function getChannelId(handle) {
   return null;
 }
 
-// جلب آخر فيديوهات عادية
 async function fetchLatestVideos(channelId, maxResults = 5, publishedAfter = null) {
   try {
     let extra = publishedAfter ? `&publishedAfter=${encodeURIComponent(publishedAfter)}` : '';
@@ -1131,7 +1174,6 @@ async function fetchLatestVideos(channelId, maxResults = 5, publishedAfter = nul
   } catch(e) { return []; }
 }
 
-// جلب بث مباشر حالي
 async function fetchLiveStream(channelId) {
   try {
     let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${YOUTUBE_API_KEY}`);
@@ -1150,7 +1192,6 @@ async function fetchLiveStream(channelId) {
   } catch(e) { return null; }
 }
 
-// جلب بث قادم (scheduled)
 async function fetchUpcomingStream(channelId) {
   try {
     let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=upcoming&type=video&key=${YOUTUBE_API_KEY}`);
@@ -1169,7 +1210,6 @@ async function fetchUpcomingStream(channelId) {
   } catch(e) { return null; }
 }
 
-// حفظ في DB مع منع التكرار
 async function saveToDb(item, room, tag) {
   let { data: existing } = await supabaseClient.from('posts')
     .select('id').eq('url', item.videoUrl).limit(1);
@@ -1186,7 +1226,6 @@ async function saveToDb(item, room, tag) {
   return true;
 }
 
-// الفحص الشامل لكل القنوات
 async function autoCheckAllChannels() {
   try {
     let { data: channels } = await supabaseClient.from('posts')
@@ -1201,7 +1240,6 @@ async function autoCheckAllChannels() {
       let chInfo = await getChannelId(handle);
       if (!chInfo) continue;
 
-      // ── فيديوهات عادية ──
       let { data: lastVid } = await supabaseClient.from('posts')
         .select('content').eq('room', 'yt-videos').eq('description', chInfo.title)
         .eq('tag', 'Video').order('id', { ascending: false }).limit(1);
@@ -1209,11 +1247,9 @@ async function autoCheckAllChannels() {
       let videos = await fetchLatestVideos(chInfo.id, 10, publishedAfter);
       for (let v of videos) { if (await saveToDb(v, 'yt-videos', 'Video')) newVideos++; }
 
-      // ── بث مباشر حالي → يُحفظ في غرفة live بـ tag "Live Now" ──
       let live = await fetchLiveStream(chInfo.id);
       if (live) { if (await saveToDb(live, 'live', 'Live Now')) newLive++; }
 
-      // ── بث قادم → يُحفظ في غرفة live بـ tag "Pre Lives" ──
       let upcoming = await fetchUpcomingStream(chInfo.id);
       if (upcoming) { if (await saveToDb(upcoming, 'live', 'Pre Lives')) newUpcoming++; }
     }
@@ -1274,8 +1310,8 @@ async function loadSubscribersAdmin() {
           const has = roles.includes(rr);
           const mm = RM[rr];
           return has
-            ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${mm.color};background:${mm.bg};color:${mm.color};cursor:pointer;" onclick="toggleRole('${uid}','${rr}',false).then(()=>loadSubscribersAdmin())">✕ ${mm.label}</button>`
-            : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole('${uid}','${rr}',true).then(()=>loadSubscribersAdmin())">${mm.label}</button>`;
+            ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${mm.color};background:${mm.bg};color:${mm.color};cursor:pointer;" onclick="toggleRoleWithExpiry('${uid}','${rr}',false).then(()=>loadSubscribersAdmin())">✕ ${mm.label}</button>`
+            : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRoleWithExpiry('${uid}','${rr}',true).then(()=>loadSubscribersAdmin())">${mm.label}</button>`;
         }).join('');
         html += `<div class="pi subs-user-item" data-username="${escapeHtml(u.username||'')}" data-email="${escapeHtml(u.email||'')}">
           <div class="pi-icon">👤</div>
@@ -1321,11 +1357,11 @@ async function addUserSubscriber() { let userId = document.getElementById('sub-u
 
 // ربط الدوال
 window.startAutoCheck = startAutoCheck; window.autoCheckAllChannels = autoCheckAllChannels;
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.toggleRole = toggleRole; window.toggleRoleWithExpiry = toggleRoleWithExpiry; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
 </script>
 
 <script>
-// ===== 3D SPACE TUNNEL + FLOATING CUBES BACKGROUND =====
+// ===== 3D SPACE TUNNEL + FLOATING CUBES BACKGROUND (نفس الكود الأصلي) =====
 (function() {
   const canvas = document.getElementById('bgCanvas');
   if (!canvas) return;
