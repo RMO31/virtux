@@ -1,169 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Virtux — لوحة الإدارة</title>
+<title>Virtux â€” Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-// ===================================================
-// POSTS SLIDER - سلسلة منشورات تفاعلية
-// ===================================================
-const sliderState = {
-  posts: [],
-  currentPage: 0,
-  perPage: 3, // منشورات لكل صفحة
-  containerId: '',
-};
-
-function buildPostsSlider(posts, containerId) {
-  sliderState.posts = posts;
-  sliderState.currentPage = 0;
-  sliderState.containerId = containerId;
-  renderSlider();
-
-  // ===== Scroll wheel support (زر الوسط) =====
-  const wrap = document.getElementById(containerId);
-  if (wrap) {
-    wrap.removeEventListener('wheel', handleSliderWheel);
-    wrap.addEventListener('wheel', handleSliderWheel, {passive:false});
-  }
-}
-
-function handleSliderWheel(e) {
-  e.preventDefault();
-  if (e.deltaY > 0) {
-    sliderNext();
-  } else {
-    sliderPrev();
-  }
-}
-
-function renderSlider() {
-  const {posts, currentPage, perPage, containerId} = sliderState;
-  const totalPages = Math.ceil(posts.length / perPage);
-  const start = currentPage * perPage;
-  const pagePosts = posts.slice(start, start + perPage);
-  const el = document.getElementById(containerId);
-  if (!el) return;
-
-  const postsHTML = pagePosts.map(p => {
-    const author = p.profiles?.username || p.posted_by || 'لاعب';
-    const avatar = p.profiles?.avatar_url;
-    const content = (p.content || '').trim();
-    const typeIcon = getTypeIcon(p.type);
-    const typeColors = {
-      clip:'rgba(99,102,241,0.2)',news:'rgba(245,158,11,0.15)',
-      tourney:'rgba(192,132,252,0.2)',question:'rgba(34,197,94,0.15)',
-      review:'rgba(239,68,68,0.15)',live:'rgba(239,68,68,0.2)',screen:'rgba(99,102,241,0.15)'
-    };
-    const iconBg = typeColors[p.type] || 'rgba(99,102,241,0.15)';
-    return `<div class="slide-post" onclick="openEditPost('${p.id}')">
-      <div class="slide-post-top">
-        <div class="slide-post-icon" style="background:${iconBg};">${typeIcon}</div>
-        <div class="slide-post-meta">
-          <div class="slide-post-author">
-            ${avatar ? `<img src="${avatar}" style="width:16px;height:16px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-left:4px;">` : ''}
-            ${esc(author)}
-          </div>
-          <div class="slide-post-time">${ago(p.created_at)}</div>
-        </div>
-        ${tagBadge(p.type)}
-      </div>
-      <div class="slide-post-content">${content ? esc(content).replace(/\n/g,'<br>') : '<span style="color:var(--text3);font-style:italic;">لا يوجد محتوى</span>'}</div>
-      <div class="slide-post-footer">
-        <span class="slide-stat">❤️ ${p.likes_count||0}</span>
-        <span class="slide-stat">💬 ${p.comments_count||0}</span>
-        <div class="slide-actions" onclick="event.stopPropagation()">
-          <button class="slide-edit-btn" onclick="openEditPost('${p.id}')">✏️ تعديل</button>
-          <button class="slide-del-btn" onclick="deletePost('${p.id}',true)">🗑️</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  // dots
-  let dotsHTML = '';
-  for (let i = 0; i < totalPages; i++) {
-    dotsHTML += `<div class="slider-dot ${i===currentPage?'active':''}" onclick="sliderGoTo(${i})"></div>`;
-  }
-
-  el.innerHTML = `
-    <div class="slider-header">
-      <div class="card-title">📝 المنشورات
-        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:6px;">(${posts.length} إجمالي)</span>
-      </div>
-      <div class="slider-controls">
-        <button class="slider-btn" id="sliderPrevBtn" onclick="sliderPrev()" ${currentPage===0?'disabled':''}>▲</button>
-        <span class="slider-counter">${currentPage+1} / ${totalPages}</span>
-        <button class="slider-btn" id="sliderNextBtn" onclick="sliderNext()" ${currentPage>=totalPages-1?'disabled':''}>▼</button>
-        <button class="slider-btn" onclick="nav('posts')" title="عرض الكل" style="width:auto;padding:0 10px;font-size:11px;">الكل ←</button>
-      </div>
-    </div>
-    <div class="slider-track-wrap">
-      <div class="slider-track" id="sliderTrack">
-        ${postsHTML || '<div class="slider-empty">لا توجد منشورات</div>'}
-      </div>
-    </div>
-    <div class="slider-dots">${dotsHTML}</div>
-  `;
-}
-
-function sliderNext() {
-  const totalPages = Math.ceil(sliderState.posts.length / sliderState.perPage);
-  if (sliderState.currentPage < totalPages - 1) {
-    sliderState.currentPage++;
-    animateSlider('down');
-    renderSlider();
-    reAttachWheel();
-  }
-}
-
-function sliderPrev() {
-  if (sliderState.currentPage > 0) {
-    sliderState.currentPage--;
-    animateSlider('up');
-    renderSlider();
-    reAttachWheel();
-  }
-}
-
-function sliderGoTo(page) {
-  const dir = page > sliderState.currentPage ? 'down' : 'up';
-  sliderState.currentPage = page;
-  animateSlider(dir);
-  renderSlider();
-  reAttachWheel();
-}
-
-function animateSlider(dir) {
-  const track = document.getElementById('sliderTrack');
-  if (!track) return;
-  const from = dir === 'down' ? '20px' : '-20px';
-  track.style.transition = 'none';
-  track.style.opacity = '0';
-  track.style.transform = `translateY(${from})`;
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      track.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-      track.style.opacity = '1';
-      track.style.transform = 'translateY(0)';
-    });
-  });
-}
-
-function reAttachWheel() {
-  const wrap = document.getElementById(sliderState.containerId);
-  if (wrap) {
-    wrap.removeEventListener('wheel', handleSliderWheel);
-    wrap.addEventListener('wheel', handleSliderWheel, {passive:false});
-  }
-}
-
-// Override deletePost in slider context to refresh slider
-const _origDeletePost = deletePost;
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#060810;--bg2:#0c0f1a;--bg3:#111525;
@@ -402,10 +244,10 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
 <div id="loginPage">
   <div class="login-box">
     <div class="login-logo">VIRTUX</div>
-    <div class="login-sub">⚙️ لوحة تحكم الإدارة</div>
-    <input type="password" id="pw" placeholder="كلمة المرور" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn-login" onclick="doLogin()">🚀 دخول</button>
-    <div class="login-err" id="loginErr">❌ كلمة المرور خاطئة</div>
+    <div class="login-sub">âš™ï¸ Ù„ÙˆØ­Ø© ØªØ­ÙƒÙ… Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©</div>
+    <input type="password" id="pw" placeholder="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn-login" onclick="doLogin()">ðŸš€ Ø¯Ø®ÙˆÙ„</button>
+    <div class="login-err" id="loginErr">âŒ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø®Ø§Ø·Ø¦Ø©</div>
   </div>
 </div>
 
@@ -418,9 +260,9 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
       <span style="font-size:12px;color:var(--text3);">Admin Panel</span>
     </div>
     <div class="topbar-right">
-      <span class="conn-badge conn-ok" id="connStatus">● متصل</span>
-      <a href="index.html" target="_blank" class="btn-sm btn-ghost-sm">🌐 الموقع</a>
-      <button class="btn-sm btn-red-sm" onclick="doLogout()">🚪 خروج</button>
+      <span class="conn-badge conn-ok" id="connStatus">â— Ù…ØªØµÙ„</span>
+      <a href="index.html" target="_blank" class="btn-sm btn-ghost-sm">ðŸŒ Ø§Ù„Ù…ÙˆÙ‚Ø¹</a>
+      <button class="btn-sm btn-red-sm" onclick="doLogout()">ðŸšª Ø®Ø±ÙˆØ¬</button>
     </div>
   </div>
 
@@ -428,29 +270,29 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
   <div class="admin-body">
     <!-- SIDEBAR -->
     <div class="sidebar">
-      <button class="sb-btn active" id="sb-dashboard" onclick="nav('dashboard')"><span class="sb-icon">📊</span> لوحة التحكم</button>
+      <button class="sb-btn active" id="sb-dashboard" onclick="nav('dashboard')"><span class="sb-icon">ðŸ“Š</span> Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ…</button>
 
-      <div class="sb-sec">إدارة المحتوى</div>
-      <button class="sb-btn" id="sb-posts" onclick="nav('posts')"><span class="sb-icon">📝</span> المنشورات<span class="sb-badge" id="sb-posts-count"></span></button>
-      <button class="sb-btn" id="sb-create-post" onclick="nav('create-post')"><span class="sb-icon">➕</span> نشر منشور</button>
+      <div class="sb-sec">Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø­ØªÙˆÙ‰</div>
+      <button class="sb-btn" id="sb-posts" onclick="nav('posts')"><span class="sb-icon">ðŸ“</span> Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª<span class="sb-badge" id="sb-posts-count"></span></button>
+      <button class="sb-btn" id="sb-create-post" onclick="nav('create-post')"><span class="sb-icon">âž•</span> Ù†Ø´Ø± Ù…Ù†Ø´ÙˆØ±</button>
 
-      <div class="sb-sec">المستخدمون</div>
-      <button class="sb-btn" id="sb-users" onclick="nav('users')"><span class="sb-icon">👥</span> المستخدمون<span class="sb-badge" id="sb-users-count"></span></button>
-      <button class="sb-btn" id="sb-roles" onclick="nav('roles')"><span class="sb-icon">🎖️</span> إدارة الرتب</button>
+      <div class="sb-sec">Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†</div>
+      <button class="sb-btn" id="sb-users" onclick="nav('users')"><span class="sb-icon">ðŸ‘¥</span> Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†<span class="sb-badge" id="sb-users-count"></span></button>
+      <button class="sb-btn" id="sb-roles" onclick="nav('roles')"><span class="sb-icon">ðŸŽ–ï¸</span> Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø±ØªØ¨</button>
 
-      <div class="sb-sec">البطولات والدفع</div>
-      <button class="sb-btn" id="sb-tournaments" onclick="nav('tournaments')"><span class="sb-icon">🏆</span> التسجيلات</button>
-      <button class="sb-btn" id="sb-payments" onclick="nav('payments')"><span class="sb-icon">💳</span> طلبات الدفع<span class="sb-badge sb-badge-gold" id="sb-pay-count"></span></button>
+      <div class="sb-sec">Ø§Ù„Ø¨Ø·ÙˆÙ„Ø§Øª ÙˆØ§Ù„Ø¯ÙØ¹</div>
+      <button class="sb-btn" id="sb-tournaments" onclick="nav('tournaments')"><span class="sb-icon">ðŸ†</span> Ø§Ù„ØªØ³Ø¬ÙŠÙ„Ø§Øª</button>
+      <button class="sb-btn" id="sb-payments" onclick="nav('payments')"><span class="sb-icon">ðŸ’³</span> Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø¯ÙØ¹<span class="sb-badge sb-badge-gold" id="sb-pay-count"></span></button>
 
-      <div class="sb-sec">يوتيوب</div>
-      <button class="sb-btn" id="sb-youtube" onclick="nav('youtube')"><span class="sb-icon">▶️</span> فيديوهات يوتيوب</button>
+      <div class="sb-sec">ÙŠÙˆØªÙŠÙˆØ¨</div>
+      <button class="sb-btn" id="sb-youtube" onclick="nav('youtube')"><span class="sb-icon">â–¶ï¸</span> ÙÙŠØ¯ÙŠÙˆÙ‡Ø§Øª ÙŠÙˆØªÙŠÙˆØ¨</button>
 
-      <div class="sb-sec">إحصائيات</div>
-      <button class="sb-btn" id="sb-stats" onclick="nav('stats')"><span class="sb-icon">📈</span> الإحصائيات</button>
-      <button class="sb-btn" id="sb-visits" onclick="nav('visits')"><span class="sb-icon">👁️</span> الزيارات</button>
+      <div class="sb-sec">Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª</div>
+      <button class="sb-btn" id="sb-stats" onclick="nav('stats')"><span class="sb-icon">ðŸ“ˆ</span> Ø§Ù„Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª</button>
+      <button class="sb-btn" id="sb-visits" onclick="nav('visits')"><span class="sb-icon">ðŸ‘ï¸</span> Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª</button>
 
-      <div class="sb-sec">الموقع</div>
-      <button class="sb-btn" id="sb-site-settings" onclick="nav('site-settings')"><span class="sb-icon">⚙️</span> إعدادات الموقع</button>
+      <div class="sb-sec">Ø§Ù„Ù…ÙˆÙ‚Ø¹</div>
+      <button class="sb-btn" id="sb-site-settings" onclick="nav('site-settings')"><span class="sb-icon">âš™ï¸</span> Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹</button>
     </div>
 
     <!-- MAIN -->
@@ -458,9 +300,9 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
 
       <!-- ===== DASHBOARD ===== -->
       <div class="page active" id="page-dashboard">
-        <div class="page-title">📊 لوحة التحكم</div>
+        <div class="page-title">ðŸ“Š Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ…</div>
         <div class="stats-grid" id="dashStats">
-          <div class="loader">جاري...<span class="spinner"></span></div>
+          <div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div>
         </div>
         <div id="dashPending"></div>
         <div id="dashRecentPosts" class="posts-slider-wrap"></div>
@@ -469,185 +311,185 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
 
       <!-- ===== POSTS ===== -->
       <div class="page" id="page-posts">
-        <div class="page-title">📝 المنشورات</div>
+        <div class="page-title">ðŸ“ Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª</div>
         <div class="card">
           <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
-            <input class="search-input" id="postsSearch" placeholder="🔍 بحث في المنشورات..." style="max-width:280px;margin-bottom:0;" oninput="filterPostsList(this.value)">
+            <input class="search-input" id="postsSearch" placeholder="ðŸ” Ø¨Ø­Ø« ÙÙŠ Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª..." style="max-width:280px;margin-bottom:0;" oninput="filterPostsList(this.value)">
             <select class="form-input" id="postsTypeFilter" style="width:auto;padding:9px 12px;" onchange="filterPostsList(document.getElementById('postsSearch').value)">
-              <option value="">كل الأنواع</option>
-              <option value="clip">🎬 كليب</option>
-              <option value="news">📰 خبر</option>
-              <option value="tourney">🏆 بطولة</option>
-              <option value="question">❓ سؤال</option>
-              <option value="review">⭐ تقييم</option>
-              <option value="live">🔴 بث</option>
-              <option value="screen">📸 لقطة</option>
+              <option value="">ÙƒÙ„ Ø§Ù„Ø£Ù†ÙˆØ§Ø¹</option>
+              <option value="clip">ðŸŽ¬ ÙƒÙ„ÙŠØ¨</option>
+              <option value="news">ðŸ“° Ø®Ø¨Ø±</option>
+              <option value="tourney">ðŸ† Ø¨Ø·ÙˆÙ„Ø©</option>
+              <option value="question">â“ Ø³Ø¤Ø§Ù„</option>
+              <option value="review">â­ ØªÙ‚ÙŠÙŠÙ…</option>
+              <option value="live">ðŸ”´ Ø¨Ø«</option>
+              <option value="screen">ðŸ“¸ Ù„Ù‚Ø·Ø©</option>
             </select>
-            <button class="btn-primary" onclick="nav('create-post')" style="margin-right:auto;">➕ منشور جديد</button>
+            <button class="btn-primary" onclick="nav('create-post')" style="margin-right:auto;">âž• Ù…Ù†Ø´ÙˆØ± Ø¬Ø¯ÙŠØ¯</button>
           </div>
-          <div id="postsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+          <div id="postsList"><div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div></div>
         </div>
       </div>
 
       <!-- ===== CREATE POST ===== -->
       <div class="page" id="page-create-post">
-        <div class="page-title">➕ نشر منشور جديد</div>
+        <div class="page-title">âž• Ù†Ø´Ø± Ù…Ù†Ø´ÙˆØ± Ø¬Ø¯ÙŠØ¯</div>
         <div class="card">
-          <div class="msg-ok" id="createOk">✅ تم النشر بنجاح!</div>
+          <div class="msg-ok" id="createOk">âœ… ØªÙ… Ø§Ù„Ù†Ø´Ø± Ø¨Ù†Ø¬Ø§Ø­!</div>
           <div class="msg-err" id="createErr"></div>
           <div class="form-grid">
             <div class="form-group form-full">
-              <label class="form-label">المحتوى *</label>
-              <textarea class="form-input" id="cpContent" placeholder="اكتب محتوى المنشور... يدعم الهاشتاقات #game والمنشنات @user" rows="4"></textarea>
+              <label class="form-label">Ø§Ù„Ù…Ø­ØªÙˆÙ‰ *</label>
+              <textarea class="form-input" id="cpContent" placeholder="Ø§ÙƒØªØ¨ Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ù…Ù†Ø´ÙˆØ±... ÙŠØ¯Ø¹Ù… Ø§Ù„Ù‡Ø§Ø´ØªØ§Ù‚Ø§Øª #game ÙˆØ§Ù„Ù…Ù†Ø´Ù†Ø§Øª @user" rows="4"></textarea>
             </div>
             <div class="form-group">
-              <label class="form-label">نوع المنشور</label>
+              <label class="form-label">Ù†ÙˆØ¹ Ø§Ù„Ù…Ù†Ø´ÙˆØ±</label>
               <select class="form-input" id="cpType">
-                <option value="news">📰 خبر</option>
-                <option value="clip">🎬 كليب</option>
-                <option value="tourney">🏆 بطولة</option>
-                <option value="question">❓ سؤال</option>
-                <option value="review">⭐ تقييم</option>
-                <option value="live">🔴 بث مباشر</option>
-                <option value="screen">📸 لقطة شاشة</option>
+                <option value="news">ðŸ“° Ø®Ø¨Ø±</option>
+                <option value="clip">ðŸŽ¬ ÙƒÙ„ÙŠØ¨</option>
+                <option value="tourney">ðŸ† Ø¨Ø·ÙˆÙ„Ø©</option>
+                <option value="question">â“ Ø³Ø¤Ø§Ù„</option>
+                <option value="review">â­ ØªÙ‚ÙŠÙŠÙ…</option>
+                <option value="live">ðŸ”´ Ø¨Ø« Ù…Ø¨Ø§Ø´Ø±</option>
+                <option value="screen">ðŸ“¸ Ù„Ù‚Ø·Ø© Ø´Ø§Ø´Ø©</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">رابط وسائط (صورة/فيديو)</label>
+              <label class="form-label">Ø±Ø§Ø¨Ø· ÙˆØ³Ø§Ø¦Ø· (ØµÙˆØ±Ø©/ÙÙŠØ¯ÙŠÙˆ)</label>
               <input class="form-input" id="cpMediaUrl" placeholder="https://...">
             </div>
             <div class="form-group form-full">
-              <label class="form-label">تعليق من الإدارة (اختياري)</label>
-              <input class="form-input" id="cpAdminNote" placeholder="ملاحظة أو تعليق إضافي من الإدارة">
+              <label class="form-label">ØªØ¹Ù„ÙŠÙ‚ Ù…Ù† Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)</label>
+              <input class="form-input" id="cpAdminNote" placeholder="Ù…Ù„Ø§Ø­Ø¸Ø© Ø£Ùˆ ØªØ¹Ù„ÙŠÙ‚ Ø¥Ø¶Ø§ÙÙŠ Ù…Ù† Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©">
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn-ghost" onclick="clearCreateForm()">↩️ مسح</button>
-            <button class="btn-primary" onclick="adminCreatePost()" id="btnCreatePost">📤 نشر الآن</button>
+            <button class="btn-ghost" onclick="clearCreateForm()">â†©ï¸ Ù…Ø³Ø­</button>
+            <button class="btn-primary" onclick="adminCreatePost()" id="btnCreatePost">ðŸ“¤ Ù†Ø´Ø± Ø§Ù„Ø¢Ù†</button>
           </div>
         </div>
       </div>
 
       <!-- ===== USERS ===== -->
       <div class="page" id="page-users">
-        <div class="page-title">👥 إدارة المستخدمين</div>
+        <div class="page-title">ðŸ‘¥ Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†</div>
         <div class="card">
-          <input class="search-input" id="usersSearch" placeholder="🔍 بحث باسم المستخدم أو البريد..." oninput="filterUsers(this.value)">
-          <div id="usersList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+          <input class="search-input" id="usersSearch" placeholder="ðŸ” Ø¨Ø­Ø« Ø¨Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ Ø§Ù„Ø¨Ø±ÙŠØ¯..." oninput="filterUsers(this.value)">
+          <div id="usersList"><div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div></div>
         </div>
       </div>
 
       <!-- ===== ROLES ===== -->
       <div class="page" id="page-roles">
-        <div class="page-title">🎖️ إدارة الرتب والصلاحيات</div>
+        <div class="page-title">ðŸŽ–ï¸ Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø±ØªØ¨ ÙˆØ§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª</div>
         <div class="card">
-          <div class="card-title">🔍 ابحث عن مستخدم لتغيير رتبته</div>
-          <input class="search-input" id="roleSearch" placeholder="اسم المستخدم أو البريد..." oninput="searchForRole(this.value)">
+          <div class="card-title">ðŸ” Ø§Ø¨Ø­Ø« Ø¹Ù† Ù…Ø³ØªØ®Ø¯Ù… Ù„ØªØºÙŠÙŠØ± Ø±ØªØ¨ØªÙ‡</div>
+          <input class="search-input" id="roleSearch" placeholder="Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø£Ùˆ Ø§Ù„Ø¨Ø±ÙŠØ¯..." oninput="searchForRole(this.value)">
           <div id="roleSearchResults"></div>
         </div>
         <div class="card">
-          <div class="card-title">📋 شرح الرتب</div>
+          <div class="card-title">ðŸ“‹ Ø´Ø±Ø­ Ø§Ù„Ø±ØªØ¨</div>
           <div id="rolesGuide"></div>
         </div>
       </div>
 
       <!-- ===== TOURNAMENTS ===== -->
       <div class="page" id="page-tournaments">
-        <div class="page-title">🏆 تسجيلات البطولات</div>
+        <div class="page-title">ðŸ† ØªØ³Ø¬ÙŠÙ„Ø§Øª Ø§Ù„Ø¨Ø·ÙˆÙ„Ø§Øª</div>
         <div class="card">
-          <div id="tournamentsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+          <div id="tournamentsList"><div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div></div>
         </div>
       </div>
 
       <!-- ===== PAYMENTS ===== -->
       <div class="page" id="page-payments">
-        <div class="page-title">💳 طلبات الدفع</div>
+        <div class="page-title">ðŸ’³ Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø¯ÙØ¹</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <button class="btn-ghost" onclick="loadPayments('all')" id="payFilterAll" style="border-color:var(--accent);color:var(--accent2);">الكل</button>
-          <button class="btn-ghost" onclick="loadPayments('pending')" id="payFilterPending">⏳ معلق</button>
-          <button class="btn-ghost" onclick="loadPayments('approved')" id="payFilterApproved">✅ مقبول</button>
-          <button class="btn-ghost" onclick="loadPayments('rejected')" id="payFilterRejected">❌ مرفوض</button>
+          <button class="btn-ghost" onclick="loadPayments('all')" id="payFilterAll" style="border-color:var(--accent);color:var(--accent2);">Ø§Ù„ÙƒÙ„</button>
+          <button class="btn-ghost" onclick="loadPayments('pending')" id="payFilterPending">â³ Ù…Ø¹Ù„Ù‚</button>
+          <button class="btn-ghost" onclick="loadPayments('approved')" id="payFilterApproved">âœ… Ù…Ù‚Ø¨ÙˆÙ„</button>
+          <button class="btn-ghost" onclick="loadPayments('rejected')" id="payFilterRejected">âŒ Ù…Ø±ÙÙˆØ¶</button>
         </div>
-        <div id="paymentsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+        <div id="paymentsList"><div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div></div>
       </div>
 
       <!-- ===== YOUTUBE ===== -->
       <div class="page" id="page-youtube">
-        <div class="page-title">▶️ فيديوهات يوتيوب</div>
+        <div class="page-title">â–¶ï¸ ÙÙŠØ¯ÙŠÙˆÙ‡Ø§Øª ÙŠÙˆØªÙŠÙˆØ¨</div>
         <div class="card">
-          <div class="card-title">➕ إضافة فيديو يوتيوب</div>
-          <div class="msg-ok" id="ytOk">✅ تم الإضافة!</div>
+          <div class="card-title">âž• Ø¥Ø¶Ø§ÙØ© ÙÙŠØ¯ÙŠÙˆ ÙŠÙˆØªÙŠÙˆØ¨</div>
+          <div class="msg-ok" id="ytOk">âœ… ØªÙ… Ø§Ù„Ø¥Ø¶Ø§ÙØ©!</div>
           <div class="msg-err" id="ytErr"></div>
           <div class="form-grid">
             <div class="form-group form-full">
-              <label class="form-label">رابط الفيديو أو القناة</label>
-              <input class="form-input" id="ytUrl" placeholder="https://youtube.com/watch?v=... أو https://youtube.com/@channel">
+              <label class="form-label">Ø±Ø§Ø¨Ø· Ø§Ù„ÙÙŠØ¯ÙŠÙˆ Ø£Ùˆ Ø§Ù„Ù‚Ù†Ø§Ø©</label>
+              <input class="form-input" id="ytUrl" placeholder="https://youtube.com/watch?v=... Ø£Ùˆ https://youtube.com/@channel">
             </div>
             <div class="form-group">
-              <label class="form-label">نوع</label>
+              <label class="form-label">Ù†ÙˆØ¹</label>
               <select class="form-input" id="ytType">
-                <option value="single">🎬 فيديو واحد</option>
-                <option value="channel">📺 قناة (أحدث فيديو)</option>
+                <option value="single">ðŸŽ¬ ÙÙŠØ¯ÙŠÙˆ ÙˆØ§Ø­Ø¯</option>
+                <option value="channel">ðŸ“º Ù‚Ù†Ø§Ø© (Ø£Ø­Ø¯Ø« ÙÙŠØ¯ÙŠÙˆ)</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">تصنيف</label>
+              <label class="form-label">ØªØµÙ†ÙŠÙ</label>
               <select class="form-input" id="ytTag">
-                <option value="clip">🎬 كليب لعبة</option>
-                <option value="news">📰 خبر</option>
-                <option value="review">⭐ تقييم</option>
-                <option value="tourney">🏆 بطولة</option>
+                <option value="clip">ðŸŽ¬ ÙƒÙ„ÙŠØ¨ Ù„Ø¹Ø¨Ø©</option>
+                <option value="news">ðŸ“° Ø®Ø¨Ø±</option>
+                <option value="review">â­ ØªÙ‚ÙŠÙŠÙ…</option>
+                <option value="tourney">ðŸ† Ø¨Ø·ÙˆÙ„Ø©</option>
               </select>
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn-primary" onclick="addYTPost()" id="btnAddYT">➕ إضافة</button>
+            <button class="btn-primary" onclick="addYTPost()" id="btnAddYT">âž• Ø¥Ø¶Ø§ÙØ©</button>
           </div>
         </div>
         <div class="card">
-          <div class="card-title">📋 الفيديوهات المضافة من يوتيوب</div>
-          <div id="ytPostsList"><div class="loader">جاري...<span class="spinner"></span></div></div>
+          <div class="card-title">ðŸ“‹ Ø§Ù„ÙÙŠØ¯ÙŠÙˆÙ‡Ø§Øª Ø§Ù„Ù…Ø¶Ø§ÙØ© Ù…Ù† ÙŠÙˆØªÙŠÙˆØ¨</div>
+          <div id="ytPostsList"><div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div></div>
         </div>
       </div>
 
       <!-- ===== STATS ===== -->
       <div class="page" id="page-stats">
-        <div class="page-title">📈 الإحصائيات</div>
-        <div id="statsContent"><div class="loader">جاري...<span class="spinner"></span></div></div>
+        <div class="page-title">ðŸ“ˆ Ø§Ù„Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª</div>
+        <div id="statsContent"><div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div></div>
       </div>
 
       <!-- ===== VISITS ===== -->
       <div class="page" id="page-visits">
-        <div class="page-title">👁️ الزيارات والنشاط</div>
-        <div id="visitsContent"><div class="loader">جاري...<span class="spinner"></span></div></div>
+        <div class="page-title">ðŸ‘ï¸ Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª ÙˆØ§Ù„Ù†Ø´Ø§Ø·</div>
+        <div id="visitsContent"><div class="loader">Ø¬Ø§Ø±ÙŠ...<span class="spinner"></span></div></div>
       </div>
 
       <!-- ===== SITE SETTINGS ===== -->
       <div class="page" id="page-site-settings">
-        <div class="page-title">⚙️ إعدادات الموقع</div>
+        <div class="page-title">âš™ï¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹</div>
         <div class="card">
-          <div class="card-title">🔗 روابط الموقع</div>
+          <div class="card-title">ðŸ”— Ø±ÙˆØ§Ø¨Ø· Ø§Ù„Ù…ÙˆÙ‚Ø¹</div>
           <div class="form-grid">
             <div class="form-group form-full">
-              <label class="form-label">رابط الموقع الرئيسي</label>
+              <label class="form-label">Ø±Ø§Ø¨Ø· Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ</label>
               <input class="form-input" id="siteUrl" value="https://rmo31.github.io/virtux/" readonly>
             </div>
           </div>
           <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
-            <a href="index.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">🏠 الصفحة الرئيسية</a>
-            <a href="auth.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">🔐 صفحة الدخول</a>
-            <a href="profile.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">👤 الملف الشخصي</a>
-            <a href="post.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">📄 صفحة المنشور</a>
-            <a href="supabase_setup.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">🗄️ إعداد DB</a>
+            <a href="index.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">ðŸ  Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</a>
+            <a href="auth.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">ðŸ” ØµÙØ­Ø© Ø§Ù„Ø¯Ø®ÙˆÙ„</a>
+            <a href="profile.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">ðŸ‘¤ Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ</a>
+            <a href="post.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">ðŸ“„ ØµÙØ­Ø© Ø§Ù„Ù…Ù†Ø´ÙˆØ±</a>
+            <a href="supabase_setup.html" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:12px;padding:7px 14px;">ðŸ—„ï¸ Ø¥Ø¹Ø¯Ø§Ø¯ DB</a>
           </div>
         </div>
         <div class="card">
-          <div class="card-title">📋 معلومات المشروع</div>
+          <div class="card-title">ðŸ“‹ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…Ø´Ø±ÙˆØ¹</div>
           <table class="data-table">
             <tr><td style="color:var(--text3);">Supabase Project ID</td><td>eyqcpkhjzpmawqtilhgl</td></tr>
-            <tr><td style="color:var(--text3);">YouTube API</td><td>مفعّل ✅</td></tr>
-            <tr><td style="color:var(--text3);">Google OAuth</td><td>مفعّل ✅</td></tr>
-            <tr><td style="color:var(--text3);">الجداول</td><td>posts · profiles · tournament_registrations · payment_requests · site_visits</td></tr>
+            <tr><td style="color:var(--text3);">YouTube API</td><td>Ù…ÙØ¹Ù‘Ù„ âœ…</td></tr>
+            <tr><td style="color:var(--text3);">Google OAuth</td><td>Ù…ÙØ¹Ù‘Ù„ âœ…</td></tr>
+            <tr><td style="color:var(--text3);">Ø§Ù„Ø¬Ø¯Ø§ÙˆÙ„</td><td>posts Â· profiles Â· tournament_registrations Â· payment_requests Â· site_visits</td></tr>
           </table>
         </div>
       </div>
@@ -660,8 +502,8 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
 <div class="modal-overlay" id="editModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">✏️ تعديل المنشور</div>
-      <button class="modal-close" onclick="closeEditModal()">✕</button>
+      <div class="modal-title">âœï¸ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…Ù†Ø´ÙˆØ±</div>
+      <button class="modal-close" onclick="closeEditModal()">âœ•</button>
     </div>
     <div class="modal-body" id="editModalBody"></div>
   </div>
@@ -671,8 +513,8 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
 <div class="modal-overlay" id="userModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="userModalTitle">👤 تعديل المستخدم</div>
-      <button class="modal-close" onclick="closeUserModal()">✕</button>
+      <div class="modal-title" id="userModalTitle">ðŸ‘¤ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…</div>
+      <button class="modal-close" onclick="closeUserModal()">âœ•</button>
     </div>
     <div class="modal-body" id="userModalBody"></div>
   </div>
@@ -692,24 +534,24 @@ let allPosts=[],allUsers=[];
 let currentEditPost=null;
 
 const ROLES={
-  admin:{label:'⭐ Admin',color:'#f59e0b',bg:'rgba(245,158,11,0.15)',cls:'badge-admin'},
-  moderator:{label:'🛡️ Mod',color:'#818cf8',bg:'rgba(99,102,241,0.15)',cls:'badge-vip'},
-  pro:{label:'💎 Pro',color:'#d8b4fe',bg:'rgba(192,132,252,0.15)',cls:'badge-pro'},
-  vip:{label:'👑 VIP',color:'#f59e0b',bg:'rgba(245,158,11,0.12)',cls:'badge-mod'},
-  youtuber:{label:'🎬 Youtuber',color:'#f87171',bg:'rgba(239,68,68,0.12)',cls:'badge-vip'},
-  member:{label:'⭐ Member',color:'#4ade80',bg:'rgba(34,197,94,0.12)',cls:'badge-approved'},
-  user:{label:'👤 User',color:'#94a3b8',bg:'rgba(71,85,105,0.15)',cls:'badge-user'},
+  admin:{label:'â­ Admin',color:'#f59e0b',bg:'rgba(245,158,11,0.15)',cls:'badge-admin'},
+  moderator:{label:'ðŸ›¡ï¸ Mod',color:'#818cf8',bg:'rgba(99,102,241,0.15)',cls:'badge-vip'},
+  pro:{label:'ðŸ’Ž Pro',color:'#d8b4fe',bg:'rgba(192,132,252,0.15)',cls:'badge-pro'},
+  vip:{label:'ðŸ‘‘ VIP',color:'#f59e0b',bg:'rgba(245,158,11,0.12)',cls:'badge-mod'},
+  youtuber:{label:'ðŸŽ¬ Youtuber',color:'#f87171',bg:'rgba(239,68,68,0.12)',cls:'badge-vip'},
+  member:{label:'â­ Member',color:'#4ade80',bg:'rgba(34,197,94,0.12)',cls:'badge-approved'},
+  user:{label:'ðŸ‘¤ User',color:'#94a3b8',bg:'rgba(71,85,105,0.15)',cls:'badge-user'},
 };
-const TAG_MAP={clip:'🎬 كليب',news:'📰 خبر',tourney:'🏆 بطولة',question:'❓ سؤال',review:'⭐ تقييم',live:'🔴 بث',screen:'📸 لقطة'};
+const TAG_MAP={clip:'ðŸŽ¬ ÙƒÙ„ÙŠØ¨',news:'ðŸ“° Ø®Ø¨Ø±',tourney:'ðŸ† Ø¨Ø·ÙˆÙ„Ø©',question:'â“ Ø³Ø¤Ø§Ù„',review:'â­ ØªÙ‚ÙŠÙŠÙ…',live:'ðŸ”´ Ø¨Ø«',screen:'ðŸ“¸ Ù„Ù‚Ø·Ø©'};
 const TYPE_COLORS={clip:'tag-badge',news:'badge-pending',tourney:'badge-pro',question:'badge-approved',review:'badge-vip',live:'badge-admin'};
 
 // ==================== UTILS ====================
 function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]||m));}
-function ago(d){if(!d)return'';const s=(Date.now()-new Date(d))/1000;if(s<60)return'الآن';if(s<3600)return'منذ '+Math.floor(s/60)+' د';if(s<86400)return'منذ '+Math.floor(s/3600)+' س';return new Date(d).toLocaleDateString('ar-EG');}
+function ago(d){if(!d)return'';const s=(Date.now()-new Date(d))/1000;if(s<60)return'Ø§Ù„Ø¢Ù†';if(s<3600)return'Ù…Ù†Ø° '+Math.floor(s/60)+' Ø¯';if(s<86400)return'Ù…Ù†Ø° '+Math.floor(s/3600)+' Ø³';return new Date(d).toLocaleDateString('ar-EG');}
 function showToast(msg,type=''){const w=document.getElementById('toastWrap');const t=document.createElement('div');t.className='toast '+type;t.innerHTML=msg;w.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='0.3s';setTimeout(()=>t.remove(),300);},2600);}
 function getRoles(u){if(Array.isArray(u.roles)&&u.roles.length)return u.roles;if(u.role)return[u.role];return['user'];}
 function roleBadge(r){const m=ROLES[r]||ROLES.user;return`<span class="badge ${m.cls}">${m.label}</span>`;}
-function tagBadge(type){return`<span class="badge tag-badge">${TAG_MAP[type]||type||'—'}</span>`;}
+function tagBadge(type){return`<span class="badge tag-badge">${TAG_MAP[type]||type||'â€”'}</span>`;}
 
 // ==================== LOGIN ====================
 function doLogin(){
@@ -725,9 +567,9 @@ async function checkConn(){
   try{
     const r=await fetch(`${SB_URL}/rest/v1/posts?limit=1`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
     const el=document.getElementById('connStatus');
-    if(r.ok){el.textContent='● متصل';el.className='conn-badge conn-ok';}
-    else{el.textContent='● خطأ';el.className='conn-badge conn-err';}
-  }catch(e){document.getElementById('connStatus').textContent='● لا إنترنت';document.getElementById('connStatus').className='conn-badge conn-err';}
+    if(r.ok){el.textContent='â— Ù…ØªØµÙ„';el.className='conn-badge conn-ok';}
+    else{el.textContent='â— Ø®Ø·Ø£';el.className='conn-badge conn-err';}
+  }catch(e){document.getElementById('connStatus').textContent='â— Ù„Ø§ Ø¥Ù†ØªØ±Ù†Øª';document.getElementById('connStatus').className='conn-badge conn-err';}
 }
 
 // ==================== NAV ====================
@@ -768,33 +610,33 @@ async function loadDashboard(){
     sb.from('payment_requests').select('*',{count:'exact',head:true}).eq('status','pending'),
   ]);
   document.getElementById('dashStats').innerHTML=`
-    <div class="stat-card" onclick="nav('posts')"><div class="stat-num" style="color:var(--accent2)">${posts||0}</div><div class="stat-lbl">📝 منشور</div></div>
-    <div class="stat-card" onclick="nav('users')"><div class="stat-num" style="color:#4ade80">${users||0}</div><div class="stat-lbl">👥 مستخدم</div></div>
-    <div class="stat-card" onclick="nav('visits')"><div class="stat-num" style="color:#fbbf24">${visits||0}</div><div class="stat-lbl">👁️ زيارة</div></div>
-    <div class="stat-card" onclick="nav('tournaments')"><div class="stat-num" style="color:#d8b4fe">${tourney||0}</div><div class="stat-lbl">🏆 تسجيل بطولة</div></div>
-    <div class="stat-card" onclick="nav('payments')"><div class="stat-num" style="color:${pendingPay?'#f87171':'var(--accent2)'}">${pendingPay||0}</div><div class="stat-lbl">💳 دفع معلق</div></div>`;
+    <div class="stat-card" onclick="nav('posts')"><div class="stat-num" style="color:var(--accent2)">${posts||0}</div><div class="stat-lbl">ðŸ“ Ù…Ù†Ø´ÙˆØ±</div></div>
+    <div class="stat-card" onclick="nav('users')"><div class="stat-num" style="color:#4ade80">${users||0}</div><div class="stat-lbl">ðŸ‘¥ Ù…Ø³ØªØ®Ø¯Ù…</div></div>
+    <div class="stat-card" onclick="nav('visits')"><div class="stat-num" style="color:#fbbf24">${visits||0}</div><div class="stat-lbl">ðŸ‘ï¸ Ø²ÙŠØ§Ø±Ø©</div></div>
+    <div class="stat-card" onclick="nav('tournaments')"><div class="stat-num" style="color:#d8b4fe">${tourney||0}</div><div class="stat-lbl">ðŸ† ØªØ³Ø¬ÙŠÙ„ Ø¨Ø·ÙˆÙ„Ø©</div></div>
+    <div class="stat-card" onclick="nav('payments')"><div class="stat-num" style="color:${pendingPay?'#f87171':'var(--accent2)'}">${pendingPay||0}</div><div class="stat-lbl">ðŸ’³ Ø¯ÙØ¹ Ù…Ø¹Ù„Ù‚</div></div>`;
 
   // Pending payments
   const{data:pending}=await sb.from('payment_requests').select('*').eq('status','pending').order('created_at',{ascending:false}).limit(5);
   if(pending&&pending.length){
     document.getElementById('dashPending').innerHTML=`<div class="card">
-      <div class="card-title">⚠️ طلبات دفع تنتظر الموافقة (${pending.length})</div>
+      <div class="card-title">âš ï¸ Ø·Ù„Ø¨Ø§Øª Ø¯ÙØ¹ ØªÙ†ØªØ¸Ø± Ø§Ù„Ù…ÙˆØ§ÙÙ‚Ø© (${pending.length})</div>
       ${pending.map(p=>`<div class="post-item">
-        <div class="post-thumb">💰</div>
+        <div class="post-thumb">ðŸ’°</div>
         <div class="post-info">
-          <div class="post-name">${esc(p.username)} — ${esc(p.plan_name||p.plan_key)}</div>
-          <div class="post-meta">${esc(p.bank_name||'')} • ${p.price?'$'+p.price:''} • ${ago(p.created_at)}</div>
+          <div class="post-name">${esc(p.username)} â€” ${esc(p.plan_name||p.plan_key)}</div>
+          <div class="post-meta">${esc(p.bank_name||'')} â€¢ ${p.price?'$'+p.price:''} â€¢ ${ago(p.created_at)}</div>
         </div>
         <div class="post-actions">
-          <button class="btn-approve" onclick="approvePayment(${p.id},'${p.user_id}','${p.plan_key}')">✅ قبول</button>
-          <button class="btn-danger" onclick="rejectPayment(${p.id})">❌ رفض</button>
+          <button class="btn-approve" onclick="approvePayment(${p.id},'${p.user_id}','${p.plan_key}')">âœ… Ù‚Ø¨ÙˆÙ„</button>
+          <button class="btn-danger" onclick="rejectPayment(${p.id})">âŒ Ø±ÙØ¶</button>
         </div>
       </div>`).join('')}
     </div>`;
   }else{document.getElementById('dashPending').innerHTML='';}
 
-  // Recent posts - بدون join
-  // جلب المنشورات للـ slider - نجلب أكثر
+  // Recent posts - Ø¨Ø¯ÙˆÙ† join
+  // Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª Ù„Ù„Ù€ slider - Ù†Ø¬Ù„Ø¨ Ø£ÙƒØ«Ø±
   const{data:rPostsRaw}=await sb.from('posts').select('id,content,type,likes_count,comments_count,created_at,posted_by,user_id').order('created_at',{ascending:false}).limit(50);
   if(rPostsRaw&&rPostsRaw.length){
     const rpIds=[...new Set(rPostsRaw.filter(p=>p.user_id).map(p=>p.user_id))];
@@ -808,34 +650,34 @@ async function loadDashboard(){
   const{data:rUsers}=await sb.from('profiles').select('*').order('created_at',{ascending:false}).limit(5);
   if(rUsers&&rUsers.length){
     document.getElementById('dashRecentUsers').innerHTML=`<div class="card">
-      <div class="card-title">🆕 آخر المستخدمين المسجلين</div>
+      <div class="card-title">ðŸ†• Ø¢Ø®Ø± Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø§Ù„Ù…Ø³Ø¬Ù„ÙŠÙ†</div>
       ${rUsers.map(u=>`<div class="post-item">
-        <div class="post-thumb">${u.avatar_url?`<img src="${u.avatar_url}" alt="">`:'👤'}</div>
+        <div class="post-thumb">${u.avatar_url?`<img src="${u.avatar_url}" alt="">`:'ðŸ‘¤'}</div>
         <div class="post-info">
-          <div class="post-name">${esc(u.username||u.email||'—')}</div>
-          <div class="post-meta">${esc(u.email||'')} • ${getRoles(u).map(r=>roleBadge(r)).join(' ')} • ${ago(u.created_at)}</div>
+          <div class="post-name">${esc(u.username||u.email||'â€”')}</div>
+          <div class="post-meta">${esc(u.email||'')} â€¢ ${getRoles(u).map(r=>roleBadge(r)).join(' ')} â€¢ ${ago(u.created_at)}</div>
         </div>
         <div class="post-actions">
-          <button class="btn-edit" onclick="openUserModal('${u.id}')">✏️</button>
-          <button class="btn-danger" onclick="deleteUser('${u.id}')">🗑️</button>
+          <button class="btn-edit" onclick="openUserModal('${u.id}')">âœï¸</button>
+          <button class="btn-danger" onclick="deleteUser('${u.id}')">ðŸ—‘ï¸</button>
         </div>
       </div>`).join('')}
     </div>`;
   }
 }
 
-function getTypeIcon(type){const m={clip:'🎬',news:'📰',tourney:'🏆',question:'❓',review:'⭐',live:'🔴',screen:'📸'};return m[type]||'📝';}
+function getTypeIcon(type){const m={clip:'ðŸŽ¬',news:'ðŸ“°',tourney:'ðŸ†',question:'â“',review:'â­',live:'ðŸ”´',screen:'ðŸ“¸'};return m[type]||'ðŸ“';}
 
 // ==================== POSTS ====================
 async function loadPosts(){
-  // استعلام منفصل بدون join لتفادي خطأ schema cache
+  // Ø§Ø³ØªØ¹Ù„Ø§Ù… Ù…Ù†ÙØµÙ„ Ø¨Ø¯ÙˆÙ† join Ù„ØªÙØ§Ø¯ÙŠ Ø®Ø·Ø£ schema cache
   const{data,error}=await sb.from('posts')
     .select('id,content,type,media_url,likes_count,comments_count,created_at,user_id,posted_by')
     .order('created_at',{ascending:false})
     .limit(200);
-  if(error){document.getElementById('postsList').innerHTML='<div class="empty">❌ '+esc(error.message)+'</div>';return;}
+  if(error){document.getElementById('postsList').innerHTML='<div class="empty">âŒ '+esc(error.message)+'</div>';return;}
   if(!data||!data.length){allPosts=[];renderPosts([]);return;}
-  // جلب profiles بشكل منفصل
+  // Ø¬Ù„Ø¨ profiles Ø¨Ø´ÙƒÙ„ Ù…Ù†ÙØµÙ„
   const userIds=[...new Set(data.filter(p=>p.user_id).map(p=>p.user_id))];
   let profilesMap={};
   if(userIds.length){
@@ -848,13 +690,13 @@ async function loadPosts(){
 
 function renderPosts(posts){
   const el=document.getElementById('postsList');
-  if(!posts||!posts.length){el.innerHTML='<div class="empty">لا توجد منشورات</div>';return;}
+  if(!posts||!posts.length){el.innerHTML='<div class="empty">Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ù†Ø´ÙˆØ±Ø§Øª</div>';return;}
   el.innerHTML=posts.map(p=>{
-    const authorName=p.profiles?.username||p.posted_by||'لاعب';
+    const authorName=p.profiles?.username||p.posted_by||'Ù„Ø§Ø¹Ø¨';
     const authorAvatar=p.profiles?.avatar_url;
     const isAdmin=!!(p.posted_by?.includes('Admin'));
     const content=(p.content||'').replace(/\n/g,' ').trim();
-    const preview=content.slice(0,130)||(p.media_url?'🔗 رابط وسائط':'—');
+    const preview=content.slice(0,130)||(p.media_url?'ðŸ”— Ø±Ø§Ø¨Ø· ÙˆØ³Ø§Ø¦Ø·':'â€”');
     return `<div class="post-item" id="pi-${p.id}" style="align-items:flex-start;gap:12px;">
       <div class="post-thumb" style="margin-top:3px;flex-shrink:0;">
         ${authorAvatar
@@ -865,16 +707,16 @@ function renderPosts(posts){
         <div style="font-size:13.5px;font-weight:600;color:var(--text);line-height:1.55;margin-bottom:5px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(preview)}</div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;">
           <span style="color:var(--accent2);font-weight:700;">${esc(authorName)}</span>
-          ${isAdmin?'<span style="color:var(--gold);">⭐</span>':''}
+          ${isAdmin?'<span style="color:var(--gold);">â­</span>':''}
           ${tagBadge(p.type)}
-          <span style="color:var(--text3);">❤️ ${p.likes_count||0}</span>
-          <span style="color:var(--text3);">💬 ${p.comments_count||0}</span>
+          <span style="color:var(--text3);">â¤ï¸ ${p.likes_count||0}</span>
+          <span style="color:var(--text3);">ðŸ’¬ ${p.comments_count||0}</span>
           <span style="color:var(--text3);">${ago(p.created_at)}</span>
         </div>
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0;margin-top:2px;">
-        <button class="btn-edit" onclick="openEditPost('${p.id}')">✏️</button>
-        <button class="btn-danger" onclick="deletePost('${p.id}')">🗑️</button>
+        <button class="btn-edit" onclick="openEditPost('${p.id}')">âœï¸</button>
+        <button class="btn-danger" onclick="deletePost('${p.id}')">ðŸ—‘ï¸</button>
       </div>
     </div>`;
   }).join('');
@@ -892,32 +734,32 @@ function filterPostsList(q){
 
 async function openEditPost(id){
   const{data,error}=await sb.from('posts').select('id,content,type,media_url,likes_count,comments_count,created_at,posted_by,user_id').eq('id',id).single();
-  // جلب اسم المستخدم منفصل
+  // Ø¬Ù„Ø¨ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù…Ù†ÙØµÙ„
   if(data?.user_id){const{data:pp}=await sb.from('profiles').select('username').eq('id',data.user_id).single();if(pp)data.profiles=pp;}
-  if(error){showToast('❌ '+error.message,'err');return;}
+  if(error){showToast('âŒ '+error.message,'err');return;}
   currentEditPost=data;
   document.getElementById('editModalBody').innerHTML=`
     <div class="form-grid">
       <div class="form-group form-full">
-        <label class="form-label">المحتوى</label>
+        <label class="form-label">Ø§Ù„Ù…Ø­ØªÙˆÙ‰</label>
         <textarea class="form-input" id="ep-content" rows="4">${esc(data.content||'')}</textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">النوع</label>
+        <label class="form-label">Ø§Ù„Ù†ÙˆØ¹</label>
         <select class="form-input" id="ep-type">
           ${Object.entries(TAG_MAP).map(([k,v])=>`<option value="${k}" ${data.type===k?'selected':''}>${v}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">رابط وسائط</label>
+        <label class="form-label">Ø±Ø§Ø¨Ø· ÙˆØ³Ø§Ø¦Ø·</label>
         <input class="form-input" id="ep-media" value="${esc(data.media_url||'')}">
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px;">
-      <button class="btn-danger" onclick="deletePost('${data.id}',false,true)">🗑️ حذف</button>
+      <button class="btn-danger" onclick="deletePost('${data.id}',false,true)">ðŸ—‘ï¸ Ø­Ø°Ù</button>
       <div style="display:flex;gap:8px;">
-        <button class="btn-ghost" onclick="closeEditModal()">إلغاء</button>
-        <button class="btn-primary" onclick="saveEditPost()">💾 حفظ</button>
+        <button class="btn-ghost" onclick="closeEditModal()">Ø¥Ù„ØºØ§Ø¡</button>
+        <button class="btn-primary" onclick="saveEditPost()">ðŸ’¾ Ø­ÙØ¸</button>
       </div>
     </div>`;
   document.getElementById('editModal').classList.add('open');
@@ -931,17 +773,17 @@ async function saveEditPost(){
   const type=document.getElementById('ep-type').value;
   const media_url=document.getElementById('ep-media').value.trim();
   const{error}=await sb.from('posts').update({content,type,media_url:media_url||null}).eq('id',currentEditPost.id);
-  if(error){showToast('❌ '+error.message,'err');return;}
-  closeEditModal();showToast('✅ تم التعديل','ok');
+  if(error){showToast('âŒ '+error.message,'err');return;}
+  closeEditModal();showToast('âœ… ØªÙ… Ø§Ù„ØªØ¹Ø¯ÙŠÙ„','ok');
   loadPosts();loadDashboard();
 }
 
 async function deletePost(id,refresh=true,closeModal=false){
-  if(!confirm('حذف هذا المنشور نهائياً؟'))return;
+  if(!confirm('Ø­Ø°Ù Ù‡Ø°Ø§ Ø§Ù„Ù…Ù†Ø´ÙˆØ± Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ'))return;
   const{error}=await sb.from('posts').delete().eq('id',id);
-  if(error){showToast('❌ '+error.message,'err');return;}
+  if(error){showToast('âŒ '+error.message,'err');return;}
   if(closeModal)closeEditModal();
-  showToast('🗑️ تم الحذف','ok');
+  showToast('ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù','ok');
   document.getElementById('pi-'+id)?.remove();
   if(refresh){loadDashboard();loadSideCounts();}
 }
@@ -952,14 +794,14 @@ async function adminCreatePost(){
   const type=document.getElementById('cpType').value;
   const media_url=document.getElementById('cpMediaUrl').value.trim();
   const note=document.getElementById('cpAdminNote').value.trim();
-  if(!content){showErr('createErr','⚠️ المحتوى مطلوب');return;}
+  if(!content){showErr('createErr','âš ï¸ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ù…Ø·Ù„ÙˆØ¨');return;}
   const btn=document.getElementById('btnCreatePost');
-  btn.disabled=true;btn.textContent='⏳ جاري النشر...';
-  const finalContent=note?content+'\n\n📌 '+note:content;
-  const{error}=await sb.from('posts').insert({content:finalContent,type,media_url:media_url||null,posted_by:'Admin ⭐',roles:['admin']});
-  btn.disabled=false;btn.textContent='📤 نشر الآن';
-  if(error){showErr('createErr','❌ '+error.message);return;}
-  showOk('createOk','✅ تم النشر بنجاح!');
+  btn.disabled=true;btn.textContent='â³ Ø¬Ø§Ø±ÙŠ Ø§Ù„Ù†Ø´Ø±...';
+  const finalContent=note?content+'\n\nðŸ“Œ '+note:content;
+  const{error}=await sb.from('posts').insert({content:finalContent,type,media_url:media_url||null,posted_by:'Admin â­',roles:['admin']});
+  btn.disabled=false;btn.textContent='ðŸ“¤ Ù†Ø´Ø± Ø§Ù„Ø¢Ù†';
+  if(error){showErr('createErr','âŒ '+error.message);return;}
+  showOk('createOk','âœ… ØªÙ… Ø§Ù„Ù†Ø´Ø± Ø¨Ù†Ø¬Ø§Ø­!');
   clearCreateForm();loadSideCounts();
 }
 
@@ -972,30 +814,30 @@ function clearCreateForm(){
 // ==================== USERS ====================
 async function loadUsers(){
   const{data,error}=await sb.from('profiles').select('*').order('created_at',{ascending:false});
-  if(error){document.getElementById('usersList').innerHTML='<div class="empty">❌ '+esc(error.message)+'</div>';return;}
+  if(error){document.getElementById('usersList').innerHTML='<div class="empty">âŒ '+esc(error.message)+'</div>';return;}
   allUsers=data||[];
   renderUsers(allUsers);
 }
 
 function renderUsers(users){
   const el=document.getElementById('usersList');
-  if(!users||!users.length){el.innerHTML='<div class="empty">لا يوجد مستخدمون</div>';return;}
+  if(!users||!users.length){el.innerHTML='<div class="empty">Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†</div>';return;}
   el.innerHTML=`<table class="data-table">
     <thead><tr>
-      <th>المستخدم</th><th>البريد</th><th>الرتبة</th><th>XP</th><th>تاريخ التسجيل</th><th>إجراء</th>
+      <th>Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…</th><th>Ø§Ù„Ø¨Ø±ÙŠØ¯</th><th>Ø§Ù„Ø±ØªØ¨Ø©</th><th>XP</th><th>ØªØ§Ø±ÙŠØ® Ø§Ù„ØªØ³Ø¬ÙŠÙ„</th><th>Ø¥Ø¬Ø±Ø§Ø¡</th>
     </tr></thead>
     <tbody>${users.map(u=>`<tr id="ur-${u.id}">
       <td><div style="display:flex;align-items:center;gap:8px;">
-        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:12px;overflow:hidden;flex-shrink:0;">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`:'👤'}</div>
-        <span style="font-weight:600;">${esc(u.username||'—')}</span>
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:12px;overflow:hidden;flex-shrink:0;">${u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`:'ðŸ‘¤'}</div>
+        <span style="font-weight:600;">${esc(u.username||'â€”')}</span>
       </div></td>
-      <td style="color:var(--text3);font-size:12px;">${esc(u.email||'—')}</td>
+      <td style="color:var(--text3);font-size:12px;">${esc(u.email||'â€”')}</td>
       <td>${getRoles(u).map(r=>roleBadge(r)).join(' ')}</td>
       <td style="color:var(--accent2);font-weight:700;">${(u.xp||0).toLocaleString()}</td>
       <td style="color:var(--text3);font-size:11px;">${ago(u.created_at)}</td>
       <td><div style="display:flex;gap:5px;">
-        <button class="btn-edit" onclick="openUserModal('${u.id}')">✏️</button>
-        <button class="btn-danger" onclick="deleteUser('${u.id}')">🗑️</button>
+        <button class="btn-edit" onclick="openUserModal('${u.id}')">âœï¸</button>
+        <button class="btn-danger" onclick="deleteUser('${u.id}')">ðŸ—‘ï¸</button>
       </div></td>
     </tr>`).join('')}
     </tbody>
@@ -1011,19 +853,19 @@ async function openUserModal(id){
   let u=allUsers.find(x=>x.id===id);
   if(!u){
     const{data:fetchedU}=await sb.from('profiles').select('*').eq('id',id).single();
-    if(!fetchedU){showToast('❌ لم يتم العثور على المستخدم','err');return;}
+    if(!fetchedU){showToast('âŒ Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…','err');return;}
     u=fetchedU;
     allUsers.push(u);
   }
-  document.getElementById('userModalTitle').textContent='👤 '+( u.username||u.email);
+  document.getElementById('userModalTitle').textContent='ðŸ‘¤ '+( u.username||u.email);
   const roles=getRoles(u);
   document.getElementById('userModalBody').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-      <div><div class="form-label" style="margin-bottom:4px;">اسم المستخدم</div><input class="form-input" id="um-username" value="${esc(u.username||'')}"></div>
-      <div><div class="form-label" style="margin-bottom:4px;">الاسم الظاهر</div><input class="form-input" id="um-display" value="${esc(u.display_name||'')}"></div>
-      <div><div class="form-label" style="margin-bottom:4px;">البريد الإلكتروني</div><input class="form-input" id="um-email" value="${esc(u.email||'')}" readonly style="opacity:0.6;"></div>
+      <div><div class="form-label" style="margin-bottom:4px;">Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…</div><input class="form-input" id="um-username" value="${esc(u.username||'')}"></div>
+      <div><div class="form-label" style="margin-bottom:4px;">Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ø¸Ø§Ù‡Ø±</div><input class="form-input" id="um-display" value="${esc(u.display_name||'')}"></div>
+      <div><div class="form-label" style="margin-bottom:4px;">Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ</div><input class="form-input" id="um-email" value="${esc(u.email||'')}" readonly style="opacity:0.6;"></div>
       <div><div class="form-label" style="margin-bottom:4px;">XP</div><input class="form-input" id="um-xp" type="number" value="${u.xp||0}"></div>
-      <div style="grid-column:1/-1"><div class="form-label" style="margin-bottom:6px;">الرتب الحالية</div>
+      <div style="grid-column:1/-1"><div class="form-label" style="margin-bottom:6px;">Ø§Ù„Ø±ØªØ¨ Ø§Ù„Ø­Ø§Ù„ÙŠØ©</div>
         <div class="role-chips" id="um-roles-chips">
           ${Object.entries(ROLES).map(([k,m])=>`
             <span class="role-chip ${roles.includes(k)?'on':'off'}" data-role="${k}"
@@ -1035,8 +877,8 @@ async function openUserModal(id){
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button class="btn-ghost" onclick="closeUserModal()">إلغاء</button>
-      <button class="btn-primary" onclick="saveUserModal('${u.id}')">💾 حفظ</button>
+      <button class="btn-ghost" onclick="closeUserModal()">Ø¥Ù„ØºØ§Ø¡</button>
+      <button class="btn-primary" onclick="saveUserModal('${u.id}')">ðŸ’¾ Ø­ÙØ¸</button>
     </div>`;
   document.getElementById('userModal').classList.add('open');
 }
@@ -1055,17 +897,17 @@ async function saveUserModal(id){
   const roles=[...document.querySelectorAll('#um-roles-chips .role-chip.on')].map(c=>c.dataset.role);
   if(!roles.length)roles.push('user');
   const{error}=await sb.from('profiles').update({username,display_name,xp,roles,role:roles[0]}).eq('id',id);
-  if(error){showToast('❌ '+error.message,'err');return;}
-  closeUserModal();showToast('✅ تم تحديث المستخدم','ok');
+  if(error){showToast('âŒ '+error.message,'err');return;}
+  closeUserModal();showToast('âœ… ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…','ok');
   loadUsers();loadDashboard();loadSideCounts();
 }
 
 async function deleteUser(id){
-  if(!confirm('حذف هذا المستخدم نهائياً؟'))return;
+  if(!confirm('Ø­Ø°Ù Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ'))return;
   const{error}=await sb.from('profiles').delete().eq('id',id);
-  if(error){showToast('❌ '+error.message,'err');return;}
+  if(error){showToast('âŒ '+error.message,'err');return;}
   document.getElementById('ur-'+id)?.remove();
-  showToast('🗑️ تم حذف المستخدم','ok');
+  showToast('ðŸ—‘ï¸ ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…','ok');
   loadSideCounts();
 }
 
@@ -1084,17 +926,17 @@ async function searchForRole(q){
   const el=document.getElementById('roleSearchResults');
   if(!q||q.length<2){el.innerHTML='';return;}
   const{data}=await sb.from('profiles').select('id,username,email,role,roles,xp').or(`username.ilike.%${q}%,email.ilike.%${q}%`).limit(8);
-  if(!data||!data.length){el.innerHTML='<div class="empty">لا يوجد مستخدم مطابق</div>';return;}
+  if(!data||!data.length){el.innerHTML='<div class="empty">Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø³ØªØ®Ø¯Ù… Ù…Ø·Ø§Ø¨Ù‚</div>';return;}
   el.innerHTML=data.map(u=>{
     const roles=getRoles(u);
     return`<div class="post-item" style="margin-bottom:8px;">
-      <div class="post-thumb">👤</div>
+      <div class="post-thumb">ðŸ‘¤</div>
       <div class="post-info">
         <div class="post-name">${esc(u.username||u.email)}</div>
-        <div class="post-meta">${esc(u.email||'')} • ${roles.map(r=>roleBadge(r)).join(' ')}</div>
+        <div class="post-meta">${esc(u.email||'')} â€¢ ${roles.map(r=>roleBadge(r)).join(' ')}</div>
       </div>
       <div class="post-actions">
-        <button class="btn-edit" onclick="openUserModal('${u.id}')">✏️ تعديل الرتبة</button>
+        <button class="btn-edit" onclick="openUserModal('${u.id}')">âœï¸ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø±ØªØ¨Ø©</button>
       </div>
     </div>`;
   }).join('');
@@ -1106,19 +948,19 @@ async function searchForRole(q){
 async function loadTournaments(){
   const{data,error}=await sb.from('tournament_registrations').select('*').order('created_at',{ascending:false});
   const el=document.getElementById('tournamentsList');
-  if(error||!data||!data.length){el.innerHTML='<div class="empty">لا توجد تسجيلات بعد</div>';return;}
+  if(error||!data||!data.length){el.innerHTML='<div class="empty">Ù„Ø§ ØªÙˆØ¬Ø¯ ØªØ³Ø¬ÙŠÙ„Ø§Øª Ø¨Ø¹Ø¯</div>';return;}
   // Group by post_id
   const grouped={};
   data.forEach(r=>{const k=r.post_id||'unset';if(!grouped[k])grouped[k]=[];grouped[k].push(r);});
   el.innerHTML=Object.entries(grouped).map(([key,regs])=>`
     <div class="card" style="margin-bottom:12px;">
-      <div class="card-title">🏆 بطولة #${esc(key)} — ${regs.length} لاعب</div>
+      <div class="card-title">ðŸ† Ø¨Ø·ÙˆÙ„Ø© #${esc(key)} â€” ${regs.length} Ù„Ø§Ø¹Ø¨</div>
       <table class="data-table">
-        <thead><tr><th>اللاعب</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>Ø§Ù„Ù„Ø§Ø¹Ø¨</th><th>Ø§Ù„ØªØ§Ø±ÙŠØ®</th><th>Ø¥Ø¬Ø±Ø§Ø¡</th></tr></thead>
         <tbody>${regs.map(r=>`<tr>
-          <td><span style="font-weight:600;">${esc(r.username||'—')}</span></td>
+          <td><span style="font-weight:600;">${esc(r.username||'â€”')}</span></td>
           <td style="color:var(--text3);font-size:11px;">${ago(r.created_at)}</td>
-          <td><button class="btn-danger" onclick="deleteTourneyReg(${r.id})">🗑️ إلغاء التسجيل</button></td>
+          <td><button class="btn-danger" onclick="deleteTourneyReg(${r.id})">ðŸ—‘ï¸ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ³Ø¬ÙŠÙ„</button></td>
         </tr>`).join('')}
         </tbody>
       </table>
@@ -1126,10 +968,10 @@ async function loadTournaments(){
 }
 
 async function deleteTourneyReg(id){
-  if(!confirm('إلغاء تسجيل هذا اللاعب؟'))return;
+  if(!confirm('Ø¥Ù„ØºØ§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ù‡Ø°Ø§ Ø§Ù„Ù„Ø§Ø¹Ø¨ØŸ'))return;
   const{error}=await sb.from('tournament_registrations').delete().eq('id',id);
-  if(error){showToast('❌ '+error.message,'err');return;}
-  showToast('✅ تم إلغاء التسجيل','ok');loadTournaments();
+  if(error){showToast('âŒ '+error.message,'err');return;}
+  showToast('âœ… ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ³Ø¬ÙŠÙ„','ok');loadTournaments();
 }
 
 // ==================== PAYMENTS ====================
@@ -1144,33 +986,33 @@ async function loadPayments(statusFilter='all'){
   if(statusFilter!=='all')query=query.eq('status',statusFilter);
   const{data,error}=await query;
   const el=document.getElementById('paymentsList');
-  if(error||!data||!data.length){el.innerHTML='<div class="empty">لا توجد طلبات دفع</div>';return;}
+  if(error||!data||!data.length){el.innerHTML='<div class="empty">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø·Ù„Ø¨Ø§Øª Ø¯ÙØ¹</div>';return;}
   el.innerHTML=data.map(p=>`
     <div class="post-item" id="pay-${p.id}">
-      <div class="post-thumb">💰</div>
+      <div class="post-thumb">ðŸ’°</div>
       <div class="post-info">
-        <div class="post-name">${esc(p.username)} — ${esc(p.plan_name||p.plan_key)}</div>
+        <div class="post-name">${esc(p.username)} â€” ${esc(p.plan_name||p.plan_key)}</div>
         <div class="post-meta">
-          ${esc(p.bank_name||'—')} •
-          ${p.price?'$'+p.price:''} •
-          <span class="badge badge-${p.status==='approved'?'approved':p.status==='rejected'?'rejected':'pending'}">${p.status==='approved'?'✅ مقبول':p.status==='rejected'?'❌ مرفوض':'⏳ معلق'}</span> •
+          ${esc(p.bank_name||'â€”')} â€¢
+          ${p.price?'$'+p.price:''} â€¢
+          <span class="badge badge-${p.status==='approved'?'approved':p.status==='rejected'?'rejected':'pending'}">${p.status==='approved'?'âœ… Ù…Ù‚Ø¨ÙˆÙ„':p.status==='rejected'?'âŒ Ù…Ø±ÙÙˆØ¶':'â³ Ù…Ø¹Ù„Ù‚'}</span> â€¢
           ${ago(p.created_at)}
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;">User ID: ${esc(p.user_id||'—')}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;">User ID: ${esc(p.user_id||'â€”')}</div>
       </div>
       <div class="post-actions" style="flex-direction:column;gap:5px;">
         ${p.status==='pending'?`
-          <button class="btn-approve" onclick="approvePayment(${p.id},'${p.user_id}','${p.plan_key}')">✅ قبول وتفعيل</button>
-          <button class="btn-danger" onclick="rejectPayment(${p.id})">❌ رفض</button>`:
-          `<button class="btn-danger" onclick="deletePayment(${p.id})">🗑️ حذف السجل</button>`}
+          <button class="btn-approve" onclick="approvePayment(${p.id},'${p.user_id}','${p.plan_key}')">âœ… Ù‚Ø¨ÙˆÙ„ ÙˆØªÙØ¹ÙŠÙ„</button>
+          <button class="btn-danger" onclick="rejectPayment(${p.id})">âŒ Ø±ÙØ¶</button>`:
+          `<button class="btn-danger" onclick="deletePayment(${p.id})">ðŸ—‘ï¸ Ø­Ø°Ù Ø§Ù„Ø³Ø¬Ù„</button>`}
       </div>
     </div>`).join('');
 }
 
 async function approvePayment(reqId,userId,planKey){
-  if(!confirm('تأكدت من وصول المبلغ وتريد تفعيل الرتبة؟'))return;
+  if(!confirm('ØªØ£ÙƒØ¯Øª Ù…Ù† ÙˆØµÙˆÙ„ Ø§Ù„Ù…Ø¨Ù„Øº ÙˆØªØ±ÙŠØ¯ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø±ØªØ¨Ø©ØŸ'))return;
   const{error}=await sb.from('payment_requests').update({status:'approved'}).eq('id',reqId);
-  if(error){showToast('❌ '+error.message,'err');return;}
+  if(error){showToast('âŒ '+error.message,'err');return;}
   // Grant role
   if(userId&&planKey){
     const{data:prof}=await sb.from('profiles').select('roles,role').eq('id',userId).single();
@@ -1180,22 +1022,22 @@ async function approvePayment(reqId,userId,planKey){
       await sb.from('profiles').update({roles,role:roles[0]}).eq('id',userId);
     }
   }
-  showToast('✅ تم القبول وتفعيل الرتبة','ok');
+  showToast('âœ… ØªÙ… Ø§Ù„Ù‚Ø¨ÙˆÙ„ ÙˆØªÙØ¹ÙŠÙ„ Ø§Ù„Ø±ØªØ¨Ø©','ok');
   loadPayments('all');loadDashboard();loadSideCounts();
 }
 
 async function rejectPayment(reqId){
-  if(!confirm('رفض هذا الطلب؟'))return;
+  if(!confirm('Ø±ÙØ¶ Ù‡Ø°Ø§ Ø§Ù„Ø·Ù„Ø¨ØŸ'))return;
   const{error}=await sb.from('payment_requests').update({status:'rejected'}).eq('id',reqId);
-  if(error){showToast('❌ '+error.message,'err');return;}
-  showToast('✅ تم الرفض','ok');loadPayments('all');loadSideCounts();
+  if(error){showToast('âŒ '+error.message,'err');return;}
+  showToast('âœ… ØªÙ… Ø§Ù„Ø±ÙØ¶','ok');loadPayments('all');loadSideCounts();
 }
 
 async function deletePayment(reqId){
-  if(!confirm('حذف هذا السجل نهائياً؟'))return;
+  if(!confirm('Ø­Ø°Ù Ù‡Ø°Ø§ Ø§Ù„Ø³Ø¬Ù„ Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ'))return;
   await sb.from('payment_requests').delete().eq('id',reqId);
   document.getElementById('pay-'+reqId)?.remove();
-  showToast('🗑️ تم الحذف','ok');
+  showToast('ðŸ—‘ï¸ ØªÙ… Ø§Ù„Ø­Ø°Ù','ok');
 }
 
 // ==================== YOUTUBE ====================
@@ -1203,58 +1045,58 @@ async function addYTPost(){
   const url=document.getElementById('ytUrl').value.trim();
   const type=document.getElementById('ytType').value;
   const tag=document.getElementById('ytTag').value;
-  if(!url){showErr('ytErr','⚠️ أدخل الرابط');return;}
+  if(!url){showErr('ytErr','âš ï¸ Ø£Ø¯Ø®Ù„ Ø§Ù„Ø±Ø§Ø¨Ø·');return;}
   const btn=document.getElementById('btnAddYT');
-  btn.disabled=true;btn.textContent='⏳ جاري الجلب...';
+  btn.disabled=true;btn.textContent='â³ Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¬Ù„Ø¨...';
   try{
     let info=null;
     if(type==='single'){
       const vid=url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
-      if(!vid)throw new Error('رابط فيديو غير صحيح');
+      if(!vid)throw new Error('Ø±Ø§Ø¨Ø· ÙÙŠØ¯ÙŠÙˆ ØºÙŠØ± ØµØ­ÙŠØ­');
       const r=await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YT_KEY}`);
       const d=await r.json();
-      if(!d.items?.[0])throw new Error('الفيديو غير موجود');
+      if(!d.items?.[0])throw new Error('Ø§Ù„ÙÙŠØ¯ÙŠÙˆ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯');
       const v=d.items[0].snippet;
-      info={content:`🎬 ${v.title}\n📺 ${v.channelTitle}`,media_url:`https://youtube.com/watch?v=${vid}`,type:tag};
+      info={content:`ðŸŽ¬ ${v.title}\nðŸ“º ${v.channelTitle}`,media_url:`https://youtube.com/watch?v=${vid}`,type:tag};
     }else{
       const handle=url.split('@')[1]?.split(/[/?]/)[0];
-      if(!handle)throw new Error('رابط القناة غير صحيح');
+      if(!handle)throw new Error('Ø±Ø§Ø¨Ø· Ø§Ù„Ù‚Ù†Ø§Ø© ØºÙŠØ± ØµØ­ÙŠØ­');
       const r=await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${handle}&key=${YT_KEY}`);
       const d=await r.json();
-      if(!d.items?.[0])throw new Error('القناة غير موجودة');
+      if(!d.items?.[0])throw new Error('Ø§Ù„Ù‚Ù†Ø§Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©');
       const ch=d.items[0];
       // Get latest video
       const vr=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${ch.id}&maxResults=1&order=date&type=video&key=${YT_KEY}`);
       const vd=await vr.json();
-      if(!vd.items?.[0])throw new Error('لا توجد فيديوهات في القناة');
+      if(!vd.items?.[0])throw new Error('Ù„Ø§ ØªÙˆØ¬Ø¯ ÙÙŠØ¯ÙŠÙˆÙ‡Ø§Øª ÙÙŠ Ø§Ù„Ù‚Ù†Ø§Ø©');
       const v=vd.items[0];
-      info={content:`🎬 ${v.snippet.title}\n📺 ${ch.snippet.title}`,media_url:`https://youtube.com/watch?v=${v.id.videoId}`,type:tag};
+      info={content:`ðŸŽ¬ ${v.snippet.title}\nðŸ“º ${ch.snippet.title}`,media_url:`https://youtube.com/watch?v=${v.id.videoId}`,type:tag};
     }
     const{error}=await sb.from('posts').insert({...info,posted_by:'YouTube Bot'});
     if(error)throw error;
-    showOk('ytOk','✅ تم إضافة الفيديو!');
+    showOk('ytOk','âœ… ØªÙ… Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙÙŠØ¯ÙŠÙˆ!');
     document.getElementById('ytUrl').value='';
     loadYTPage();loadSideCounts();
-  }catch(e){showErr('ytErr','❌ '+e.message);}
-  btn.disabled=false;btn.textContent='➕ إضافة';
+  }catch(e){showErr('ytErr','âŒ '+e.message);}
+  btn.disabled=false;btn.textContent='âž• Ø¥Ø¶Ø§ÙØ©';
 }
 
 async function loadYTPage(){
   const{data}=await sb.from('posts').select('id,content,type,media_url,created_at,posted_by').in('type',['clip','review']).not('media_url','is',null).order('created_at',{ascending:false}).limit(30);
   const el=document.getElementById('ytPostsList');
-  if(!data||!data.length){el.innerHTML='<div class="empty">لا توجد فيديوهات مضافة بعد</div>';return;}
+  if(!data||!data.length){el.innerHTML='<div class="empty">Ù„Ø§ ØªÙˆØ¬Ø¯ ÙÙŠØ¯ÙŠÙˆÙ‡Ø§Øª Ù…Ø¶Ø§ÙØ© Ø¨Ø¹Ø¯</div>';return;}
   el.innerHTML=data.map(p=>{
     const vid=p.media_url?.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
     const thumb=vid?`https://img.youtube.com/vi/${vid}/mqdefault.jpg`:null;
     return`<div class="yt-item">
-      <div class="yt-thumb">${thumb?`<img src="${thumb}" alt="">`:'▶️'}</div>
+      <div class="yt-thumb">${thumb?`<img src="${thumb}" alt="">`:'â–¶ï¸'}</div>
       <div class="yt-info">
         <div class="yt-title">${esc((p.content||'').split('\n')[0])}</div>
-        <div class="yt-meta">${tagBadge(p.type)} • ${ago(p.created_at)}</div>
+        <div class="yt-meta">${tagBadge(p.type)} â€¢ ${ago(p.created_at)}</div>
       </div>
       <div style="display:flex;gap:5px;">
-        ${p.media_url?`<a href="${p.media_url}" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:11px;padding:5px 10px;">▶️</a>`:''}
-        <button class="btn-danger" onclick="deletePost('${p.id}')">🗑️</button>
+        ${p.media_url?`<a href="${p.media_url}" target="_blank" class="btn-ghost" style="text-decoration:none;font-size:11px;padding:5px 10px;">â–¶ï¸</a>`:''}
+        <button class="btn-danger" onclick="deletePost('${p.id}')">ðŸ—‘ï¸</button>
       </div>
     </div>`;
   }).join('');
@@ -1281,16 +1123,16 @@ async function loadStats(){
 
   document.getElementById('statsContent').innerHTML=`
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num">${posts||0}</div><div class="stat-lbl">📝 إجمالي المنشورات</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${users||0}</div><div class="stat-lbl">👥 إجمالي المستخدمين</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#fbbf24">${visits||0}</div><div class="stat-lbl">👁️ إجمالي الزيارات</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#f87171">${likes||0}</div><div class="stat-lbl">❤️ منشورات مُعجب بها</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#d8b4fe">${tourney||0}</div><div class="stat-lbl">🏆 تسجيلات بطولة</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${pay||0}</div><div class="stat-lbl">💳 مدفوعات مقبولة</div></div>
+      <div class="stat-card"><div class="stat-num">${posts||0}</div><div class="stat-lbl">ðŸ“ Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${users||0}</div><div class="stat-lbl">ðŸ‘¥ Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#fbbf24">${visits||0}</div><div class="stat-lbl">ðŸ‘ï¸ Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#f87171">${likes||0}</div><div class="stat-lbl">â¤ï¸ Ù…Ù†Ø´ÙˆØ±Ø§Øª Ù…ÙØ¹Ø¬Ø¨ Ø¨Ù‡Ø§</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#d8b4fe">${tourney||0}</div><div class="stat-lbl">ðŸ† ØªØ³Ø¬ÙŠÙ„Ø§Øª Ø¨Ø·ÙˆÙ„Ø©</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${pay||0}</div><div class="stat-lbl">ðŸ’³ Ù…Ø¯ÙÙˆØ¹Ø§Øª Ù…Ù‚Ø¨ÙˆÙ„Ø©</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div class="card">
-        <div class="card-title">📊 المنشورات حسب النوع</div>
+        <div class="card-title">ðŸ“Š Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª Ø­Ø³Ø¨ Ø§Ù„Ù†ÙˆØ¹</div>
         ${Object.entries(typeCounts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <span style="min-width:90px;font-size:12px;">${tagBadge(k)}</span>
@@ -1299,11 +1141,11 @@ async function loadStats(){
           </div>`).join('')}
       </div>
       <div class="card">
-        <div class="card-title">🏅 أعلى مستخدمين XP</div>
+        <div class="card-title">ðŸ… Ø£Ø¹Ù„Ù‰ Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† XP</div>
         ${(topXP||[]).map((u,i)=>`
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <span style="font-size:16px;">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
-            <span style="flex:1;font-size:13px;font-weight:600;">${esc(u.username||'—')}</span>
+            <span style="font-size:16px;">${['ðŸ¥‡','ðŸ¥ˆ','ðŸ¥‰','4ï¸âƒ£','5ï¸âƒ£'][i]}</span>
+            <span style="flex:1;font-size:13px;font-weight:600;">${esc(u.username||'â€”')}</span>
             <span style="color:var(--accent2);font-weight:700;font-size:13px;">${(u.xp||0).toLocaleString()} XP</span>
           </div>`).join('')}
       </div>
@@ -1314,17 +1156,17 @@ async function loadStats(){
 async function loadVisits(){
   const{data,error}=await sb.from('site_visits').select('*').order('created_at',{ascending:false}).limit(50);
   const el=document.getElementById('visitsContent');
-  if(error||!data||!data.length){el.innerHTML='<div class="card"><div class="empty">لا توجد بيانات زيارات</div></div>';return;}
+  if(error||!data||!data.length){el.innerHTML='<div class="card"><div class="empty">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø²ÙŠØ§Ø±Ø§Øª</div></div>';return;}
   // Count by page
   const pageCounts={};
   data.forEach(v=>{pageCounts[v.page||'home']=(pageCounts[v.page||'home']||0)+1;});
   el.innerHTML=`
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-num">${data.length}</div><div class="stat-lbl">📊 الزيارات المحملة</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${new Set(data.map(v=>v.user_id).filter(Boolean)).size}</div><div class="stat-lbl">👤 مستخدمون فريدون</div></div>
+      <div class="stat-card"><div class="stat-num">${data.length}</div><div class="stat-lbl">ðŸ“Š Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª Ø§Ù„Ù…Ø­Ù…Ù„Ø©</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#4ade80">${new Set(data.map(v=>v.user_id).filter(Boolean)).size}</div><div class="stat-lbl">ðŸ‘¤ Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ† ÙØ±ÙŠØ¯ÙˆÙ†</div></div>
     </div>
     <div class="card">
-      <div class="card-title">📄 الصفحات الأكثر زيارة</div>
+      <div class="card-title">ðŸ“„ Ø§Ù„ØµÙØ­Ø§Øª Ø§Ù„Ø£ÙƒØ«Ø± Ø²ÙŠØ§Ø±Ø©</div>
       ${Object.entries(pageCounts).sort((a,b)=>b[1]-a[1]).map(([page,count])=>`
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
           <span style="min-width:130px;font-size:12px;color:var(--text2);">${esc(page)}</span>
@@ -1333,12 +1175,12 @@ async function loadVisits(){
         </div>`).join('')}
     </div>
     <div class="card">
-      <div class="card-title">🕐 آخر الزيارات</div>
+      <div class="card-title">ðŸ• Ø¢Ø®Ø± Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª</div>
       <table class="data-table">
-        <thead><tr><th>الصفحة</th><th>المستخدم</th><th>الوقت</th></tr></thead>
+        <thead><tr><th>Ø§Ù„ØµÙØ­Ø©</th><th>Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…</th><th>Ø§Ù„ÙˆÙ‚Øª</th></tr></thead>
         <tbody>${data.slice(0,20).map(v=>`<tr>
           <td><span class="tag-badge" style="font-size:11px;">${esc(v.page||'home')}</span></td>
-          <td style="font-size:11px;color:var(--text3);">${esc(v.user_id?v.user_id.slice(0,8)+'...':'زائر')}</td>
+          <td style="font-size:11px;color:var(--text3);">${esc(v.user_id?v.user_id.slice(0,8)+'...':'Ø²Ø§Ø¦Ø±')}</td>
           <td style="font-size:11px;color:var(--text3);">${ago(v.created_at)}</td>
         </tr>`).join('')}
         </tbody>
@@ -1358,12 +1200,12 @@ document.addEventListener('click',e=>{
 document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
 // ===================================================
-// POSTS SLIDER - سلسلة منشورات تفاعلية
+// POSTS SLIDER - Ø³Ù„Ø³Ù„Ø© Ù…Ù†Ø´ÙˆØ±Ø§Øª ØªÙØ§Ø¹Ù„ÙŠØ©
 // ===================================================
 const sliderState = {
   posts: [],
   currentPage: 0,
-  perPage: 3, // منشورات لكل صفحة
+  perPage: 3, // Ù…Ù†Ø´ÙˆØ±Ø§Øª Ù„ÙƒÙ„ ØµÙØ­Ø©
   containerId: '',
 };
 
@@ -1373,7 +1215,7 @@ function buildPostsSlider(posts, containerId) {
   sliderState.containerId = containerId;
   renderSlider();
 
-  // ===== Scroll wheel support (زر الوسط) =====
+  // ===== Scroll wheel support (Ø²Ø± Ø§Ù„ÙˆØ³Ø·) =====
   const wrap = document.getElementById(containerId);
   if (wrap) {
     wrap.removeEventListener('wheel', handleSliderWheel);
@@ -1399,7 +1241,7 @@ function renderSlider() {
   if (!el) return;
 
   const postsHTML = pagePosts.map(p => {
-    const author = p.profiles?.username || p.posted_by || 'لاعب';
+    const author = p.profiles?.username || p.posted_by || 'Ù„Ø§Ø¹Ø¨';
     const avatar = p.profiles?.avatar_url;
     const content = (p.content || '').trim();
     const typeIcon = getTypeIcon(p.type);
@@ -1421,13 +1263,13 @@ function renderSlider() {
         </div>
         ${tagBadge(p.type)}
       </div>
-      <div class="slide-post-content">${content ? esc(content).replace(/\n/g,'<br>') : '<span style="color:var(--text3);font-style:italic;">لا يوجد محتوى</span>'}</div>
+      <div class="slide-post-content">${content ? esc(content).replace(/\n/g,'<br>') : '<span style="color:var(--text3);font-style:italic;">Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø­ØªÙˆÙ‰</span>'}</div>
       <div class="slide-post-footer">
-        <span class="slide-stat">❤️ ${p.likes_count||0}</span>
-        <span class="slide-stat">💬 ${p.comments_count||0}</span>
+        <span class="slide-stat">â¤ï¸ ${p.likes_count||0}</span>
+        <span class="slide-stat">ðŸ’¬ ${p.comments_count||0}</span>
         <div class="slide-actions" onclick="event.stopPropagation()">
-          <button class="slide-edit-btn" onclick="openEditPost('${p.id}')">✏️ تعديل</button>
-          <button class="slide-del-btn" onclick="deletePost('${p.id}',true)">🗑️</button>
+          <button class="slide-edit-btn" onclick="openEditPost('${p.id}')">âœï¸ ØªØ¹Ø¯ÙŠÙ„</button>
+          <button class="slide-del-btn" onclick="deletePost('${p.id}',true)">ðŸ—‘ï¸</button>
         </div>
       </div>
     </div>`;
@@ -1441,19 +1283,19 @@ function renderSlider() {
 
   el.innerHTML = `
     <div class="slider-header">
-      <div class="card-title">📝 المنشورات
-        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:6px;">(${posts.length} إجمالي)</span>
+      <div class="card-title">ðŸ“ Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª
+        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:6px;">(${posts.length} Ø¥Ø¬Ù…Ø§Ù„ÙŠ)</span>
       </div>
       <div class="slider-controls">
-        <button class="slider-btn" id="sliderPrevBtn" onclick="sliderPrev()" ${currentPage===0?'disabled':''}>▲</button>
+        <button class="slider-btn" id="sliderPrevBtn" onclick="sliderPrev()" ${currentPage===0?'disabled':''}>â–²</button>
         <span class="slider-counter">${currentPage+1} / ${totalPages}</span>
-        <button class="slider-btn" id="sliderNextBtn" onclick="sliderNext()" ${currentPage>=totalPages-1?'disabled':''}>▼</button>
-        <button class="slider-btn" onclick="nav('posts')" title="عرض الكل" style="width:auto;padding:0 10px;font-size:11px;">الكل ←</button>
+        <button class="slider-btn" id="sliderNextBtn" onclick="sliderNext()" ${currentPage>=totalPages-1?'disabled':''}>â–¼</button>
+        <button class="slider-btn" onclick="nav('posts')" title="Ø¹Ø±Ø¶ Ø§Ù„ÙƒÙ„" style="width:auto;padding:0 10px;font-size:11px;">Ø§Ù„ÙƒÙ„ â†</button>
       </div>
     </div>
     <div class="slider-track-wrap">
       <div class="slider-track" id="sliderTrack">
-        ${postsHTML || '<div class="slider-empty">لا توجد منشورات</div>'}
+        ${postsHTML || '<div class="slider-empty">Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ù†Ø´ÙˆØ±Ø§Øª</div>'}
       </div>
     </div>
     <div class="slider-dots">${dotsHTML}</div>
@@ -1517,3 +1359,4 @@ const _origDeletePost = deletePost;
 </script>
 </body>
 </html>
+
