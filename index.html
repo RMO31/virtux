@@ -361,43 +361,56 @@
       border: 1px solid #e01010;
       border-radius: 12px;
       width: 90%;
-      max-width: 500px;
-      padding: 25px;
+      max-width: 460px;
+      padding: 20px;
       max-height: 90vh;
       overflow-y: auto;
     }
-    .modal-box h2, .modal-box h3 { color: #e01010; text-align:center; margin-bottom:15px; }
-    .modal-box input { width:100%; padding:12px; margin:10px 0; background:#2a2a2a; border:1px solid #444; border-radius:6px; color:white; }
-    .modal-box button { background:#e01010; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; margin:5px; }
+    .modal-box h2, .modal-box h3 { color: #e01010; text-align:center; margin-bottom:15px; font-size:18px; }
+    .modal-box input { width:100%; padding:9px 12px; margin:8px 0; background:#2a2a2a; border:1px solid #444; border-radius:6px; color:white; font-size:13px; }
+    .modal-box button { background:#e01010; color:#000; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer; margin:4px; font-size:13px; }
     .modal-box button.cancel { background:#555; color:white; }
 
-    .profile-avatar { text-align:center; margin-bottom:20px; }
-    .profile-avatar img { width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #e01010; background:#2a2a2a; }
-    .avatar-placeholder { width:80px; height:80px; border-radius:50%; background:#2a2a3a; display:inline-flex; align-items:center; justify-content:center; font-size:42px; border:2px solid #e01010; }
-    .profile-field { margin-bottom:15px; }
-    .profile-field label { display:block; margin-bottom:5px; color:#e01010; font-weight:500; font-size:13px; }
-    .profile-field input, .profile-field select { width:100%; padding:9px 12px; background:#2a2a2a; border:1px solid #444; border-radius:6px; color:white; font-size:13px; }
-    .profile-buttons { display:flex; gap:10px; margin-top:20px; }
+    .profile-avatar { text-align:center; margin-bottom:16px; }
+    .profile-avatar img { width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid #e01010; background:#2a2a2a; }
+    .avatar-placeholder { width:64px; height:64px; border-radius:50%; background:#2a2a3a; display:inline-flex; align-items:center; justify-content:center; font-size:36px; border:2px solid #e01010; }
+    .profile-field { margin-bottom:12px; }
+    .profile-field label { display:block; margin-bottom:4px; color:#e01010; font-weight:500; font-size:12px; }
+    .profile-field input, .profile-field select { width:100%; padding:7px 10px; background:#2a2a2a; border:1px solid #444; border-radius:6px; color:white; font-size:12px; }
+    .profile-buttons { display:flex; gap:8px; margin-top:16px; }
     .btn-save { background:#e01010; color:#000; }
     .btn-cancel { background:#555; color:white; }
-    .change-password-section { margin-top:20px; padding-top:20px; border-top:1px solid #444; }
+    .change-password-section { margin-top:16px; padding-top:12px; border-top:1px solid #444; }
     /* تحسين عرض الرتب المتعددة */
     .profile-roles-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 5px;
+      gap: 5px;
+      margin-top: 4px;
     }
     .profile-role-badge {
-      font-size: 10px;
+      font-size: 9px;
       background: #2a0000;
       border: 1px solid #e01010;
       color: #e01010;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 20px;
       display: inline-flex;
       align-items: center;
+      gap: 3px;
+    }
+    /* تحسين شريط الرتب في الهيدر */
+    #user-role-badge {
+      display: flex;
+      flex-wrap: wrap;
       gap: 4px;
+      max-width: 200px;
+      align-items: center;
+    }
+    #user-role-badge span {
+      font-size: 9px;
+      padding: 2px 6px;
+      white-space: nowrap;
     }
 
     #upm-modal {
@@ -503,7 +516,7 @@
         <div style="display:flex; align-items:center; gap:8px;">
           <img id="user-avatar-img" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover; background:#2a2a3a; display:none;">
           <span id="user-name" style="font-size:13px;color:#e01010;"></span>
-          <span id="user-role-badge" style="display:none;align-items:center;gap:3px;flex-wrap:nowrap;max-width:200px;overflow:hidden;"></span>
+          <span id="user-role-badge" style="display:flex;flex-wrap:wrap;gap:3px;max-width:200px;"></span>
         </div>
         <button id="profileButton" style="background:transparent;border:1px solid #e01010;color:#e01010;padding:4px 10px;border-radius:5px;font-size:12px;cursor:pointer;">👤 الملف الشخصي</button>
         <button id="logoutButton" onclick="window.doLogout()" style="background:transparent;border:1px solid #f55;color:#f55;padding:4px 12px;border-radius:5px;font-size:12px;cursor:pointer;">خروج</button>
@@ -645,12 +658,12 @@
     <h2>👤 الملف الشخصي</h2>
     <div class="profile-avatar">
       <div id="profileAvatarContainer">
-        <img id="profileAvatarImg" src="" style="display:none; width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid #e01010;">
+        <img id="profileAvatarImg" src="" style="display:none; width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid #e01010;">
         <div id="profileAvatarPlaceholder" class="avatar-placeholder" style="display:flex;">👤</div>
       </div>
-      <div style="margin-top:10px;">
+      <div style="margin-top:8px;">
         <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml" style="display:none;">
-        <button id="changeAvatarBtn" class="btn-submit" style="width:auto; padding:5px 12px; font-size:12px;">📷 تغيير الصورة</button>
+        <button id="changeAvatarBtn" class="btn-submit" style="width:auto; padding:4px 10px; font-size:11px;">📷 تغيير الصورة</button>
       </div>
     </div>
     <div class="profile-field">
@@ -705,8 +718,8 @@
       <button id="saveProfileBtn" class="btn-save">💾 حفظ التغييرات</button>
       <button id="closeProfileBtn" class="btn-cancel">إغلاق</button>
     </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #440000;">
-      <button id="deleteAccountBtn" style="width:100%;background:transparent;border:1px solid #f55;color:#f55;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px;" onclick="window.confirmDeleteAccount()">🗑️ حذف الحساب نهائياً</button>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid #440000;">
+      <button id="deleteAccountBtn" style="width:100%;background:transparent;border:1px solid #f55;color:#f55;padding:8px;border-radius:6px;font-weight:bold;cursor:pointer;font-size:12px;" onclick="window.confirmDeleteAccount()">🗑️ حذف الحساب نهائياً</button>
     </div>
   </div>
 </div>
@@ -1698,7 +1711,7 @@ async function updateUIAfterAuth(sessionOverride) {
       const roles = normalizeRoles(profile).filter(r => r !== 'user');
       if (roles.length) {
         const colors = { admin: {bg:'#3d0f0f', fg:'#f55', label:'ADMIN'}, moderator: {bg:'#2a0000', fg:'#ff2222', label:'🛡️ MOD'}, youtuber_vip: {bg:'#1a0010', fg:'#ff6600', label:'🔥 YT VIP'}, youtuber: {bg:'#3d0f0f', fg:'#f55', label:'📺 YT'}, vip: {bg:'#1a0000', fg:'#e01010', label:'👑 VIP'}, member: {bg:'#0d0000', fg:'#cc2222', label:'⭐ MEMBER'}, donor: {bg:'#001a22', fg:'#00ccff', label:'💎 DONOR'}, guest: {bg:'#1a1a1a', fg:'#aaa', label:'🛡️ GUEST'}, user: {bg:'#111', fg:'#888', label:'USER'} };
-        roleBadge.innerHTML = roles.map(r => { const c = colors[r] || {bg:'#2a2a3a', fg:'#e01010', label:r.toUpperCase()}; return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:2px 6px;margin-right:3px;font-size:11px;">${c.label}</span>`; }).join('');
+        roleBadge.innerHTML = roles.map(r => { const c = colors[r] || {bg:'#2a2a3a', fg:'#e01010', label:r.toUpperCase()}; return `<span style="background:${c.bg};color:${c.fg};border:1px solid ${c.fg};border-radius:4px;padding:2px 6px;margin-right:3px;font-size:10px;">${c.label}</span>`; }).join('');
         roleBadge.style.display = 'flex';
       } else roleBadge.style.display = 'none';
       if (profile?.avatar_url) { userAvatarImg.src = profile.avatar_url; userAvatarImg.style.display = 'inline-block'; } else userAvatarImg.style.display = 'none';
