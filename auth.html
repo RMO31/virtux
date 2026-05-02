@@ -307,19 +307,6 @@ function hideMsg() {
   document.getElementById('authMsg').style.display = 'none';
 }
 
-function getDummyEmail(username) {
-  if (!username) return '';
-  const clean = username.trim().toLowerCase();
-  try {
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(clean);
-    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    return `ux_${hex}@virtux.v`;
-  } catch(e) {
-    return clean.replace(/[^a-z0-9]/g, '') + '@virtux.v';
-  }
-}
-
 async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -337,17 +324,14 @@ async function doLogin() {
       loginError = error;
     } else {
       const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-      let emailToTry = p?.email || getDummyEmail(identifier);
-      const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
-      loginError = error;
-
-      if (loginError && loginError.status !== 429 && !p?.email) {
-        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
-        if (fallback !== emailToTry) {
-          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
-          loginError = retryError || null;
-        }
+      if (!p?.email) {
+        showMsg('Username not found. Please check your username or use email.', 'err');
+        btn.disabled = false;
+        btn.textContent = 'Login';
+        return;
       }
+      const { error } = await db.auth.signInWithPassword({ email: p.email, password });
+      loginError = error;
     }
 
     if (loginError) {

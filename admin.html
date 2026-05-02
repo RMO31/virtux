@@ -241,14 +241,13 @@
       <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">🏆 Tournaments</button>
       <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">🎬 Highlights</button>
       <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">👥 Subscribers</button>
-      <button class="sb-btn" id="sb-ranks" onclick="showPage('ranks')">💎 الميزات والرتب</button>
+      <!-- تم حذف زر الميزات والرتب (sb-ranks) -->
       <div class="sb-sec">أخبار</div>
       <button class="sb-btn" id="sb-gaming-news" onclick="showPage('gaming-news')">📰 Gaming News</button>
       <button class="sb-btn" id="sb-youtube-news" onclick="showPage('youtube-news')">▶️ Youtube News</button>
       <div class="sb-sec">يوتيوب</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
-      <!-- تم حذف زر "🔴 Lives" المكرر -->
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
     </div>
@@ -308,8 +307,7 @@ function logout() { window.location.reload(); }
 function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
-  // removed 'yt-lives' from rooms list
-  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact', 'ranks'];
+  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact'];
   rooms.forEach(room => {
     let div = document.createElement('div');
     div.className = 'ap';
@@ -323,7 +321,7 @@ function getRoomTitle(room) {
     dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
     'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
-    projects:'🌐 Collaboration', contact:'📞 Contact', ranks:'💎 الميزات والرتب'
+    projects:'🌐 Collaboration', contact:'📞 Contact'
   };
   return titles[room] || room;
 }
@@ -336,7 +334,6 @@ function showPage(id) {
   if (btn) btn.classList.add('active');
   if (id === 'dashboard') loadDashboard();
   else if (id === 'contact') loadContact();
-  else if (id === 'ranks') loadRanks();
   else loadContentPage(id);
 }
 function loadContact() {
@@ -353,7 +350,6 @@ async function loadDashboard() {
     if (error) throw error;
     if (!users) users = [];
     let total = users.length;
-    // Helper: get roles array from user (supports both roles[] array and single role string)
     function getRoles(u) {
       if (Array.isArray(u.roles) && u.roles.length) return u.roles;
       if (u.role) return [u.role];
@@ -403,35 +399,7 @@ async function loadDashboard() {
     }
     recentMembersHtml += `</div>`;
 
-    let { data: payReqs, error: payErr } = await supabaseClient
-      .from('payment_requests')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
-    
-    let payReqsHtml = `<div class="card"><h3>💳 طلبات الدفع المعلقة (Paysera)</h3>`;
-    if (!payErr && payReqs && payReqs.length > 0) {
-      payReqsHtml += `<div class="posts-list">`;
-      payReqs.forEach(req => {
-        let date = new Date(req.created_at).toLocaleString('ar-EG');
-        payReqsHtml += `<div class="pi">
-          <div class="pi-icon">💰</div>
-          <div class="pi-info" style="flex:1;">
-            <div class="pi-title">${escapeHtml(req.username)} <span style="color:#aaa;font-weight:normal;">(صاحب الحساب: ${escapeHtml(req.bank_name)})</span></div>
-            <div class="pi-meta">${escapeHtml(req.plan_name)} • ${req.price ? '$'+req.price : 'تبرع'} • ${date}</div>
-            <span class="pi-tag">ID: ${req.user_id || 'غير معروف'}</span>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn-pub" style="background:#4caf90;padding:5px 12px;font-size:11px;" onclick="approvePayment(${req.id}, '${req.user_id}', '${req.plan_key}')">✅ قبول وتفعيل</button>
-            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="rejectPayment(${req.id})">❌ رفض</button>
-          </div>
-        </div>`;
-      });
-      payReqsHtml += `</div>`;
-    } else {
-      payReqsHtml += `<div class="empty">لا توجد طلبات دفع معلقة.</div>`;
-    }
-    payReqsHtml += `</div>`;
+    // تم حذف قسم payment_requests بالكامل
 
     let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
       <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
@@ -491,7 +459,7 @@ async function loadDashboard() {
       </div>`;
     }).join('') + `</div></div>`;
 
-    container.innerHTML = statsHtml + payReqsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
+    container.innerHTML = statsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
     loadNewsList();
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
@@ -573,34 +541,23 @@ async function searchUsersForRole(query) {
   } catch(e) { console.error(e); resultsDiv.innerHTML = '<div class="empty">خطأ في البحث</div>'; }
 }
 function refreshDashboard() { loadDashboard(); }
-async function setRole(userId, role) {
-  // Legacy: just call toggleRole add
-  await toggleRole(userId, role, true);
-}
+
 async function toggleRole(userId, role, add, expiryDate = null) {
   try {
     console.log(`toggleRole called: userId=${userId}, role=${role}, add=${add}`);
-    // Fetch current roles
     const { data: prof, error: fetchErr } = await supabaseClient
       .from('profiles').select('role,roles').eq('id', userId).single();
     if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم: ' + fetchErr.message); console.error('Fetch error:', fetchErr); return false; }
-
-    console.log('Current profile data:', prof);
 
     let currentRoles = Array.isArray(prof.roles) && prof.roles.length
       ? [...prof.roles]
       : (prof.role ? [prof.role] : ['user']);
 
-    console.log('Current roles before change:', currentRoles);
-
     if (add) {
-      // Simply add the role if not already present
       if (!currentRoles.includes(role)) currentRoles.push(role);
-      // Always ensure 'user' is present as a base role
       if (!currentRoles.includes('user')) currentRoles.unshift('user');
     } else {
       currentRoles = currentRoles.filter(r => r !== role);
-      // Always ensure 'user' remains as base role
       if (!currentRoles.includes('user')) currentRoles.unshift('user');
     }
 
@@ -612,8 +569,6 @@ async function toggleRole(userId, role, add, expiryDate = null) {
       .eq('id', userId)
       .select();
     if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error('Update error:', error); return false; }
-
-    console.log('Update result:', updateData);
 
     if (!updateData || updateData.length === 0) {
       alert('⚠️ لم يتم تحديث أي صف. تأكد أن RLS policy تسمح بالتحديث في جدول profiles.');
@@ -633,107 +588,6 @@ async function deleteUser(userId) {
     alert('✅ تم حذف المستخدم');
     await loadDashboard();
   } catch(e) { alert('❌ خطأ: ' + e.message); console.error(e); }
-}
-
-async function approvePayment(reqId, userId, planKey) {
-  if (!confirm('هل تأكدت من وصول المبلغ في حسابك البنكي Paysera؟')) return;
-  try {
-    let { error: err1 } = await supabaseClient.from('payment_requests').update({ status: 'approved' }).eq('id', reqId);
-    if (err1) throw err1;
-    if (userId && userId !== 'null' && planKey) {
-      let expiry = null;
-      if (['vip', 'member', 'youtuber_vip'].includes(planKey)) {
-        expiry = new Date();
-        expiry.setDate(expiry.getDate() + 30);
-        expiry = expiry.toISOString();
-      }
-      let success = await toggleRole(userId, planKey, true, expiry);
-      if (success) {
-        alert('✅ تم قبول الطلب وتفعيل الرتبة بنجاح.');
-      } else {
-        alert('⚠️ تم قبول الطلب ولكن فشل تفعيل الرتبة. قم بتفعيلها يدوياً.');
-      }
-    } else {
-      alert('✅ تم قبول الطلب بنجاح (لا يوجد User ID).');
-    }
-    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
-    if (currentPage === 'ranks') loadRanks();
-    else loadDashboard();
-  } catch(e) {
-    alert('❌ حدث خطأ: ' + e.message);
-  }
-}
-
-async function rejectPayment(reqId) {
-  if (!confirm('هل تريد رفض هذا الطلب؟')) return;
-  try {
-    let { error } = await supabaseClient.from('payment_requests').update({ status: 'rejected' }).eq('id', reqId);
-    if (error) throw error;
-    alert('✅ تم رفض الطلب.');
-    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
-    if (currentPage === 'ranks') loadRanks();
-    else loadDashboard();
-  } catch(e) {
-    alert('❌ حدث خطأ: ' + e.message);
-  }
-}
-
-async function loadRanks() {
-  let container = document.getElementById('content-ranks');
-  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
-  try {
-    let { data: reqs, error } = await supabaseClient
-      .from('payment_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    
-    let html = `<div class="card"><h3>💎 سجل الميزات والرتب</h3>`;
-    if (reqs && reqs.length) {
-      html += `<div class="posts-list">`;
-      reqs.forEach(req => {
-        let date = new Date(req.created_at).toLocaleString('ar-EG');
-        let statusBadge = '';
-        if (req.status === 'approved') statusBadge = `<span style="background:#0f3d2e;color:#4caf90;padding:2px 8px;border-radius:4px;font-size:11px;">مفعلة تلقائياً / مقبولة</span>`;
-        else if (req.status === 'pending') statusBadge = `<span style="background:#3d2e0f;color:#ff9800;padding:2px 8px;border-radius:4px;font-size:11px;">قيد الانتظار</span>`;
-        else statusBadge = `<span style="background:#3d0f0f;color:#f55;padding:2px 8px;border-radius:4px;font-size:11px;">مرفوضة</span>`;
-        
-        html += `<div class="pi">
-          <div class="pi-icon">💎</div>
-          <div class="pi-info" style="flex:1;">
-            <div class="pi-title">${escapeHtml(req.username)} <span style="color:#aaa;font-weight:normal;">(الجهة: ${escapeHtml(req.bank_name)})</span></div>
-            <div class="pi-meta">${escapeHtml(req.plan_name)} • ${req.price ? '$'+req.price : 'تبرع'} • ${date}</div>
-            <div style="margin-top:4px;">${statusBadge} <span class="pi-tag">ID: ${req.user_id || 'غير معروف'}</span></div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            ${req.status === 'pending' ? `<button class="btn-pub" style="background:#4caf90;padding:5px 12px;font-size:11px;" onclick="approvePayment(${req.id}, '${req.user_id}', '${req.plan_key}')">✅ قبول وتفعيل</button>
-            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="rejectPayment(${req.id})">❌ رفض</button>` : ''}
-            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="deletePaymentReq(${req.id})">🗑️ حذف السجل</button>
-          </div>
-        </div>`;
-      });
-      html += `</div>`;
-    } else {
-      html += `<div class="empty">لا يوجد سجل للميزات والرتب حتى الآن.</div>`;
-    }
-    html += `</div>`;
-    container.innerHTML = html;
-  } catch(e) {
-    container.innerHTML = `<div class="empty" style="color:red; text-align:center;">خطأ في التحميل: ${escapeHtml(e.message || e)}</div>`;
-    console.error(e);
-  }
-}
-
-async function deletePaymentReq(reqId) {
-  if (!confirm('حذف هذا السجل نهائياً؟')) return;
-  try {
-    let { error } = await supabaseClient.from('payment_requests').delete().eq('id', reqId);
-    if (error) throw error;
-    alert('✅ تم حذف السجل.');
-    let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
-    if (currentPage === 'ranks') loadRanks();
-    else loadDashboard();
-  } catch(e) { alert('❌ حدث خطأ: ' + e.message); }
 }
 
 // ==================== تحميل صفحة المحتوى ====================
@@ -772,9 +626,18 @@ async function loadContentPage(room) {
           else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
           else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
           else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
+          
+          // جلب معلومات المستخدم إذا وجد user_id
+          let authorHtml = '';
+          if (p.user_id) {
+            // سيتم جلب بيانات المستخدمين بشكل جماعي بعد ذلك، ولكن نعرض مؤقتاً
+            authorHtml = `<div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;"><span style="font-size:12px; color:#aaa;">👤 ${escapeHtml(p.user_id.substring(0,6))}...</span></div>`;
+          }
+          
           return `<div class="pi" id="pi-${p.id}">
             <div style="width:80px; flex-shrink:0;">${media}</div>
             <div class="pi-info">
+              ${authorHtml}
               <div class="pi-title">${escapeHtml(p.title)}</div>
               <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
               <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
@@ -791,7 +654,7 @@ async function loadContentPage(room) {
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
 }
 
-// ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
+// ==================== نموذج الإضافة لكل غرفة ====================
 function getAddForm(room) {
   if (room === 'home') {
     return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
@@ -1070,7 +933,7 @@ async function addPost(room) {
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
 async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
 
-// ==================== دوال التعديل المصححة ====================
+// ==================== دوال التعديل المصححة (مع رفع ملفات جديدة) ====================
 function getTagOptionsForEdit(room, currentTag) {
   let opts = '';
   if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -1209,15 +1072,12 @@ async function addYouTubeChannel(room) {
       if (btn) btn.textContent = '📥 جاري تنزيل المحتوى...';
       let chInfo = await getChannelId(handle);
       if (chInfo) {
-        // فيديوهات
         let videos = await fetchLatestVideos(chInfo.id, 5);
         let vCount = 0;
         for (let v of videos) { if (await saveToDb(v, 'yt-videos', 'Video')) vCount++; }
-        // بث مباشر
         let live = await fetchLiveStream(chInfo.id);
         let lCount = 0;
         if (live) { if (await saveToDb(live, 'live', 'Live Now')) lCount++; }
-        // قبل بث
         let upcoming = await fetchUpcomingStream(chInfo.id);
         let uCount = 0;
         if (upcoming) { if (await saveToDb(upcoming, 'live', 'Pre Lives')) uCount++; }
@@ -1374,8 +1234,6 @@ function startAutoCheck() {
   _autoCheckInterval = setInterval(autoCheckAllChannels, 15 * 60 * 1000);
 }
 
-// تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
-
 // ==================== غرفة Subscribers ====================
 async function loadSubscribersAdmin() {
   const container = document.getElementById('subscribers-admin-view');
@@ -1397,7 +1255,6 @@ async function loadSubscribersAdmin() {
       if (!placed) grouped['user'].push(u);
     });
 
-    // Search bar for subscribers
     let html = `<div style="margin-bottom:14px;">
       <input type="text" id="subsSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد..." oninput="filterSubscribersList(this.value)">
     </div>`;
@@ -1451,7 +1308,6 @@ function filterSubscribersList(query) {
       item.style.display = 'none';
     }
   });
-  // Show/hide role groups if all children hidden
   document.querySelectorAll('.subs-role-group').forEach(group => {
     const visible = group.querySelectorAll('.subs-user-item:not([style*="display: none"])');
     group.style.display = visible.length ? '' : 'none';
@@ -1465,7 +1321,7 @@ async function addUserSubscriber() { let userId = document.getElementById('sub-u
 
 // ربط الدوال
 window.startAutoCheck = startAutoCheck; window.autoCheckAllChannels = autoCheckAllChannels;
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList; window.approvePayment = approvePayment; window.rejectPayment = rejectPayment;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList;
 </script>
 
 <script>
@@ -1475,7 +1331,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   if (!canvas) return;
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
   if (!gl) {
-    // Fallback: 2D canvas 3D effect
     fallback2D(canvas);
     return;
   }
@@ -1488,7 +1343,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   resize();
   window.addEventListener('resize', resize);
 
-  // Vertex shader
   const vsSource = `
     attribute vec3 aPos;
     attribute vec3 aColor;
@@ -1529,7 +1383,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   const aColor = gl.getAttribLocation(prog, 'aColor');
   const uMVP = gl.getUniformLocation(prog, 'uMVP');
 
-  // Math helpers
   function mat4() { return new Float32Array(16); }
   function identity(m) {
     m[0]=1;m[1]=0;m[2]=0;m[3]=0;
@@ -1572,7 +1425,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     return multiply(mat4(), m, r);
   }
 
-  // Cube geometry
   function makeCubeEdges(cx, cy, cz, size, r, g, b) {
     const s = size/2;
     const verts = [
@@ -1588,15 +1440,14 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     return {pos, col};
   }
 
-  // Generate floating cubes
   function randomColor() {
     const palettes = [
-      [0.9, 0.0, 0.0],   // red
-      [1.0, 0.2, 0.1],   // bright red
-      [0.7, 0.0, 0.0],   // dark red
-      [0.5, 0.0, 0.0],   // deep red
-      [1.0, 0.1, 0.0],   // red-orange
-      [0.8, 0.05, 0.05],  // crimson
+      [0.9, 0.0, 0.0],
+      [1.0, 0.2, 0.1],
+      [0.7, 0.0, 0.0],
+      [0.5, 0.0, 0.0],
+      [1.0, 0.1, 0.0],
+      [0.8, 0.05, 0.05],
     ];
     return palettes[Math.floor(Math.random()*palettes.length)];
   }
@@ -1617,14 +1468,12 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     color: randomColor()
   }));
 
-  // Star particles (3D)
   const stars3d = Array.from({length:300}, () => ({
     x: (Math.random()-0.5)*50,
     y: (Math.random()-0.5)*50,
     z: -Math.random()*60
   }));
 
-  // Grid tunnel rings
   const tunnelRings = Array.from({length:20}, (_, i) => ({
     z: -i*3.5,
     angle: i*0.1
@@ -1739,10 +1588,8 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
     let view = identity(mat4());
     view[12] = -camX; view[13] = -camY; view[14] = 2;
 
-    // Draw stars
     drawStars(proj, view);
 
-    // Draw tunnel rings
     tunnelRings.forEach(ring => {
       ring.z += 0.04;
       ring.angle += 0.004;
@@ -1750,7 +1597,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
       drawTunnelRing(ring, proj, view);
     });
 
-    // Draw cubes
     cubes.forEach(cube => {
       cube.z += cube.speed;
       cube.rx += cube.drx;
@@ -1765,7 +1611,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
       drawCubeEdges(cube, proj, view);
     });
 
-    // Draw connecting lines between nearby cubes
     const linPos=[], linCol=[];
     for(let i=0; i<cubes.length; i++) {
       for(let j=i+1; j<cubes.length; j++) {
@@ -1790,7 +1635,6 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
 
   animate();
 
-  // 2D fallback
   function fallback2D(c) {
     const ctx = c.getContext('2d');
     function resz() { c.width=window.innerWidth; c.height=window.innerHeight; }
@@ -1824,7 +1668,7 @@ window.login = login; window.logout = logout; window.showPage = showPage; window
   }
 })();
 
-// بدء الفحص التلقائي كل 15 دقيقة
 setTimeout(startAutoCheck, 3000);
 </script>
 </body>
+</html>
