@@ -323,55 +323,54 @@ function getDummyEmail(username) {
 async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!identifier || !password) { showMsg('الرجاء إكمال جميع الحقول / Please fill all fields!', 'err'); return; }
+  if (!identifier || !password) { showMsg('Please fill all fields!', 'err'); return; }
 
   const btn = document.getElementById('btn-login');
   btn.disabled = true;
-  btn.textContent = 'جاري الدخول... / Logging in...';
+  btn.textContent = 'Logging in...';
 
   try {
     let loginError = null;
 
     if (identifier.includes('@')) {
-      // ===== تسجيل بالإيميل =====
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // ===== تسجيل باسم المستخدم - نبحث عن الإيميل أولاً =====
-      const { data: profile, error: profileErr } = await db
-        .from('profiles')
-        .select('email, id')
-        .ilike('username', identifier.trim())
-        .maybeSingle();
+      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+      const candidates = [
+        p?.email || '',
+        getDummyEmail(identifier),
+        identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v',
+        identifier.trim() + '@virtux.v'
+      ].filter(Boolean).filter((value, index, arr) => arr.indexOf(value) === index);
 
-      if (profileErr || !profile?.email) {
-        // لم نجد المستخدم
-        showMsg('❌ اسم المستخدم غير موجود / Username not found', 'err');
-        btn.disabled = false;
-        btn.textContent = 'Login';
-        return;
+      for (const emailToTry of candidates) {
+        const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
+        loginError = error || null;
+        if (!loginError || loginError.status === 429) break;
       }
 
-      // وجدنا الإيميل - نسجل الدخول
-      const { error } = await db.auth.signInWithPassword({ email: profile.email, password });
-      loginError = error;
+      if (loginError && !p?.email) {
+        const { data: exactProfile } = await db.from('profiles').select('email').eq('username', identifier.trim()).maybeSingle();
+        if (exactProfile?.email && !candidates.includes(exactProfile.email)) {
+          const { error } = await db.auth.signInWithPassword({ email: exactProfile.email, password });
+          loginError = error || null;
+        }
+      }
     }
 
     if (loginError) {
       let msg = loginError.message || 'Login failed.';
       if (loginError.status === 429) {
-        msg = 'محاولات كثيرة جداً - انتظر قليلاً / Too many attempts.';
-      } else if (
-        loginError.message === 'Invalid login credentials' ||
-        loginError.status === 400
-      ) {
-        msg = '❌ كلمة المرور خاطئة / Wrong password';
+        msg = 'Too many attempts. Please wait a few minutes and try again.';
+      } else if (loginError.message === 'Invalid login credentials' || loginError.status === 400) {
+        msg = 'Invalid email/username or password.';
       }
       throw new Error(msg);
     }
 
-    showMsg('✅ مرحباً بك! / Welcome back! جاري التحويل...', 'ok');
-    setTimeout(() => window.location.href = 'index.html', 1200);
+    showMsg('✅ Welcome back! Redirecting...', 'ok');
+    setTimeout(() => window.location.href = 'index.html', 1500);
   } catch (err) {
     showMsg('❌ ' + (err.message || 'Login failed.'), 'err');
     btn.disabled = false;

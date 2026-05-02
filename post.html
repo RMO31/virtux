@@ -19,6 +19,11 @@
     .content{padding:30px}
     .title{font-size:32px;color:#fff;margin-bottom:14px;line-height:1.25;font-weight:800}
     .meta{color:#95a3be;font-size:14px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:16px}
+    .author-box{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px}
+    .author-box img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#162033}
+    .author-fallback{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#162033;font-size:20px}
+    .author-name{font-size:15px;font-weight:700;color:#fff}
+    .author-sub{font-size:12px;color:#95a3be}
     .article-body{line-height:2;color:#dbe4f5;font-size:17px}
     .article-body p{margin-bottom:18px}
     .footer{margin-top:12px;text-align:center;padding:18px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px;color:#7e8ba3;background:rgba(255,255,255,0.02)}
@@ -86,6 +91,18 @@ async function loadArticle() {
     }
 
     const contentHtml = post.content ? escapeHtml(post.content).replace(/\n/g, '<br>') : escapeHtml(post.description || 'لا يوجد محتوى.');
+    let authorHtml = '';
+    if (post.user_id) {
+      const { data: profile } = await db.from('profiles').select('username, avatar_url, email').eq('id', post.user_id).maybeSingle();
+      const authorName = profile?.username || profile?.email || post.user_email || '';
+      if (authorName || profile?.avatar_url) {
+        const avatar = profile?.avatar_url
+          ? `<img src="${profile.avatar_url}" alt="${escapeHtml(authorName || 'User')}">`
+          : `<div class="author-fallback">👤</div>`;
+        authorHtml = `<div class="author-box">${avatar}<div><div class="author-name">${escapeHtml(authorName || 'User')}</div><div class="author-sub">Virtux member</div></div></div>`;
+      }
+    }
+
     const metaHtml = `
       <div class="meta">
         🏷️ ${escapeHtml(post.tag || post.room || 'post')} &nbsp;|&nbsp;
@@ -103,6 +120,7 @@ async function loadArticle() {
       ${mediaHtml}
       <div class="content">
         <h1 class="title">${escapeHtml(post.title)}</h1>
+        ${authorHtml}
         ${metaHtml}
         <div class="article-body">${contentHtml}</div>
         ${extraLink}
