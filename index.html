@@ -749,6 +749,9 @@ window.openUserModal=function(room, existingPost=null){
   currentRoomFor = room;
   currentMediaFile = null;
   currentPreviewDataUrl = null;
+  // Clear any previous timer
+  if(ytAutofillTimers[room]) clearTimeout(ytAutofillTimers[room]);
+  
   const roomTitles = {
     live: window.t('🔴 مباشر','🔴 Live'),
     tournaments: window.t('🏆 البطولات','🏆 Tournaments'),
@@ -958,6 +961,7 @@ window.onclick=(e)=>{ if(e.target===document.getElementById('userInfoModal')) do
 
 function renderCards(posts,gridId,room){
   const el=document.getElementById(gridId);
+  if(!el) return;
   if(room==='subscribers'){
     el.innerHTML='<div style="text-align:center;color:#888;padding:20px;">⏳ جارٍ تحميل المشتركين...</div>';
     loadSubscribersWithVIP(el,posts||[]);
@@ -1160,8 +1164,7 @@ function showPage(id){
   if(page) page.classList.add('active');
   const btn=document.getElementById(`sb-${id}`);
   if(btn) btn.classList.add('active');
-  if(id!=='home'&&id!=='contact'&&id!==window._currentPage) loadPage(id);
-  else if(id!=='home'&&id!=='contact'&&!allPosts[id]) loadPage(id);
+  if(id!=='home'&&id!=='contact'&&(id!==window._currentPage || !allPosts[id])) loadPage(id);
   window._currentPage=id;
 }
 function toggleDD(id){ document.querySelectorAll('.dd').forEach(d=>{ if(d.id!==id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
