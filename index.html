@@ -215,6 +215,8 @@
     .post-dl{font-size:12px;color:#000;text-decoration:none;background:#e01010;border-radius:5px;padding:4px 10px;font-weight:600}
     .read-more{font-size:12px;background:#e01010;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600;cursor:pointer;border:none;}
     .read-more:hover{background:#e6c300}
+    .btn-edit-post{background:transparent;border:1px solid #e01010;color:#e01010;border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;}
+    .btn-edit-post:hover{background:#e01010;color:#000;}
     
     .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;padding:16px 18px}
     .channels-grid.subscribers-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));align-items:start;gap:18px}
@@ -263,7 +265,7 @@
       border-radius: 12px;
       width: 90%;
       max-width: 500px;
-      padding: 28px 24px;
+      padding: 20px;
       position: relative;
       max-height: 80vh;
       overflow-y: auto;
@@ -279,35 +281,34 @@
     .modal-close:hover { color: #e01010; }
     .modal h3 {
       color: #e01010;
-      margin-bottom: 20px;
-      font-size: 22px;
+      margin-bottom: 12px;
+      font-size: 18px;
       text-align: center;
     }
     .form-group {
-      margin-bottom: 18px;
+      margin-bottom: 12px;
     }
     .form-group label {
       display: block;
-      margin-bottom: 6px;
-      font-size: 13px;
+      margin-bottom: 4px;
+      font-size: 12px;
       color: #ccc;
     }
-    .form-group input {
+    .form-group input, .form-group select, .form-group textarea {
       width: 100%;
-      padding: 10px 12px;
+      padding: 8px 10px;
       background: #2a2a2a;
       border: 1px solid #444;
       border-radius: 6px;
       color: #fff;
-      font-size: 14px;
+      font-size: 13px;
     }
-    .form-group input:focus { outline: none; border-color: #e01010; }
     .btn-submit {
       width: 100%;
       background: #e01010;
       color: #000;
       border: none;
-      padding: 10px;
+      padding: 8px;
       border-radius: 6px;
       font-weight: bold;
       cursor: pointer;
@@ -566,6 +567,8 @@
 <div id="upm-modal"><div class="upm-box"><div class="upm-top"><h2>➕ <span id="upm-room-title"></span></h2><button class="upm-close" id="upm-close" onclick="document.getElementById('upm-modal').classList.remove('active')">✕</button></div><div class="upm-body"><div id="upm-ok"></div><div id="upm-err"></div><div id="upm-form-body"></div><button id="upm-submit">➕ Publish</button></div></div></div>
 
 <div id="articleModal" class="modal"><div class="modal-content"><span class="modal-close" id="closeArticleModal">&times;</span><div id="articleContent"></div></div></div>
+
+<div id="userInfoModal" class="modal"><div class="modal-content" id="userInfoContent"><span class="modal-close" id="closeUserInfoModal">&times;</span><div id="userInfoDetails"></div></div></div>
 
 <script>
 window._siteLanguage = window._siteLanguage || 'ar';
@@ -877,6 +880,50 @@ async function deletePost(id,room){
   } catch(e){ alert('خطأ: '+e.message); }
 }
 
+// === دالة تعديل المنشور ===
+async function editPost(postId, room){
+  const {data:post,error}=await db.from('posts').select('*').eq('id',postId).single();
+  if(error || !post){ alert('تعذر تحميل بيانات المنشور'); return; }
+  const newTitle=prompt('تعديل العنوان:', post.title);
+  if(newTitle===null) return;
+  const newDesc=prompt('تعديل الوصف:', post.description||'');
+  const newContent=prompt('تعديل المحتوى (المقال):', post.content||'');
+  const newUrl=prompt('تعديل الرابط:', post.url||'');
+  const newTag=prompt('تعديل التصنيف:', post.tag||'');
+  const updates={title:newTitle, description:newDesc||null, content:newContent||null, url:newUrl||null, tag:newTag||null};
+  const {error:updateErr}=await db.from('posts').update(updates).eq('id',postId);
+  if(updateErr){ alert('فشل التعديل: '+updateErr.message); return; }
+  alert('✅ تم تعديل المنشور بنجاح');
+  loadPage(room);
+}
+
+// === دالة عرض معلومات المستخدم (بوب أب) ===
+async function showUserInfo(userId){
+  if(!userId) return;
+  const {data:profile,error}=await db.from('profiles').select('*').eq('id',userId).single();
+  if(error || !profile){
+    alert('لا يمكن عرض معلومات المستخدم');
+    return;
+  }
+  const roles=normalizeRoles(profile);
+  const roleLabels={admin:'🛡️ Admin',moderator:'🔧 Moderator',youtuber_vip:'🔥 YT VIP',youtuber:'🎬 Youtuber',vip:'👑 VIP',member:'⭐ Member',guest:'🛡️ Guest',user:'👤 User'};
+  const badges=roles.map(r=>`<span class="profile-role-badge" style="background:#2a0000;color:#e01010;border-color:#e01010;">${roleLabels[r]||r}</span>`).join('');
+  const avatarHtml=profile.avatar_url?`<img src="${profile.avatar_url}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #e01010;margin:0 auto 10px;">`:`<div class="avatar-placeholder" style="width:80px;height:80px;margin:0 auto 10px;">👤</div>`;
+  const joinDate=new Date(profile.created_at).toLocaleDateString();
+  document.getElementById('userInfoDetails').innerHTML=`
+    <div style="text-align:center;">${avatarHtml}<h3 style="color:#e01010;">${escapeHtml(profile.username||profile.email)}</h3></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px;">${badges}</div>
+    <div class="profile-field"><label>📅 تاريخ الانضمام</label><div>${joinDate}</div></div>
+    ${profile.country?`<div class="profile-field"><label>🌍 البلد</label><div>${escapeHtml(profile.country)}</div></div>`:''}
+    ${profile.birthdate?`<div class="profile-field"><label>🎂 تاريخ الميلاد</label><div>${escapeHtml(profile.birthdate)}</div></div>`:''}
+    ${profile.birth_place?`<div class="profile-field"><label>📍 مكان الولادة</label><div>${escapeHtml(profile.birth_place)}</div></div>`:''}
+    ${profile.favorite_game?`<div class="profile-field"><label>🎮 اللعبة المفضلة</label><div>${escapeHtml(profile.favorite_game)}</div></div>`:''}
+  `;
+  document.getElementById('userInfoModal').classList.add('active');
+}
+document.getElementById('closeUserInfoModal')?.addEventListener('click',()=>{ document.getElementById('userInfoModal').classList.remove('active'); });
+window.onclick=(e)=>{ if(e.target===document.getElementById('userInfoModal')) document.getElementById('userInfoModal').classList.remove('active'); };
+
 function renderCards(posts,gridId,room){
   const el=document.getElementById(gridId);
   if(room==='subscribers'){
@@ -943,6 +990,7 @@ function renderCardsWithUsers(posts,gridId,room,usersMap,canViewVIP){
     const currentUid=window.currentUserId;
     const isOwner=currentUid&&p.user_id&&p.user_id===currentUid;
     const deleteBtn=isOwner?`<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`:'';
+    const editBtn=isOwner?`<button class="btn-edit-post" onclick="window.editPost(${p.id},'${room}')">✏️ تعديل</button>`:'';
     const isVipCh=!!(p.tag&&p.tag.startsWith('auto:'));
     const vipBadge=isVipCh?'<div class="vip-ch-badge">🔥 YT VIP</div>':'';
     const cardCls=isVipCh?'post-card vip-ch':'post-card';
@@ -960,26 +1008,25 @@ function renderCardsWithUsers(posts,gridId,room,usersMap,canViewVIP){
       dateLabel=`<span style="font-size:10px;color:#555;">${rel}</span>`;
     }
     
-    // معلومات صاحب المنشور
+    // معلومات صاحب المنشور (قابلة للنقر)
     let authorHtml='';
     if(p.user_id&&usersMap[p.user_id]){
       const pr=usersMap[p.user_id];
       const authorName=pr?.username||'';
       const authorAvatar=pr?.avatar_url||'';
       if(authorName||authorAvatar){
-        const avatarEl=authorAvatar?`<img src="${authorAvatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;">`:`<span style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">👤</span>`;
-        authorHtml=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;"><div onclick="window.showProfileById('${p.user_id}')" style="cursor:pointer;">${avatarEl}</div><div style="font-size:11px;color:#e01010;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" onclick="window.showProfileById('${p.user_id}')">@${escapeHtml(authorName)}</div></div>`;
+        const avatarEl=authorAvatar?`<img src="${authorAvatar}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid #555;flex-shrink:0;cursor:pointer;" onclick="window.showUserInfo('${p.user_id}')">`:`<span style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;cursor:pointer;" onclick="window.showUserInfo('${p.user_id}')">👤</span>`;
+        authorHtml=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;">${avatarEl}<div style="font-size:11px;color:#e01010;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;cursor:pointer;" onclick="window.showUserInfo('${p.user_id}')">@${escapeHtml(authorName)}</div></div>`;
       }
     }
     
-    // إضافة زر "اقرأ المزيد" إذا كان هناك محتوى (نص طويل)
     let readMoreHtml='';
     if(p.content&&p.content.trim().length>0){
       const fullContent=escapeHtml(p.content).replace(/\n/g,'<br>');
       readMoreHtml=`<button class="read-more" onclick="window.showFullArticle('${escapeHtml(p.title)}','${fullContent.replace(/'/g,"\\'")}','${escapeHtml(p.description||'')}')">📖 ${window.t("اقرأ المزيد","Read More")}</button>`;
     }
     
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title)||window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${registerBtn}${actions}${readMoreHtml}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title)||window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${registerBtn}${actions}${readMoreHtml}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -1013,7 +1060,7 @@ async function loadSubscribersWithVIP(el,posts,roleFilter){
     
     const usersWithRoles=profiles.map(profile=>{
       let roles=normalizeRoles(profile);
-      if(roles.length>1&&roles.includes('user')) roles=roles.filter(r=>r!=='user');
+      // لا نزيل 'user' إذا كانت الرتبة الوحيدة
       const topRole=roleOrder.find(r=>roles.includes(r))||'user';
       return {profile,roles,topRole};
     });
@@ -1548,6 +1595,8 @@ function applyTranslations(){
 }
 
 window.deletePost=deletePost;
+window.editPost=editPost;
+window.showUserInfo=showUserInfo;
 window.playYT=function(el){ var vid=el.getAttribute('data-vid'); if(!vid) return; el.onclick=null; el.style.cursor='default'; var iframe=document.createElement('iframe'); iframe.src='https://www.youtube.com/embed/'+vid+'?autoplay=1&rel=0'; iframe.setAttribute('frameborder','0'); iframe.setAttribute('allowfullscreen',''); iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture'); iframe.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;border:none;'; el.innerHTML=''; el.appendChild(iframe); };
 window.fixThumb=function(img,vid){ var fallbacks=['https://i.ytimg.com/vi/'+vid+'/hqdefault.jpg','https://i.ytimg.com/vi/'+vid+'/0.jpg','https://i.ytimg.com/vi/'+vid+'/default.jpg']; var idx=parseInt(img.getAttribute('data-fb')||'0'); if(idx<fallbacks.length){ img.setAttribute('data-fb',idx+1); img.src=fallbacks[idx]; } else { img.style.display='none'; } };
 initializeAuth();
