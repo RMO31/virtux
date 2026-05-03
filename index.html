@@ -891,9 +891,102 @@ contactPage.id='page-contact';
 contactPage.innerHTML=`<div class="page-header"><h2 id="contact-header" data-ar="📞 التواصل" data-en="📞 Contact Virtux">📞 التواصل</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card" onclick="window.open('https://discord.gg/45fJNmww6D','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/45fJNmww6D</div></div><div class="contact-card" onclick="window.location.href='mailto:menouer.rayane310201@gmail.com'"><div class="cc-icon">📧</div><div class="cc-name" data-ar="البريد الإلكتروني" data-en="Email">البريد الإلكتروني</div><div class="cc-handle" style="font-size:10px;word-break:break-all;">menouer.rayane310201@gmail.com</div></div></div></div>`;
 mainContainer.appendChild(contactPage);
 
+// تعريف المتغيرات العامة للمشتركين
+let allSubscribersProfiles = [];
+let currentSubscriberFilter = '';
+
+// دالة لتحميل صفحة المشتركين (تعرض جميع الملفات الشخصية)
+async function loadSubscribersPage() {
+  const grid = document.getElementById('grid-subscribers');
+  if (!grid) return;
+  grid.innerHTML = `<div class="loading-state">${window.t('جاري التحميل...','Loading...')}</div>`;
+  try {
+    const { data, error } = await db.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    allSubscribersProfiles = data || [];
+    currentSubscriberFilter = ''; // إعادة تعيين الفلتر إلى الكل
+    renderSubscribersGrid(allSubscribersProfiles);
+  } catch (e) {
+    console.error('Error loading subscribers:', e);
+    grid.innerHTML = `<div class="empty-state">${window.t('فشل التحميل','Failed to load')}</div>`;
+  }
+}
+
+// دالة تصفية المشتركين حسب الرتبة
+window.filterSubscribers = function(role, btn) {
+  if (btn && btn.closest('.filter-bar')) {
+    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  currentSubscriberFilter = role || '';
+  if (!currentSubscriberFilter) {
+    renderSubscribersGrid(allSubscribersProfiles);
+  } else {
+    const filtered = allSubscribersProfiles.filter(profile => {
+      const roles = normalizeRoles(profile);
+      return roles.includes(currentSubscriberFilter);
+    });
+    renderSubscribersGrid(filtered);
+  }
+};
+
+// دالة عرض المشتركين في شبكة
+function renderSubscribersGrid(profiles) {
+  const grid = document.getElementById('grid-subscribers');
+  if (!grid) return;
+  if (!profiles || profiles.length === 0) {
+    grid.innerHTML = `<div class="empty-state">${window.t('لا يوجد مشتركون','No subscribers found')}</div>`;
+    return;
+  }
+  const roleLabels = {
+    admin: '🛡️ Admin',
+    moderator: '🔧 Moderator',
+    youtuber_vip: '🔥 YT VIP',
+    youtuber: '🎬 Youtuber',
+    vip: '👑 VIP',
+    member: '⭐ Member',
+    donor: '💎 Donor',
+    guest: '🛡️ Guest',
+    user: '👤 User'
+  };
+  const roleColors = {
+    admin: '#ff4444',
+    moderator: '#cc8844',
+    youtuber_vip: '#ff6600',
+    youtuber: '#e06060',
+    vip: '#e01010',
+    member: '#cc2222',
+    donor: '#00ccff',
+    guest: '#aaaaaa',
+    user: '#888888'
+  };
+  grid.innerHTML = `<div class="channels-grid subscribers-grid">` + profiles.map(profile => {
+    const roles = normalizeRoles(profile);
+    const primaryRole = roles[0] || 'user';
+    const badgeColor = roleColors[primaryRole] || '#e01010';
+    const badgeText = roleLabels[primaryRole] || primaryRole.toUpperCase();
+    const joinDate = profile.created_at ? new Date(profile.created_at).toLocaleDateString(window._siteLanguage === 'en' ? 'en-US' : 'ar-EG') : '';
+    const avatarHtml = profile.avatar_url ? `<img class="channel-avatar" src="${profile.avatar_url}" alt="avatar">` : `<div class="channel-avatar">👤</div>`;
+    return `<div class="channel-card subscriber-card" style="--sub-accent: ${badgeColor};">
+              ${avatarHtml}
+              <div class="channel-info">
+                <div class="channel-name">${escapeHtml(profile.username || profile.email || 'مستخدم')}</div>
+                <div class="channel-sub" style="font-size: 11px;">${joinDate}</div>
+                <div class="subscriber-badge" style="background:${badgeColor}20; color:${badgeColor}; border:1px solid ${badgeColor};">${badgeText}</div>
+              </div>
+            </div>`;
+  }).join('') + `</div>`;
+}
+
+// تعديل دالة loadPage لمعالجة غرفة المشتركين بشكل خاص
 async function loadPage(room){
   const el=document.getElementById(`grid-${room}`);
   if(!el) return;
+  // معالجة خاصة لغرفة المشتركين
+  if (room === 'subscribers') {
+    await loadSubscribersPage();
+    return;
+  }
   el.innerHTML=`<div class="loading-state">${window.t('جاري التحميل...','Loading...')}</div>`;
   try{
     let data,error;
@@ -911,7 +1004,10 @@ async function loadPage(room){
       if(uids.length){ const {data:profiles}=await db.from('profiles').select('id,username,avatar_url').in('id',uids); window._highlightsProfiles={}; (profiles||[]).forEach(pr=>{ window._highlightsProfiles[pr.id]=pr; }); }
     }
     renderCards(allPosts[room],`grid-${room}`,room);
-  } catch(e){ el.innerHTML='<div class="empty-state">فشل التحميل</div>'; }
+  } catch(e){ 
+    console.error('Error loading page', room, e);
+    el.innerHTML='<div class="empty-state">فشل التحميل</div>'; 
+  }
 }
 
 function isVIP(post){ return post.tag==='VIP'||post.tag==='Youtuber VIP'; }
@@ -955,26 +1051,52 @@ async function showUserInfo(userId){
   document.getElementById('userInfoModal').classList.add('active');
 }
 document.getElementById('closeUserInfoModal')?.addEventListener('click',()=>{ document.getElementById('userInfoModal').classList.remove('active'); });
-window.onclick=(e)=>{ if(e.target===document.getElementById('userInfoModal')) document.getElementById('userInfoModal').classList.remove('active'); };
+window.onclick=(e)=>{
+  if(e.target===document.getElementById('userInfoModal')) document.getElementById('userInfoModal').classList.remove('active');
+  if(e.target===document.getElementById('articleModal')) document.getElementById('articleModal').classList.remove('active');
+};
 
-/* ========= IMPROVED TIMESTAMP CLEANING ========= */
 function cleanTimestamp(str){
   if(!str) return '';
-  // Remove full ISO timestamps like 2024-01-15T10:30:45Z or 2024-01-15T10:30:45.123Z
-  let cleaned = str.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, '');
-  // Remove partial time fragments like T00:16:31Z or T23:59:59.999Z
+  // إزالة الطوابع الزمنية الكاملة (ISO) والنماذج المختصرة
+  let cleaned = str.replace(/\d{4}-\d{2}-\d{2}T(\d{2}:){2}\d{2}(\.\d+)?Z?/g, '');
   cleaned = cleaned.replace(/T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, '');
-  // Remove leftover standalone T or Z around spaces/edges
   cleaned = cleaned.replace(/\s+T\s+/g, ' ').replace(/\s+Z\s+/g, ' ').replace(/^[TZ]\s+/g, '').replace(/\s+[TZ]$/g, '');
   return cleaned.trim();
+}
+
+// تحسين دالة التصفية لضمان المطابقة الدقيقة وإزالة المسافات الزائدة
+function filterPosts(room,tag,btn){
+  if(btn&&btn.closest('.filter-bar')){ 
+    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); 
+    btn.classList.add('active'); 
+  }
+  const allRoomPosts = allPosts[room]||[];
+  let filtered;
+  if(!tag){
+    filtered = allRoomPosts;
+  } else {
+    const normalizedFilter = tag.trim();
+    filtered = allRoomPosts.filter(p=>{
+      let postTag = (p.tag||'').trim();
+      // إزالة المسافات الزائدة والمقارنة
+      if(postTag === normalizedFilter) return true;
+      // معاملة VIP خاصة
+      if(normalizedFilter === 'VIP' && postTag.startsWith('auto:')) return true;
+      // مقارنة غير حالة الأحرف (للحروف اللاتينية)
+      if(normalizedFilter.toLowerCase() === postTag.toLowerCase()) return true;
+      return false;
+    });
+  }
+  renderCards(filtered,`grid-${room}`,room);
 }
 
 function renderCards(posts,gridId,room){
   const el=document.getElementById(gridId);
   if(!el) return;
   if(room==='subscribers'){
-    el.innerHTML='<div style="text-align:center;color:#888;padding:20px;">⏳ جارٍ تحميل المشتركين...</div>';
-    loadSubscribersWithVIP(el,posts||[]);
+    // يتم التعامل مع المشتركين في loadPage مباشرة، لكن هذا ضمان إضافي
+    loadSubscribersPage();
     return;
   }
   if(!posts||!posts.length){ el.innerHTML='<div class="empty-state">لا توجد منشورات بعد 🎮</div>'; return; }
@@ -1013,7 +1135,7 @@ function renderCardsWithUsers(posts,gridId,room,usersMap,canViewVIP){
       else{ const liveTag=room==='live'&&(p.tag==='مباشر Now'||p.tag==='Live Now')?`<div class="live-badge">${window.t('مباشر','LIVE')}</div>`:''; media=`<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0a0a1a,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">${liveTag}<span style="font-size:36px;">${p.icon||'📄'}</span></div>`; }
     }
     const rawSummary=cleanTimestamp(p.content||p.description||'');
-    const cleanSummary=rawSummary; // already cleaned by cleanTimestamp
+    const cleanSummary=rawSummary;
     let summary=cleanSummary.substring(0,150);
     if(cleanSummary.length>150) summary+='...';
     let actions='';
@@ -1081,7 +1203,6 @@ function renderCardsWithUsers(posts,gridId,room,usersMap,canViewVIP){
 window.showFullArticle=function(title,content,desc){
   const modal=document.getElementById('articleModal');
   const contentDiv=document.getElementById('articleContent');
-  // Clean timestamps in displayed content
   const cleanTitle = cleanTimestamp(title);
   const cleanContent = cleanTimestamp(content);
   const cleanDesc = cleanTimestamp(desc||'');
@@ -1091,37 +1212,7 @@ window.showFullArticle=function(title,content,desc){
 
 document.getElementById('closeArticleModal')?.addEventListener('click',()=>{ document.getElementById('articleModal').classList.remove('active'); });
 
-/* ========= FIXED FILTER FUNCTION ========= */
-/* Normalizes tags for comparison, handles both exact and auto: prefixed VIP posts */
-function filterPosts(room,tag,btn){
-  if(btn&&btn.closest('.filter-bar')){ 
-    btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); 
-    btn.classList.add('active'); 
-  }
-  const allRoomPosts = allPosts[room]||[];
-  let filtered;
-  if(!tag){
-    // "All" filter - show everything
-    filtered = allRoomPosts;
-  } else {
-    // Normalize tag for comparison
-    const normalizedFilter = tag.trim();
-    filtered = allRoomPosts.filter(p=>{
-      const postTag = (p.tag||'').trim();
-      // Exact match
-      if(postTag === normalizedFilter) return true;
-      // For VIP filter: also match auto: prefixed tags (auto-fetched YT VIP posts)
-      if(normalizedFilter === 'VIP' && postTag.startsWith('auto:')) return true;
-      // Case-insensitive match for English tags
-      if(normalizedFilter.toLowerCase() === postTag.toLowerCase()) return true;
-      return false;
-    });
-  }
-  renderCards(filtered,`grid-${room}`,room);
-}
-
 window._currentPage='home';
-/* ========= FIXED showPage - integrates home panel loading ========= */
 function showPage(id){
   document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
@@ -1129,9 +1220,8 @@ function showPage(id){
   if(page) page.classList.add('active');
   const btn=document.getElementById(`sb-${id}`);
   if(btn) btn.classList.add('active');
-  if(id!=='home'&&id!=='contact'&&(id!==window._currentPage || !allPosts[id])) loadPage(id);
+  if(id!=='home'&&id!=='contact'&&(id!==window._currentPage || !allPosts[id] || id==='subscribers')) loadPage(id);
   window._currentPage=id;
-  // Load home panels if navigating to home
   if(id==='home') setTimeout(function(){ if(typeof loadHomePanel==='function') loadHomePanel(); },80);
 }
 function toggleDD(id){ document.querySelectorAll('.dd').forEach(d=>{ if(d.id!==id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
@@ -1204,14 +1294,13 @@ const signupDiv=document.getElementById('modal-signup');
 function openModal(){ modal.classList.add('active'); }
 function closeModal(){ modal.classList.remove('active'); loginDiv.style.display='block'; signupDiv.style.display='none'; document.getElementById('loginError').innerText=''; document.getElementById('signupError').innerText=''; }
 document.getElementById('closeModal')?.addEventListener('click',closeModal);
-// Use a single click handler on window to avoid overwriting
-window._globalClickHandler=function(e){ 
+// استدعاء دالة عامة للتعامل مع النقر على الخلفيات
+window.onclick=window._globalClickHandler=function(e){ 
   if(e.target===modal) closeModal(); 
   if(e.target===document.getElementById('upm-modal')) return;
   if(e.target===document.getElementById('userInfoModal')) document.getElementById('userInfoModal').classList.remove('active');
   if(e.target===document.getElementById('articleModal')) document.getElementById('articleModal').classList.remove('active');
 };
-window.onclick=window._globalClickHandler;
 document.getElementById('switchToSignup')?.addEventListener('click',()=>{ loginDiv.style.display='none'; signupDiv.style.display='block'; });
 document.getElementById('switchToLogin')?.addEventListener('click',()=>{ signupDiv.style.display='none'; loginDiv.style.display='block'; });
 
@@ -1490,7 +1579,6 @@ window._translateTitleBg=async function(title){
   } catch(e){}
 };
 
-/* ========= ABOUT VIRTUX BILINGUAL CONTENT ========= */
 function getAboutContent(){
   const isEN = window._siteLanguage === 'en';
   if(isEN){
@@ -1513,6 +1601,20 @@ function updateAboutContent(){
   if(aboutEl) aboutEl.innerHTML = getAboutContent();
 }
 
+function rebuildFilterBar(room){
+  const page=document.getElementById('page-'+room);
+  if(!page) return;
+  const existing=page.querySelector('.filter-bar');
+  if(!existing) return;
+  const isEN=window._siteLanguage==='en';
+  let newBar='';
+  if(room==='live') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button><button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
+  else if(room==='tournaments') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">${isEN?'Register':'تسجيل'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">${isEN?'Global':'عالمي'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
+  else if(room==='highlights') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
+  else if(room==='subscribers') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('guest',this)">Guest</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button></div>`;
+  if(newBar) existing.outerHTML=newBar;
+}
+
 function applyTranslations(){
   const isEN = window._siteLanguage === 'en';
   document.querySelectorAll('[data-ar][data-en]').forEach(el => {
@@ -1524,9 +1626,7 @@ function applyTranslations(){
       el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
     }
   });
-  // Update About Virtux content
   updateAboutContent();
-  // Update page headers
   const roomHeaders = {
     live: { ar: '🔴 مباشر Streams', en: '🔴 Live Streams' },
     tournaments: { ar: '🏆 البطولات', en: '🏆 Tournaments' },
@@ -1554,14 +1654,20 @@ function applyTranslations(){
       el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
     }
   });
-  // Re-render current page contents
   const currentPageEl = document.querySelector('.vx-page.active');
   const currentPage = currentPageEl?.id?.replace('page-', '');
   if (currentPage && allPosts[currentPage] && currentPage !== 'home' && currentPage !== 'contact') {
     const el = document.getElementById('grid-'+currentPage);
     if (el && allPosts[currentPage]) {
-      if (currentPage === 'subscribers') loadSubscribersWithVIP(el, allPosts[currentPage]||[], window._subscribersRoleFilter||'');
-      else renderCards(allPosts[currentPage], 'grid-'+currentPage, currentPage);
+      if (currentPage === 'subscribers') {
+        if (allSubscribersProfiles.length) {
+          renderSubscribersGrid(allSubscribersProfiles);
+        } else {
+          loadSubscribersPage();
+        }
+      } else {
+        renderCards(allPosts[currentPage], 'grid-'+currentPage, currentPage);
+      }
     }
   }
   if (document.getElementById('page-home')?.classList.contains('active')) {
@@ -1569,7 +1675,6 @@ function applyTranslations(){
   }
   if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
   
-  // Update auth modal texts
   const loginModal = document.getElementById('modal-login');
   if (loginModal) {
     loginModal.querySelector('h3').textContent = isEN ? '🔐 Login' : '🔐 تسجيل الدخول';
@@ -1611,7 +1716,6 @@ function applyTranslations(){
       if (link) link.textContent = isEN ? 'Login' : 'تسجيل الدخول';
     }
   }
-  // Profile modal
   const profileModal = document.getElementById('profileModal');
   if (profileModal) {
     profileModal.querySelector('h2').textContent = isEN ? '👤 Profile' : '👤 الملف الشخصي';
@@ -1640,7 +1744,6 @@ function applyTranslations(){
     const changeAvatar = document.getElementById('changeAvatarBtn');
     if (changeAvatar) changeAvatar.textContent = isEN ? '📷 Change Avatar' : '📷 تغيير الصورة';
   }
-  // Username modal
   const usernameModal = document.getElementById('usernameModal');
   if (usernameModal) {
     const h2 = usernameModal.querySelector('h2');
@@ -1657,7 +1760,6 @@ function applyTranslations(){
   const upmSubmit = document.getElementById('upm-submit');
   if (upmSubmit) upmSubmit.textContent = isEN ? '➕ Publish' : '➕ نشر';
   
-  // Update filter bars
   const visiblePages = ['live', 'tournaments', 'highlights', 'subscribers'];
   for (const r of visiblePages) {
     const page = document.getElementById(`page-${r}`);
@@ -1665,19 +1767,6 @@ function applyTranslations(){
       rebuildFilterBar(r);
     }
   }
-}
-function rebuildFilterBar(room){
-  const page=document.getElementById('page-'+room);
-  if(!page) return;
-  const existing=page.querySelector('.filter-bar');
-  if(!existing) return;
-  const isEN=window._siteLanguage==='en';
-  let newBar='';
-  if(room==='live') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button><button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
-  else if(room==='tournaments') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">${isEN?'Register':'تسجيل'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">${isEN?'Global':'عالمي'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
-  else if(room==='highlights') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
-  else if(room==='subscribers') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('guest',this)">Guest</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button></div>`;
-  if(newBar) existing.outerHTML=newBar;
 }
 window.setLang = function(lang){
   if(window._siteLanguage===lang) return;
@@ -1694,7 +1783,10 @@ window.setLang = function(lang){
     Object.keys(window.allPosts).forEach(room=>{
       const el=document.getElementById('grid-'+room);
       if(el&&window.allPosts[room]?.length){
-        if(room==='subscribers'||room==='yt-channels') loadSubscribersWithVIP(el,window.allPosts[room]||[],window._subscribersRoleFilter||'');
+        if(room==='subscribers') {
+          if (allSubscribersProfiles.length) renderSubscribersGrid(allSubscribersProfiles);
+          else loadSubscribersPage();
+        }
         else renderCards(window.allPosts[room],'grid-'+room,room);
       }
     });
