@@ -320,6 +320,25 @@ function getDummyEmail(username) {
   }
 }
 
+const DISPOSABLE_DOMAINS = [
+  'temp-mail.org', 'mailinator.com', '10minutemail.com', 'guerrillamail.com', 'sharklasers.com',
+  'dispostable.com', 'getnada.com', 'maildrop.cc', 'moakt.com', 'yopmail.com', 'trashmail.com',
+  'tempmail.com', 'temp-mail.ru', 'temp-mail.fr', '10minutemail.co.uk', 'tempmail.net', 'tempmail.id',
+  'throwawaymail.com', 'tempmailaddress.com', 'mailbox.org', 'proton.me', 'tutanota.com',
+  'GuerrillaMail.info', 'GuerrillaMail.biz', 'GuerrillaMail.com', 'GuerrillaMail.de', 'GuerrillaMail.net', 'GuerrillaMail.org', 'PktMail.net', 'Spam4.me', 'SayNoToSpam.com', 'sharklasers.com', 'guerrillamailblocker.com', 'guerrillamail.com', 'grr.la', 'spam4.me', 'pokemail.net', 'temp-mail.org', 'mailinator.com', '10minutemail.com', 'dispostable.com', 'getnada.com', 'maildrop.cc', 'moakt.com', 'yopmail.com', 'trashmail.com', 'tempmail.com', 'temp-mail.ru', 'temp-mail.fr', '10minutemail.co.uk', 'tempmail.net', 'tempmail.id', 'throwawaymail.com', 'tempmailaddress.com', 'mailbox.org'
+];
+
+function isRealEmail(email) {
+  if (!email || !email.includes('@')) return false;
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!re.test(email)) return false;
+  const domain = email.split('@')[1].toLowerCase();
+  if (DISPOSABLE_DOMAINS.some(d => domain === d.toLowerCase().trim())) return false;
+  const parts = domain.split('.');
+  if (parts.length < 2 || parts[parts.length - 1].length < 2) return false;
+  return true;
+}
+
 async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -396,12 +415,16 @@ async function doForgotPassword() {
     alert('Error: ' + e.message);
   }
 }
-
 async function doRegister() {
   const username = document.getElementById('reg-username').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
   if (!username || !email || !password) { showMsg('Please fill all fields!', 'err'); return; }
+  
+  if (!isRealEmail(email)) {
+    showMsg('Please enter a valid, real email address.', 'err');
+    return;
+  }
 
   if (!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)) {
     showMsg('Username contains invalid characters.', 'err');
