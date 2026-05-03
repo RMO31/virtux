@@ -2619,15 +2619,19 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   btn.textContent = isEN ? '⏳ Logging in...' : '⏳ جاري الدخول...';
 
   try {
-    let email = identifier;
     let loginError = null;
 
     if (identifier.includes('@')) {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // 1. Look up the email associated with this username in the profiles table
-      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
+      // 1. Look up the email associated with this username in the profiles table (Case-insensitive)
+      const { data: p, error: pError } = await db.from('profiles')
+        .select('email')
+        .ilike('username', identifier)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
       let emailToTry = p?.email || getDummyEmail(identifier);
       
@@ -2635,11 +2639,10 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       const { data, error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
 
-      // 2. Fallback: Only if the first attempt fails and it's NOT a rate limit, try one common old pattern
+      // 2. Fallback: If not found and not a rate limit
       if (loginError && loginError.status !== 429 && !p?.email) {
         const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
         if (fallback !== emailToTry) {
-          console.log('Trying fallback pattern:', fallback);
           const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
           if (!retryError) loginError = null;
           else loginError = retryError;
@@ -2648,23 +2651,16 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     }
 
     if (loginError) {
-      const isEN = window._siteLanguage === 'en';
       let msg = loginError.message;
-      
       if (loginError.status === 429) {
         msg = isEN 
-          ? '⚠️ Too many attempts. Please wait a few minutes or use Sign in with Google.' 
-          : '⚠️ محاولات كثيرة جداً. يرجى الانتظار بضع دقائق أو استخدام الدخول عبر Google.';
-      } else if (msg === 'Invalid login credentials' || loginError.status === 400) {
+          ? '⚠️ Too many attempts. Please wait a few minutes.' 
+          : '⚠️ محاولات كثيرة. يرجى الانتظار بضع دقائق.';
+      } else if (msg === 'Invalid login credentials' || loginError.status === 400 || msg.includes('Invalid')) {
         msg = isEN 
-          ? 'Invalid username or password. Try your email if this is an old account.' 
-          : 'اسم المستخدم أو كلمة المرور غير صحيحة. جرب الدخول بالإيميل إذا كان حسابك قديماً.';
-      } else if (msg.includes('Email not confirmed')) {
-        msg = isEN
-          ? 'Email not confirmed. Please check your inbox.'
-          : 'البريد الإلكتروني لم يُؤكَّد. تحقق من صندوق الوارد الخاص بك.';
+          ? 'Invalid username or password.' 
+          : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
       }
-      
       errEl.innerText = msg;
       errEl.style.color = '#f55';
       return;
@@ -2757,7 +2753,6 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     errEl.innerText = isEN ? 'Please enter a valid email.' : 'يرجى إدخال بريد إلكتروني صالح.';
     return;
   }
-  // السماح بالمسافات والحروف العربية والإنجليزية
   if (!/^[a-zA-Z0-9_\s\u0600-\u06FF]+$/.test(username)) {
     errEl.innerText = isEN ? 'Username contains invalid characters.' : 'اسم المستخدم يحتوي على رموز غير مسموحة.';
     return;
@@ -2772,13 +2767,21 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   btn.textContent = isEN ? '⏳ Creating...' : '⏳ جاري الإنشاء...';
 
   try {
-    // تحقق من أن اسم المستخدم غير مأخوذ
-    const { data: existing } = await db.from('profiles').select('id').eq('username', username).maybeSingle();
+    // 1. Check if username is taken (Case-insensitive)
+    const { data: existing, error: checkError } = await db.from('profiles')
+      .select('username')
+      .ilike('username', username)
+      .limit(1)
+      .maybeSingle();
+
     if (existing) {
       errEl.innerText = isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ، جرب اسماً آخر.';
+      btn.disabled = false;
+      btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
       return;
     }
 
+    // 2. Auth SignUp
     const { data, error } = await db.auth.signUp({
       email,
       password,
@@ -2789,21 +2792,21 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     });
 
     if (error) {
-      // معالجة rate limit
-      if (error.message?.toLowerCase().includes('rate') || error.status === 429) {
-        errEl.innerText = isEN
-          ? '⚠️ Too many attempts. Please wait a few minutes and try again, or use Google Login.'
-          : '⚠️ محاولات كثيرة. انتظر دقائق وأعد المحاولة، أو استخدم الدخول عبر Google.';
-        return;
+      if (error.status === 429) {
+        errEl.innerText = isEN ? '⚠️ Too many attempts. Please wait.' : '⚠️ محاولات كثيرة. انتظر قليلاً.';
+      } else {
+        errEl.innerText = error.message;
       }
-      throw error;
+      btn.disabled = false;
+      btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
+      return;
     }
 
     const uid = data?.user?.id;
-    if (!uid) throw new Error(isEN ? 'Registration failed, please try again.' : 'فشل التسجيل، حاول مجدداً.');
+    if (!uid) throw new Error(isEN ? 'Registration failed.' : 'فشل التسجيل.');
 
-    // حفظ الـ profile
-    const { error: profileError } = await db.from('profiles').upsert({
+    // 3. Manual profile creation (Trigger handles it but this is for immediate consistency)
+    await db.from('profiles').upsert({
       id: uid,
       username,
       email: email,
@@ -2812,44 +2815,19 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
       created_at: new Date().toISOString()
     });
 
-    if (profileError) {
-      console.warn('Profile creation failed (possibly due to RLS if email not confirmed):', profileError);
-    }
-
-    // تسجيل دخول مباشر
     if (data.session) {
       await updateUIAfterAuth();
       closeModal();
     } else {
-      // محاولة تسجيل دخول مباشر
-      const { data: loginData, error: loginErr } = await db.auth.signInWithPassword({
-        email: email, password
-      });
-      if (!loginErr && loginData.session) {
-        await updateUIAfterAuth();
-        closeModal();
-      } else {
-        errEl.style.color = '#4f4';
-        errEl.innerText = isEN
-          ? '✅ Account created! Please log in with your username and password.'
-          : '✅ تم إنشاء الحساب! سجّل دخولك الآن باسم المستخدم وكلمة المرور.';
-        // الانتقال لصفحة الدخول وتعبئة اسم المستخدم
-        document.getElementById('switchToLogin').click();
-        document.getElementById('loginIdentifier').value = username;
-      }
+      errEl.style.color = '#4f4';
+      errEl.innerText = isEN
+        ? '✅ Account created! Please log in.'
+        : '✅ تم إنشاء الحساب! سجّل دخولك الآن.';
+      document.getElementById('switchToLogin').click();
+      document.getElementById('loginIdentifier').value = username;
     }
   } catch(e) {
-    let msg = e.message || (isEN ? 'Registration failed.' : 'فشل التسجيل.');
-    if (msg.includes('rate') || msg.includes('429')) {
-      msg = isEN
-        ? '⚠️ Too many attempts. Please wait a few minutes.'
-        : '⚠️ محاولات كثيرة. انتظر دقائق وأعد المحاولة.';
-    } else if (msg.includes('already')) {
-      msg = isEN ? 'Account already exists.' : 'الحساب موجود بالفعل.';
-    }
-    errEl.style.color = '#f55';
-    errEl.innerText = msg;
-  } finally {
+    errEl.innerText = e.message || 'Error';
     btn.disabled = false;
     btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
   }

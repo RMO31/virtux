@@ -307,6 +307,19 @@ function hideMsg() {
   document.getElementById('authMsg').style.display = 'none';
 }
 
+function getDummyEmail(username) {
+  if (!username) return '';
+  const clean = username.trim().toLowerCase();
+  try {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(clean);
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `ux_${hex}@virtux.v`;
+  } catch(e) {
+    return clean.replace(/[^a-z0-9]/g, '') + '@virtux.v';
+  }
+}
+
 async function doLogin() {
   const identifier = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -323,22 +336,32 @@ async function doLogin() {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      const { data: p } = await db.from('profiles').select('email').ilike('username', identifier.trim()).maybeSingle();
-      if (!p?.email) {
-        showMsg('Username not found. Please check your username or use email.', 'err');
-        btn.disabled = false;
-        btn.textContent = 'Login';
-        return;
-      }
-      const { error } = await db.auth.signInWithPassword({ email: p.email, password });
+      // Look up the email associated with this username (Case-insensitive)
+      const { data: p } = await db.from('profiles')
+        .select('email')
+        .ilike('username', identifier)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let emailToTry = p?.email || getDummyEmail(identifier);
+      const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
+
+      if (loginError && loginError.status !== 429 && !p?.email) {
+        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
+        if (fallback !== emailToTry) {
+          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
+          loginError = retryError || null;
+        }
+      }
     }
 
     if (loginError) {
       let msg = loginError.message || 'Login failed.';
       if (loginError.status === 429) {
-        msg = 'Too many attempts. Please wait a few minutes and try again.';
-      } else if (loginError.message === 'Invalid login credentials' || loginError.status === 400) {
+        msg = 'Too many attempts. Please wait a few minutes.';
+      } else if (msg === 'Invalid login credentials' || loginError.status === 400 || msg.includes('Invalid')) {
         msg = 'Invalid email/username or password.';
       }
       throw new Error(msg);
@@ -377,7 +400,6 @@ async function doRegister() {
     showMsg('Username contains invalid characters.', 'err');
     return;
   }
-
   if (password.length < 6) { showMsg('Password must be at least 6 characters!', 'err'); return; }
 
   const btn = document.getElementById('btn-register');
@@ -385,6 +407,21 @@ async function doRegister() {
   btn.textContent = 'Creating account...';
 
   try {
+    // 1. Check if username is taken (Case-insensitive)
+    const { data: existing } = await db.from('profiles')
+      .select('username')
+      .ilike('username', username)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      showMsg('Username already taken.', 'err');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+      return;
+    }
+
+    // 2. Auth SignUp
     const { data, error } = await db.auth.signUp({
       email,
       password,
@@ -396,7 +433,7 @@ async function doRegister() {
 
     if (error) {
       let msg = error.message || 'Registration failed.';
-      if (msg.includes('rate limit')) msg = 'Registration limit reached. Please try later.';
+      if (error.status === 429) msg = 'Too many attempts. Please wait.';
       throw new Error(msg);
     }
 
@@ -415,10 +452,13 @@ async function doRegister() {
       showMsg('✅ Welcome! Redirecting...', 'ok');
       setTimeout(() => window.location.href = 'index.html', 1500);
     } else {
-      showMsg('✅ Account created! If email confirmation is enabled, please check your inbox.', 'ok');
+      showMsg('✅ Account created! Please log in.', 'ok');
       btn.disabled = false;
       btn.textContent = 'Create Account';
-      setTimeout(() => switchTab('login'), 2500);
+      setTimeout(() => {
+        switchTab('login');
+        document.getElementById('login-email').value = username;
+      }, 2500);
     }
   } catch (e) {
     showMsg('❌ ' + (e.message || 'Registration failed.'), 'err');

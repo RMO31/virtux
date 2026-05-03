@@ -150,6 +150,7 @@ async function trySQL(sql){
 
 async function runSetup(){
   const FIX_SQL = `
+-- 1. Create profiles table if not exists with all needed columns
 create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   username text unique,
@@ -164,8 +165,10 @@ create table if not exists public.profiles (
   created_at timestamptz default now()
 );
 
+-- 2. Enable RLS
 alter table public.profiles enable row level security;
 
+-- 3. Create or Update Policies
 do $$ begin
   if not exists (select 1 from pg_policies where tablename='profiles' and policyname='Public profiles are viewable by everyone.') then
     create policy "Public profiles are viewable by everyone." on profiles for select using (true);
@@ -178,28 +181,46 @@ do $$ begin
   end if;
 end $$;
 
+-- 4. Trigger Function for new users (Synchronizes auth.users metadata to public.profiles)
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  suggested_username text;
 begin
+  suggested_username := coalesce(
+    new.raw_user_meta_data->>'username', 
+    new.raw_user_meta_data->>'full_name',
+    'user_' || substr(new.id::text, 1, 6)
+  );
+
   insert into public.profiles (id, username, email, role, roles)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 5)),
+    suggested_username,
     new.email,
     'user',
     '{user}'
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update set
+    username = excluded.username,
+    email = excluded.email;
+    
+  return new;
+exception when others then
+  -- Prevent trigger failure from blocking registration if it's just a profile sync issue
   return new;
 end;
 $$ language plpgsql security definer;
 
+-- 5. Attach Trigger
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+-- 6. Ensure Storage Buckets
 insert into storage.buckets (id, name, public) values ('avatars', 'avatars', true) on conflict (id) do nothing;
+insert into storage.buckets (id, name, public) values ('posts-media', 'posts-media', true) on conflict (id) do nothing;
 `;
 
   const btn=document.getElementById('runBtn');
