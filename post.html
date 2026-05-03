@@ -133,16 +133,24 @@ async function loadArticle() {
       const hasArabicContent = /[؀-ۿ]/.test(cleanContent);
       
       if (hasArabicTitle) {
-        fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=' + encodeURIComponent(post.title))
+        fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'q=' + encodeURIComponent(post.title)
+        })
         .then(r => r.json())
         .then(j => {
           const t = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('');
           if (t) document.querySelector('.title').textContent = t;
-        }).catch(()=>{});
+        }).catch(e => console.error('Title translation error:', e));
       }
       
       if (hasArabicContent) {
-        fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=' + encodeURIComponent(cleanContent))
+        fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'q=' + encodeURIComponent(cleanContent)
+        })
         .then(r => r.json())
         .then(j => {
           const t = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('');
@@ -151,7 +159,7 @@ async function loadArticle() {
             let l = e.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank" style="color:#7de9ff;text-decoration:underline;text-shadow: 0 0 8px rgba(125,233,255,0.5);">${url}</a>`);
             document.querySelector('.article-body').innerHTML = l.replace(/\n/g, '<br>');
           }
-        }).catch(()=>{});
+        }).catch(e => console.error('Content translation error:', e));
       }
     }
   } catch (err) {
