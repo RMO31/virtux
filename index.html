@@ -2789,39 +2789,8 @@ function isRealEmail(email) {
   return true;
 }
 
-let resendTimer = null;
-window.resendConfirmation = async function(email) {
-  if (resendTimer) return;
-  const isEN = window._siteLanguage === 'en';
-  try {
-    const { error } = await db.auth.resend({ type: 'signup', email });
-    if (error) throw error;
-    const errEl = document.getElementById('signupError');
-    errEl.style.color = '#4f4';
-    errEl.innerText = isEN ? '✅ Confirmation email sent again!' : '✅ تم إعادة إرسال بريد التأكيد!';
-    
-    // Start countdown
-    let seconds = 120;
-    const btn = document.querySelector('button[onclick*="resendConfirmation"]');
-    if (btn) {
-      btn.disabled = true;
-      resendTimer = setInterval(() => {
-        seconds--;
-        btn.textContent = isEN ? `Wait ${seconds}s` : `انتظر ${seconds} ثانية`;
-        if (seconds <= 0) {
-          clearInterval(resendTimer);
-          resendTimer = null;
-          btn.disabled = false;
-          btn.textContent = isEN ? "Resend Email" : "إعادة الإرسال";
-        }
-      }, 1000);
-    }
-  } catch(e) {
-    const errEl = document.getElementById('signupError');
-    errEl.style.color = '#f55';
-    errEl.innerText = isEN ? '❌ Error: ' + e.message : '❌ خطأ: ' + e.message;
-  }
-};
+// Email confirmation is disabled, so we only validate the email format locally.
+
 document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   const isEN = window._siteLanguage === 'en';
   const username = document.getElementById('signupUsername').value.trim();
@@ -2901,14 +2870,16 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     } else {
       errEl.style.color = '#4f4';
       errEl.innerText = isEN
-        ? '✅ Success! Please check your email for confirmation link.'
-        : '✅ تم التسجيل بنجاح! يرجى مراجعة بريدك الإلكتروني لتأكيد الحساب.';
+        ? '✅ Account created successfully! You can now login.'
+        : '✅ تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.';
       
       // Auto switch to login
       setTimeout(() => {
-        document.getElementById('switchToLogin').click();
-        document.getElementById('loginIdentifier').value = username;
-      }, 3000);
+        const switchBtn = document.getElementById('switchToLogin');
+        if (switchBtn) switchBtn.click();
+        const loginId = document.getElementById('loginIdentifier');
+        if (loginId) loginId.value = username;
+      }, 2500);
     }
   } catch(e) {
     console.error('Signup Catch:', e);
