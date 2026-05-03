@@ -2602,6 +2602,27 @@ document.getElementById('closeModal')?.addEventListener('click', closeModal);
 window.onclick = (e) => { if(e.target === modal) closeModal(); if(e.target === document.getElementById('upm-modal')) { /* لا تغلق */ } };
 document.getElementById('switchToSignup')?.addEventListener('click', () => { loginDiv.style.display = 'none'; signupDiv.style.display = 'block'; });
 document.getElementById('switchToLogin')?.addEventListener('click', () => { signupDiv.style.display = 'none'; loginDiv.style.display = 'block'; });
+// وظيفة لفحص الاتصال وتشخيص المشاكل (تُستدعى من الكونسول)
+window.checkVirtuxConnection = async () => {
+  console.log('--- Virtux Diagnostic Start ---');
+  console.log('URL:', SUPABASE_URL);
+  
+  // 1. Test Auth Connection
+  const { data: { session }, error: authErr } = await db.auth.getSession();
+  console.log('Auth Session:', session ? 'Active' : 'None', authErr || '');
+  
+  // 2. Test Profiles Access
+  const { data: prof, error: profErr } = await db.from('profiles').select('count', { count: 'exact', head: true });
+  console.log('Profiles Table Access:', profErr ? 'FAILED (401/404)' : 'SUCCESS', profErr || '');
+  
+  // 3. Test RPC
+  const { data: rpc, error: rpcErr } = await db.rpc('get_server_time');
+  console.log('RPC Access:', rpcErr ? 'FAILED (Maybe not defined)' : 'SUCCESS', rpcErr || '');
+  
+  console.log('--- Diagnostic End ---');
+  return "Diagnostic complete. Check logs above.";
+};
+
 document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
   const identifier = document.getElementById('loginIdentifier').value.trim();
   const password = document.getElementById('loginPassword').value;
@@ -2627,8 +2648,6 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     } else {
       // 1. Look up the email (Case-insensitive)
       const cleanId = identifier.replace(/\s+/g, '');
-      
-      // We use a try-catch for the profile lookup to handle 401 gracefully
       let profile = null;
       try {
         const { data: p, error: pError } = await db.from('profiles')
@@ -2637,10 +2656,11 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
           .order('created_at', { ascending: false })
           .limit(1);
         if (p && p[0]) profile = p[0];
+        if (pError) console.warn('Profile Lookup Error:', pError);
       } catch(e) { console.warn('Profile lookup failed:', e); }
       
       let emailToTry = profile?.email || getDummyEmail(identifier);
-      console.log('Login attempt:', { identifier, emailToTry });
+      console.log('Attempting Auth with:', emailToTry);
       
       const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
