@@ -30,9 +30,15 @@
 </head>
 <body>
 <div class="container">
-  <div class="header">
-    <a href="javascript:history.back()" class="back-link">← العودة</a>
-    <h1>قراءة المقال</h1>
+  <div class="header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+    <div>
+      <a href="javascript:history.back()" class="back-link">← العودة</a>
+      <h1 id="article-header-title">قراءة المقال</h1>
+    </div>
+    <div class="lang-switch" style="background:rgba(0,0,0,0.4);border:1px solid #333;border-radius:8px;display:flex;overflow:hidden;">
+      <button onclick="setPostLang('ar')" id="post-lang-ar" style="background:#e01010;color:#000;border:none;padding:6px 12px;font-weight:bold;cursor:pointer;font-family:'Tajawal',sans-serif;">عربي</button>
+      <button onclick="setPostLang('en')" id="post-lang-en" style="background:transparent;color:#e01010;border:none;padding:6px 12px;font-weight:bold;cursor:pointer;font-family:'Orbitron',sans-serif;">English</button>
+    </div>
   </div>
   <div id="article-content">
     <div class="loading">جاري تحميل المقال...</div>
@@ -55,12 +61,27 @@ function escapeHtml(str) {
   });
 }
 
+function setPostLang(lang) {
+  const currentLang = localStorage.getItem('virtux_lang') || 'ar';
+  if (currentLang === lang) return;
+  localStorage.setItem('virtux_lang', lang);
+  location.reload();
+}
+
 async function loadArticle() {
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get('id');
   if (!id) {
     document.getElementById('article-content').innerHTML = '<div class="error">No article ID provided.</div>';
     return;
+  }
+  
+  const lang = localStorage.getItem('virtux_lang') || 'ar';
+  if (lang === 'en') {
+    document.getElementById('post-lang-en').style.background = '#e01010';
+    document.getElementById('post-lang-en').style.color = '#000';
+    document.getElementById('post-lang-ar').style.background = 'transparent';
+    document.getElementById('post-lang-ar').style.color = '#e01010';
   }
   try {
     const { data, error } = await db.from('posts').select('*').eq('id', id).single();
@@ -121,10 +142,9 @@ async function loadArticle() {
     `;
 
     // Translation logic
-    const lang = localStorage.getItem('virtux_lang') || 'ar';
     if (lang === 'en') {
       document.querySelector('.back-link').textContent = '← Back';
-      document.querySelector('.header h1').textContent = 'Read Article';
+      document.getElementById('article-header-title').textContent = 'Read Article';
       if (extraLink) {
         document.querySelector('.extra-link-btn').innerHTML = '🔗 Post Link';
       }
