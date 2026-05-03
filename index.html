@@ -2625,36 +2625,37 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // 1. Look up the email associated with this username (Case-insensitive)
-      // Try exact and without spaces
+      // 1. Look up the email (Case-insensitive)
       const cleanId = identifier.replace(/\s+/g, '');
-      const { data: p, error: pError } = await db.from('profiles')
-        .select('email, username')
-        .or(`username.ilike."${identifier}",username.ilike."${cleanId}"`)
-        .order('created_at', { ascending: false })
-        .limit(1);
       
-      const profile = p && p[0];
+      // We use a try-catch for the profile lookup to handle 401 gracefully
+      let profile = null;
+      try {
+        const { data: p, error: pError } = await db.from('profiles')
+          .select('email, username')
+          .or(`username.ilike."${identifier}",username.ilike."${cleanId}"`)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (p && p[0]) profile = p[0];
+      } catch(e) { console.warn('Profile lookup failed:', e); }
+      
       let emailToTry = profile?.email || getDummyEmail(identifier);
+      console.log('Login attempt:', { identifier, emailToTry });
       
-      console.log('Login Trace:', { identifier, foundEmail: profile?.email, trying: emailToTry });
-      
-      const { data, error } = await db.auth.signInWithPassword({ email: emailToTry, password });
+      const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
 
-      // 2. Deep Fallback for legacy accounts
+      // 2. Legacy fallback
       if (loginError && loginError.status !== 429) {
-        const fallbackPatterns = [
+        const fallbacks = [
            identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v',
            identifier.toLowerCase() + '@virtux.v'
         ];
-        
-        for (const fb of fallbackPatterns) {
+        for (const fb of fallbacks) {
            if (fb === emailToTry) continue;
-           console.log('Trying legacy fallback:', fb);
-           const { error: retryError } = await db.auth.signInWithPassword({ email: fb, password });
-           if (!retryError) { loginError = null; break; }
-           else { loginError = retryError; }
+           const { error: re } = await db.auth.signInWithPassword({ email: fb, password });
+           if (!re) { loginError = null; break; }
+           else loginError = re;
         }
       }
     }
@@ -2668,13 +2669,13 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       }
       errEl.innerText = msg;
       errEl.style.color = '#f55';
-      return;
+    } else {
+      closeModal();
+      await updateUIAfterAuth();
     }
-
-    closeModal();
-    await updateUIAfterAuth();
   } catch(e) {
     errEl.innerText = e.message || 'Error';
+    errEl.style.color = '#f55';
   } finally {
     btn.disabled = false;
     btn.textContent = isEN ? 'Login' : 'دخول';
