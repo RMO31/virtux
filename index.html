@@ -957,10 +957,14 @@ async function showUserInfo(userId){
 document.getElementById('closeUserInfoModal')?.addEventListener('click',()=>{ document.getElementById('userInfoModal').classList.remove('active'); });
 window.onclick=(e)=>{ if(e.target===document.getElementById('userInfoModal')) document.getElementById('userInfoModal').classList.remove('active'); };
 
+/* ========= IMPROVED TIMESTAMP CLEANING ========= */
 function cleanTimestamp(str){
   if(!str) return '';
+  // Remove full ISO timestamps like 2024-01-15T10:30:45Z or 2024-01-15T10:30:45.123Z
   let cleaned = str.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, '');
+  // Remove partial time fragments like T00:16:31Z or T23:59:59.999Z
   cleaned = cleaned.replace(/T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, '');
+  // Remove leftover standalone T or Z around spaces/edges
   cleaned = cleaned.replace(/\s+T\s+/g, ' ').replace(/\s+Z\s+/g, ' ').replace(/^[TZ]\s+/g, '').replace(/\s+[TZ]$/g, '');
   return cleaned.trim();
 }
@@ -1009,7 +1013,7 @@ function renderCardsWithUsers(posts,gridId,room,usersMap,canViewVIP){
       else{ const liveTag=room==='live'&&(p.tag==='مباشر Now'||p.tag==='Live Now')?`<div class="live-badge">${window.t('مباشر','LIVE')}</div>`:''; media=`<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0a0a1a,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">${liveTag}<span style="font-size:36px;">${p.icon||'📄'}</span></div>`; }
     }
     const rawSummary=cleanTimestamp(p.content||p.description||'');
-    const cleanSummary=rawSummary;
+    const cleanSummary=rawSummary; // already cleaned by cleanTimestamp
     let summary=cleanSummary.substring(0,150);
     if(cleanSummary.length>150) summary+='...';
     let actions='';
@@ -1077,6 +1081,7 @@ function renderCardsWithUsers(posts,gridId,room,usersMap,canViewVIP){
 window.showFullArticle=function(title,content,desc){
   const modal=document.getElementById('articleModal');
   const contentDiv=document.getElementById('articleContent');
+  // Clean timestamps in displayed content
   const cleanTitle = cleanTimestamp(title);
   const cleanContent = cleanTimestamp(content);
   const cleanDesc = cleanTimestamp(desc||'');
@@ -1087,6 +1092,7 @@ window.showFullArticle=function(title,content,desc){
 document.getElementById('closeArticleModal')?.addEventListener('click',()=>{ document.getElementById('articleModal').classList.remove('active'); });
 
 /* ========= FIXED FILTER FUNCTION ========= */
+/* Normalizes tags for comparison, handles both exact and auto: prefixed VIP posts */
 function filterPosts(room,tag,btn){
   if(btn&&btn.closest('.filter-bar')){ 
     btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); 
@@ -1095,14 +1101,19 @@ function filterPosts(room,tag,btn){
   const allRoomPosts = allPosts[room]||[];
   let filtered;
   if(!tag){
+    // "All" filter - show everything
     filtered = allRoomPosts;
   } else {
-    const normalizedFilter = tag.trim().replace(/\s+/g, ' ').toLowerCase();
+    // Normalize tag for comparison
+    const normalizedFilter = tag.trim();
     filtered = allRoomPosts.filter(p=>{
-      if(!p.tag) return false;
-      const postTag = String(p.tag).trim().replace(/\s+/g, ' ').toLowerCase();
+      const postTag = (p.tag||'').trim();
+      // Exact match
       if(postTag === normalizedFilter) return true;
-      if(normalizedFilter === 'vip' && postTag.startsWith('auto:')) return true;
+      // For VIP filter: also match auto: prefixed tags (auto-fetched YT VIP posts)
+      if(normalizedFilter === 'VIP' && postTag.startsWith('auto:')) return true;
+      // Case-insensitive match for English tags
+      if(normalizedFilter.toLowerCase() === postTag.toLowerCase()) return true;
       return false;
     });
   }
@@ -1110,6 +1121,7 @@ function filterPosts(room,tag,btn){
 }
 
 window._currentPage='home';
+/* ========= FIXED showPage - integrates home panel loading ========= */
 function showPage(id){
   document.querySelectorAll('.vx-page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
@@ -1117,12 +1129,9 @@ function showPage(id){
   if(page) page.classList.add('active');
   const btn=document.getElementById(`sb-${id}`);
   if(btn) btn.classList.add('active');
-  if(id!=='home'&&id!=='contact'){
-    if(!allPosts[id] || id !== window._currentPage) {
-      loadPage(id);
-    }
-  }
+  if(id!=='home'&&id!=='contact'&&(id!==window._currentPage || !allPosts[id])) loadPage(id);
   window._currentPage=id;
+  // Load home panels if navigating to home
   if(id==='home') setTimeout(function(){ if(typeof loadHomePanel==='function') loadHomePanel(); },80);
 }
 function toggleDD(id){ document.querySelectorAll('.dd').forEach(d=>{ if(d.id!==id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
@@ -1195,6 +1204,7 @@ const signupDiv=document.getElementById('modal-signup');
 function openModal(){ modal.classList.add('active'); }
 function closeModal(){ modal.classList.remove('active'); loginDiv.style.display='block'; signupDiv.style.display='none'; document.getElementById('loginError').innerText=''; document.getElementById('signupError').innerText=''; }
 document.getElementById('closeModal')?.addEventListener('click',closeModal);
+// Use a single click handler on window to avoid overwriting
 window._globalClickHandler=function(e){ 
   if(e.target===modal) closeModal(); 
   if(e.target===document.getElementById('upm-modal')) return;
@@ -1317,81 +1327,395 @@ window.closeDD=closeDD;
 window.openUserModal=openUserModal;
 window.clearMediaForRoom=clearMediaForRoom;
 window.cleanTimestamp=cleanTimestamp;
-window.openYTVIPModal=function(){ /* ... يبقى كما هو ... */ };
-window.previewYTVIP=function(url){ /* ... */ };
-window.submitYTVIP=async function(){ /* ... */ };
-window.openTournamentsVIPModal=function(){ /* ... */ };
-window.submitVIPTournament=async function(){ /* ... */ };
+window.openYTVIPModal=function(){ if(!window.currentUserId){ alert('⚠️ يجب تسجيل الدخول أولاً'); return; } const allowed=(window.userRoles||[]).some(r=>['admin','vip','youtuber','youtuber_vip','moderator'].includes(r)); if(!allowed){ alert('⛔ هذا الزر مخصص لأصحاب رتبة Youtuber VIP فقط'); return; } let m=document.getElementById('ytvip-post-modal'); if(!m){ m=document.createElement('div'); m.id='ytvip-post-modal'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'; m.onclick=function(e){ if(e.target===m) m.style.display='none'; }; m.innerHTML=`<div style="background:#0d0000;border:1.5px solid #e01010;border-radius:16px;padding:26px 22px;width:100%;max-width:500px;position:relative;box-shadow:0 0 40px rgba(220,0,0,0.15);"><button onclick="document.getElementById('ytvip-post-modal').style.display='none'" style="position:absolute;top:12px;left:14px;background:transparent;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1;">✕</button><div style="text-align:center;margin-bottom:18px;"><div style="font-size:28px;margin-bottom:4px;">👑</div><h3 style="color:#e01010;margin:0;font-size:17px;">نشر فيديو VIP</h3><p style="color:#777;font-size:12px;margin:6px 0 0;">يظهر فقط لأعضاء Member  VIP وما فوق</p></div><label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🔗 رابط يوتيوب *</label><input id="ytvip-url" type="text" placeholder="https://youtube.com/watch?v=..." style="width:100%;box-sizing:border-box;background:#0a0000;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;" oninput="window.previewYTVIP(this.value)"><div id="ytvip-preview" style="display:none;margin-bottom:12px;border-radius:8px;overflow:hidden;border:1px solid #2a2a3a;"></div><label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">📝 العنوان *</label><input id="ytvip-title" type="text" placeholder="عنوان الفيديو..." style="width:100%;box-sizing:border-box;background:#0a0000;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;"><label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">💬 وصف (اختياري)</label><textarea id="ytvip-desc" placeholder="اكتب وصفاً..." rows="3" style="width:100%;box-sizing:border-box;background:#0a0000;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:16px;resize:vertical;outline:none;"></textarea><button onclick="window.submitYTVIP()" style="width:100%;background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:15px;cursor:pointer;letter-spacing:0.5px;">🚀 نشر الفيديو VIP</button><div id="ytvip-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;min-height:18px;"></div></div>`; document.body.appendChild(m); } m.style.display='flex'; document.getElementById('ytvip-url').value=''; document.getElementById('ytvip-title').value=''; document.getElementById('ytvip-desc').value=''; document.getElementById('ytvip-status').textContent=''; document.getElementById('ytvip-preview').style.display='none'; };
+window.previewYTVIP=function(url){ const prev=document.getElementById('ytvip-preview'); if(!prev) return; const match=url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/); if(!match){ prev.style.display='none'; return; } const vid=match[1]; prev.style.display='block'; prev.innerHTML=`<img src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg" style="width:100%;display:block;border-radius:8px;">`; const titleEl=document.getElementById('ytvip-title'); if(titleEl&&!titleEl.value){ fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id='+vid+'&key='+(window.YOUTUBE_API_KEY||'')).then(r=>r.json()).then(d=>{ if(d.items?.[0]?.snippet?.title&&titleEl&&!titleEl.value) titleEl.value=d.items[0].snippet.title; }).catch(()=>{}); } };
+window.submitYTVIP=async function(){ const url=(document.getElementById('ytvip-url')?.value||'').trim(); const title=(document.getElementById('ytvip-title')?.value||'').trim(); const desc=(document.getElementById('ytvip-desc')?.value||'').trim(); const status=document.getElementById('ytvip-status'); if(!url){ status.style.color='#f55'; status.text='⚠️ أدخل رابط يوتيوب'; return; } if(!title){ status.style.color='#f55'; status.text='⚠️ أدخل عنواناً للفيديو'; return; } if(!url.includes('youtube.com')&&!url.includes('youtu.be')){ status.style.color='#f55'; status.text='⚠️ الرابط يجب أن يكون من يوتيوب'; return; } const match=url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/); const thumb=match?`https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`:''; status.style.color='#aaa'; status.text='⏳ جارٍ النشر...'; const btn=document.querySelector('#ytvip-post-modal button[onclick*="submitYTVIP"]'); if(btn) btn.disabled=true; try{ const {error}=await db.from('posts').insert({title:title,description:desc||window.currentUsername||'',url:url,icon:thumb||'👑',tag:'VIP',room:'yt-videos',user_id:window.currentUserId||null}); if(error) throw error; status.style.color='#cc2222'; status.textContent='✅ تم النشر بنجاح!'; setTimeout(()=>{ document.getElementById('ytvip-post-modal').style.display='none'; if(window.currentRoom==='yt-videos'||!window.currentRoom) loadPage('yt-videos'); },1400); } catch(e){ status.style.color='#f55'; status.textContent='❌ '+(e.message||'حدث خطأ'); } finally{ if(btn) btn.disabled=false; } };
+window.openTournamentsVIPModal=function(){ const allowed=(window.userRoles||[]).some(r=>['admin','vip'].includes(r)); if(!allowed){ alert('⛔ زر مخصص لأصحاب رتبة VIP فقط'); return; } let m=document.getElementById('vip-tour-modal'); if(!m){ m=document.createElement('div'); m.id='vip-tour-modal'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'; m.onclick=function(e){ if(e.target===m) m.style.display='none'; }; m.innerHTML=`<div style="background:#0d0000;border:1.5px solid #e01010;border-radius:16px;padding:26px 22px;width:100%;max-width:520px;position:relative;box-shadow:0 0 40px rgba(220,0,0,0.18);"><button onclick="document.getElementById('vip-tour-modal').style.display='none'" style="position:absolute;top:12px;left:14px;background:transparent;border:none;color:#666;font-size:22px;cursor:pointer;line-height:1;">✕</button><div style="text-align:center;margin-bottom:18px;"><div style="font-size:30px;margin-bottom:4px;">🏆</div><h3 style="color:#e01010;margin:0;font-size:17px;">نشر بطولة VIP</h3><p style="color:#777;font-size:12px;margin:6px 0 0;">تظهر فقط لأعضاء VIP  Member وما فوق</p></div><label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">📝 عنوان البطولة *</label><input id="vipt-title" type="text" placeholder="اسم البطولة..." style="width:100%;box-sizing:border-box;background:#0a0000;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;"><label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">💬 الوصف</label><textarea id="vipt-desc" placeholder="تفاصيل البطولة، الجوائز، المواعيد..." rows="4" style="width:100%;box-sizing:border-box;background:#0a0000;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;resize:vertical;outline:none;"></textarea><label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🔗 رابط (اختياري)</label><input id="vipt-url" type="text" placeholder="https://..." style="width:100%;box-sizing:border-box;background:#0a0000;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;"><label style="color:#aaa;font-size:12px;display:block;margin-bottom:4px;">🖼️ أيقونة/إيموجي (اختياري)</label><input id="vipt-icon" type="text" placeholder="🏆 أو رابط صورة" value="🏆" style="width:100%;box-sizing:border-box;background:#0a0000;border:1px solid #333;color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:16px;outline:none;"><button onclick="window.submitVIPTournament()" style="width:100%;background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:15px;cursor:pointer;letter-spacing:0.5px;">🚀 نشر البطولة VIP</button><div id="vipt-status" style="margin-top:10px;text-align:center;font-size:13px;color:#aaa;min-height:18px;"></div></div>`; document.body.appendChild(m); } m.style.display='flex'; ['vipt-title','vipt-desc','vipt-url'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); const ic=document.getElementById('vipt-icon'); if(ic) ic.value='🏆'; document.getElementById('vipt-status').textContent=''; };
+window.submitVIPTournament=async function(){ const title=(document.getElementById('vipt-title')?.value||'').trim(); const desc=(document.getElementById('vipt-desc')?.value||'').trim(); const url=(document.getElementById('vipt-url')?.value||'').trim(); const icon=(document.getElementById('vipt-icon')?.value||'🏆').trim(); const status=document.getElementById('vipt-status'); if(!title){ status.style.color='#f55'; status.text='⚠️ أدخل عنوان البطولة'; return; } status.style.color='#aaa'; status.text='⏳ جارٍ النشر...'; const btn=document.querySelector('#vip-tour-modal button[onclick*="submitVIPTournament"]'); if(btn) btn.disabled=true; try{ const {error}=await db.from('posts').insert({title:title,description:desc||'',content:desc||'',url:url||null,icon:icon||'🏆',tag:'VIP',room:'tournaments',user_id:window.currentUserId||null}); if(error) throw error; status.style.color='#cc2222'; status.textContent='✅ تم نشر البطولة VIP بنجاح!'; setTimeout(()=>{ document.getElementById('vip-tour-modal').style.display='none'; if(window.currentRoom==='tournaments'||!window.currentRoom) loadPage('tournaments'); },1300); } catch(e){ status.style.color='#f55'; status.textContent='❌ '+(e.message||'حدث خطأ'); } finally{ if(btn) btn.disabled=false; } };
 
-// ========== دوال المشتركين المضافة ==========
-window._subscribersRoleFilter = '';
-
-async function loadSubscribersWithVIP(gridElement, posts, roleFilter = '') {
-    gridElement.innerHTML = `<div class="loading-state">${window.t('جاري تحميل المشتركين...', 'Loading subscribers...')}</div>`;
-    try {
-        let query = db.from('profiles').select('*').order('created_at', { ascending: false });
-        if (roleFilter) {
-            query = query.or(`role.eq.${roleFilter},roles.cs.{${roleFilter}}`);
-        }
-        const { data: profiles, error } = await query;
-        if (error) throw error;
-        const validProfiles = (profiles || []).filter(p => p.username && p.id);
-        window._subscribersRoleFilter = roleFilter;
-        renderSubscribers(gridElement, validProfiles);
-    } catch (e) {
-        gridElement.innerHTML = `<div class="empty-state">${window.t('فشل تحميل المشتركين', 'Failed to load subscribers')}</div>`;
+document.getElementById('profileButton')?.addEventListener('click',async()=>{
+  if(!window.currentUserId) return;
+  const profileModal=document.getElementById('profileModal');
+  if(!profileModal) return;
+  try{
+    const {data:profile}=await db.from('profiles').select('*').eq('id',window.currentUserId).single();
+    if(profile){
+      currentProfileData=profile;
+      document.getElementById('profileUsername').value=profile.username||'';
+      document.getElementById('profileEmail').value=profile.email||'';
+      document.getElementById('profileBirthdate').value=profile.birthdate||'';
+      document.getElementById('profileBirthPlace').value=profile.birth_place||'';
+      document.getElementById('profileCountry').value=profile.country||'';
+      document.getElementById('profileFavoriteGame').value=profile.favorite_game||'';
+      const rolesDiv=document.getElementById('profileRolesContainer');
+      if(rolesDiv){
+        const userRolesList=normalizeRoles(profile);
+        const roleLabels={admin:'🛡️ Admin',moderator:'🔧 Moderator',youtuber_vip:'🔥 YT VIP',youtuber:'🎬 Youtuber',vip:'👑 VIP',member:'⭐ Member',user:'👤 User',guest:'🛡️ Guest'};
+        rolesDiv.innerHTML=userRolesList.map(r=>`<span class="profile-role-badge">${roleLabels[r]||r}</span>`).join('');
+        if(profile.expiry_date){ const expiryDate=new Date(profile.expiry_date).toLocaleDateString(); rolesDiv.innerHTML+=`<span class="profile-role-badge" style="border-color:#ffaa00;">⏳ ينتهي: ${expiryDate}</span>`; }
+      }
+      const avatarImg=document.getElementById('profileAvatarImg');
+      const avatarPlaceholder=document.getElementById('profileAvatarPlaceholder');
+      if(profile.avatar_url){ avatarImg.src=profile.avatar_url; avatarImg.style.display='inline-block'; avatarPlaceholder.style.display='none'; } else { avatarImg.style.display='none'; avatarPlaceholder.style.display='flex'; }
     }
+  } catch(e){ console.error('Error loading profile:',e); }
+  document.getElementById('passwordError').innerText='';
+  document.getElementById('usernameFeedback').innerText='';
+  document.getElementById('oldPassword').value='';
+  document.getElementById('newPassword').value='';
+  document.getElementById('confirmNewPassword').value='';
+  profileModal.classList.add('active');
+});
+document.getElementById('closeProfileBtn')?.addEventListener('click',()=>{ document.getElementById('profileModal')?.classList.remove('active'); });
+document.getElementById('saveProfileBtn')?.addEventListener('click',async()=>{
+  if(!window.currentUserId) return;
+  const btn=document.getElementById('saveProfileBtn');
+  const originalText=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='⏳ جاري الحفظ...';
+  try{
+    const newUsername=document.getElementById('profileUsername').value.trim();
+    if(!newUsername||newUsername.length<3){ document.getElementById('usernameFeedback').innerText='اسم المستخدم يجب أن يكون 3 أحرف على الأقل'; btn.disabled=false; btn.textContent=originalText; return; }
+    if(currentProfileData&&newUsername!==currentProfileData.username){
+      const {data:existing}=await db.from('profiles').select('username').eq('username',newUsername).maybeSingle();
+      if(existing){ document.getElementById('usernameFeedback').innerText='اسم المستخدم موجود بالفعل'; btn.disabled=false; btn.textContent=originalText; return; }
+    }
+    const updates={id:window.currentUserId,username:newUsername,email:currentProfileData?.email||null,birthdate:document.getElementById('profileBirthdate').value||null,birth_place:document.getElementById('profileBirthPlace').value.trim()||null,country:document.getElementById('profileCountry').value.trim()||null,favorite_game:document.getElementById('profileFavoriteGame').value.trim()||null};
+    const {error:profileError}=await db.from('profiles').upsert(updates);
+    if(profileError) throw profileError;
+    const {error:authError}=await db.auth.updateUser({data:{username:newUsername}});
+    if(authError) console.warn('Auth metadata update failed:',authError);
+    if(currentProfileData) Object.assign(currentProfileData,updates);
+    window.currentUsername=newUsername;
+    const userNameSpan=document.getElementById('user-name');
+    if(userNameSpan) userNameSpan.textContent='👋 '+newUsername;
+    const {data:{session}}=await db.auth.getSession();
+    if(session?.user){ session.user.user_metadata.username=newUsername; }
+    document.getElementById('usernameFeedback').innerText='';
+    await updateUIAfterAuth();
+    alert('✅ تم حفظ التغييرات بنجاح');
+    document.getElementById('profileModal').classList.remove('active');
+  } catch(e){ console.error('Save profile error:',e); let msg=e.message||e; if(msg.includes('policy')) msg='فشل الحفظ بسبب قيود الحماية (RLS). يرجى تشغيل ملف supabase_setup.html لإصلاح الصلاحيات.'; alert('❌ خطأ في حفظ البيانات: '+msg); }
+  finally{ btn.disabled=false; btn.textContent=originalText; }
+});
+document.getElementById('changeAvatarBtn')?.addEventListener('click',()=>{ document.getElementById('avatarUpload')?.click(); });
+document.getElementById('avatarUpload')?.addEventListener('change',async(e)=>{
+  const file=e.target.files[0];
+  if(!file||!window.currentUserId) return;
+  const changeBtn=document.getElementById('changeAvatarBtn');
+  const originalText=changeBtn.textContent;
+  changeBtn.disabled=true; changeBtn.textContent='⏳ جاري الرفع...';
+  try{
+    const publicUrl=await uploadAvatar(file,window.currentUserId);
+    await db.from('profiles').upsert({id:window.currentUserId,avatar_url:publicUrl});
+    const avatarImg=document.getElementById('profileAvatarImg');
+    const avatarPlaceholder=document.getElementById('profileAvatarPlaceholder');
+    avatarImg.src=publicUrl; avatarImg.style.display='inline-block'; avatarPlaceholder.style.display='none';
+    const headerAvatar=document.getElementById('user-avatar-img');
+    if(headerAvatar){ headerAvatar.src=publicUrl; headerAvatar.style.display='inline-block'; }
+  } catch(e){ alert('❌ فشل رفع الصورة: '+(e.message||e)); }
+  finally{ changeBtn.disabled=false; changeBtn.textContent=originalText; }
+});
+document.getElementById('changePasswordBtn')?.addEventListener('click',async()=>{
+  const oldPass=document.getElementById('oldPassword').value;
+  const newPass=document.getElementById('newPassword').value;
+  const confirmPass=document.getElementById('confirmNewPassword').value;
+  const errorEl=document.getElementById('passwordError');
+  if(!oldPass||!newPass||!confirmPass){ errorEl.innerText='يرجى ملء جميع حقول كلمة المرور'; return; }
+  if(newPass.length<6){ errorEl.innerText='كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'; return; }
+  if(newPass!==confirmPass){ errorEl.innerText='كلمة المرور الجديدة غير متطابقة'; return; }
+  try{
+    const {data:{session}}=await db.auth.getSession();
+    if(!session?.user?.email) throw new Error('لا يوجد جلسة نشطة');
+    const {error:signInError}=await db.auth.signInWithPassword({email:session.user.email,password:oldPass});
+    if(signInError){ errorEl.innerText='كلمة المرور الحالية غير صحيحة'; return; }
+    const {error}=await db.auth.updateUser({password:newPass});
+    if(error) throw error;
+    errorEl.style.color='#cc2222'; errorEl.innerText='✅ تم تغيير كلمة المرور بنجاح';
+    document.getElementById('oldPassword').value=''; document.getElementById('newPassword').value=''; document.getElementById('confirmNewPassword').value='';
+    setTimeout(()=>{ errorEl.innerText=''; errorEl.style.color=''; },3000);
+  } catch(e){ errorEl.style.color=''; errorEl.innerText='❌ '+(e.message||'خطأ في تغيير كلمة المرور'); }
+});
+document.getElementById('profileModal')?.addEventListener('click',(e)=>{ if(e.target.id==='profileModal') document.getElementById('profileModal').classList.remove('active'); });
+window.confirmDeleteAccount=async function(){
+  if(!window.currentUserId) return;
+  const confirmed=confirm('⚠️ هل أنت متأكد من حذف حسابك نهائياً؟\nسيتم حذف جميع بياناتك ولا يمكن التراجع عن هذا الإجراء.');
+  if(!confirmed) return;
+  const doubleConfirm=confirm('⚠️ تأكيد أخير: سيتم حذف حسابك وكل بياناتك بشكل دائم. هل تريد المتابعة؟');
+  if(!doubleConfirm) return;
+  try{
+    const btn=document.getElementById('deleteAccountBtn');
+    if(btn){ btn.disabled=true; btn.textContent='⏳ جاري الحذف...'; }
+    await db.from('profiles').delete().eq('id',window.currentUserId);
+    const {error:deleteError}=await db.rpc('delete_user_account');
+    if(deleteError) throw new Error('فشل حذف الحساب من الخادم: '+deleteError.message);
+    await db.auth.signOut();
+    alert('✅ تم حذف حسابك بنجاح.');
+    document.getElementById('profileModal')?.classList.remove('active');
+    window.currentUserId=null; window.currentUsername=null; window.userRole='guest'; window.userRoles=['guest'];
+    document.getElementById('btn-login-link').style.display='inline-block';
+    document.getElementById('btn-user-area').style.display='none';
+  } catch(e){ alert('❌ حدث خطأ أثناء حذف الحساب: '+(e.message||e)); const btn=document.getElementById('deleteAccountBtn'); if(btn){ btn.disabled=false; btn.textContent='🗑️ حذف الحساب نهائياً'; } }
+};
+
+window._titleCache={};
+window.tTitle=function(title){
+  if(!title) return '';
+  if(window._siteLanguage!=='en') return title;
+  let t=title;
+  t=t.replace(/بث مباشر/g,'Live Stream');
+  t=t.replace(/مباشر على Twitch/g,'Live on Twitch');
+  t=t.replace(/Facebook مباشر/g,'Facebook Live');
+  t=t.replace(/TikTok مباشر/g,'TikTok Live');
+  t=t.replace(/منشور/g,'Post');
+  t=t.replace(/فيديو/g,'Video');
+  if(t!==title) return t;
+  const hasArabic=/[؀-ۿ]/.test(title);
+  if(!hasArabic) return title;
+  if(window._titleCache[title]) return window._titleCache[title];
+  window._translateTitleBg(title);
+  return title;
+};
+window._translateTitleBg=async function(title){
+  if(window._titleCache[title]) return;
+  try{
+    const url='https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q='+encodeURIComponent(title);
+    const r=await fetch(url);
+    const j=await r.json();
+    const translated=j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('')||title;
+    window._titleCache[title]=translated;
+    if(window._siteLanguage==='en'){
+      document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title, .ticker-item, .ticker-item a').forEach(el=>{ if(el.textContent===title) el.textContent=translated; });
+    }
+  } catch(e){}
+};
+
+/* ========= ABOUT VIRTUX BILINGUAL CONTENT ========= */
+function getAboutContent(){
+  const isEN = window._siteLanguage === 'en';
+  if(isEN){
+    return `<p><strong>🔴 Live Streams</strong><br>A dedicated section for live streaming, where users can follow gamers and content creators in real time and interact with them directly on the platform.</p>
+    <p><strong>🏆 Tournaments</strong><br>The tournaments area at Virtux includes: open tournaments for all players, VIP tournaments for premium members, and professional competitive events with ongoing prizes.</p>
+    <p><strong>🎬 Highlights</strong><br>A section dedicated to the best gaming moments, showcasing top clips, victories, and exciting scenes shared by players and the community.</p>
+    <p><strong>👥 Subscribers System</strong><br>The subscription system in Virtux allows users to support their favorite channels or players and get special perks and exclusive content.</p>
+    <p><strong>🚀 Our Goal</strong><br>At Virtux, we strive to build a strong gaming community that combines entertainment, competition, and live streaming in a professional and safe environment.</p>`;
+  } else {
+    return `<p><strong>🔴 مباشر Streams</strong><br>قسم خاص live المباشرة، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة.</p>
+    <p><strong>🏆 البطولات</strong><br>منطقة البطولات في Virtux، وتضم: بطولات مفتوحة لجميع اللاعبين، بطولات VIP للاعبين المميزين، ومنافسات قوية بنظام احترافي وجوائز مستمرة.</p>
+    <p><strong>🎬 أبرز اللحظات</strong><br>قسم مخصص لأقوى اللحظات داخل الألعاب، حيث يتم عرض أفضل اللقطات والانتصارات والمشاهد الحماسية التي يشاركها اللاعبون والمجتمع.</p>
+    <p><strong>👥 Subscribers System</strong><br>نظام الاشتراكات داخل Virtux يتيح للمستخدمين دعم القنوات أو اللاعبين المفضلين لديهم، والحصول على مزايا خاصة ومحتوى حصري.</p>
+    <p><strong>🚀 هدفنا</strong><br>نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، live المباشر في بيئة احترافية وآمنة.</p>`;
+  }
 }
 
-function filterSubscribers(role, btn) {
-    window._subscribersRoleFilter = role;
-    if (btn) {
-        btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-    const grid = document.getElementById('grid-subscribers');
-    if (grid) loadSubscribersWithVIP(grid, [], role);
+function updateAboutContent(){
+  const aboutEl = document.getElementById('aboutVirtuxContent');
+  if(aboutEl) aboutEl.innerHTML = getAboutContent();
 }
 
-function renderSubscribers(gridElement, profiles) {
-    if (!profiles.length) {
-        gridElement.innerHTML = `<div class="empty-state">${window.t('لا يوجد مشتركون بعد', 'No subscribers yet')}</div>`;
-        return;
+function applyTranslations(){
+  const isEN = window._siteLanguage === 'en';
+  document.querySelectorAll('[data-ar][data-en]').forEach(el => {
+    if (el.tagName === 'INPUT' && el.hasAttribute('data-ar-placeholder') && el.hasAttribute('data-en-placeholder')) {
+      el.placeholder = isEN ? el.getAttribute('data-en-placeholder') : el.getAttribute('data-ar-placeholder');
+    } else if (el.tagName === 'TEXTAREA' && el.hasAttribute('data-ar-placeholder') && el.hasAttribute('data-en-placeholder')) {
+      el.placeholder = isEN ? el.getAttribute('data-en-placeholder') : el.getAttribute('data-ar-placeholder');
+    } else {
+      el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
     }
-    const accentColors = {
-        'admin': '#ff4444', 'moderator': '#ff9933', 'youtuber_vip': '#ff6600',
-        'youtuber': '#cc0000', 'vip': '#e01010', 'member': '#bb88ff',
-        'donor': '#00ccff', 'guest': '#aaaaaa', 'user': '#888888'
-    };
-    const roleLabels = {
-        'admin': '👑 ADMIN', 'moderator': '🛡️ MOD', 'youtuber_vip': '🔥 YT VIP',
-        'youtuber': '▶️ YOUTUBER', 'vip': '⭐ VIP', 'member': '💠 MEMBER',
-        'donor': '💎 DONOR', 'guest': '🛡️ GUEST', 'user': '👤 USER'
-    };
-    gridElement.innerHTML = profiles.map(profile => {
-        const mainRole = normalizeRoles(profile)[0] || 'user';
-        const accent = accentColors[mainRole] || '#e01010';
-        const avatarContent = profile.avatar_url
-            ? `<img class="channel-avatar" src="${profile.avatar_url}" style="width:78px;height:78px;object-fit:cover;border-radius:50%;cursor:pointer;" onclick="window.showUserInfo('${profile.id}')">`
-            : `<div class="channel-avatar avatar-placeholder" style="width:78px;height:78px;cursor:pointer;" onclick="window.showUserInfo('${profile.id}')">👤</div>`;
-        const badgeLabel = roleLabels[mainRole] || '👤 USER';
-        return `
-        <div class="channel-card subscriber-card" style="--sub-accent:${accent}; cursor:pointer;" onclick="window.showUserInfo('${profile.id}')">
-            ${avatarContent}
-            <div class="channel-info" style="text-align:center;">
-                <div class="channel-name" style="font-size:20px;">${escapeHtml(profile.username || 'Unknown')}</div>
-                <div class="subscriber-badge" style="background:${accent}22;color:${accent};border:1px solid ${accent};">${badgeLabel}</div>
-            </div>
-        </div>`;
-    }).join('');
+  });
+  // Update About Virtux content
+  updateAboutContent();
+  // Update page headers
+  const roomHeaders = {
+    live: { ar: '🔴 مباشر Streams', en: '🔴 Live Streams' },
+    tournaments: { ar: '🏆 البطولات', en: '🏆 Tournaments' },
+    highlights: { ar: '🎬 أبرز اللحظات', en: '🎬 Highlights' },
+    subscribers: { ar: '👥 المشتركون', en: '👥 Subscribers' },
+    'gaming-news': { ar: '📰 أخبار الألعاب', en: '📰 Gaming News' },
+    'youtube-news': { ar: '▶️ أخبار يوتيوب', en: '▶️ YouTube News' },
+    'yt-channels': { ar: '📺 قنوات يوتيوب', en: '📺 YouTube Channels' },
+    'yt-videos': { ar: '🎬 فيديوهات يوتيوب', en: '🎬 YouTube Videos' },
+    projects: { ar: '🌐 التعاون', en: '🌐 Collaboration' }
+  };
+  for (const [room, labels] of Object.entries(roomHeaders)) {
+    const header = document.getElementById(`header-${room}`);
+    if (header) header.textContent = isEN ? labels.en : labels.ar;
+  }
+  const contactHeader = document.getElementById('contact-header');
+  if (contactHeader) contactHeader.textContent = isEN ? '📞 Contact Virtux' : '📞 التواصل';
+  document.querySelectorAll('.sb-btn, .sb-section').forEach(el => {
+    if (el.hasAttribute('data-ar') && el.hasAttribute('data-en')) {
+      el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
+    }
+  });
+  document.querySelectorAll('.dd-btn, .dd-menu a').forEach(el => {
+    if (el.hasAttribute('data-ar') && el.hasAttribute('data-en')) {
+      el.textContent = isEN ? el.getAttribute('data-en') : el.getAttribute('data-ar');
+    }
+  });
+  // Re-render current page contents
+  const currentPageEl = document.querySelector('.vx-page.active');
+  const currentPage = currentPageEl?.id?.replace('page-', '');
+  if (currentPage && allPosts[currentPage] && currentPage !== 'home' && currentPage !== 'contact') {
+    const el = document.getElementById('grid-'+currentPage);
+    if (el && allPosts[currentPage]) {
+      if (currentPage === 'subscribers') loadSubscribersWithVIP(el, allPosts[currentPage]||[], window._subscribersRoleFilter||'');
+      else renderCards(allPosts[currentPage], 'grid-'+currentPage, currentPage);
+    }
+  }
+  if (document.getElementById('page-home')?.classList.contains('active')) {
+    if (typeof window.loadHomePanel === 'function') window.loadHomePanel();
+  }
+  if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
+  
+  // Update auth modal texts
+  const loginModal = document.getElementById('modal-login');
+  if (loginModal) {
+    loginModal.querySelector('h3').textContent = isEN ? '🔐 Login' : '🔐 تسجيل الدخول';
+    const labels = loginModal.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = isEN ? 'Email or Username' : 'البريد الإلكتروني أو اسم المستخدم';
+    if (labels[1]) labels[1].textContent = isEN ? 'Password' : 'كلمة المرور';
+    const loginId = document.getElementById('loginIdentifier');
+    if (loginId) loginId.placeholder = isEN ? 'example@domain.com or username' : 'example@domain.com أو username';
+    const doLogin = document.getElementById('doLoginBtn');
+    if (doLogin) doLogin.textContent = isEN ? 'Login' : 'دخول';
+    const gBtn = document.getElementById('googleBtn');
+    if (gBtn) gBtn.textContent = isEN ? '🔵 Sign in with Google' : '🔵 تسجيل دخول عن طريق غوغل';
+    const sw = loginModal.querySelector('.auth-switch');
+    if (sw) {
+      const link = sw.querySelector('a');
+      const span = sw.querySelector('span');
+      if (span) span.textContent = isEN ? "Don't have an account? " : "ليس لديك حساب؟ ";
+      if (link) link.textContent = isEN ? 'Create account' : 'إنشاء حساب جديد';
+    }
+  }
+  const signupModal = document.getElementById('modal-signup');
+  if (signupModal) {
+    signupModal.querySelector('h3').textContent = isEN ? '📝 Create Account' : '📝 إنشاء حساب جديد';
+    const labels = signupModal.querySelectorAll('label');
+    if (labels[0]) labels[0].textContent = isEN ? 'Username' : 'اسم المستخدم';
+    if (labels[1]) labels[1].textContent = isEN ? 'Email' : 'البريد الإلكتروني';
+    if (labels[2]) labels[2].textContent = isEN ? 'Password' : 'كلمة المرور';
+    const suUser = document.getElementById('signupUsername');
+    if (suUser) suUser.placeholder = isEN ? 'Username' : 'اسم المستخدم';
+    const doSignup = document.getElementById('doSignupBtn');
+    if (doSignup && !doSignup.disabled) doSignup.textContent = isEN ? 'Sign Up' : 'تسجيل';
+    const gBtn2 = document.getElementById('googleSignupBtn');
+    if (gBtn2) gBtn2.textContent = isEN ? '🔵 Sign up with Google' : '🔵 تسجيل عبر Google';
+    const sw2 = signupModal.querySelector('.auth-switch');
+    if (sw2) {
+      const link = sw2.querySelector('a');
+      const span = sw2.querySelector('span');
+      if (span) span.textContent = isEN ? 'Already have an account? ' : 'لديك حساب بالفعل؟ ';
+      if (link) link.textContent = isEN ? 'Login' : 'تسجيل الدخول';
+    }
+  }
+  // Profile modal
+  const profileModal = document.getElementById('profileModal');
+  if (profileModal) {
+    profileModal.querySelector('h2').textContent = isEN ? '👤 Profile' : '👤 الملف الشخصي';
+    const labels = profileModal.querySelectorAll('.profile-field label');
+    if (labels[0]) labels[0].textContent = isEN ? 'Username' : 'اسم المستخدم';
+    if (labels[1]) labels[1].textContent = isEN ? '📧 Email' : '📧 البريد الإلكتروني';
+    if (labels[2]) labels[2].textContent = isEN ? '🎂 Birthdate' : '🎂 تاريخ الميلاد';
+    if (labels[3]) labels[3].textContent = isEN ? '📍 Birth Place' : '📍 مكان الولادة';
+    if (labels[4]) labels[4].textContent = isEN ? '🌍 Current Country' : '🌍 البلد الحالي';
+    if (labels[5]) labels[5].textContent = isEN ? '🎮 Favorite Game' : '🎮 اللعبة المفضلة';
+    if (labels[6]) labels[6].textContent = isEN ? '🏷️ Roles' : '🏷️ الرتب';
+    const changePassTitle = profileModal.querySelector('.change-password-section h3');
+    if (changePassTitle) changePassTitle.textContent = isEN ? '🔒 Change Password' : '🔒 تغيير كلمة المرور';
+    const changePassLabels = profileModal.querySelectorAll('.change-password-section .profile-field label');
+    if (changePassLabels[0]) changePassLabels[0].textContent = isEN ? 'Current Password' : 'كلمة المرور الحالية';
+    if (changePassLabels[1]) changePassLabels[1].textContent = isEN ? 'New Password' : 'كلمة المرور الجديدة';
+    if (changePassLabels[2]) changePassLabels[2].textContent = isEN ? 'Confirm New Password' : 'تأكيد كلمة المرور الجديدة';
+    const changePassBtn = document.getElementById('changePasswordBtn');
+    if (changePassBtn) changePassBtn.textContent = isEN ? 'Change Password' : 'تغيير كلمة المرور';
+    const saveBtn = document.getElementById('saveProfileBtn');
+    if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
+    const closeBtn = document.getElementById('closeProfileBtn');
+    if (closeBtn) closeBtn.textContent = isEN ? 'Close' : 'إغلاق';
+    const delBtn = document.getElementById('deleteAccountBtn');
+    if (delBtn && !delBtn.disabled) delBtn.textContent = isEN ? '🗑️ Delete Account Permanently' : '🗑️ حذف الحساب نهائياً';
+    const changeAvatar = document.getElementById('changeAvatarBtn');
+    if (changeAvatar) changeAvatar.textContent = isEN ? '📷 Change Avatar' : '📷 تغيير الصورة';
+  }
+  // Username modal
+  const usernameModal = document.getElementById('usernameModal');
+  if (usernameModal) {
+    const h2 = usernameModal.querySelector('h2');
+    if (h2) h2.textContent = isEN ? '✨ Choose a username' : '✨ اختر اسم مستخدم';
+    const p = usernameModal.querySelector('p');
+    if (p) p.textContent = isEN ? 'Please choose a unique username to complete your registration' : 'يرجى اختيار اسم مستخدم فريد لإكمال التسجيل';
+    const input = usernameModal.querySelector('input');
+    if (input) input.placeholder = isEN ? 'Username' : 'اسم المستخدم';
+    const confirmBtn = document.getElementById('confirmUsernameBtn');
+    if (confirmBtn) confirmBtn.textContent = isEN ? 'Confirm' : 'تأكيد';
+    const cancelBtn = document.getElementById('cancelUsernameBtn');
+    if (cancelBtn) cancelBtn.textContent = isEN ? 'Cancel' : 'إلغاء';
+  }
+  const upmSubmit = document.getElementById('upm-submit');
+  if (upmSubmit) upmSubmit.textContent = isEN ? '➕ Publish' : '➕ نشر';
+  
+  // Update filter bars
+  const visiblePages = ['live', 'tournaments', 'highlights', 'subscribers'];
+  for (const r of visiblePages) {
+    const page = document.getElementById(`page-${r}`);
+    if (page && page.classList.contains('active')) {
+      rebuildFilterBar(r);
+    }
+  }
 }
+function rebuildFilterBar(room){
+  const page=document.getElementById('page-'+room);
+  if(!page) return;
+  const existing=page.querySelector('.filter-bar');
+  if(!existing) return;
+  const isEN=window._siteLanguage==='en';
+  let newBar='';
+  if(room==='live') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button><button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
+  else if(room==='tournaments') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">${isEN?'Register':'تسجيل'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">${isEN?'Global':'عالمي'}</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
+  else if(room==='highlights') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
+  else if(room==='subscribers') newBar=`<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">${isEN?'All':'الكل'}</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('guest',this)">Guest</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button></div>`;
+  if(newBar) existing.outerHTML=newBar;
+}
+window.setLang = function(lang){
+  if(window._siteLanguage===lang) return;
+  window._siteLanguage=lang;
+  const arBtn=document.getElementById('lang-ar-btn');
+  const enBtn=document.getElementById('lang-en-btn');
+  const activeBtn=lang==='en'?enBtn:arBtn;
+  if(activeBtn){ activeBtn.classList.remove('lang-switching'); void activeBtn.offsetWidth; activeBtn.classList.add('lang-switching'); setTimeout(()=>activeBtn.classList.remove('lang-switching'),400); }
+  if(lang==='ar'){ if(arBtn){ arBtn.style.background='#e01010'; arBtn.style.color='#000'; } if(enBtn){ enBtn.style.background='transparent'; enBtn.style.color='#e01010'; } }
+  else{ if(enBtn){ enBtn.style.background='#e01010'; enBtn.style.color='#000'; } if(arBtn){ arBtn.style.background='transparent'; arBtn.style.color='#e01010'; } }
+  applyTranslations();
+  if(typeof window.rebuildTicker==='function') window.rebuildTicker();
+  if(window.allPosts){
+    Object.keys(window.allPosts).forEach(room=>{
+      const el=document.getElementById('grid-'+room);
+      if(el&&window.allPosts[room]?.length){
+        if(room==='subscribers'||room==='yt-channels') loadSubscribersWithVIP(el,window.allPosts[room]||[],window._subscribersRoleFilter||'');
+        else renderCards(window.allPosts[room],'grid-'+room,room);
+      }
+    });
+    setTimeout(()=>{
+      if(typeof window.loadHomePanel==='function') window.loadHomePanel();
+      if(typeof window.loadTicker==='function') window.loadTicker();
+    },50);
+  }
+};
+window.toggleLanguage=function(){ window.setLang(window._siteLanguage==='ar'?'en':'ar'); };
 
-window.loadSubscribersWithVIP = loadSubscribersWithVIP;
-window.filterSubscribers = filterSubscribers;
-window.renderSubscribers = renderSubscribers;
-
-// ... باقي الكود (الترجمة، setLang، الخ) يبقى كما هو ...
-
+window.deletePost=deletePost;
+window.editPost=editPost;
+window.showUserInfo=showUserInfo;
+window.playYT=function(el){ var vid=el.getAttribute('data-vid'); if(!vid) return; el.onclick=null; el.style.cursor='default'; var iframe=document.createElement('iframe'); iframe.src='https://www.youtube.com/embed/'+vid+'?autoplay=1&rel=0'; iframe.setAttribute('frameborder','0'); iframe.setAttribute('allowfullscreen',''); iframe.setAttribute('allow','accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture'); iframe.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;border:none;'; el.innerHTML=''; el.appendChild(iframe); };
+window.fixThumb=function(img,vid){ var fallbacks=['https://i.ytimg.com/vi/'+vid+'/hqdefault.jpg','https://i.ytimg.com/vi/'+vid+'/0.jpg','https://i.ytimg.com/vi/'+vid+'/default.jpg']; var idx=parseInt(img.getAttribute('data-fb')||'0'); if(idx<fallbacks.length){ img.setAttribute('data-fb',idx+1); img.src=fallbacks[idx]; } else { img.style.display='none'; } };
+initializeAuth();
+showPage('home');
+loadTicker();
+updateAboutContent();
+applyTranslations();
 </script>
 </body>
 </html>
