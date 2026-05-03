@@ -923,6 +923,41 @@ let tickerAnimationId = null;
 let authReady = false;
 let ytAutofillTimers = {};
 
+// ==================== نظام تتبع النشاط اليومي ====================
+async function logActivity(type) {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const userId = session?.user?.id || null;
+    
+    // تعريف هويّة الزائر (Fingerprint) للمجهولين
+    let visitorId = localStorage.getItem('virtux_visitor_id');
+    if (!visitorId) {
+      visitorId = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('virtux_visitor_id', visitorId);
+    }
+
+    const payload = {
+      type: type,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    if (userId) {
+      payload.user_id = userId;
+    } else {
+      payload.visitor_id = visitorId;
+    }
+
+    // محاولة الإدراج (سيفشل التكرار بسبب القيود في قاعدة البيانات)
+    await db.from('daily_traffic').insert(payload);
+  } catch (e) {
+    // نتجاهل الأخطاء بصمت (عادةً تكون بسبب تكرار المفتاح الفريد وهذا مقصود)
+    console.debug('Activity logged or skipped:', e.message);
+  }
+}
+
+// تسجيل زيارة عند التحميل
+logActivity('visit');
+
 window.doLogout = async function() {
   try { await db.auth.signOut(); } catch(e) { console.error('signOut:', e); }
   window.currentUserId = null;
@@ -2560,7 +2595,8 @@ db.auth.onAuthStateChange((event, session) => {
     updateUIAfterAuth(session || null).catch(err => console.error('auth sync error:', err));
 
     if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
-maybePromptForGoogle(session.user).catch(err=>console.error('usernamemodalerror:',err));
+      logActivity('login');
+      maybePromptForGoogle(session.user).catch(err=>console.error('usernamemodalerror:',err));
       if (hasAuthCallbackParams()) setTimeout(cleanupAuthCallbackUrl, 1500);
     }
 
