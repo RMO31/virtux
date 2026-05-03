@@ -149,15 +149,44 @@ async function loadArticle() {
       </div>
     `;
 
-    // Translation logic is handled on page load via localStorage
+    // Translation logic
+    const targetLang = lang === 'en' ? 'en' : 'ar';
     if (lang === 'en') {
       document.querySelector('.back-link').textContent = '← Back';
       document.getElementById('article-header-title').textContent = 'Read Article';
       if (extraLink) {
         document.querySelector('.extra-link-btn').innerHTML = '🔗 Post Link';
       }
-      // Note: Full text translation via API was removed due to stability issues reported by user
+    } else {
+      document.querySelector('.back-link').textContent = '← العودة';
+      document.getElementById('article-header-title').textContent = 'قراءة المقال';
+      if (extraLink) {
+        document.querySelector('.extra-link-btn').innerHTML = '🔗 رابط المنشور';
+      }
     }
+
+    // Translate Title
+    const urlTitle = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(post.title)}`;
+    fetch(urlTitle)
+    .then(r => r.json())
+    .then(j => {
+      const t = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('');
+      if (t) document.querySelector('.title').textContent = t;
+    }).catch(e => console.error('Title translation error:', e));
+    
+    // Translate Content
+    const textToTranslate = cleanContent.substring(0, 2000);
+    const urlContent = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
+    fetch(urlContent)
+    .then(r => r.json())
+    .then(j => {
+      const t = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('');
+      if (t) {
+        let e = escapeHtml(t);
+        let l = e.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank" style="color:#7de9ff;text-decoration:underline;text-shadow: 0 0 8px rgba(125,233,255,0.5);">${url}</a>`);
+        document.querySelector('.article-body').innerHTML = l.replace(/\n/g, '<br>');
+      }
+    }).catch(e => console.error('Content translation error:', e));
   } catch (err) {
     console.error(err);
     document.getElementById('article-content').innerHTML = `<div class="error">${escapeHtml(err.message || 'Unknown error')}</div>`;
