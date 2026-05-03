@@ -1564,7 +1564,7 @@ window.openUserModal = function(room) {
         <div id="live-status" style="font-size:11px;color:#aaa;margin-top:3px;min-height:15px;"></div>
         <div style="margin-top:10px;"><label>📝 Title</label><input id="title-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط"></div>
         <div style="margin-top:10px;"><label>🎮 Game / Description</label><input id="desc-${room}" style="${inputStyle}" placeholder="يُملأ تلقائياً من الرابط"></div>
-        <div style="margin-top:10px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="مباشر Now">🔴 مباشر Now</option><option value="Pre s">⏰ Pre s</option></select></div>
+        <div style="margin-top:10px;"><label>Type</label><select id="tag-${room}" style="${inputStyle}"><option value="مباشر Now">🔴 مباشر Now</option><option value="Pre live">⏰ Pre live</option></select></div>
         <input type="hidden" id="icon-${room}">
       </div>
       <div class="preview-panel">
@@ -1744,10 +1744,12 @@ async function submitUser(room) {
         }
       } catch(e) {}
     }
-    var socialUrl = null;
-    if (room === 'highlights') {
+    var contentText = null;
+    var contentEl = document.getElementById('content-' + room);
+    if (contentEl) contentText = contentEl.value.trim() || null;
+    if (room === 'highlights' && !contentText) {
       var socialUrlEl = document.getElementById('social-url-' + room);
-      socialUrl = socialUrlEl ? (socialUrlEl.value.trim() || null) : null;
+      contentText = socialUrlEl ? (socialUrlEl.value.trim() || null) : null;
     }
     var row = {
       title:       title || url || window.t('منشور', 'Post'),
@@ -1756,7 +1758,7 @@ async function submitUser(room) {
       url:         finalUrl,
       tag:         tag,
       room:        room,
-      content:     socialUrl || null,
+      content:     contentText,
       user_id:     window.currentUserId || null
     };
     var dbr = currentEditPost
@@ -1801,7 +1803,7 @@ rooms.forEach(room => {
     </div>`;
   }
   let filterBar = '';
-  if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button><button class="filter-btn" onclick="window.filterLive('مباشر Now',this)">مباشر Now</button><button class="filter-btn" onclick="window.filterLive('Pre s',this)">Pre s</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
+  if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button><button class="filter-btn" onclick="window.filterLive('مباشر Now',this)">مباشر Now</button><button class="filter-btn" onclick="window.filterLive('Pre live',this)">Pre live</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
   else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">الكل</button><button class="filter-btn" onclick="window.filterTournaments('registration',this)">تسجيل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">عالمي</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
   else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
   else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">الكل</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button><input type="text" id="subscribers-search" placeholder="ابحث عن مستخدم..." onkeyup="window.searchSubscribers(this.value)" style="background:#111;border:1px solid #444;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;margin-right:auto;width:150px;"></div>`;
@@ -2115,7 +2117,6 @@ async function loadSubscribersWithVIP(el, posts, roleFilter, searchQuery) {
             }
             if (usersInRole.length) {
               usersInRole.forEach(u => shownUsernames.add(u.username));
-              groupedHtml += `<div style="padding:8px 16px;margin:8px 0 4px;"><span style="color:${def.color};font-size:13px;font-weight:700;">${def.title}</span></div>`;
               groupedHtml += `<div class="channels-grid subscribers-grid" style="direction:ltr;">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>`;
             }
           }
@@ -2322,6 +2323,10 @@ window.openEditPost = function(postId, room) {
           <input id="desc-${room}" style="${inputStyle}" value="${escapeHtml(post.description||'')}">
         </div>
         <div style="margin-top:10px;">
+          <label>المقال / المحتوى</label>
+          <textarea id="content-${room}" style="${inputStyle}min-height:80px;">${escapeHtml(post.content||'')}</textarea>
+        </div>
+        <div style="margin-top:10px;">
           <label>URL (اختياري)</label>
           <input id="url-${room}" style="${inputStyle}" value="${escapeHtml(post.url||'')}">
         </div>
@@ -2337,8 +2342,8 @@ window.openEditPost = function(postId, room) {
       </div>
       <div class="preview-panel">
         <h4 style="color:#e01010;">معاينة</h4>
-        <img id="preview-img-${room}" class="preview-media" style="display:none;">
-        <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+        <img id="preview-img-${room}" class="preview-media" style="display:none; object-fit:contain; max-height:250px; width:100%;">
+        <video id="preview-video-${room}" class="preview-media" controls style="display:none; object-fit:contain; max-height:250px; width:100%;"></video>
         <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط جديدة</div>
         <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ إلغاء الملف</button>
       </div>
