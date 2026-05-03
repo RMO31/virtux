@@ -1803,10 +1803,10 @@ rooms.forEach(room => {
     </div>`;
   }
   let filterBar = '';
-  if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button><button class="filter-btn" onclick="window.filterLive('مباشر Now',this)">مباشر Now</button><button class="filter-btn" onclick="window.filterLive('Pre live',this)">Pre live</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
-  else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">الكل</button><button class="filter-btn" onclick="window.filterTournaments('registration',this)">تسجيل</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">عالمي</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
+  if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button><button class="filter-btn" onclick="window.filterLive('مباشر Now',this)">مباشر Now</button><button class="filter-btn" onclick="window.filterLive('Pre Live',this)">Pre Live</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
+  else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">الكل</button><button class="filter-btn" onclick="window.filterTournaments('Register',this)">Register</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">عالمي</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
   else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
-  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">الكل</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button><input type="text" id="subscribers-search" placeholder="ابحث عن مستخدم..." onkeyup="window.searchSubscribers(this.value)" style="background:#111;border:1px solid #444;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;margin-right:auto;width:150px;"></div>`;
+  else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">الكل</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button><div style="display:flex;align-items:center;margin-right:auto;gap:4px;"><input type="text" id="subscribers-search" placeholder="ابحث عن مستخدم..." onkeyup="if(event.key==='Enter')window.searchSubscribers(this.value)" style="background:#111;border:1px solid #444;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;width:150px;"><button onclick="window.searchSubscribers(document.getElementById('subscribers-search').value)" style="background:#e01010;border:none;color:#fff;border-radius:5px;padding:5px 10px;font-size:12px;font-weight:bold;cursor:pointer;">🔍 بحث</button></div></div>`;
   pageDiv.innerHTML = `<div class="page-header"><h2>${roomLabels[room]}</h2>${buttonsHtml}</div>${filterBar}<div class="posts-grid" id="grid-${room}"><div class="loading-state">Loading...</div></div>`;
   mainContainer.appendChild(pageDiv);
 });
@@ -2038,7 +2038,7 @@ function renderCards(posts, gridId, room) {
     const editBtn = (isOwnerEdit && editableRooms.includes(room))
       ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="تعديل">✏️</button>`
       : '';
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary} ${readMoreLink}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -2368,17 +2368,27 @@ window.openEditPost = function(postId, room) {
 window.filterLive = function(tagVal, btn) {
   if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
   const posts = allPosts['live'] || [];
-  const cleanTag = tagVal.replace('🔴 ', '').replace('⏰ ', '');
-  const filtered = posts.filter(p => p.tag && (p.tag === tagVal || p.tag.includes(cleanTag) || p.tag.includes('Live Now') || p.tag.includes('مباشر Now')));
+  const filtered = posts.filter(p => {
+    if (!p.tag) return false;
+    const t = p.tag.toLowerCase();
+    if (tagVal === 'مباشر Now') {
+       return t.includes('مباشر') || t.includes('live now') || t.includes('now') || p.tag === 'مباشر Now';
+    }
+    if (tagVal === 'Pre Live' || tagVal === 'Pre s' || tagVal === 'Pre live') {
+       return t.includes('pre') || t.includes('مجدول') || p.tag === 'Pre Live' || p.tag === 'Pre s';
+    }
+    const cleanTag = tagVal.replace('🔴 ', '').replace('⏰ ', '');
+    return p.tag === tagVal || p.tag.includes(cleanTag);
+  });
   renderCards(filtered, 'grid-live', 'live');
 };
-// فلترة البطولات — تسجيل يشمل كل من tag يحتوي كلمة registration أو تسجيل
+// فلترة البطولات — تسجيل يشمل كل من tag يحتوي كلمة registration أو تسجيل أو Register
 window.filterTournaments = function(type, btn) {
   if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
   const posts = allPosts['tournaments'] || [];
   let filtered;
-  if (type === 'registration') {
-    filtered = posts.filter(p => p.tag && (p.tag === 'تسجيل' || p.tag.toLowerCase().includes('registration') || p.tag.toLowerCase().includes('registr') || p.tag.includes('تسجيل')));
+  if (type === 'Register' || type === 'registration' || type === 'تسجيل') {
+    filtered = posts.filter(p => p.tag && (p.tag === 'تسجيل' || p.tag.toLowerCase().includes('registration') || p.tag.toLowerCase().includes('registr') || p.tag.includes('تسجيل') || p.tag.toLowerCase() === 'register'));
   } else {
     filtered = posts.filter(p => p.tag === type);
   }
