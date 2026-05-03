@@ -2164,15 +2164,14 @@ async function loadSubscribersWithVIP(el, posts, roleFilter, searchQuery) {
         return `<div class="channel-card subscriber-card" style="--sub-accent:${accentColor};">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(u.username || window.t('مستخدم','User'))}</div><div style="margin-top:4px;display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">${badges}</div></div></div>`;
       };
 
+      let cardsHtml = '';
       if (roleFilter) {
         // عرض فلتر محدد: أظهر فقط المستخدمين الذين لديهم هذه الرتبة
         const def = ROLE_DEFS.find(d => d.key === roleFilter);
         if (def) {
           let usersInRole = vipUsers.filter(u => normalizeRoles(u).includes(roleFilter));
           if (!searchQuery) usersInRole = usersInRole.slice(0, 30);
-          if (usersInRole.length) {
-            groupedHtml += `<div class="channels-grid subscribers-grid" style="direction:ltr;">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>`;
-          }
+          cardsHtml = usersInRole.map(u => userCard(u, def.color)).join('');
         }
       } else {
         let totalShown = 0;
@@ -2193,10 +2192,13 @@ async function loadSubscribersWithVIP(el, posts, roleFilter, searchQuery) {
             }
             if (usersInRole.length) {
               usersInRole.forEach(u => shownUsernames.add(u.username));
-              groupedHtml += `<div class="channels-grid subscribers-grid" style="direction:ltr;">${usersInRole.map(u => userCard(u, def.color)).join('')}</div>`;
+              cardsHtml += usersInRole.map(u => userCard(u, def.color)).join('');
             }
           }
         });
+      }
+      if (cardsHtml) {
+        groupedHtml = `<div class="channels-grid subscribers-grid" style="direction:ltr;">${cardsHtml}</div>`;
       }
     }
   } catch(e) { console.error(e); }
