@@ -336,23 +336,30 @@ async function doLogin() {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // Look up the email associated with this username (Case-insensitive)
+      // 1. Look up the email associated with this username (Case-insensitive)
+      const cleanId = identifier.replace(/\s+/g, '');
       const { data: p } = await db.from('profiles')
         .select('email')
-        .ilike('username', identifier)
+        .or(`username.ilike."${identifier}",username.ilike."${cleanId}"`)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
 
-      let emailToTry = p?.email || getDummyEmail(identifier);
+      const profile = p && p[0];
+      let emailToTry = profile?.email || getDummyEmail(identifier);
+      
       const { error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
 
-      if (loginError && loginError.status !== 429 && !p?.email) {
-        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
-        if (fallback !== emailToTry) {
-          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
-          loginError = retryError || null;
+      if (loginError && loginError.status !== 429) {
+        const fallbackPatterns = [
+           identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v',
+           identifier.toLowerCase() + '@virtux.v'
+        ];
+        for (const fb of fallbackPatterns) {
+           if (fb === emailToTry) continue;
+           const { error: retryError } = await db.auth.signInWithPassword({ email: fb, password });
+           if (!retryError) { loginError = null; break; }
+           else { loginError = retryError; }
         }
       }
     }
@@ -361,7 +368,7 @@ async function doLogin() {
       let msg = loginError.message || 'Login failed.';
       if (loginError.status === 429) {
         msg = 'Too many attempts. Please wait a few minutes.';
-      } else if (msg === 'Invalid login credentials' || loginError.status === 400 || msg.includes('Invalid')) {
+      } else if (msg.includes('Invalid') || loginError.status === 400) {
         msg = 'Invalid email/username or password.';
       }
       throw new Error(msg);

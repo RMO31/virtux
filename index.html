@@ -2625,27 +2625,36 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
       const { error } = await db.auth.signInWithPassword({ email: identifier, password });
       loginError = error;
     } else {
-      // 1. Look up the email associated with this username in the profiles table (Case-insensitive)
+      // 1. Look up the email associated with this username (Case-insensitive)
+      // Try exact and without spaces
+      const cleanId = identifier.replace(/\s+/g, '');
       const { data: p, error: pError } = await db.from('profiles')
-        .select('email')
-        .ilike('username', identifier)
+        .select('email, username')
+        .or(`username.ilike."${identifier}",username.ilike."${cleanId}"`)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
       
-      let emailToTry = p?.email || getDummyEmail(identifier);
+      const profile = p && p[0];
+      let emailToTry = profile?.email || getDummyEmail(identifier);
       
-      console.log('Attempting login with:', emailToTry);
+      console.log('Login Trace:', { identifier, foundEmail: profile?.email, trying: emailToTry });
+      
       const { data, error } = await db.auth.signInWithPassword({ email: emailToTry, password });
       loginError = error;
 
-      // 2. Fallback: If not found and not a rate limit
-      if (loginError && loginError.status !== 429 && !p?.email) {
-        const fallback = identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v';
-        if (fallback !== emailToTry) {
-          const { error: retryError } = await db.auth.signInWithPassword({ email: fallback, password });
-          if (!retryError) loginError = null;
-          else loginError = retryError;
+      // 2. Deep Fallback for legacy accounts
+      if (loginError && loginError.status !== 429) {
+        const fallbackPatterns = [
+           identifier.toLowerCase().replace(/\s+/g, '') + '@virtux.v',
+           identifier.toLowerCase() + '@virtux.v'
+        ];
+        
+        for (const fb of fallbackPatterns) {
+           if (fb === emailToTry) continue;
+           console.log('Trying legacy fallback:', fb);
+           const { error: retryError } = await db.auth.signInWithPassword({ email: fb, password });
+           if (!retryError) { loginError = null; break; }
+           else { loginError = retryError; }
         }
       }
     }
@@ -2653,13 +2662,9 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     if (loginError) {
       let msg = loginError.message;
       if (loginError.status === 429) {
-        msg = isEN 
-          ? '⚠️ Too many attempts. Please wait a few minutes.' 
-          : '⚠️ محاولات كثيرة. يرجى الانتظار بضع دقائق.';
-      } else if (msg === 'Invalid login credentials' || loginError.status === 400 || msg.includes('Invalid')) {
-        msg = isEN 
-          ? 'Invalid username or password.' 
-          : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+        msg = isEN ? '⚠️ Too many attempts.' : '⚠️ محاولات كثيرة جداً.';
+      } else if (msg.includes('Invalid') || loginError.status === 400) {
+        msg = isEN ? 'Invalid username or password.' : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
       }
       errEl.innerText = msg;
       errEl.style.color = '#f55';
@@ -2669,8 +2674,7 @@ document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
     closeModal();
     await updateUIAfterAuth();
   } catch(e) {
-    errEl.innerText = e.message || (isEN ? 'Login failed.' : 'فشل تسجيل الدخول.');
-    errEl.style.color = '#f55';
+    errEl.innerText = e.message || 'Error';
   } finally {
     btn.disabled = false;
     btn.textContent = isEN ? 'Login' : 'دخول';
