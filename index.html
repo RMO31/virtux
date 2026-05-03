@@ -3539,13 +3539,15 @@ window._translateTitleBg = async function(title) {
     const translated = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('') || title;
     window._titleCache[title] = translated;
     
+  } catch(e) {}
+    
     // تحديث العناوين في الصفحة إذا لا تزال إنجليزية
     if (window._siteLanguage === 'en') {
-      document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title, .ticker-item, .ticker-item a').forEach(el => {
+      document.querySelectorAll('.post-card-title, .hc-info-title, .pi-title, .ticker-item a').forEach(el => {
         if (el.textContent === title) el.textContent = translated;
       });
+      if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
     }
-  } catch(e) {}
 };
 
 window.setLang = function(lang) {
