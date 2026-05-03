@@ -2792,18 +2792,14 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
   btn.textContent = isEN ? '⏳ Creating...' : '⏳ جاري الإنشاء...';
 
   try {
-    // 1. Check if username is taken (Case-insensitive)
-    const { data: existing, error: checkError } = await db.from('profiles')
+    // 1. Double check username availability (Case-insensitive)
+    const { data: existingProf, error: checkErr } = await db.from('profiles')
       .select('username')
       .ilike('username', username)
-      .limit(1)
-      .maybeSingle();
-
-    if (existing) {
-      errEl.innerText = isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ، جرب اسماً آخر.';
-      btn.disabled = false;
-      btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
-      return;
+      .limit(1);
+    
+    if (existingProf && existingProf.length > 0) {
+      throw new Error(isEN ? 'Username already taken.' : 'اسم المستخدم مأخوذ، جرب اسماً آخر.');
     }
 
     // 2. Auth SignUp
@@ -2817,22 +2813,19 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
     });
 
     if (error) {
-      if (error.status === 429) {
-        errEl.innerText = isEN ? '⚠️ Too many attempts. Please wait.' : '⚠️ محاولات كثيرة. انتظر قليلاً.';
-      } else {
-        errEl.innerText = error.message;
-      }
-      btn.disabled = false;
-      btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
-      return;
+       console.error('Signup Error:', error);
+       if (error.message.includes('already registered')) {
+         throw new Error(isEN ? 'Email already registered. Try logging in.' : 'هذا البريد الإلكتروني مسجل بالفعل. حاول تسجيل الدخول.');
+       }
+       throw error;
     }
 
-    const uid = data?.user?.id;
-    if (!uid) throw new Error(isEN ? 'Registration failed.' : 'فشل التسجيل.');
+    const user = data?.user;
+    if (!user) throw new Error(isEN ? 'Registration failed.' : 'فشل التسجيل.');
 
-    // 3. Manual profile creation (Trigger handles it but this is for immediate consistency)
+    // 3. Ensure profile is created even if trigger is slow
     await db.from('profiles').upsert({
-      id: uid,
+      id: user.id,
       username,
       email: email,
       role: 'user',
@@ -2840,19 +2833,27 @@ document.getElementById('doSignupBtn')?.addEventListener('click', async () => {
       created_at: new Date().toISOString()
     });
 
+    // 4. Success Handling
     if (data.session) {
       await updateUIAfterAuth();
       closeModal();
     } else {
       errEl.style.color = '#4f4';
       errEl.innerText = isEN
-        ? '✅ Account created! Please log in.'
-        : '✅ تم إنشاء الحساب! سجّل دخولك الآن.';
-      document.getElementById('switchToLogin').click();
-      document.getElementById('loginIdentifier').value = username;
+        ? '✅ Success! Please check your email for confirmation link.'
+        : '✅ تم التسجيل بنجاح! يرجى مراجعة بريدك الإلكتروني لتأكيد الحساب.';
+      
+      // Auto switch to login
+      setTimeout(() => {
+        document.getElementById('switchToLogin').click();
+        document.getElementById('loginIdentifier').value = username;
+      }, 3000);
     }
   } catch(e) {
-    errEl.innerText = e.message || 'Error';
+    console.error('Signup Catch:', e);
+    errEl.innerText = '❌ ' + (e.message || 'Error');
+    errEl.style.color = '#f55';
+  } finally {
     btn.disabled = false;
     btn.textContent = isEN ? 'Sign Up' : 'تسجيل';
   }
