@@ -923,35 +923,50 @@ let tickerAnimationId = null;
 let authReady = false;
 let ytAutofillTimers = {};
 
-// ==================== نظام تتبع النشاط اليومي ====================
+// ==================== نظام تتبع النشاط التلقائي (بدون SQL) ====================
 async function logActivity(type) {
   try {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `virtux_last_${type}_${today}`;
+    
+    // منع التكرار من جهة المستخدم لتقليل الضغط
+    if (localStorage.getItem(storageKey)) return;
+
     const { data: { session } } = await db.auth.getSession();
     const userId = session?.user?.id || null;
     
-    // تعريف هويّة الزائر (Fingerprint) للمجهولين
     let visitorId = localStorage.getItem('virtux_visitor_id');
     if (!visitorId) {
-      visitorId = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      visitorId = 'v_' + Math.random().toString(36).substring(2, 15);
       localStorage.setItem('virtux_visitor_id', visitorId);
     }
 
     const payload = {
-      type: type,
-      date: new Date().toISOString().split('T')[0]
+      room: '_traffic',
+      tag: type, // 'visit' or 'login'
+      description: today,
+      title: userId || visitorId, // معرف المستخدم أو الزائر
+      user_id: userId,
+      icon: '📊'
     };
 
-    if (userId) {
-      payload.user_id = userId;
-    } else {
-      payload.visitor_id = visitorId;
-    }
+    // التحقق من وجود سجل مسبق في قاعدة البيانات لهذا اليوم (للتأكيد)
+    const { data: existing } = await db.from('posts')
+      .select('id')
+      .eq('room', '_traffic')
+      .eq('tag', type)
+      .eq('description', today)
+      .eq('title', payload.title)
+      .limit(1);
 
-    // محاولة الإدراج (سيفشل التكرار بسبب القيود في قاعدة البيانات)
-    await db.from('daily_traffic').insert(payload);
+    if (!existing || existing.length === 0) {
+      await db.from('posts').insert(payload);
+    }
+    
+    // حفظ في localStorage لمنع المحاولة مرة أخرى اليوم
+    localStorage.setItem(storageKey, 'true');
   } catch (e) {
-    // نتجاهل الأخطاء بصمت (عادةً تكون بسبب تكرار المفتاح الفريد وهذا مقصود)
-    console.debug('Activity logged or skipped:', e.message);
+    console.debug('Traffic log skipped:', e.message);
   }
 }
 
