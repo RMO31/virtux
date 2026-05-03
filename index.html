@@ -3549,20 +3549,10 @@ window._translateTitleBg = async function(title) {
     }
 };
 
-window.setLang = function(lang) {
-  if (window._siteLanguage === lang) return;
-  window._siteLanguage = lang;
-  localStorage.setItem('virtux_lang', lang);
+window.setLang = function(lang, force = false) {
   const arBtn = document.getElementById('lang-ar-btn');
   const enBtn = document.getElementById('lang-en-btn');
-  // أنيميشن على الزر النشط
-  const activeBtn = lang === 'en' ? enBtn : arBtn;
-  if (activeBtn) {
-    activeBtn.classList.remove('lang-switching');
-    void activeBtn.offsetWidth; // reset animation
-    activeBtn.classList.add('lang-switching');
-    setTimeout(() => activeBtn.classList.remove('lang-switching'), 400);
-  }
+  
   if (lang === 'ar') {
     if (arBtn) { arBtn.style.background='#e01010'; arBtn.style.color='#000'; }
     if (enBtn) { enBtn.style.background='transparent'; enBtn.style.color='#e01010'; }
@@ -3570,6 +3560,20 @@ window.setLang = function(lang) {
     if (enBtn) { enBtn.style.background='#e01010'; enBtn.style.color='#000'; }
     if (arBtn) { arBtn.style.background='transparent'; arBtn.style.color='#e01010'; }
   }
+
+  if (window._siteLanguage === lang && !force) return;
+  window._siteLanguage = lang;
+  localStorage.setItem('virtux_lang', lang);
+  
+  // أنيميشن على الزر النشط
+  const activeBtn = lang === 'en' ? enBtn : arBtn;
+  if (activeBtn && !force) {
+    activeBtn.classList.remove('lang-switching');
+    void activeBtn.offsetWidth; // reset animation
+    activeBtn.classList.add('lang-switching');
+    setTimeout(() => activeBtn.classList.remove('lang-switching'), 400);
+  }
+
   applyTranslations();
   if (typeof window.rebuildTicker === 'function') window.rebuildTicker();
   if (window.allPosts) {
@@ -4276,8 +4280,8 @@ window.fixThumb = function(img, vid) {
 initializeAuth();
 showPage('home');
 loadTicker();
-// تهيئة الترجمة عند تحميل الصفحة
-if (typeof applyTranslations === 'function') applyTranslations();
+// تهيئة الترجمة واللغة عند تحميل الصفحة
+if (typeof setLang === 'function') setLang(window._siteLanguage, true);
 </script>
 </body>
 </html>
