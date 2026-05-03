@@ -218,10 +218,13 @@
     .post-card.vip-channel-card:hover{border-color:#ff8800;box-shadow:0 0 20px rgba(255,102,0,0.4);}
     .vip-channel-badge{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#ff6600,#e01010);color:#fff;font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;z-index:10;letter-spacing:.5px;}
     .post-card:hover{border-color:#e01010}
-    .post-card-img{width:100%;height:auto;max-height:420px;min-height:100px;object-fit:contain;background:#0a0000;display:block}
+    .post-card-img{width:100%;height:auto;max-height:420px;min-height:100px;object-fit:contain;background:#0a0000;display:block;transition:all 0.3s;}
     .post-card-img.img-landscape{object-fit:cover;height:210px;max-height:210px}
     .post-card-img.img-square{object-fit:cover;height:230px;max-height:230px}
     .post-card-img.img-portrait{object-fit:contain;max-height:420px}
+    .post-card-img:hover{object-fit:contain;background:transparent;max-height:600px;z-index:99;}
+    .post-card-video iframe,.post-card-video video{transition:all 0.3s;}
+    .post-card-video:hover video,.post-card-video:hover iframe{object-fit:contain;max-height:600px;}
     .post-card-emoji{width:100%;height:120px;background:linear-gradient(135deg,#2a2a3a,#1a1a2a);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
     .post-card-video{width:100%;aspect-ratio:16/9;background:#000;display:block;overflow:hidden;position:relative;}
     .post-card-video video,.post-card-video iframe{width:100%;height:100%;border:none;display:block;}
@@ -2038,7 +2041,7 @@ function renderCards(posts, gridId, room) {
     const editBtn = (isOwnerEdit && editableRooms.includes(room))
       ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="تعديل">✏️</button>`
       : '';
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary} ${readMoreLink}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -3583,14 +3586,14 @@ function rebuildFilterBar(room) {
   if (room === 'live') {
     newBar = `<div class="filter-bar">
       <button class="filter-btn active" onclick="window.filterPosts('live','',this)">${isEN?'All':'الكل'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('live','مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('live','Pre s',this)">Pre s</button>
+      <button class="filter-btn" onclick="window.filterLive('مباشر Now',this)">${isEN?'Live Now':'مباشر Now'}</button>
+      <button class="filter-btn" onclick="window.filterLive('Pre Live',this)">Pre Live</button>
       <button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button>
     </div>`;
   } else if (room === 'tournaments') {
     newBar = `<div class="filter-bar">
       <button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">${isEN?'All':'الكل'}</button>
-      <button class="filter-btn" onclick="window.filterPosts('tournaments','تسجيل',this)">${isEN?'Register':'تسجيل'}</button>
+      <button class="filter-btn" onclick="window.filterTournaments('Register',this)">Register</button>
       <button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">${isEN?'Global':'عالمي'}</button>
       <button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button>
     </div>`;
@@ -3612,8 +3615,8 @@ function rebuildFilterBar(room) {
       <button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button>
       <button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button>
       <button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button>
-      <button class="filter-btn" onclick="window.filterSubscribers('guest',this)">Guest</button>
       <button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button>
+      <div style="display:flex;align-items:center;margin-right:auto;gap:4px;"><input type="text" id="subscribers-search" placeholder="ابحث عن مستخدم..." onkeyup="if(event.key==='Enter')window.searchSubscribers(this.value)" style="background:#111;border:1px solid #444;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;width:150px;"><button onclick="window.searchSubscribers(document.getElementById('subscribers-search').value)" style="background:#e01010;border:none;color:#fff;border-radius:5px;padding:5px 10px;font-size:12px;font-weight:bold;cursor:pointer;">🔍 بحث</button></div>
     </div>`;
   }
   if (newBar) existing.outerHTML = newBar;
