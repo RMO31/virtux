@@ -69,20 +69,22 @@ async function loadArticle() {
 
     const post = data;
     let mediaHtml = '';
-
-    if (post.url && (post.url.match(/\.(mp4|webm)$/i) || post.url.includes('/storage/v1/object/public/videos/'))) {
+    let isUploadedMediaUrl = false;
+    if (post.url && (post.url.match(/\.(mp4|webm|mov|ogg)$/i) || post.url.includes('/storage/v1/object/public/videos/'))) {
       mediaHtml = `<div style="text-align:center; margin:10px 0;"><video src="${post.url}" controls style="max-width:100%; border-radius:18px;"></video></div>`;
+      isUploadedMediaUrl = true;
+    } else if (post.url && (post.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || post.url.includes('/storage/v1/object/public/images/') || post.url.includes('/storage/v1/object/public/media/'))) {
+      mediaHtml = `<img class="article-img" src="${post.url}" alt="${escapeHtml(post.title)}">`;
+      isUploadedMediaUrl = true;
     } else if (post.url && (post.url.includes('youtube.com/watch') || post.url.includes('youtu.be'))) {
       const videoId = post.url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\?\/]+)/);
       if (videoId) {
         mediaHtml = `<div style="text-align:center; margin:10px 0;"><iframe width="100%" height="420" src="https://www.youtube.com/embed/${videoId[1]}" frameborder="0" allowfullscreen></iframe></div>`;
-      } else if (post.icon) {
-        mediaHtml = `<img class="article-img" src="${post.icon}" alt="${escapeHtml(post.title)}">`;
       }
-    } else if (post.icon && (post.icon.startsWith('data:') || post.icon.startsWith('http'))) {
+    }
+
+    if (!mediaHtml && post.icon && (post.icon.startsWith('data:') || post.icon.startsWith('http'))) {
       mediaHtml = `<img class="article-img" src="${post.icon}" alt="${escapeHtml(post.title)}">`;
-    } else {
-      mediaHtml = `<div class="article-emoji">${post.icon || '📄'}</div>`;
     }
 
     let cleanContent = post.content || post.description || 'لا يوجد محتوى.';
@@ -97,7 +99,7 @@ async function loadArticle() {
     `;
 
     let extraLink = '';
-    if (post.url && !post.url.includes('youtube.com') && !post.url.includes('youtu.be') && !post.url.match(/\.(mp4|webm|mov|ogg)$/i) && !post.url.includes('/storage/v1/object/public/videos/')) {
+    if (post.url && !isUploadedMediaUrl) {
       extraLink = `<div style="margin-top:20px; text-align:center;"><a href="${post.url}" target="_blank" style="background:#7de9ff;color:#04111d;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700;">🔗 رابط المنشور</a></div>`;
     }
 

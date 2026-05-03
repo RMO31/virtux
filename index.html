@@ -1607,6 +1607,26 @@ window.openUserModal = function(room) {
         <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
       </div>
     </div>`;
+  } else if (room === 'gaming-news' || room === 'youtube-news') {
+    formHtml = `<div class="form-with-preview">
+      <div>
+        <div><label>عنوان الخبر</label><input id="title-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>وصف قصير</label><input id="desc-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>رابط خارجي (اختياري)</label><input id="url-${room}" style="${inputStyle}" placeholder="https://..."></div>
+        <div style="margin-top:12px;"><label>المقال / محتوى الخبر</label><textarea id="content-${room}" style="${inputStyle} height:100px; resize:vertical;"></textarea></div>
+        <div style="margin-top:12px;"><label>تصنيف / Tag</label><input id="tag-${room}" style="${inputStyle}"></div>
+        ${fileInputHtml('video/*', 'رفع فيديو', 'media')}
+        ${fileInputHtml('image/*', 'رفع صورة أو غلاف للخبر (اختياري)', 'thumb')}
+        <input type="hidden" id="icon-${room}">
+      </div>
+      <div class="preview-panel">
+        <h4 style="color:#e01010;">معاينة</h4>
+        <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+        <img id="preview-img-${room}" class="preview-media" style="display:none; border: 1px solid #e01010;">
+        <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط</div>
+        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ حذف</button>
+      </div>
+    </div>`;
   } else {
     // generic
     formHtml = `<div class="form-with-preview">
@@ -1615,6 +1635,7 @@ window.openUserModal = function(room) {
         <div style="margin-top:12px;"><label>Description</label><input id="desc-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>URL (optional)</label><input id="url-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Tag</label><input id="tag-${room}" style="${inputStyle}"></div>
+        <div style="margin-top:12px;"><label>Content / Article</label><textarea id="content-${room}" style="${inputStyle} height:80px;"></textarea></div>
         ${fileInputHtml('video/*', 'رفع فيديو', 'media')}
         ${fileInputHtml('image/*', 'رفع صورة مصغرة (اختياري)', 'thumb')}
         <input type="hidden" id="icon-${room}">
