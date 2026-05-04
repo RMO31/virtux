@@ -851,9 +851,9 @@ async function deletePaymentReq(reqId) {
 async function loadContentPage(room) {
   let container = document.getElementById(`content-${room}`);
   if (!container) return;
-  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+  container.innerHTML = '<div class="loading">جاري التحميل (أحدث 50)...</div>';
   try {
-    let { data: posts, error } = await supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+    let { data: posts, error } = await supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false }).limit(50);
     if (error) throw error;
     let addForm = getAddForm(room);
     let bulkActionsHtml = '';
@@ -867,7 +867,10 @@ async function loadContentPage(room) {
               <button class="btn-del" style="background:#ff3333; color:white; padding:6px 14px;" onclick="deleteSelectedPosts('${room}')">🗑️ حذف المحدد</button>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
-              <input type="text" id="channelFilter-${room}" placeholder="اسم اليوتيوبر / القناة" style="padding:6px 12px; border-radius:6px; border:1px solid #444; background:rgba(0,0,0,0.3); color:white; font-size:12px; width:200px;">
+              <input type="text" id="postSearch-${room}" placeholder="🔍 ابحث في هذه الغرفة..." style="padding:8px 14px; border-radius:10px; border:1px solid #ff9800; background:rgba(0,0,0,0.5); color:white; font-size:13px; width:250px;" oninput="searchPostsInRoom('${room}', this.value)">
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="channelFilter-${room}" placeholder="اسم اليوتيوبر للـ حذف" style="padding:6px 12px; border-radius:6px; border:1px solid #444; background:rgba(0,0,0,0.3); color:white; font-size:12px; width:160px;">
               <button class="btn-del" style="padding:6px 14px;" onclick="deleteByChannelName('${room}')">🔥 حذف محتوى القناة</button>
             </div>
           </div>
@@ -961,6 +964,75 @@ async function deleteByChannelName(room) {
     loadContentPage(room);
     loadDashboard();
   } catch(e) { alert('❌ فشل الحذف: ' + e.message); }
+}
+
+let _searchTimeout = null;
+async function searchPostsInRoom(room, query) {
+  if (_searchTimeout) clearTimeout(_searchTimeout);
+  _searchTimeout = setTimeout(async () => {
+    let container = document.getElementById(`content-${room}`);
+    let postListContainer = container.querySelector('.posts-list');
+    if (!postListContainer) return;
+    
+    try {
+      let queryBuilder = supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+      if (query.trim()) {
+        queryBuilder = queryBuilder.ilike('title', `%${query.trim()}%`);
+      } else {
+        queryBuilder = queryBuilder.limit(50);
+      }
+      
+      let { data: posts, error } = await queryBuilder;
+      if (error) throw error;
+      
+      if (!posts || !posts.length) {
+        postListContainer.innerHTML = '<div class="empty">لا توجد نتائج بحث.</div>';
+        return;
+      }
+      
+      postListContainer.innerHTML = posts.map(p => {
+        if (room === 'yt-channels') {
+          let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
+          return `<div class="channel-card-admin">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer;">
+            ${avatar}
+            <div class="channel-info-admin">
+              <div class="channel-name-admin">${escapeHtml(p.title)}</div>
+              <div class="channel-sub-admin">${escapeHtml(p.description || '')}</div>
+              <a href="${p.url}" target="_blank" class="channel-link-admin">زيارة القناة</a>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️</button>
+            </div>
+          </div>`;
+        } else {
+          let media = '';
+          const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
+          const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+          const isImage = p.url && p.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i);
+          if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
+          else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
+          else if (isImage) media = `<img src="${p.url}" style="width:80px; height:60px; border-radius:6px; object-fit:cover;">`;
+          else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
+          else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
+          return `<div class="pi" id="pi-${p.id}">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer; margin-right:5px;">
+            <div style="width:80px; flex-shrink:0;">${media}</div>
+            <div class="pi-info">
+              <div class="pi-title">${escapeHtml(p.title)}</div>
+              <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
+              <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️ حذف</button>
+            </div>
+          </div>`;
+        }
+      }).join('');
+    } catch(e) { console.error('Search error:', e); }
+  }, 400);
 }
 
 // ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
@@ -1266,9 +1338,10 @@ async function openEditModal(id) {
     alert('فشل تحميل بيانات المنشور');
     return;
   }
-  currentEditPost = data;
-  let modalBody = document.getElementById('editModalBody');
-  let tagOptions = getTagOptionsForEdit(data.room, data.tag);
+  let currentMediaUrl = '';
+  if (data.icon && (data.icon.startsWith('http') || data.icon.startsWith('data:'))) currentMediaUrl = data.icon;
+  else if (data.url && data.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i)) currentMediaUrl = data.url;
+
   modalBody.innerHTML = `
     <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
     <div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
@@ -1276,7 +1349,13 @@ async function openEditModal(id) {
     <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div>
     <div class="fg"><select id="edit-tag">${tagOptions}</select></div>
     <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div>
-    <div class="fg"><div class="img-upload"><input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()"><label for="edit-imgfile">📁 رفع صورة جديدة</label><img id="edit-imgpreview" class="img-preview" src=""></div></div>
+    <div class="fg">
+      <div class="img-upload">
+        <input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()">
+        <label for="edit-imgfile">📁 رفع صورة جديدة</label>
+        <img id="edit-imgpreview" class="img-preview" src="${currentMediaUrl}" style="${currentMediaUrl ? 'display:block;' : 'display:none;'} max-width:100%; height:80px; margin-top:10px; border-radius:8px; object-fit:cover;">
+      </div>
+    </div>
     <div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div>
     <button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button>
     <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${currentEditPost.id}, '${currentEditPost.room}'); closeEditModal();">🗑️ حذف المنشور</button>
@@ -1637,7 +1716,7 @@ async function addUserSubscriber() { let userId = document.getElementById('sub-u
 
 // ربط الدوال
 window.startAutoCheck = startAutoCheck; window.autoCheckAllChannels = autoCheckAllChannels;
-window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList; window.approvePayment = approvePayment; window.rejectPayment = rejectPayment;
+window.login = login; window.logout = logout; window.showPage = showPage; window.addPost = addPost; window.deletePost = deletePost; window.openEditModal = openEditModal; window.closeEditModal = closeEditModal; window.saveEditPost = saveEditPost; window.handleImageUpload = handleImageUpload; window.uploadVideoToBucket = uploadVideoToBucket; window.addYouTubeChannel = addYouTubeChannel; window.addYouTubeVideo = addYouTubeVideo; window.searchUsers = searchUsers; window.selectUser = selectUser; window.addUserSubscriber = addUserSubscriber; window.loadSubscribersAdmin = loadSubscribersAdmin; window.setRole = setRole; window.toggleRole = toggleRole; window.deleteUser = deleteUser; window.clearMedia = clearMedia; window.refreshDashboard = refreshDashboard; window.searchUsersForRole = searchUsersForRole; window.searchPostsInRoom = searchPostsInRoom; window.addNews = addNews; window.deleteNews = deleteNews; window.editNews = editNews; window.loadNewsList = loadNewsList; window.approvePayment = approvePayment; window.rejectPayment = rejectPayment;
 </script>
 
 <script>
