@@ -1380,9 +1380,12 @@ function getAddForm(room) {
           </div>
           <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
           ${room==='tournaments' ? `
-          <div style="margin-bottom:12px; padding:10px; background:rgba(255,210,0,0.05); border:1px solid rgba(255,210,0,0.1); border-radius:10px;">
+          <div style="margin-bottom:12px; padding:10px; background:rgba(255,210,0,0.05); border:1px solid rgba(255,210,0,0.1); border-radius:10px; display:flex; gap:15px; flex-wrap:wrap;">
             <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#ffd2b8;">
-              <input type="checkbox" id="reg-enabled-${room}" style="width:18px; height:18px;"> 🚀 تفعيل التسجيل المباشر في هذه البطولة
+              <input type="checkbox" id="reg-enabled-${room}" style="width:18px; height:18px;"> 🚀 تفعيل التسجيل المباشر
+            </label>
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#00f5ff;">
+              <input type="checkbox" id="dl-enabled-${room}" style="width:18px; height:18px;"> ⬇️ تفعيل زر التحميل
             </label>
           </div>` : ''}
           <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)">${room==='live' ? '' : `<textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea>`}</div>
@@ -1541,10 +1544,12 @@ async function addPost(room) {
   let icon = getSafeValue(iconEl);
   let tag = tagEl ? tagEl.value : room;
 
-  // دعم التسجيل المباشر للبطولات
+  // دعم البطولات
   if (room === 'tournaments') {
     const regCb = document.getElementById(`reg-enabled-${room}`);
     if (regCb && regCb.checked) tag += ':reg';
+    const dlCb = document.getElementById(`dl-enabled-${room}`);
+    if (dlCb && dlCb.checked) tag += ':dl';
   }
   let imgData = iconEl?._imgData || '';
   if (imgData) icon = imgData;
@@ -1819,9 +1824,12 @@ async function openEditModal(id) {
     <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, data.tag.split(':')[0])}</select></div>
     
     ${data.room === 'tournaments' ? `
-    <div style="margin-bottom:12px; padding:10px; background:rgba(255,210,0,0.05); border:1px solid rgba(255,210,0,0.1); border-radius:10px;">
+    <div style="margin-bottom:12px; padding:10px; background:rgba(255,210,0,0.05); border:1px solid rgba(255,210,0,0.1); border-radius:10px; display:flex; gap:15px; flex-wrap:wrap;">
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#ffd2b8;">
         <input type="checkbox" id="edit-reg-enabled" ${data.tag.includes(':reg') ? 'checked' : ''} style="width:18px; height:18px;"> 🚀 تفعيل التسجيل المباشر
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#00f5ff;">
+        <input type="checkbox" id="edit-dl-enabled" ${data.tag.includes(':dl') ? 'checked' : ''} style="width:18px; height:18px;"> ⬇️ تفعيل زر التحميل
       </label>
     </div>` : ''}
 
@@ -1899,10 +1907,12 @@ async function saveEditPost() {
     content:     getV('edit-content')
   };
 
-  // دعم التسجيل المباشر للبطولات في التعديل
+  // دعم البطولات في التعديل
   if (currentEditPost.room === 'tournaments') {
     const regCb = document.getElementById('edit-reg-enabled');
     if (regCb && regCb.checked) updated.tag += ':reg';
+    const dlCb = document.getElementById('edit-dl-enabled');
+    if (dlCb && dlCb.checked) updated.tag += ':dl';
   }
   let imgData = document.getElementById('edit-icon')._imgData;
   if (imgData) updated.icon = imgData;

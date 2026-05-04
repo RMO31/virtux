@@ -2330,7 +2330,9 @@ function renderCards(posts, gridId, room) {
       const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
       const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
       const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
-      if (isVideoFile || isImageFile) {
+      const forceDownload = p.tag && p.tag.includes(':dl');
+      
+      if (forceDownload || isVideoFile || isImageFile) {
         actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل","Download")}</a>`;
       } else if (!isYouTubeUrl) {
         actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط","Link")}</a>`;
@@ -2372,7 +2374,13 @@ function renderCards(posts, gridId, room) {
 
     const isVipCh = !!(p.tag && p.tag.startsWith('auto:'));
     const cardCls = isVipCh ? 'post-card vip-ch' : 'post-card';
-    const shownTag = (p.tag && p.tag.startsWith('auto:')) ? '🔥 YT VIP' : (p.tag || '');
+    
+    // تنظيف التاج من العلامات التقنية للعرض
+    let shownTag = p.tag || '';
+    if (shownTag.startsWith('auto:')) shownTag = '🔥 YT VIP';
+    else {
+      shownTag = shownTag.split(':')[0]; // إزالة :reg و :dl من العرض
+    }
 
     let dateLabel = '';
     if (p.created_at) {
