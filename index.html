@@ -390,6 +390,8 @@
     .channel-link{font-size:11px;color:#e01010;text-decoration:none;border:1px solid #e01010;border-radius:6px;padding:5px 14px;display:inline-block;margin-top:6px;width:100%;box-sizing:border-box;font-weight:600;}
     .channel-link:hover{background:#e01010;color:#000;border-color:#e01010}
     .empty-state{text-align:center;color:#555;padding:40px;font-size:14px}
+    .post-card.gold-frame { border: 2px solid gold !important; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important; }
+    .post-card.gold-frame .post-card-title { color: gold !important; }
     .loading-state{text-align:center;color:#aaa;padding:30px;font-size:13px}
     .contact-page{padding:20px}
     .contact-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}
@@ -1764,9 +1766,8 @@ window.openEditPost = async function(id, room) {
 };
 
 window.openUserModal = function(room, postToEdit = null) {
-  // إذا لم يكن المستخدم مسجلاً، نفتح نافذة تسجيل الدخول أولاً
-  if (!window.currentUserId) {
-    openModal();
+  if (room === 'yt-videos' && !userHasAnyRole(['youtuber', 'youtuber_vip', 'admin', 'moderator'])) {
+    alert(window.t('عذراً، النشر في غرفة الفيديوهات مخصص لليوتيوبرز فقط.', 'Sorry, posting in the Videos room is for Youtubers only.'));
     return;
   }
   currentEditPost = postToEdit;
@@ -2523,27 +2524,42 @@ function renderYTVideosPaged(posts, page) {
   const tempEl = document.createElement('div');
   tempEl.innerHTML = pageData.map(p => {
     const room = 'yt-videos';
-    const isVipCh = !!(p.tag && p.tag.startsWith('auto:'));
-    const cardCls = isVipCh ? 'post-card vip-ch' : 'post-card';
-    const shownTag = (p.tag && p.tag.startsWith('auto:')) ? '🔥 YT VIP' : (p.tag || '');
+    const isAutoVip = !!(p.tag && p.tag.startsWith('auto:'));
+    const isManualVip = p.tag === 'VIP';
+    const cardCls = isManualVip ? 'post-card gold-frame' : (isAutoVip ? 'post-card vip-ch' : 'post-card');
+    
+    // إذا كان منشورا يدويا VIP (اطار ذهبي)، لا نظهر التاج تحته حسب طلب المستخدم
+    const shownTag = isManualVip ? '' : (isAutoVip ? 'Video' : (p.tag || ''));
+    
+    const canViewVIP = window.userHasAnyRole(['vip','member','admin','moderator','youtuber_vip']);
+    const isRestricted = isManualVip && !canViewVIP;
+    
     const videoId = extractYouTubeId(p.url);
     let media = '';
-    if (videoId) {
-      media = '<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;" data-vid="' + videoId + '" onclick="window.playYT(this)">'
+    if (isRestricted) {
+      media = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1a0a2e,#0a0000);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+        <span style="font-size:42px;">👑</span>
+        <span style="color:gold;font-size:13px;font-weight:700;">فيديو VIP</span>
+        <span style="color:#888;font-size:11px;">خاص بأعضاء VIP & Member</span>
+      </div>`;
+    } else if (videoId) {
+      media = '<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;" data-vid="' + videoId + '" data-postid="' + p.id + '" onclick="window.playYT(this)">'
         + '<img src="https://i.ytimg.com/vi/' + videoId + '/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="window.fixThumb(this,this.closest(\'[data-vid]\').dataset.vid)">'
         + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:48px;height:48px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:11px solid transparent;border-bottom:11px solid transparent;border-left:18px solid #fff;margin-left:4px;"></div></div></div>'
         + '</div>';
     } else if (p.url) {
       media = `<div class="post-card-emoji">🎬</div>`;
     }
-    const isAdmin = window.userHasAnyRole(['admin','moderator']);
+    
+    // تعديل الصلاحيات: ممنوع تعديل منشورات الأدمن (null) أو منشورات الآخرين
     const isOwner = window.currentUserId && p.user_id === window.currentUserId;
-    const canEdit = isOwner || isAdmin;
+    const canEdit = isOwner && p.user_id !== null;
+    
     const editBtn = canEdit ? `<button onclick="window.openEditPost(${p.id},'yt-videos')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-right:4px;" title="${window.t('تعديل','Edit')}">✏️</button>` : '';
     const deleteBtn = isOwner ? `<button onclick="window.deletePost(${p.id},'yt-videos')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" title="delete">🗑️</button>` : '';
     const title = escapeHtml(window.tTitle(p.title) || window.t('فيديو','Video'));
-    const desc = (p.description||'').substring(0,100);
-    return `<div class="${cardCls}">${media}<div class="post-card-body"><div class="post-card-title">${title}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span><div style="display:flex;gap:6px;">${editBtn}${deleteBtn}</div></div></div></div>`;
+    const tagHtml = shownTag ? `<span class="post-tag">${escapeHtml(shownTag)}</span>` : '<span></span>';
+    return `<div class="${cardCls}">${media}<div class="post-card-body"><div class="post-card-title">${title}</div><div class="post-card-footer">${tagHtml}<div style="display:flex;gap:6px;">${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 
   // شريط التنقل بين الصفحات
@@ -2757,6 +2773,12 @@ async function updateUIAfterAuth(sessionOverride) {
       window.currentUserId = session.user.id;
       window.currentUsername= profile?.username || displayName;
       setMemberingVisibility(true);
+
+      // نشر فيديو: youtuber / admin فقط
+      const canVideoPost = userHasAnyRole(['admin','moderator','youtuber','youtuber_vip']);
+      document.querySelectorAll('.btn-user-post[data-room="yt-videos"]').forEach(btn => {
+        btn.style.display = canVideoPost ? 'inline-flex' : 'none';
+      });
 
       // نشر بث: admin و youtuber_vip فقط
       const canLivePost = userHasAnyRole(['admin','youtuber_vip']);
@@ -4486,7 +4508,21 @@ setTimeout(autoFetchYouTubeChannels, 5000); // بدء الفتش بعد 5 ثوا
 // ===== تشغيل يوتيوب =====
 window.playYT = function(el) {
   var vid = el.getAttribute('data-vid');
+  var postId = el.getAttribute('data-postid');
   if (!vid) return;
+
+  // التحقق من صلاحية مشاهدة محتوى VIP
+  if (postId) {
+    const post = (allPosts['yt-videos'] || []).find(p => p.id == postId);
+    if (post && post.tag === 'VIP') {
+      const canView = userHasAnyRole(['vip', 'member', 'admin', 'moderator', 'youtuber_vip']);
+      if (!canView) {
+        alert(window.t('عذراً، هذا الفيديو مخصص لأعضاء VIP و Member فقط.', 'Sorry, this video is for VIP and Member only.'));
+        return;
+      }
+    }
+  }
+
   el.onclick = null;
   el.style.cursor = 'default';
   var iframe = document.createElement('iframe');
