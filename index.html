@@ -1737,13 +1737,26 @@ function handleThumbFile(room, file) {
   reader.readAsDataURL(file);
 }
 
-window.openUserModal = function(room) {
+window.openEditPost = async function(id, room) {
+  try {
+    const { data, error } = await db.from('posts').select('*').eq('id', id).single();
+    if (error) throw error;
+    if (data) {
+      currentEditPost = data;
+      window.openUserModal(room, data);
+    }
+  } catch(e) {
+    alert(window.t('خطأ في جلب بيانات المنشور', 'Error fetching post data') + ': ' + e.message);
+  }
+};
+
+window.openUserModal = function(room, postToEdit = null) {
   // إذا لم يكن المستخدم مسجلاً، نفتح نافذة تسجيل الدخول أولاً
   if (!window.currentUserId) {
     openModal();
     return;
   }
-  currentEditPost = null;
+  currentEditPost = postToEdit;
   currentEditRoom = room;
   currentRoomFor = room;
   currentMediaFile = null;
@@ -1853,6 +1866,38 @@ window.openUserModal = function(room) {
     </div>`;
   }
   document.getElementById('upm-form-body').innerHTML = formHtml;
+  
+  // تعبئة البيانات في حال التعديل
+  if (currentEditPost) {
+    const p = currentEditPost;
+    if (document.getElementById(`title-${room}`)) document.getElementById(`title-${room}`).value = p.title || '';
+    if (document.getElementById(`desc-${room}`))  document.getElementById(`desc-${room}`).value  = p.description || '';
+    if (document.getElementById(`url-${room}`))   document.getElementById(`url-${room}`).value   = p.url || '';
+    if (document.getElementById(`tag-${room}`))   document.getElementById(`tag-${room}`).value   = p.tag || '';
+    if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = p.content || '';
+    if (document.getElementById(`icon-${room}`))  document.getElementById(`icon-${room}`).value  = p.icon || '';
+    
+    // معاينة الوسائط الموجودة
+    const previewImg = document.getElementById(`preview-img-${room}`);
+    const previewVideo = document.getElementById(`preview-video-${room}`);
+    const previewText = document.getElementById(`preview-text-${room}`);
+    
+    if (p.url) {
+      const isImg = /\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url);
+      const isVid = /\.(mp4|webm|ogg|mov)/i.test(p.url) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/');
+      
+      if (isImg && previewImg) {
+        previewImg.src = p.url;
+        previewImg.style.display = 'block';
+        if (previewText) previewText.style.display = 'none';
+      } else if (isVid && previewVideo) {
+        previewVideo.src = p.url;
+        previewVideo.style.display = 'block';
+        if (previewText) previewText.style.display = 'none';
+      }
+    }
+  }
+
   document.getElementById('upm-ok').style.display = 'none';
   document.getElementById('upm-err').style.display = 'none';
 
@@ -1888,6 +1933,7 @@ window.openUserModal = function(room) {
     }
   }
 
+  document.getElementById('upm-submit').textContent = currentEditPost ? window.t('تحديث','Update') : window.t('نشر','Post');
   document.getElementById('upm-submit').onclick = () => submitUser(room);
   document.getElementById('upm-modal').classList.add('active');
 };
@@ -1929,7 +1975,7 @@ async function submitUser(room) {
   function done(ok, msg) {
     if (btn) { btn.disabled = false;  btn.textContent = '➕ Publish'; }
     if (ok) {
-      if (okEl) { okEl.textContent = '✅ تم النشر!'; okEl.style.display = 'block'; }
+      if (okEl) { okEl.textContent = currentEditPost ? '✅ تم التحديث!' : '✅ تم النشر!'; okEl.style.display = 'block'; }
       currentEditPost = null;
       loadPage(room);
       setTimeout(function() {
@@ -2258,12 +2304,14 @@ function renderCards(posts, gridId, room) {
       const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
       socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد','Watch')}</a>`;
     }
-    // زر التعديل — يظهر فقط لصاحب المنشور في غرف الأخبار
-    const editableRooms = ['gaming-news','youtube-news'];
-    const currentUidE = window.currentUserId;
-    const isOwnerEdit = currentUidE && p.user_id && p.user_id === currentUidE;
-    const editBtn = (isOwnerEdit && editableRooms.includes(room))
-      ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="تعديل">✏️</button>`
+    // زر التعديل — يظهر لصاحب المنشور أو الادمن
+    const editableRooms = ['gaming-news','youtube-news','live','yt-videos','highlights','tournaments'];
+    const isAdmin = window.userHasAnyRole(['admin','moderator']);
+    const isOwnerEdit = window.currentUserId && p.user_id && p.user_id === window.currentUserId;
+    const canEdit = isOwnerEdit || isAdmin;
+    
+    const editBtn = (canEdit && editableRooms.includes(room))
+      ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="${window.t('تعديل','Edit')}">✏️</button>`
       : '';
     return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div><div class="post-card-summary">${summary}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
@@ -2419,11 +2467,14 @@ function renderYTVideosPaged(posts, page) {
     } else if (p.url) {
       media = `<div class="post-card-emoji">🎬</div>`;
     }
+    const isAdmin = window.userHasAnyRole(['admin','moderator']);
     const isOwner = window.currentUserId && p.user_id === window.currentUserId;
+    const canEdit = isOwner || isAdmin;
+    const editBtn = canEdit ? `<button onclick="window.openEditPost(${p.id},'yt-videos')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-right:4px;" title="${window.t('تعديل','Edit')}">✏️</button>` : '';
     const deleteBtn = isOwner ? `<button onclick="window.deletePost(${p.id},'yt-videos')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" title="delete">🗑️</button>` : '';
     const title = escapeHtml(window.tTitle(p.title) || window.t('فيديو','Video'));
     const desc = (p.description||'').substring(0,100);
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body"><div class="post-card-title">${title}</div><div class="post-card-summary">${desc}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span><div style="display:flex;gap:6px;">${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body"><div class="post-card-title">${title}</div><div class="post-card-summary">${desc}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span><div style="display:flex;gap:6px;">${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 
   // شريط التنقل بين الصفحات
