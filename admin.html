@@ -277,6 +277,19 @@ let currentEditPost = null;
 let trashPage = 1;
 const trashPageSize = 30;
 
+// تعريف الرتب بشكل موحد لكامل الملف
+const ROLE_META = {
+  vip:          { label:'👑 VIP',          color:'#d4e800', bg:'#2a2000' },
+  member:       { label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e' },
+  moderator:    { label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f' },
+  youtuber:     { label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f' },
+  youtuber_vip: { label:'🔥 YT VIP',       color:'#ff6b35', bg:'#3d1a0f' },
+  guest:        { label:'🛡️ Guest',        color:'#aaa',    bg:'#222' },
+  user:         { label:'👤 User',           color:'#aabbcc', bg:'#0f1e55' },
+  punished:     { label:'🚫 معاقب',         color:'#ff3333', bg:'#220000' }
+};
+window._ROLE_META = ROLE_META;
+
 // ==================== نظام تتبع النشاط التلقائي (بدون SQL) ====================
 async function logActivity(type) {
   try {
@@ -404,8 +417,8 @@ async function loadDashboard() {
       if (Array.isArray(u.roles)) r = u.roles;
       else if (u.role) r = [u.role];
       if (!r || r.length === 0) r = ['user'];
-      // توحيد الرتب (حروف صغيرة وحذف التكرار)
-      return [...new Set(r.filter(x => x).map(x => x.toLowerCase().trim()))];
+      // توحيد الرتب (حروف صغيرة، حذف المسافات، وحذف التكرار)
+      return [...new Set(r.filter(x => x && typeof x === 'string').map(x => x.toLowerCase().trim()))];
     }
     function hasRole(u, r) { return getRoles(u).includes(r); }
 
@@ -575,6 +588,7 @@ async function loadDashboard() {
       <p style="font-size:12px;color:#aaa;margin-bottom:12px;">استخدم هذه الأدوات لتنظيف البيانات المتبقية أو إصلاح الأخطاء في قاعدة البيانات.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn-del" onclick="cleanupOrphanedVideos()" style="background:rgba(255,170,0,0.1); border-color:#ffaa00; color:#ffaa00; flex:1; min-width:200px;">🧹 تنظيف الفيديوهات اليتيمة (للقنوات المحذوفة)</button>
+        <button class="btn-pub" onclick="autoCheckAllChannels(true)" style="background:rgba(0,255,136,0.1); border-color:#00ff88; color:#00ff88; flex:1; min-width:200px;">🚀 فحص قسري للقنوات الآن (1 كريدي لكل قناة)</button>
         <button class="btn-edit" onclick="refreshDashboard()" style="flex:1;">🔄 تحديث الإحصائيات</button>
       </div>
     </div>`;
@@ -596,16 +610,7 @@ async function loadDashboard() {
       <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
     </div>`;
 
-    const ROLE_META = {
-      vip:          { label:'👑 VIP',          color:'#d4e800', bg:'#2a2000' },
-      member:       { label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e' },
-      moderator:    { label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f' },
-      youtuber:     { label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f' },
-      youtuber_vip: { label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f' },
-      guest:        { label:'🛡️ Guest',        color:'#aaa',    bg:'#222' },
-      user:         { label:'👤 User',           color:'#aabbcc', bg:'#0f1e55' },
-    };
-    window._ROLE_META = ROLE_META;
+    // تم نقل ROLE_META للأعلى كمتغير عالمي لضمان التناسق
 
     let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
       const uid = u.id;
@@ -704,15 +709,7 @@ async function searchUsersForRole(query) {
       .or(`username.ilike.%${query}%,email.ilike.%${query}%`).limit(10);
     if (error) throw error;
     if (!users || !users.length) { resultsDiv.innerHTML = '<div class="empty" style="padding:10px;">لا يوجد مستخدم مطابق</div>'; return; }
-    const RM = window._ROLE_META || { 
-      vip:          {label:'👑 VIP',          color:'#d4e800', bg:'#2a2000'}, 
-      member:       {label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e'}, 
-      moderator:    {label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f'}, 
-      youtuber:     {label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f'}, 
-      youtuber_vip: {label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f'}, 
-      guest:        {label:'🛡️ Guest',        color:'#aaa',    bg:'#222'},
-      user:         {label:'👤 User',           color:'#aabbcc', bg:'#0f1e55'} 
-    };
+    // تم استخدام ROLE_META العالمي
     resultsDiv.innerHTML = users.map(u => {
       const id = u.id;
       const uRoles = Array.isArray(u.roles) && u.roles.length ? u.roles : (u.role ? [u.role] : ['user']);
@@ -737,48 +734,61 @@ async function setRole(userId, role) {
 }
 async function toggleRole(userId, role, add, expiryDate = null) {
   try {
-    console.log(`toggleRole called: userId=${userId}, role=${role}, add=${add}`);
-    // Fetch current roles
+    console.log(`toggleRole: userId=${userId}, role=${role}, add=${add}`);
     const { data: prof, error: fetchErr } = await supabaseClient
       .from('profiles').select('role,roles').eq('id', userId).single();
-    if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم: ' + fetchErr.message); console.error('Fetch error:', fetchErr); return false; }
+    if (fetchErr) { alert('❌ فشل جلب بيانات المستخدم'); return false; }
 
-    console.log('Current profile data:', prof);
-
-    // تنظيف شامل للرتب (Case-Insensitive)
+    let currentRoles = [];
+    if (Array.isArray(prof.roles)) currentRoles = prof.roles;
+    else if (prof.role) currentRoles = [prof.role];
+    
+    // تنظيف شامل وتوحيد (Case-Insensitive)
     currentRoles = currentRoles.filter(r => r && typeof r === 'string').map(r => r.toLowerCase().trim());
     currentRoles = [...new Set(currentRoles)];
 
-    if (add) {
-      if (!currentRoles.includes(role.toLowerCase())) currentRoles.push(role.toLowerCase());
+    const target = role.toLowerCase().trim();
+
+    if (target === 'punished') {
+      if (add) {
+        // إذا تمت معاقبته: نسحب منه كل الرتب ونعطيه "معاقب" فقط
+        currentRoles = ['punished'];
+      } else {
+        // إذا أزلنا العقوبة: نرجعه لرتبة "user"
+        currentRoles = ['user'];
+      }
     } else {
-      currentRoles = currentRoles.filter(r => r !== role.toLowerCase());
+      if (add) {
+        // عند إضافة رتبة: نتأكد من إزالة "معاقب" أولاً
+        currentRoles = currentRoles.filter(r => r !== 'punished');
+        if (!currentRoles.includes(target)) currentRoles.push(target);
+      } else {
+        // عند حذف رتبة:
+        // لا نسمح بحذف رتبة "user" إلا إذا كان سيصبح "معاقب" (وهذا يتم في الشرط أعلاه)
+        if (target === 'user') {
+          alert('⚠️ لا يمكن حذف رتبة User الأساسية إلا في حالة العقاب (Punish).');
+          return false;
+        }
+        currentRoles = currentRoles.filter(r => r !== target);
+      }
     }
 
-    // نضمن وجود رتبة واحدة على الأقل (user) فقط إذا كانت القائمة فارغة تماماً
+    // تأمين نهائي: إذا فرغت القائمة لأي سبب، نضع رتبة user
     if (currentRoles.length === 0) currentRoles = ['user'];
     currentRoles = [...new Set(currentRoles)];
 
-    const primaryRole = currentRoles[0];
-    console.log('New roles:', currentRoles, 'Primary:', primaryRole);
-
+    const primary = currentRoles[0];
     const { data: updateData, error } = await supabaseClient.from('profiles')
-      .update({ roles: currentRoles, role: primaryRole, expiry_date: add ? expiryDate : null })
+      .update({ roles: currentRoles, role: primary, expiry_date: add ? (expiryDate || null) : null })
       .eq('id', userId)
       .select();
-    if (error) { alert('❌ فشل تغيير الرول: ' + error.message); console.error('Update error:', error); return false; }
+    
+    if (error) { alert('❌ فشل التحديث: ' + error.message); return false; }
+    if (!updateData?.length) { alert('⚠️ لم يتأثر أي صف. تأكد من الصلاحيات.'); return false; }
 
-    console.log('Update result:', updateData);
-
-    if (!updateData || updateData.length === 0) {
-      alert('⚠️ لم يتم تحديث أي صف. تأكد أن RLS policy تسمح بالتحديث في جدول profiles.');
-      console.warn('No rows updated. Check RLS policies on profiles table.');
-      return false;
-    }
-
-    console.log('✅ Role updated successfully');
+    console.log('✅ تم تحديث الرتب:', currentRoles);
     return true;
-  } catch(e) { alert('❌ خطأ: ' + e.message); console.error('toggleRole error:', e); return false; }
+  } catch(e) { alert('❌ خطأ: ' + e.message); return false; }
 }
 async function deleteUser(userId) {
   if (!confirm('حذف المستخدم نهائياً؟ لا يمكن التراجع')) return;
@@ -1896,42 +1906,33 @@ async function fetchLatestVideos(playlistId, maxResults = 5) {
   } catch(e) { console.error('fetchLatestVideos error:', e); return []; }
 }
 
-// جلب بث مباشر حالي
-async function fetchLiveStream(channelId) {
+// جلب الأنشطة (بث مباشر + قادم) بطريقة موفرة جداً (1 كريدي بدلاً من 200)
+async function fetchActivities(channelId) {
   try {
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${YOUTUBE_API_KEY}`);
+    let res = await fetch(`https://www.googleapis.com/youtube/v3/activities?part=snippet,contentDetails&channelId=${channelId}&maxResults=5&key=${YOUTUBE_API_KEY}`);
     let d = await res.json();
-    if (!d.items?.length) return null;
-    let v = d.items[0];
-    return {
-      videoId:     v.id.videoId,
-      title:       v.snippet.title,
-      channelName: v.snippet.channelTitle,
-      thumbnail:   v.snippet.thumbnails?.high?.url || '',
-      publishedAt: v.snippet.publishedAt,
-      videoUrl:    `https://www.youtube.com/watch?v=${v.id.videoId}`,
-      type:        'live'
-    };
-  } catch(e) { return null; }
-}
-
-// جلب بث قادم (scheduled)
-async function fetchUpcomingStream(channelId) {
-  try {
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=upcoming&type=video&key=${YOUTUBE_API_KEY}`);
-    let d = await res.json();
-    if (!d.items?.length) return null;
-    let v = d.items[0];
-    return {
-      videoId:     v.id.videoId,
-      title:       v.snippet.title,
-      channelName: v.snippet.channelTitle,
-      thumbnail:   v.snippet.thumbnails?.high?.url || '',
-      publishedAt: v.snippet.publishedAt,
-      videoUrl:    `https://www.youtube.com/watch?v=${v.id.videoId}`,
-      type:        'upcoming'
-    };
-  } catch(e) { return null; }
+    if (!d.items) return [];
+    
+    return d.items
+      .filter(item => item.snippet.type === 'liveStreaming')
+      .map(item => {
+        const vid = item.contentDetails.liveStreaming.videoId;
+        const title = item.snippet.title;
+        // تحديد النوع (قادم أم مباشر) بناءً على العنوان أو البيانات المتاحة
+        let type = 'live'; 
+        if (title.toLowerCase().includes('upcoming') || title.toLowerCase().includes('waiting')) type = 'upcoming';
+        
+        return {
+          videoId:     vid,
+          title:       title,
+          channelName: item.snippet.channelTitle,
+          thumbnail:   item.snippet.thumbnails?.high?.url || '',
+          publishedAt: item.snippet.publishedAt,
+          videoUrl:    `https://www.youtube.com/watch?v=${vid}`,
+          type:        type
+        };
+      });
+  } catch(e) { return []; }
 }
 
 // حفظ في DB مع منع التكرار
@@ -2003,8 +2004,9 @@ async function cleanupOrphanedVideos() {
 }
 
 // الفحص الشامل لكل القنوات بطريقة موفرة للكريدي
-async function autoCheckAllChannels() {
+async function autoCheckAllChannels(force = false) {
   try {
+    if (force) console.log('🔄 فحص قسري لجميع القنوات...');
     // جلب القنوات المراقبة
     let { data: channels } = await supabaseClient.from('posts')
       .select('*').eq('room', 'yt-channels').eq('tag', 'Channel');
@@ -2017,9 +2019,9 @@ async function autoCheckAllChannels() {
     const ONE_DAY = 24 * 60 * 60 * 1000;
 
     for (let ch of channels) {
-      // التحقق: هل تم فحص هذه القناة في آخر 24 ساعة؟
+      // التحقق: هل تم فحص هذه القناة في آخر 24 ساعة؟ (إلا إذا كان الفحص قسرياً)
       let lastSync = parseInt(ch.content) || 0;
-      if (now - lastSync < ONE_DAY) {
+      if (!force && (now - lastSync < ONE_DAY)) {
         // console.log(`⏩ تخطي ${ch.title}: تم الفحص مؤخراً.`);
         continue; 
       }
@@ -2042,16 +2044,13 @@ async function autoCheckAllChannels() {
         if (await saveToDb(v, 'yt-videos', 'Video', ch.id)) newVideos++;
       }
 
-      // ── 2. جلب البث المباشر (تكلفة: 100 كريدي) ──
-      let live = await fetchLiveStream(chInfo.id);
-      if (live) {
-        if (await saveToDb(live, 'live', 'Live Now', ch.id)) newLive++;
-      }
-
-      if (channels.length < 50) {
-        let upcoming = await fetchUpcomingStream(chInfo.id);
-        if (upcoming) {
-          if (await saveToDb(upcoming, 'live', 'Pre Lives', ch.id)) newUpcoming++;
+      // ── 2. جلب البث المباشر والقادم (تكلفة: 1 كريدي فقط) ──
+      let activities = await fetchActivities(chInfo.id);
+      for (let act of activities) {
+        if (act.type === 'live') {
+          if (await saveToDb(act, 'live', 'Live Now', ch.id)) newLive++;
+        } else {
+          if (await saveToDb(act, 'live', 'Pre Lives', ch.id)) newUpcoming++;
         }
       }
 
@@ -2089,7 +2088,7 @@ async function loadSubscribersAdmin() {
     const { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     if (!users || !users.length) { container.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">لا يوجد مستخدمون</div>'; return; }
-    const RM = window._ROLE_META || { vip:{label:'👑 VIP',color:'#d4e800',bg:'#2a2000'}, member:{label:'⭐ Member',color:'#4caf90',bg:'#0f3d2e'}, moderator:{label:'🛡️ Mod',color:'#ff9800',bg:'#3d2e0f'}, youtuber:{label:'🎬 Youtuber',color:'#ff4444',bg:'#3d0f0f'}, youtuber_vip:{label:'🔥 Youtuber VIP',color:'#ff6b35',bg:'#3d1a0f'}, user:{label:'👤 User',color:'#aabbcc',bg:'#1a1a2e'} };
+    // تم استخدام ROLE_META العالمي
     function getRoles(u) { if (Array.isArray(u.roles) && u.roles.length) return u.roles; if (u.role) return [u.role]; return ['user']; }
     const roleOrder = ['vip','youtuber_vip','youtuber','moderator','member','user'];
     const grouped = {};
