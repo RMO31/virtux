@@ -438,6 +438,7 @@ async function loadDashboard() {
       <div class="stat-card"><div class="stat-number" style="color:#ff9800">${modCount}</div><div class="stat-label">🛡️ Mod</div></div>
       <div class="stat-card"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
       <div class="stat-card"><div class="stat-number" style="color:#ff6b35">${ytVipCount}</div><div class="stat-label">🔥 YT VIP</div></div>
+      <div class="stat-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);"><div class="stat-number" style="color:#aabbcc">${userCount}</div><div class="stat-label">👤 User</div></div>
     </div>`;
 
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
@@ -898,8 +899,11 @@ async function loadContentPage(room) {
           let media = '';
           const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
           const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+          const isImage = p.url && p.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i);
+
           if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
           else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
+          else if (isImage) media = `<img src="${p.url}" style="width:80px; height:60px; border-radius:6px; object-fit:cover;">`;
           else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
           else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
           return `<div class="pi" id="pi-${p.id}">
