@@ -1155,7 +1155,7 @@ function getAddForm(room) {
       </div>
     </div>`;
   } else if (room === 'yt-channels') {
-    return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"><textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
+    return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (handle أو ID أو URL)"> <textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
   } else if (room === 'subscribers') {
     setTimeout(() => loadSubscribersAdmin(), 80);
     return `
@@ -1482,8 +1482,38 @@ async function saveEditPost() {
 function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
 
 // ==================== دوال يوتيوب والمستخدمين ====================
+function parseYouTubeUrl(url) {
+  if (!url) return null;
+  if (url.includes('@')) {
+    let h = url.split('@')[1]?.split(/[\/?]/)[0];
+    if (h) return { type: 'handle', value: '@' + h };
+  }
+  if (url.includes('/channel/')) {
+    let id = url.split('/channel/')[1]?.split(/[\/?]/)[0];
+    if (id) return { type: 'id', value: id };
+  }
+  if (url.includes('/user/')) {
+    let user = url.split('/user/')[1]?.split(/[\/?]/)[0];
+    if (user) return { type: 'user', value: user };
+  }
+  if (url.includes('/c/')) {
+    let c = url.split('/c/')[1]?.split(/[\/?]/)[0];
+    if (c) return { type: 'handle', value: '@' + c };
+  }
+  return null;
+}
+
 async function fetchYouTubeChannelInfo(url) {
-  try { let handle = url.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url }; return null; } catch(e) { return null; }
+  try {
+    let parsed = parseYouTubeUrl(url);
+    if (!parsed) return null;
+    let param = parsed.type === 'handle' ? `forHandle=${parsed.value}` : (parsed.type === 'id' ? `id=${parsed.value}` : `forUsername=${parsed.value}`);
+    let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&${param}&key=${YOUTUBE_API_KEY}`;
+    let res = await fetch(apiUrl);
+    let data = await res.json();
+    if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url, channelId: data.items[0].id };
+    return null;
+  } catch(e) { console.error('Error fetching channel info:', e); return null; }
 }
 async function addYouTubeChannel(room) {
   let url = document.getElementById(`url-${room}`)?.value?.trim();
@@ -1499,10 +1529,10 @@ async function addYouTubeChannel(room) {
     if (error) throw error;
 
     // ── جلب فوري: فيديوهات + بث مباشر + قبل بث ──
-    let handle = url.split('@')[1]?.split(/[\/?]/)[0];
-    if (handle) {
+    let parsed = parseYouTubeUrl(url);
+    if (parsed) {
       if (btn) btn.textContent = '📥 جاري تنزيل المحتوى...';
-      let chInfo = await getChannelId(handle);
+      let chInfo = await getChannelId(parsed);
       if (chInfo) {
         // فيديوهات
         let videos = await fetchLatestVideos(chInfo.id, 5);
@@ -1562,9 +1592,10 @@ async function addYouTubeVideo(room) {
 // 🔄 AUTO-FETCH ENGINE — فيديوهات + بث مباشر + قبل البث
 // ══════════════════════════════════════════════════════════════════
 
-async function getChannelId(handle) {
+async function getChannelId(parsed) {
   try {
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet&forHandle=${handle}&key=${YOUTUBE_API_KEY}`);
+    let param = parsed.type === 'handle' ? `forHandle=${parsed.value}` : (parsed.type === 'id' ? `id=${parsed.value}` : `forUsername=${parsed.value}`);
+    let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet&${param}&key=${YOUTUBE_API_KEY}`);
     let d = await res.json();
     if (d.items?.[0]) return { id: d.items[0].id, title: d.items[0].snippet.title };
   } catch(e) {}
@@ -1654,9 +1685,9 @@ async function autoCheckAllChannels() {
     let newVideos = 0, newLive = 0, newUpcoming = 0;
 
     for (let ch of channels) {
-      let handle = ch.url?.split('@')[1]?.split(/[\/?]/)[0];
-      if (!handle) continue;
-      let chInfo = await getChannelId(handle);
+      let parsed = parseYouTubeUrl(ch.url);
+      if (!parsed) continue;
+      let chInfo = await getChannelId(parsed);
       if (!chInfo) continue;
 
       // ── فيديوهات عادية ──
