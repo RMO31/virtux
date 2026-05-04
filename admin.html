@@ -941,9 +941,30 @@ async function deleteSelectedPosts(room) {
   if (ids.length === 0) { alert('يرجى تحديد منشورات أولاً'); return; }
   if (!confirm(`هل أنت متأكد من حذف ${ids.length} منشور؟`)) return;
   try {
-    const { error } = await supabaseClient.from('posts').delete().in('id', ids);
-    if (error) throw error;
-    alert(`✅ تم حذف ${ids.length} منشور بنجاح`);
+    if (room === 'yt-videos' || room === 'live') {
+      // Smart bulk delete
+      let { data: channels } = await supabaseClient.from('posts').select('title').eq('room', 'yt-channels');
+      let trackedNames = (channels || []).map(c => c.title);
+      
+      let { data: postsToDelete } = await supabaseClient.from('posts').select('id, description').in('id', ids);
+      
+      let toSoftDelete = [];
+      let toPermanentDelete = [];
+      
+      (postsToDelete || []).forEach(p => {
+        if (trackedNames.includes(p.description)) toSoftDelete.push(p.id);
+        else toPermanentDelete.push(p.id);
+      });
+      
+      if (toSoftDelete.length > 0) await supabaseClient.from('posts').update({ room: '_trash' }).in('id', toSoftDelete);
+      if (toPermanentDelete.length > 0) await supabaseClient.from('posts').delete().in('id', toPermanentDelete);
+      
+      alert(`✅ تم حذف ${ids.length} فيديو (${toSoftDelete.length} في المهملات و ${toPermanentDelete.length} نهائياً)`);
+    } else {
+      const { error } = await supabaseClient.from('posts').delete().in('id', ids);
+      if (error) throw error;
+      alert(`✅ تم حذف ${ids.length} منشور نهائياً`);
+    }
     loadContentPage(room);
     loadDashboard();
   } catch(e) { alert('❌ فشل الحذف الجماعي: ' + e.message); }
@@ -956,11 +977,11 @@ async function deleteByChannelName(room) {
   try {
     // We assume 'description' field contains the channel name for YouTube videos
     const { error } = await supabaseClient.from('posts')
-      .delete()
+      .update({ room: '_trash' })
       .eq('room', room)
       .eq('description', channelName);
     if (error) throw error;
-    alert(`✅ تم حذف جميع محتويات "${channelName}" بنجاح`);
+    alert(`✅ تم إخفاء جميع محتويات "${channelName}" بنجاح لمنع البوت من إعادتها`);
     loadContentPage(room);
     loadDashboard();
   } catch(e) { alert('❌ فشل الحذف: ' + e.message); }
@@ -1350,7 +1371,29 @@ async function addPost(room) {
   finally { if (btn) btn.disabled = false; }
 }
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
-async function deletePost(id, room) { if (!confirm('حذف المنشور نهائياً؟')) return; await supabaseClient.from('posts').delete().eq('id', id); loadContentPage(room); loadDashboard(); }
+async function deletePost(id, room) { 
+  if (!confirm('هل أنت متأكد من الحذف؟')) return; 
+  try {
+    if (room === 'yt-videos' || room === 'live') {
+      let { data: post } = await supabaseClient.from('posts').select('description').eq('id', id).single();
+      if (post) {
+        let { data: channel } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
+        if (channel && channel.length > 0) {
+          await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id); 
+          alert('✅ تم النقل للمهملات (قناة مراقبة بواسطة البوت)');
+        } else {
+          await supabaseClient.from('posts').delete().eq('id', id); 
+          alert('✅ تم الحذف نهائياً (قناة غير مراقبة أو مضاف يدوياً)');
+        }
+      }
+    } else {
+      await supabaseClient.from('posts').delete().eq('id', id); 
+      alert('✅ تم الحذف نهائياً');
+    }
+    loadContentPage(room); 
+    loadDashboard();
+  } catch(e) { console.error(e); alert('❌ خطأ في الحذف'); }
+}
 
 // ==================== دوال التعديل المصححة ====================
 function getTagOptionsForEdit(room, currentTag) {
