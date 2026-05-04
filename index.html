@@ -1679,6 +1679,12 @@ function handleMediaFile(room, file) {
   const isVideoFile = file.type.startsWith('video/');
   const tagEl = document.getElementById(`tag-${room}`);
   const iconEl = document.getElementById(`icon-${room}`);
+  const urlEl = document.getElementById(`url-${room}`);
+
+  if (urlEl) {
+    urlEl.value = ''; // Clear URL if a file is uploaded
+    urlEl.dataset.autoFilled = 'false';
+  }
 
   if (room === 'highlights' && tagEl && (tagEl.value === 'Video' || tagEl.value === 'Photo' || !tagEl.value)) {
     if (isImageFile) tagEl.value = 'Photo';
@@ -1726,6 +1732,10 @@ function handleMediaFile(room, file) {
 function handleThumbFile(room, file) {
   if (!file) return;
   currentThumbFile = file;
+  const urlEl = document.getElementById(`url-${room}`);
+  if (urlEl && (room === 'highlights' || room === 'tournaments' || room.includes('news'))) {
+     // No need to clear URL for thumb if it's just a thumbnail for a link
+  }
   const reader = new FileReader();
   reader.onload = e => {
     const previewImg = document.getElementById(`preview-img-${room}`);
@@ -1845,7 +1855,7 @@ window.openUserModal = function(room, postToEdit = null) {
       </div>
     </div>`;
   } else {
-    // generic
+    // generic (includes tournaments)
     formHtml = `<div class="form-with-preview">
       <div>
         <div><label>Title</label><input id="title-${room}" style="${inputStyle}"></div>
@@ -1859,6 +1869,7 @@ window.openUserModal = function(room, postToEdit = null) {
       </div>
       <div class="preview-panel">
         <h4 style="color:#e01010;">معاينة</h4>
+        <div id="yt-preview-${room}" style="color:#aaa; font-size:11px; margin-bottom:10px;"></div>
         <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
         <img id="preview-img-${room}" class="preview-media" style="display:none; border: 1px solid #e01010;">
         <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط</div>
@@ -1886,6 +1897,7 @@ window.openUserModal = function(room, postToEdit = null) {
     if (p.url) {
       const isImg = /\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url);
       const isVid = /\.(mp4|webm|ogg|mov)/i.test(p.url) || p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/');
+      const isYT  = p.url.includes('youtube.com') || p.url.includes('youtu.be');
       
       if (isImg && previewImg) {
         previewImg.src = p.url;
@@ -1895,6 +1907,15 @@ window.openUserModal = function(room, postToEdit = null) {
         previewVideo.src = p.url;
         previewVideo.style.display = 'block';
         if (previewText) previewText.style.display = 'none';
+      } else if (isYT) {
+        // Trigger YouTube preview for edit
+        const urlInput = document.getElementById(`url-${room}`);
+        if (urlInput) {
+           setTimeout(() => {
+             const event = new Event('input', { bubbles: true });
+             urlInput.dispatchEvent(event);
+           }, 100);
+        }
       }
     }
   }
@@ -1913,8 +1934,8 @@ window.openUserModal = function(room, postToEdit = null) {
     }
   }
 
-  // معاينة يوتيوب
-  if (room === 'yt-videos') {
+  // معاينة يوتيوب للغرف التي تدعم الروابط (بما فيها البطولات)
+  if (room === 'yt-videos' || room === 'tournaments' || room === 'live' || !['highlights', 'yt-videos'].includes(room)) {
     bindYouTubeVideoUrlAutofill(room);
   }
 
@@ -2308,8 +2329,8 @@ function renderCards(posts, gridId, room) {
     const cardClass = isVipChannelPost ? 'post-card vip-channel-card' : 'post-card';
 
     const isVipCh = !!(p.tag && p.tag.startsWith('auto:'));
-    const vipBadge = isVipCh ? '<div class="vip-ch-badge">🔥 YT VIP</div>' : '';
     const cardCls = isVipCh ? 'post-card vip-ch' : 'post-card';
+    const shownTag = (p.tag && p.tag.startsWith('auto:')) ? '🔥 YT VIP' : (p.tag || '');
 
     let dateLabel = '';
     if (p.created_at) {
@@ -2362,7 +2383,7 @@ function renderCards(posts, gridId, room) {
       ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="${window.t('تعديل','Edit')}">✏️</button>`
       : '';
     const summaryHtml = (room === 'live' || room === 'yt-videos') ? '' : `<div class="post-card-summary">${summary}</div>`;
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag || '')}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(window.tTitle(p.title) || window.t('منشور','Post'))}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -2504,8 +2525,8 @@ function renderYTVideosPaged(posts, page) {
   tempEl.innerHTML = pageData.map(p => {
     const room = 'yt-videos';
     const isVipCh = !!(p.tag && p.tag.startsWith('auto:'));
-    const vipBadge = isVipCh ? '<div class="vip-ch-badge">🔥 YT VIP</div>' : '';
     const cardCls = isVipCh ? 'post-card vip-ch' : 'post-card';
+    const shownTag = (p.tag && p.tag.startsWith('auto:')) ? '🔥 YT VIP' : (p.tag || '');
     const videoId = extractYouTubeId(p.url);
     let media = '';
     if (videoId) {
@@ -2523,7 +2544,7 @@ function renderYTVideosPaged(posts, page) {
     const deleteBtn = isOwner ? `<button onclick="window.deletePost(${p.id},'yt-videos')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" title="delete">🗑️</button>` : '';
     const title = escapeHtml(window.tTitle(p.title) || window.t('فيديو','Video'));
     const desc = (p.description||'').substring(0,100);
-    return `<div class="${cardCls}">${vipBadge}${media}<div class="post-card-body"><div class="post-card-title">${title}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(p.tag||'')}</span><div style="display:flex;gap:6px;">${editBtn}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}">${media}<div class="post-card-body"><div class="post-card-title">${title}</div><div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span><div style="display:flex;gap:6px;">${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 
   // شريط التنقل بين الصفحات
@@ -2614,80 +2635,7 @@ window.showUserProfile = function(userId) {
   document.body.appendChild(popup);
 };
 
-// ==================== تعديل منشور في غرف الأخبار ====================
-window.openEditPost = function(postId, room) {
-  if (!window.currentUserId) { openModal(); return; }
-  const posts = allPosts[room] || [];
-  const post = posts.find(p => p.id === postId);
-  if (!post) return;
-  if (post.user_id !== window.currentUserId) return;
-
-  currentEditPost = post;
-  currentEditRoom = room;
-  currentRoomFor = room;
-  currentMediaFile = null;
-  currentPreviewDataUrl = null;
-
-  const roomTitles = {
-    'gaming-news': window.t('📰 تعديل أخبار الألعاب', '📰 Edit Gaming News'),
-    'youtube-news': window.t('▶️ تعديل أخبار يوتيوب', '▶️ Edit YouTube News'),
-  };
-  document.getElementById('upm-room-title').innerText = roomTitles[room] || room;
-  const inputStyle = 'width:100%;padding:8px;margin-top:5px;background:#110000;border:1px solid #333;color:#fff;border-radius:4px;';
-  const formHtml = `
-    <div class="form-with-preview">
-      <div>
-        <div>
-          <label>عنوان المنشور</label>
-          <input id="title-${room}" style="${inputStyle}" value="${escapeHtml(post.title||'')}">
-        </div>
-        <div style="margin-top:10px;">
-          <label>الوصف</label>
-          <input id="desc-${room}" style="${inputStyle}" value="${escapeHtml(post.description||'')}">
-        </div>
-        <div style="margin-top:10px;">
-          <label>المقال / المحتوى</label>
-          <textarea id="content-${room}" style="${inputStyle}min-height:80px;">${escapeHtml(post.content||'')}</textarea>
-        </div>
-        <div style="margin-top:10px;">
-          <label>URL (اختياري)</label>
-          <input id="url-${room}" style="${inputStyle}" value="${escapeHtml(post.url||'')}">
-        </div>
-        <div style="margin-top:10px;">
-          <label style="color:#e01010;font-size:12px;">📁 ارفع ملف من الحاسوب (صورة أو فيديو)</label>
-          <input type="file" id="file-${room}-media" accept="image/*,video/*" style="display:block;margin-top:6px;width:100%;color:#ccc;font-size:12px;background:#110000;border:1px solid #333;padding:6px;border-radius:4px;cursor:pointer;">
-        </div>
-        <div style="margin-top:10px;">
-          <label>Tag</label>
-          <input id="tag-${room}" style="${inputStyle}" value="${escapeHtml(post.tag||'')}">
-        </div>
-        <input type="hidden" id="icon-${room}" value="${escapeHtml(post.icon||'')}">
-      </div>
-      <div class="preview-panel">
-        <h4 style="color:#e01010;">معاينة</h4>
-        <img id="preview-img-${room}" class="preview-media" style="display:none; object-fit:contain; max-height:250px; width:100%;">
-        <video id="preview-video-${room}" class="preview-media" controls style="display:none; object-fit:contain; max-height:250px; width:100%;"></video>
-        <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط جديدة</div>
-        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ إلغاء الملف</button>
-      </div>
-    </div>`;
-
-  document.getElementById('upm-form-body').innerHTML = formHtml;
-  
-  const fileInput = document.getElementById(`file-${room}-media`);
-  if (fileInput) {
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) handleMediaFile(room, file);
-    });
-  }
-
-  document.getElementById('upm-ok').style.display = 'none';
-  document.getElementById('upm-err').style.display = 'none';
-  document.getElementById('upm-submit').textContent = '✏️ حفظ التعديل';
-  document.getElementById('upm-submit').onclick = () => submitUser(room);
-  document.getElementById('upm-modal').classList.add('active');
-};
+// ==================== فلترة live — live ====================
 window.filterLive = function(tagVal, btn) {
   if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
   const posts = allPosts['live'] || [];
