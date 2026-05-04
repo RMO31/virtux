@@ -1917,15 +1917,19 @@ async function saveEditPost() {
   let imgData = document.getElementById('edit-icon')._imgData;
   if (imgData) updated.icon = imgData;
   try {
+    const roomToReload = currentEditPost.room;
     const { error } = await supabaseClient.from('posts').update(updated).eq('id', currentEditPost.id);
     if (error) throw error;
+    
+    // Call load functions BEFORE closing the modal so currentEditPost.room is still available in context if needed
+    loadContentPage(roomToReload).catch(err => console.error(err));
+    loadDashboard().catch(err => console.error(err));
+    
     closeEditModal();
-    loadContentPage(currentEditPost.room);
-    loadDashboard();
     alert('✅ تم التعديل بنجاح');
   } catch (e) {
     console.error(e);
-    alert('❌ فشل التعديل: ' + e.message);
+    alert('❌ فشل التعديل: ' + (e.message || 'خطأ غير معروف'));
   }
 }
 
@@ -2545,22 +2549,37 @@ async function loadTournamentRegistrants(postId) {
     if (error) throw error;
     if (!regs || regs.length === 0) { list.innerHTML = '<div class="empty">لا يوجد مسجلون بعد.</div>'; return; }
     
-    list.innerHTML = `<table style="width:100%; border-collapse:collapse; font-size:13px;">
-      <thead style="background:#1a1a2e; color:#ffd2b8;">
-        <tr><th style="padding:10px; text-align:right;">المستخدم</th><th style="padding:10px; text-align:right;">الحالة</th><th style="padding:10px; text-align:center;">إجراءات</th></tr>
-      </thead>
-      <tbody>` + regs.map(r => {
+    list.innerHTML = `<div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">` + regs.map((r, idx) => {
         const statusColor = r.description === 'accepted' ? '#00ff88' : (r.description === 'rejected' ? '#ff3333' : '#ff9800');
-        const statusText = r.description === 'accepted' ? 'مقبول' : (r.description === 'rejected' ? 'مستبعد' : 'قيد الانتظار');
-        return `<tr style="border-bottom:1px solid #333;">
-          <td style="padding:10px;"><strong>${escapeHtml(r.profiles?.username || 'User')}</strong></td>
-          <td style="padding:10px; color:${statusColor}">${statusText}</td>
-          <td style="padding:10px; text-align:center;">
-            <button class="btn-edit" style="padding:3px 8px; font-size:10px; border-color:#00ff88; color:#00ff88;" onclick="updateRegStatusInTour(${r.id}, 'accepted', ${postId})">✅ قبول</button>
-            <button class="btn-del" style="padding:3px 8px; font-size:10px;" onclick="updateRegStatusInTour(${r.id}, 'rejected', ${postId})">❌ استبعاد</button>
-          </td>
-        </tr>`;
-      }).join('') + `</tbody></table>`;
+        const statusText = r.description === 'accepted' ? '✅ مقبول' : (r.description === 'rejected' ? '❌ مستبعد' : '⏳ قيد الانتظار');
+        const avatarHtml = r.icon && (r.icon.startsWith('http') || r.icon.startsWith('data:')) ? `<img src="${r.icon}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : `👤`;
+        
+        return `<div class="card" style="margin-bottom:0; background:rgba(255,255,255,0.03); border:1px solid #333; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:45px; height:45px; border-radius:50%; background:#222; display:flex; align-items:center; justify-content:center; font-size:20px; border:1px solid #444; flex-shrink:0;">
+                ${avatarHtml}
+              </div>
+              <div>
+                <div style="font-weight:bold; color:#fff; font-size:15px; margin-bottom:4px;">${escapeHtml(r.profiles?.username || r.title || 'User')}</div>
+                <div style="font-size:12px; color:${statusColor}; font-weight:600;">${statusText}</div>
+              </div>
+            </div>
+            
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn-edit" style="padding:6px 12px; font-size:11px; border-color:#00ff88; color:#00ff88; background:rgba(0,255,136,0.1);" onclick="updateRegStatusInTour(${r.id}, 'accepted', ${postId})">✅ قبول</button>
+              <button class="btn-edit" style="padding:6px 12px; font-size:11px; border-color:#ffaa00; color:#ffaa00; background:rgba(255,170,0,0.1);" onclick="updateRegStatusInTour(${r.id}, 'pending', ${postId})">⏳ انتظار</button>
+              <button class="btn-del" style="padding:6px 12px; font-size:11px; background:rgba(255,51,51,0.1);" onclick="updateRegStatusInTour(${r.id}, 'rejected', ${postId})">❌ استبعاد</button>
+            </div>
+          </div>
+          
+          <div style="background:rgba(0,0,0,0.4); border:1px solid #222; border-radius:8px; padding:10px; font-size:12px; color:#aaa;">
+            <div style="margin-bottom:6px; color:#ddd;"><strong style="color:#777;">ID:</strong> ${r.user_id || 'غير معروف'}</div>
+            <div style="margin-bottom:6px; color:#ddd;"><strong style="color:#777;">التاريخ:</strong> ${new Date(r.created_at).toLocaleString('ar-EG')}</div>
+            <div style="color:#ddd;"><strong style="color:#777;">ملاحظات:</strong> ${escapeHtml(r.tag || 'لا توجد ملاحظات')}</div>
+          </div>
+        </div>`;
+      }).join('') + `</div>`;
   } catch(e) { list.innerHTML = 'خطأ: ' + e.message; }
 }
 
