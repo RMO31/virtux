@@ -2163,12 +2163,25 @@ async function loadPage(room) {
 function isVIP(post) { return post.tag === 'VIP' || post.tag === 'Youtuber VIP'; }
 
 async function deletePost(id, room) {
-  if (!confirm('حذف هذا المنشور نهائياً؟')) return;
+  if (!confirm(window.t('حذف هذا المنشور؟', 'Delete this post?'))) return;
   try {
-    const { error } = await db.from('posts').delete().eq('id', id);
-    if (error) { alert('فشل الحذف: ' + error.message); return; }
+    if (room === 'yt-videos' || room === 'live') {
+      // جلب بيانات المنشور للتحقق من القناة
+      let { data: post } = await db.from('posts').select('description').eq('id', id).single();
+      if (post) {
+        // التحقق إذا كانت القناة مراقبة من البوت
+        let { data: channel } = await db.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
+        if (channel && channel.length > 0) {
+          await db.from('posts').update({ room: '_trash' }).eq('id', id);
+        } else {
+          await db.from('posts').delete().eq('id', id);
+        }
+      }
+    } else {
+      await db.from('posts').delete().eq('id', id);
+    }
     loadPage(room);
-  } catch(e) { alert('خطأ: ' + e.message); }
+  } catch(e) { console.error(e); }
 }
 
 function renderCards(posts, gridId, room) {

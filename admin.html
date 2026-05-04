@@ -251,6 +251,8 @@
       <!-- تم حذف زر "🔴 Lives" المكرر -->
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
+      <div class="sb-sec">إدارة النظام</div>
+      <button class="sb-btn" id="sb-trash" onclick="showPage('trash')" style="color:#ffaa00;">🗑️ المحذوفات (البوت)</button>
     </div>
     <div class="main" id="mainContainer"></div>
   </div>
@@ -349,7 +351,7 @@ function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
   // removed 'yt-lives' from rooms list
-  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact', 'ranks'];
+  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact', 'ranks', 'trash'];
   rooms.forEach(room => {
     let div = document.createElement('div');
     div.className = 'ap';
@@ -363,7 +365,7 @@ function getRoomTitle(room) {
     dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
     'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
-    projects:'🌐 Collaboration', contact:'📞 Contact', ranks:'💎 الميزات والرتب'
+    projects:'🌐 Collaboration', contact:'📞 Contact', ranks:'💎 الميزات والرتب', trash: '🗑️ سلة المحذوفات (البوت)'
   };
   return titles[room] || room;
 }
@@ -377,6 +379,7 @@ function showPage(id) {
   if (id === 'dashboard') loadDashboard();
   else if (id === 'contact') loadContact();
   else if (id === 'ranks') loadRanks();
+  else if (id === 'trash') loadTrashRoom();
   else loadContentPage(id);
 }
 function loadContact() {
@@ -1374,7 +1377,17 @@ function showError(room, msg) { let er = document.getElementById(`er-${room}`); 
 async function deletePost(id, room) { 
   if (!confirm('هل أنت متأكد من الحذف؟')) return; 
   try {
-    if (room === 'yt-videos' || room === 'live') {
+    if (room === 'yt-channels') {
+      // جلب اسم القناة قبل الحذف
+      let { data: channel } = await supabaseClient.from('posts').select('title').eq('id', id).single();
+      if (channel) {
+        // حذف جميع الفيديوهات والبثوث التابعة لهذه القناة نهائياً (حتى من المهملات)
+        await supabaseClient.from('posts').delete().eq('description', channel.title).in('room', ['yt-videos', 'live', '_trash']);
+        // حذف القناة نفسها
+        await supabaseClient.from('posts').delete().eq('id', id);
+        alert(`✅ تم حذف القناة "${channel.title}" وجميع فيديوهاتها نهائياً من الموقع والمهملات.`);
+      }
+    } else if (room === 'yt-videos' || room === 'live') {
       let { data: post } = await supabaseClient.from('posts').select('description').eq('id', id).single();
       if (post) {
         let { data: channel } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
@@ -1393,6 +1406,58 @@ async function deletePost(id, room) {
     loadContentPage(room); 
     loadDashboard();
   } catch(e) { console.error(e); alert('❌ خطأ في الحذف'); }
+}
+
+// ==================== إدارة سلة المحذوفات (Trash) ====================
+async function loadTrashRoom() {
+  let container = document.getElementById('content-trash');
+  if (!container) return;
+  container.innerHTML = '<div class="loading">جاري تحميل المهملات...</div>';
+  try {
+    let { data: trashPosts, error } = await supabaseClient.from('posts').select('*').eq('room', '_trash').order('id', { ascending: false });
+    if (error) throw error;
+    
+    let html = `<div class="card" style="border-color:#ffaa00;">
+      <h3>🗑️ فيديوهات في المهملات (يمنع البوت من إعادتها)</h3>
+      <p style="font-size:12px; color:#888; margin-bottom:12px;">ملاحظة: الفيديوهات هنا لن تظهر في الموقع، ولكن وجودها يمنع البوت من جلبها مرة أخرى. إذا حذفتها من هنا نهائياً، قد يعيد البوت جلبها.</p>
+    </div>`;
+
+    if (!trashPosts || trashPosts.length === 0) {
+      html += '<div class="empty">سلة المهملات فارغة.</div>';
+    } else {
+      html += `<div class="posts-list">` + trashPosts.map(p => {
+        let vid = p.url?.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+        let media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : `<div class="pi-icon">📹</div>`;
+        return `<div class="pi">
+          <div style="width:80px; flex-shrink:0;">${media}</div>
+          <div class="pi-info">
+            <div class="pi-title">${escapeHtml(p.title)}</div>
+            <div class="pi-meta">${escapeHtml(p.description || '')} • ${p.tag || ''}</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-pub" style="background:#4caf90; padding:6px 12px;" onclick="restorePost(${p.id})">⏪ استعادة</button>
+            <button class="btn-del" onclick="hardDeletePost(${p.id})">🔥 حذف نهائي</button>
+          </div>
+        </div>`;
+      }).join('') + `</div>`;
+    }
+    container.innerHTML = html;
+  } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل المهملات</div>'; console.error(e); }
+}
+
+async function restorePost(id) {
+  if (!confirm('هل تريد استعادة هذا الفيديو للموقع؟')) return;
+  // سنفترض أنه فيديو يوتيوب، وإذا كان بثاً مباشراً يمكن تعديله لاحقاً
+  await supabaseClient.from('posts').update({ room: 'yt-videos' }).eq('id', id);
+  alert('✅ تم استعادة الفيديو بنجاح.');
+  loadTrashRoom();
+}
+
+async function hardDeletePost(id) {
+  if (!confirm('تحذير: الحذف النهائي سيجعل البوت يعيد إضافة الفيديو إذا وجده في القناة. استمر؟')) return;
+  await supabaseClient.from('posts').delete().eq('id', id);
+  alert('✅ تم الحذف النهائي.');
+  loadTrashRoom();
 }
 
 // ==================== دوال التعديل المصححة ====================
