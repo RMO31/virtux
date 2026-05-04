@@ -855,12 +855,32 @@ async function loadContentPage(room) {
     let { data: posts, error } = await supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false });
     if (error) throw error;
     let addForm = getAddForm(room);
+    let bulkActionsHtml = '';
+    if (posts && posts.length) {
+      bulkActionsHtml = `
+        <div class="card" style="border-color: #ff9800; background: rgba(255,152,0,0.05);">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <input type="checkbox" id="selectAll-${room}" style="width:18px; height:18px; cursor:pointer;" onclick="toggleAllCheckboxes('${room}', this.checked)">
+              <label for="selectAll-${room}" style="font-size:13px; font-weight:700; cursor:pointer;">تحديد الكل</label>
+              <button class="btn-del" style="background:#ff3333; color:white; padding:6px 14px;" onclick="deleteSelectedPosts('${room}')">🗑️ حذف المحدد</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="channelFilter-${room}" placeholder="اسم اليوتيوبر / القناة" style="padding:6px 12px; border-radius:6px; border:1px solid #444; background:rgba(0,0,0,0.3); color:white; font-size:12px; width:200px;">
+              <button class="btn-del" style="padding:6px 14px;" onclick="deleteByChannelName('${room}')">🔥 حذف محتوى القناة</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
     let postsHtml = '';
     if (posts && posts.length) {
       if (room === 'yt-channels') {
         postsHtml = `<div class="card"><h3>📋 القنوات</h3><div class="posts-list">` + posts.map(p => {
           let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
           return `<div class="channel-card-admin">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer;">
             ${avatar}
             <div class="channel-info-admin">
               <div class="channel-name-admin">${escapeHtml(p.title)}</div>
@@ -883,6 +903,7 @@ async function loadContentPage(room) {
           else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
           else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
           return `<div class="pi" id="pi-${p.id}">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer; margin-right:5px;">
             <div style="width:80px; flex-shrink:0;">${media}</div>
             <div class="pi-info">
               <div class="pi-title">${escapeHtml(p.title)}</div>
@@ -897,8 +918,45 @@ async function loadContentPage(room) {
         }).join('') + `</div></div>`;
       }
     } else postsHtml = '<div class="card"><div class="empty">لا توجد منشورات.</div></div>';
-    container.innerHTML = addForm + postsHtml;
+    container.innerHTML = addForm + bulkActionsHtml + postsHtml;
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
+}
+
+// --- Bulk Action Functions ---
+function toggleAllCheckboxes(room, checked) {
+  const checkboxes = document.querySelectorAll(`.post-checkbox-${room}`);
+  checkboxes.forEach(cb => cb.checked = checked);
+}
+
+async function deleteSelectedPosts(room) {
+  const checkboxes = document.querySelectorAll(`.post-checkbox-${room}:checked`);
+  const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+  if (ids.length === 0) { alert('يرجى تحديد منشورات أولاً'); return; }
+  if (!confirm(`هل أنت متأكد من حذف ${ids.length} منشور؟`)) return;
+  try {
+    const { error } = await supabaseClient.from('posts').delete().in('id', ids);
+    if (error) throw error;
+    alert(`✅ تم حذف ${ids.length} منشور بنجاح`);
+    loadContentPage(room);
+    loadDashboard();
+  } catch(e) { alert('❌ فشل الحذف الجماعي: ' + e.message); }
+}
+
+async function deleteByChannelName(room) {
+  const channelName = document.getElementById(`channelFilter-${room}`).value.trim();
+  if (!channelName) { alert('يرجى إدخال اسم اليوتيوبر / القناة'); return; }
+  if (!confirm(`هل أنت متأكد من حذف جميع محتويات "${channelName}" في هذا القسم؟`)) return;
+  try {
+    // We assume 'description' field contains the channel name for YouTube videos
+    const { error } = await supabaseClient.from('posts')
+      .delete()
+      .eq('room', room)
+      .eq('description', channelName);
+    if (error) throw error;
+    alert(`✅ تم حذف جميع محتويات "${channelName}" بنجاح`);
+    loadContentPage(room);
+    loadDashboard();
+  } catch(e) { alert('❌ فشل الحذف: ' + e.message); }
 }
 
 // ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
