@@ -400,9 +400,12 @@ async function loadDashboard() {
     let total = users.length;
     // Helper: get roles array from user (supports both roles[] array and single role string)
     function getRoles(u) {
-      if (Array.isArray(u.roles) && u.roles.length) return u.roles;
-      if (u.role) return [u.role];
-      return ['user'];
+      let r = [];
+      if (Array.isArray(u.roles)) r = u.roles;
+      else if (u.role) r = [u.role];
+      if (!r || r.length === 0) r = ['user'];
+      // توحيد الرتب (حروف صغيرة وحذف التكرار)
+      return [...new Set(r.filter(x => x).map(x => x.toLowerCase().trim()))];
     }
     function hasRole(u, r) { return getRoles(u).includes(r); }
 
@@ -742,22 +745,19 @@ async function toggleRole(userId, role, add, expiryDate = null) {
 
     console.log('Current profile data:', prof);
 
-    let currentRoles = Array.isArray(prof.roles) && prof.roles.length
-      ? [...prof.roles]
-      : (prof.role ? [prof.role] : ['user']);
-
-    // تنظيف شامل للرتب (حل مشكلة RMO والبيانات القديمة)
-    currentRoles = currentRoles.filter(r => r && typeof r === 'string' && r.trim() !== '');
+    // تنظيف شامل للرتب (Case-Insensitive)
+    currentRoles = currentRoles.filter(r => r && typeof r === 'string').map(r => r.toLowerCase().trim());
+    currentRoles = [...new Set(currentRoles)];
 
     if (add) {
-      if (!currentRoles.includes(role)) currentRoles.push(role);
+      if (!currentRoles.includes(role.toLowerCase())) currentRoles.push(role.toLowerCase());
     } else {
-      currentRoles = currentRoles.filter(r => r !== role);
+      currentRoles = currentRoles.filter(r => r !== role.toLowerCase());
     }
 
-    // تنظيف التكرار وضمان وجود رتبة User كقاعدة أساسية
+    // نضمن وجود رتبة واحدة على الأقل (user) فقط إذا كانت القائمة فارغة تماماً
+    if (currentRoles.length === 0) currentRoles = ['user'];
     currentRoles = [...new Set(currentRoles)];
-    if (!currentRoles.includes('user')) currentRoles.unshift('user');
 
     const primaryRole = currentRoles[0];
     console.log('New roles:', currentRoles, 'Primary:', primaryRole);
