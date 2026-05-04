@@ -1863,7 +1863,7 @@ window.openUserModal = function(room, postToEdit = null) {
         <div style="margin-top:12px;"><label>URL (optional)</label><input id="url-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Tag</label><input id="tag-${room}" style="${inputStyle}"></div>
         <div style="margin-top:12px;"><label>Content / Article</label><textarea id="content-${room}" style="${inputStyle} height:80px;"></textarea></div>
-        ${fileInputHtml('video/*', 'رفع فيديو', 'media')}
+        ${fileInputHtml('image/*,video/*', 'رفع فيديو أو صورة', 'media')}
         ${fileInputHtml('image/*', 'رفع صورة مصغرة (اختياري)', 'thumb')}
         <input type="hidden" id="icon-${room}">
       </div>
@@ -1945,14 +1945,13 @@ window.openUserModal = function(room, postToEdit = null) {
   }
 
   // معاينة صورة مصغرة للفيديو (Highlights)
-  if (room === 'highlights') {
-    const thumbInput = document.getElementById(`file-${room}-thumb`);
-    if (thumbInput) {
-      thumbInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) handleThumbFile(room, file);
-      });
-    }
+  // معاينة صورة مصغرة (Thumbnail) لكل الغرف التي تدعمها
+  const thumbInput = document.getElementById(`file-${room}-thumb`);
+  if (thumbInput) {
+    thumbInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleThumbFile(room, file);
+    });
   }
 
   document.getElementById('upm-submit').textContent = currentEditPost ? window.t('تحديث','Update') : window.t('نشر','Post');
