@@ -4675,6 +4675,7 @@ loadTicker();
     <div style="display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid var(--vx-border); padding-bottom: 10px; overflow-x: auto;">
       <button class="filter-btn active" id="tab-reg-form" onclick="changeRegTab('form')">📝 تسجيل</button>
       <button class="filter-btn" id="tab-reg-accepted" onclick="changeRegTab('accepted')">✅ المقبولين</button>
+      <button class="filter-btn" id="tab-reg-pending" onclick="changeRegTab('pending')">⏳ قائمة الانتظار</button>
       <button class="filter-btn" id="tab-reg-rejected" onclick="changeRegTab('rejected')">❌ المستبعدين</button>
     </div>
 
@@ -4683,6 +4684,10 @@ loadTicker();
       <div id="reg-auth-check">
         <div id="reg-form-active" style="display: none;">
           <p style="font-size: 13px; color: #aaa; margin-bottom: 15px;">هل ترغب في تسجيل اسمك في هذه البطولة؟ بمجرد الضغط سيتم إرسال طلبك للإدارة.</p>
+          <div style="margin-bottom: 15px;">
+            <label style="display:block; color:#fff; font-size:13px; margin-bottom:5px;">لائحة أعضاء الفريق (اختياري)</label>
+            <textarea id="reg-team-list" rows="3" placeholder="إذا كانت بطولة فرق، اكتب أسماء أعضاء فريقك هنا..." style="width:100%; background:#111; border:1px solid #333; border-radius:8px; padding:10px; color:#fff; font-size:13px; box-sizing:border-box;"></textarea>
+          </div>
           <button class="btn-submit" id="reg-btn-submit" onclick="submitRegistration()">🚀 إرسال طلب التسجيل</button>
           <div id="reg-status-msg" style="margin-top: 10px; text-align: center; font-size: 13px;"></div>
         </div>
@@ -4696,6 +4701,11 @@ loadTicker();
     <!-- Tab: Accepted -->
     <div id="reg-section-accepted" class="reg-section" style="display: none;">
       <div class="posts-list" id="reg-list-accepted" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- Tab: Pending -->
+    <div id="reg-section-pending" class="reg-section" style="display: none;">
+      <div class="posts-list" id="reg-list-pending" style="max-height: 300px; overflow-y: auto;"></div>
     </div>
 
     <!-- Tab: Rejected -->
@@ -4720,7 +4730,7 @@ window.openRegistrationModal = function(postId, title) {
   document.getElementById('reg-status-msg').innerText = '';
   document.getElementById('reg-btn-submit').disabled = false;
   
-  changeRegTab('form');
+  changeRegTab('accepted'); // افتح قائمة المقبولين كأولوية
 };
 
 window.closeRegistrationModal = function() {
@@ -4734,7 +4744,7 @@ window.changeRegTab = function(tab) {
   document.getElementById('reg-section-' + tab).style.display = 'block';
   document.getElementById('tab-reg-' + tab).classList.add('active');
   
-  if (tab === 'accepted' || tab === 'rejected') {
+  if (tab === 'accepted' || tab === 'pending' || tab === 'rejected') {
     loadRegList(tab);
   }
 };
@@ -4753,19 +4763,32 @@ async function loadRegList(status) {
     if (error) throw error;
     
     if (!data || data.length === 0) {
-      listEl.innerHTML = `<div class="empty-state">${status === 'accepted' ? 'لا يوجد مقبولين بعد' : 'لا يوجد مستبعدون بعد'}</div>`;
+      let emptyMsg = 'لا يوجد مسجلون هنا بعد';
+      if (status === 'accepted') emptyMsg = 'لم يتم قبول أحد بعد ⏳';
+      if (status === 'pending') emptyMsg = 'قائمة الانتظار فارغة ✨';
+      listEl.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
       return;
     }
     
-    listEl.innerHTML = data.map(reg => {
+    listEl.innerHTML = data.map((reg, idx) => {
       const avatar = reg.icon && reg.icon.startsWith('http') 
-        ? `<img src="${reg.icon}" class="reg-item-avatar">` 
-        : `<div class="reg-item-avatar" style="display:flex;align-items:center;justify-content:center;background:#222;font-size:14px;">👤</div>`;
-        
-      return `<div class="reg-item">
-        ${avatar}
-        <div class="reg-item-name">${escapeHtml(reg.title)}</div>
-      </div>`;
+        ? `<img src="${reg.icon}" class="reg-card-avatar">` 
+        : `<div class="reg-card-avatar" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#222,#111);font-size:18px;">👤</div>`;
+      
+      const statusBadge = status === 'accepted' ? '<span class="reg-badge-ok">مقبول ✅</span>' : (status === 'pending' ? '<span class="reg-badge-wait">قيد الانتظار ⏳</span>' : '<span class="reg-badge-no">مستبعد ❌</span>');
+
+      return `
+        <div class="reg-card-big" style="flex-direction:column; align-items:stretch; background:rgba(255,255,255,0.02); border:1px solid #222; padding:15px; border-radius:12px; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:15px;">
+            <div class="reg-card-rank">#${idx + 1}</div>
+            ${avatar}
+            <div class="reg-card-info" style="flex:1;">
+              <div class="reg-card-name" style="font-size:16px; font-weight:bold; color:#fff; margin-bottom:4px;">${escapeHtml(reg.title)}</div>
+              <div class="reg-card-meta" style="font-size:12px; color:#aaa;">${statusBadge} • سجل في ${new Date(reg.created_at).toLocaleDateString('ar-EG')}</div>
+            </div>
+          </div>
+          ${reg.content ? `<div style="margin-top:12px; padding:10px; background:rgba(0,0,0,0.5); border:1px solid #111; border-radius:8px; font-size:12px; color:#aaa; white-space:pre-wrap;"><strong style="color:#ffd2b8;">لائحة الفريق:</strong>\n${escapeHtml(reg.content)}</div>` : ''}
+        </div>`;
     }).join('');
     
   } catch(e) {
@@ -4797,13 +4820,17 @@ window.submitRegistration = async function() {
       return;
     }
     
+    const teamListEl = document.getElementById('reg-team-list');
+    const teamList = teamListEl ? teamListEl.value.trim() : '';
+    
     const body = {
       title: window.currentUsername || 'User',
       description: 'pending', // الحالة الافتراضية
       room: '_registrations',
       url: window._currentRegTournamentId, // ربط الطلب بالبطولة
       user_id: window.currentUserId,
-      icon: window.currentUserAvatar || '👤'
+      icon: window.currentUserAvatar || '👤',
+      content: teamList
     };
     
     const { error } = await db.from('posts').insert(body);
@@ -4937,49 +4964,5 @@ function renderGroups(groups, container) {
   container.innerHTML = html;
 }
 </script>
-<!-- Registration Modal -->
-<div id="registrationModal" class="vx-modal">
-  <div class="vx-modal-content" style="max-width: 500px;">
-    <div class="vx-modal-header">
-      <h3 id="reg-tournament-title">التسجيل في البطولة</h3>
-      <button class="vx-modal-close" onclick="window.closeRegistrationModal()">×</button>
-    </div>
-    <div class="vx-modal-body">
-      <div class="filter-bar" style="margin-bottom: 20px;">
-        <button id="tab-reg-form" class="filter-btn active" onclick="window.changeRegTab('form')">🎯 طلب التسجيل</button>
-        <button id="tab-reg-accepted" class="filter-btn" onclick="window.changeRegTab('accepted')">✅ المقبولون</button>
-      </div>
-
-      <div id="reg-section-form" class="reg-section">
-        <div id="reg-form-active" style="display:none;">
-          <p style="font-size:13px; color:#aaa; margin-bottom:15px;">بصفتك مستخدماً مسجلاً، يمكنك إرسال طلب انضمام للبطولة مباشرة.</p>
-          <div id="reg-status-msg" style="margin-bottom:10px; font-weight:bold; font-size:13px;"></div>
-          <button id="reg-btn-submit" class="btn-user-post" style="width:100%;" onclick="window.submitRegistration()">🚀 إرسال طلب التسجيل</button>
-        </div>
-        <div id="reg-form-guest" style="display:none; text-align:center; padding:20px;">
-          <p style="margin-bottom:15px;">يجب تسجيل الدخول للمشاركة في البطولات</p>
-          <a href="auth.html" class="btn-user-post" style="text-decoration:none;">🔑 تسجيل الدخول الآن</a>
-        </div>
-      </div>
-
-      <div id="reg-section-accepted" class="reg-section" style="display:none;">
-        <div id="reg-list-accepted" class="reg-list-container"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<style>
-.vx-modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; display:none; align-items:center; justify-content:center; backdrop-filter:blur(5px); }
-.vx-modal.active { display:flex; }
-.vx-modal-content { background:#120000; border:1px solid #cc0000; border-radius:18px; width:95%; max-height:90vh; overflow-y:auto; padding:25px; box-shadow:0 0 50px rgba(255,0,0,0.2); }
-.vx-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #330000; padding-bottom:15px; }
-.vx-modal-header h3 { color:#ffd2b8; font-size:18px; }
-.vx-modal-close { background:none; border:none; color:#ff3333; font-size:28px; cursor:pointer; }
-.reg-item { display:flex; align-items:center; gap:12px; padding:10px; border-bottom:1px solid #222; }
-.reg-item-avatar { width:32px; height:32px; border-radius:50%; object-fit:cover; }
-.reg-item-name { font-size:14px; color:#fff; }
-</style>
-
 </body>
 </html>

@@ -2545,7 +2545,7 @@ async function openTournamentManagement(postId, title) {
 async function loadTournamentRegistrants(postId) {
   const list = document.getElementById('registrants-list');
   try {
-    let { data: regs, error } = await supabaseClient.from('posts').select('*, profiles:user_id(username, avatar_url)').eq('room', '_registrations').eq('url', postId.toString());
+    let { data: regs, error } = await supabaseClient.from('posts').select('*').eq('room', '_registrations').eq('url', postId.toString());
     if (error) throw error;
     if (!regs || regs.length === 0) { list.innerHTML = '<div class="empty">لا يوجد مسجلون بعد.</div>'; return; }
     
