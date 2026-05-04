@@ -428,22 +428,49 @@ async function loadDashboard() {
       dailyLogins = traffic.filter(t => t.tag === 'login').length;
     }
 
+    // جلب أعداد المنشورات في الغرف المختلفة
+    let { data: postCounts, error: countsErr } = await supabaseClient
+      .from('posts')
+      .select('room');
+    
+    let totalChannels = 0;
+    let totalVideos = 0;
+    let totalLive = 0;
+    let totalOtherPosts = 0;
+
+    if (postCounts) {
+      totalChannels = postCounts.filter(p => p.room === 'yt-channels').length;
+      totalVideos = postCounts.filter(p => p.room === 'yt-videos').length;
+      totalLive = postCounts.filter(p => p.room === 'live').length;
+      totalOtherPosts = postCounts.filter(p => !['yt-channels', 'yt-videos', 'live', '_traffic', '_trash'].includes(p.room)).length;
+    }
+
     let statsHtml = `<div class="stats-grid">
-      <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">👥 إجمالي المستخدمين</div></div>
-      <div class="stat-card" style="background:rgba(255,255,255,0.05); border:1.5px solid #ff3333; box-shadow:0 0 20px rgba(255,51,51,0.15);">
-        <div class="stat-number" style="color:#00ff88">${dailyVisitors}</div>
-        <div class="stat-label" style="color:#00ff88; font-weight:bold;">🌐 زوار اليوم</div>
+      <div class="stat-card" style="border-bottom:3px solid #ff3333;"><div class="stat-number">${total}</div><div class="stat-label">👥 إجمالي المستخدمين</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #00ff88;"><div class="stat-number">${dailyVisitors}</div><div class="stat-label">🌐 زوار اليوم</div></div>
+      
+      <!-- إحصائيات المحتوى الجديدة -->
+      <div class="stat-card" style="background:rgba(255,215,0,0.05); border-bottom:3px solid gold;">
+        <div class="stat-number" style="color:gold;">${totalChannels}</div>
+        <div class="stat-label">📺 القنوات المراقبة</div>
       </div>
-      <div class="stat-card" style="background:rgba(255,255,255,0.05); border:1.5px solid #ff3333; box-shadow:0 0 20px rgba(255,51,51,0.15);">
-        <div class="stat-number" style="color:#ffcc00">${dailyLogins}</div>
-        <div class="stat-label" style="color:#ffcc00; font-weight:bold;">🔑 دخول المستخدمين</div>
+      <div class="stat-card" style="background:rgba(0,191,255,0.05); border-bottom:3px solid #00bfff;">
+        <div class="stat-number" style="color:#00bfff;">${totalVideos}</div>
+        <div class="stat-label">🎬 إجمالي الفيديوهات</div>
       </div>
+      <div class="stat-card" style="background:rgba(255,0,0,0.05); border-bottom:3px solid #ff0000;">
+        <div class="stat-number" style="color:#ff0000;">${totalLive}</div>
+        <div class="stat-label">🔴 البثوث المباشرة</div>
+      </div>
+      <div class="stat-card" style="background:rgba(255,255,255,0.03); border-bottom:3px solid #fff;">
+        <div class="stat-number">${totalOtherPosts}</div>
+        <div class="stat-label">📄 منشورات الغرف الأخرى</div>
+      </div>
+
       <div class="stat-card"><div class="stat-number" style="color:#d4e800">${vipCount}</div><div class="stat-label">👑 VIP</div></div>
       <div class="stat-card"><div class="stat-number" style="color:#4caf90">${memberCount}</div><div class="stat-label">⭐ Member</div></div>
       <div class="stat-card"><div class="stat-number" style="color:#ff9800">${modCount}</div><div class="stat-label">🛡️ Mod</div></div>
       <div class="stat-card"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff6b35">${ytVipCount}</div><div class="stat-label">🔥 YT VIP</div></div>
-      <div class="stat-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1);"><div class="stat-number" style="color:#aabbcc">${userCount}</div><div class="stat-label">👤 User</div></div>
     </div>`;
 
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
