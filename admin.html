@@ -1158,15 +1158,34 @@ function getAddForm(room) {
     return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (مثال: https://www.youtube.com/@handle)"><textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
   } else if (room === 'subscribers') {
     setTimeout(() => loadSubscribersAdmin(), 80);
-    return `<div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <h3 style="margin:0;">👥 المستخدمون حسب الرتبة</h3>
-        <button class="btn-edit" onclick="loadSubscribersAdmin()" style="font-size:12px;padding:5px 14px;">🔄 تحديث</button>
+    return `
+      <div class="card">
+        <h3>➕ إضافة يوتيوبر / مشترك مميز</h3>
+        <div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div>
+        <div class="fg">
+          <input class="full" id="user-search-input" placeholder="🔍 ابحث عن مستخدم بالاسم..." oninput="searchUsers(this.value)">
+          <div id="user-search-results" class="search-results-dropdown" style="display:none; background:#0d1117; border:1px solid #334; border-radius:8px; margin-top:5px; max-height:200px; overflow-y:auto; z-index:100;"></div>
+          <input type="hidden" id="sub-user-id">
+          <input class="full" id="sub-user-selected" placeholder="المستخدم المختار" readonly style="background:#1a1a2e; margin-top:8px;">
+          <div class="fg" style="margin-top:8px;">
+            <select id="sub-user-role" class="full">
+              <option value="Youtuber">🎬 Youtuber</option>
+              <option value="Youtuber VIP">🔥 Youtuber VIP</option>
+              <option value="VIP">👑 VIP Member</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة للقائمة</button>
       </div>
-      <div id="subscribers-admin-view" style="margin-top:14px;">
-        <div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>
-      </div>
-    </div>`;
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <h3 style="margin:0;">👥 إدارة المستخدمين والأدوار</h3>
+          <button class="btn-edit" onclick="loadSubscribersAdmin()" style="font-size:12px;padding:5px 14px;">🔄 تحديث</button>
+        </div>
+        <div id="subscribers-admin-view" style="margin-top:14px;">
+          <div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>
+        </div>
+      </div>`;
   } else if (room === 'yt-videos') {
     return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
   } else {
@@ -1176,11 +1195,30 @@ function getAddForm(room) {
     else if (room === 'gaming-news') tagOptions = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
     else if (room === 'youtube-news') tagOptions = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
     else tagOptions = `<option value="default">عام</option>`;
-    return `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src=""></div><select id="tag-${room}">${tagOptions}</select><input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+    return `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src="" style="display:none; max-width:100%; height:80px; object-fit:cover; margin-top:10px; border-radius:8px;"></div><select id="tag-${room}">${tagOptions}</select><input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
   }
 }
 
 // ==================== دوال مساعدة للمعاينة والإضافة ====================
+function previewImg(room) {
+  let file = document.getElementById(`imgfile-${room}`).files[0];
+  if (!file) return;
+  let reader = new FileReader();
+  reader.onload = e => {
+    let preview = document.getElementById(`preview-${room}`);
+    if (preview) {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    }
+    const iconField = document.getElementById(`icon-${room}`);
+    if (iconField) {
+      iconField.value = '🖼️';
+      iconField._imgData = e.target.result;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
 function clearMedia(room) {
   if (room !== 'highlights' && room !== 'home' && room !== 'projects' && room !== 'gaming-news' && room !== 'youtube-news' && room !== 'live' && room !== 'tournaments') return;
   const previewImg = document.getElementById(`preview-img-${room}`);
@@ -1338,16 +1376,20 @@ async function openEditModal(id) {
     alert('فشل تحميل بيانات المنشور');
     return;
   }
+  currentEditPost = data;
   let currentMediaUrl = '';
   if (data.icon && (data.icon.startsWith('http') || data.icon.startsWith('data:'))) currentMediaUrl = data.icon;
   else if (data.url && data.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i)) currentMediaUrl = data.url;
 
-  modalBody.innerHTML = `
+  const modalBodyEl = document.getElementById('editModalBody');
+  if (!modalBodyEl) return;
+
+  modalBodyEl.innerHTML = `
     <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
     <div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
     <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div>
     <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div>
-    <div class="fg"><select id="edit-tag">${tagOptions}</select></div>
+    <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, data.tag)}</select></div>
     <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div>
     <div class="fg">
       <div class="img-upload">
@@ -1358,7 +1400,7 @@ async function openEditModal(id) {
     </div>
     <div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div>
     <button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button>
-    <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${currentEditPost.id}, '${currentEditPost.room}'); closeEditModal();">🗑️ حذف المنشور</button>
+    <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${data.id}, '${data.room}'); closeEditModal();">🗑️ حذف المنشور</button>
   `;
   document.getElementById('editModal').classList.add('open');
 }
@@ -1487,9 +1529,55 @@ async function addYouTubeChannel(room) {
   } catch(e) { alert('خطأ: ' + e.message); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '➕ إضافة'; } }
 }
+async function addYouTubeChannel(room) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { alert('أدخل رابط القناة'); return; }
+  let handle = url.split('@')[1]?.split(/[\/?]/)[0];
+  if (!handle) { alert('رابط غير صحيح. يجب أن يحتوي على @handle'); return; }
+  let extraContent = document.getElementById(`content-${room}`)?.value.trim() || '';
+  let body = {
+    title: '@' + handle,
+    description: 'YouTube Channel',
+    icon: '📺',
+    url: url,
+    tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'),
+    room: room,
+    content: extraContent
+  };
+  let { error } = await supabaseClient.from('posts').insert(body);
+  if (error) alert('❌ فشل الإضافة: ' + error.message);
+  else {
+    alert('✅ تمت إضافة القناة بنجاح');
+    document.getElementById(`url-${room}`).value = '';
+    loadContentPage(room);
+  }
+}
+
 async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
 async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
-async function addYouTubeVideo(room) { let url = document.getElementById(`url-${room}`).value.trim(); if (!url) { alert('أدخل رابط'); return; } let type = document.getElementById(`type-${room}`).value; let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url); if (!info) { alert('تعذر جلب الفيديو'); return; } let body = { title: info.title, description: info.description, icon: info.thumbnail || '📹', url: info.videoUrl, tag: document.getElementById(`tag-${room}`).value, room: room, content: document.getElementById(`content-${room}`).value.trim() }; await supabaseClient.from('posts').insert(body); loadContentPage(room); }
+async function addYouTubeVideo(room) {
+  let url = document.getElementById(`url-${room}`).value.trim();
+  if (!url) { alert('أدخل رابط'); return; }
+  let type = document.getElementById(`type-${room}`).value;
+  let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url);
+  if (!info) { alert('تعذر جلب الفيديو'); return; }
+  let body = {
+    title: info.title,
+    description: info.description,
+    icon: info.thumbnail || '📹',
+    url: info.videoUrl,
+    tag: document.getElementById(`tag-${room}`).value,
+    room: room,
+    content: document.getElementById(`content-${room}`).value.trim()
+  };
+  let { error } = await supabaseClient.from('posts').insert(body);
+  if (error) alert('❌ فشل الإضافة: ' + error.message);
+  else {
+    alert('✅ تمت إضافة الفيديو بنجاح');
+    document.getElementById(`url-${room}`).value = '';
+    loadContentPage(room);
+  }
+}
 
 // ══════════════════════════════════════════════════════════════════
 // 🔄 AUTO-FETCH ENGINE — فيديوهات + بث مباشر + قبل البث
