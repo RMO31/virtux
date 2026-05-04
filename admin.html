@@ -1392,58 +1392,62 @@ async function addPost(room) {
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
 async function deletePost(id, room, page = 1) { 
   if (!confirm('هل أنت متأكد من الحذف؟')) return; 
+  
+  // إخفاء العنصر فوراً من الشاشة ليعطي شعوراً بالحذف الفوري
+  const el = document.getElementById(`pi-${id}`) || document.getElementById(`user-${id}`) || document.querySelector(`[value="${id}"]`)?.closest('.channel-card-admin');
+  if (el) el.style.display = 'none';
+
   try {
-    let success = false;
+    let { data: post, error: fetchErr } = await supabaseClient.from('posts').select('*').eq('id', id).single();
+    if (fetchErr || !post) {
+      alert('⚠️ لم يتم العثور على العنصر في قاعدة البيانات، ربما تم حذفه بالفعل.');
+      loadContentPage(room, page);
+      return;
+    }
+
     if (room === 'yt-channels') {
-      let { data: channel, error: fetchErr } = await supabaseClient.from('posts').select('title').eq('id', id).single();
-      if (fetchErr) throw fetchErr;
-      if (channel) {
-        // حذف المحتوى المرتبط نهائياً
-        await supabaseClient.from('posts').delete().eq('description', channel.title).in('room', ['yt-videos', 'live', '_trash']);
-        // حذف القناة
-        const { error: delErr } = await supabaseClient.from('posts').delete().eq('id', id);
-        if (delErr) throw delErr;
-        success = true;
-        alert(`✅ تم حذف القناة وفيديوهاتها بنجاح.`);
-      }
+      // حذف القناة ومحتوياتها
+      await supabaseClient.from('posts').delete().eq('description', post.title).in('room', ['yt-videos', 'live', '_trash']);
+      const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+      if (error) throw error;
+      alert(`✅ تم حذف القناة "${post.title}" وجميع فيديوهاتها.`);
     } else if (room === 'yt-videos' || room === 'live') {
-      let { data: post, error: fetchErr } = await supabaseClient.from('posts').select('description').eq('id', id).single();
-      if (post) {
-        let { data: ch } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
-        if (ch && ch.length > 0) {
-          const { error: upErr } = await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id);
-          if (upErr) throw upErr;
-          alert('✅ تم النقل للمهملات.');
-        } else {
-          const { error: delErr } = await supabaseClient.from('posts').delete().eq('id', id);
-          if (delErr) throw delErr;
-          alert('✅ تم الحذف نهائياً.');
-        }
-        success = true;
+      // التحقق إذا كانت القناة مراقبة
+      let { data: ch } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
+      
+      if (ch && ch.length > 0) {
+        // نقل للمهملات
+        const { error } = await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id);
+        if (error) throw error;
+        // حذف أي تكرارات لنفس الرابط في هذه الغرفة لضمان نظافة القائمة
+        if (post.url) await supabaseClient.from('posts').delete().eq('url', post.url).eq('room', room).neq('id', id);
+        alert('✅ تم النقل للمهملات.');
       } else {
-        const { error: delErr } = await supabaseClient.from('posts').delete().eq('id', id);
-        if (delErr) throw delErr;
-        alert('✅ تم الحذف نهائياً (بيانات مفقودة).');
-        success = true;
+        // حذف نهائي
+        const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+        if (error) throw error;
+        alert('✅ تم الحذف نهائياً.');
       }
     } else {
-      const { error: delErr } = await supabaseClient.from('posts').delete().eq('id', id);
-      if (delErr) throw delErr;
+      // غرف أخرى حذف نهائي
+      const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+      if (error) throw error;
       alert('✅ تم الحذف نهائياً.');
-      success = true;
     }
-    
-    if (success) {
-      // إزالة العنصر من الواجهة فوراً قبل إعادة التحميل للتأكد من اختفائه
-      const el = document.getElementById(`pi-${id}`) || document.getElementById(`user-${id}`) || document.querySelector(`[value="${id}"]`)?.closest('.channel-card-admin');
-      if (el) el.style.opacity = '0.3'; 
-      
-      await loadContentPage(room, page); 
-      await loadDashboard();
+
+    // التحقق النهائي: هل لا يزال موجوداً؟
+    const { data: verify } = await supabaseClient.from('posts').select('id').eq('id', id);
+    if (verify && verify.length > 0) {
+      alert('❌ فشل الحذف: العنصر لا يزال مسجلاً في قاعدة البيانات! تأكد من صلاحيات RLS.');
+      if (el) el.style.display = 'flex'; // إعادة إظهاره إذا فشل
     }
+
+    await loadContentPage(room, page); 
+    loadDashboard();
   } catch(e) { 
-    console.error('Delete error:', e); 
-    alert('❌ فشل الحذف: ' + (e.message || 'خطأ غير معروف')); 
+    console.error('Delete process failed:', e); 
+    alert('❌ خطأ أثناء الحذف: ' + e.message); 
+    if (el) el.style.display = 'flex';
   }
 }
 
