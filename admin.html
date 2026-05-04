@@ -1933,16 +1933,19 @@ async function cleanupOrphanedVideos() {
     let { data: channels } = await supabaseClient.from('posts').select('title').eq('room', 'yt-channels');
     let activeChannelTitles = (channels || []).map(c => c.title.trim().toLowerCase());
 
-    // 2. جلب كل الفيديوهات والبثوث
-    let { data: videos } = await supabaseClient.from('posts').select('id, description, tag').in('room', ['yt-videos', 'live']);
+    // 2. جلب كل الفيديوهات والبثوث مع معرف الناشر
+    let { data: videos } = await supabaseClient.from('posts').select('id, description, tag, user_id').in('room', ['yt-videos', 'live']);
     
     if (!videos || !videos.length) {
       alert('لا توجد فيديوهات لفحصها.');
       return;
     }
 
-    // 3. تحديد الفيديوهات "اليتيمة"
+    // 3. تحديد الفيديوهات "اليتيمة" (التي جلبها البوت فقط ومسؤولها null)
     let orphanedIds = videos.filter(v => {
+      // استثناء: إذا كان الفيديو منشورا يدويا (يملك user_id)، لا نلمسه أبدا
+      if (v.user_id !== null) return false;
+      
       if (!v.description) return false;
       const channelName = v.description.trim().toLowerCase();
       return !activeChannelTitles.includes(channelName);
