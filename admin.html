@@ -1523,7 +1523,7 @@ async function addYouTubeChannel(room) {
   try {
     let info = await fetchYouTubeChannelInfo(url);
     if (!info) { alert('تعذر جلب معلومات القناة'); return; }
-    let extraContent = document.getElementById(`content-${room}`)?.value.trim() || '';
+    let extraContent = document.getElementById(`content-${room}`)?.value?.trim() || '';
     let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'), room: room, content: extraContent };
     let { error } = await supabaseClient.from('posts').insert(body);
     if (error) throw error;
