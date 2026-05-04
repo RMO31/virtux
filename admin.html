@@ -1435,13 +1435,6 @@ async function deletePost(id, room, page = 1) {
       alert('✅ تم الحذف نهائياً.');
     }
 
-    // التحقق النهائي: هل لا يزال موجوداً؟
-    const { data: verify } = await supabaseClient.from('posts').select('id').eq('id', id);
-    if (verify && verify.length > 0) {
-      alert('❌ فشل الحذف: العنصر لا يزال مسجلاً في قاعدة البيانات! تأكد من صلاحيات RLS.');
-      if (el) el.style.display = 'flex'; // إعادة إظهاره إذا فشل
-    }
-
     await loadContentPage(room, page); 
     loadDashboard();
   } catch(e) { 
