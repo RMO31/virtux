@@ -274,6 +274,8 @@ const ADMIN_PASSWORD = 'virtux2025';
 
 let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentEditPost = null;
+let trashPage = 1;
+const trashPageSize = 30;
 
 // ==================== نظام تتبع النشاط التلقائي (بدون SQL) ====================
 async function logActivity(type) {
@@ -1392,15 +1394,19 @@ async function deletePost(id, room, page = 1) {
     }
 
     if (room === 'yt-channels') {
-      // حذف القناة ومحتوياتها بشكل موسع لضمان التنظيف
       const channelTitle = post.title.trim();
-      // محاولة الحذف بالاسم (مع مراعاة المسافات) وبالـ ID إذا كان مخزناً في الـ tag
-      await supabaseClient.from('posts').delete()
-        .or(`description.eq."${channelTitle}",tag.eq."auto:${id}"`)
-        .in('room', ['yt-videos', 'live', '_trash']);
-        
+      console.log(`🧹 جاري تنظيف محتويات القناة: ${channelTitle}`);
+      
+      // 1. حذف الفيديوهات المرتبطة بالاسم (للفيديوهات القديمة)
+      await supabaseClient.from('posts').delete().eq('description', channelTitle).in('room', ['yt-videos', 'live', '_trash']);
+      
+      // 2. حذف الفيديوهات المرتبطة بالـ ID (للفيديوهات الجديدة)
+      await supabaseClient.from('posts').delete().eq('tag', `auto:${id}`).in('room', ['yt-videos', 'live', '_trash']);
+      
+      // 3. حذف القناة نفسها
       const { error } = await supabaseClient.from('posts').delete().eq('id', id);
       if (error) throw error;
+      
       alert(`✅ تم حذف القناة "${channelTitle}" وجميع محتوياتها بنجاح.`);
     } else if (room === 'yt-videos' || room === 'live') {
       // التحقق إذا كانت القناة مراقبة
@@ -1436,17 +1442,37 @@ async function deletePost(id, room, page = 1) {
 }
 
 // ==================== إدارة سلة المحذوفات (Trash) ====================
-async function loadTrashRoom() {
+async function loadTrashRoom(page = 1) {
+  trashPage = page;
   let container = document.getElementById('content-trash');
   if (!container) return;
   container.innerHTML = '<div class="loading">جاري تحميل المهملات...</div>';
   try {
-    let { data: trashPosts, error } = await supabaseClient.from('posts').select('*').eq('room', '_trash').order('id', { ascending: false });
+    const from = (trashPage - 1) * trashPageSize;
+    const to = from + trashPageSize - 1;
+
+    let { data: trashPosts, count, error } = await supabaseClient.from('posts')
+      .select('*', { count: 'exact' })
+      .eq('room', '_trash')
+      .order('id', { ascending: false })
+      .range(from, to);
+      
     if (error) throw error;
     
     let html = `<div class="card" style="border-color:#ffaa00;">
       <h3>🗑️ فيديوهات في المهملات (يمنع البوت من إعادتها)</h3>
       <p style="font-size:12px; color:#888; margin-bottom:12px;">ملاحظة: الفيديوهات هنا لن تظهر في الموقع، ولكن وجودها يمنع البوت من جلبها مرة أخرى. إذا حذفتها من هنا نهائياً، قد يعيد البوت جلبها.</p>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05);">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#ffaa00;">
+          <input type="checkbox" id="selectAllTrash" onchange="toggleSelectAllTrash(this.checked)" style="width:16px; height:16px;">
+          تحديد الكل في هذه الصفحة
+        </label>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-pub" style="background:#4caf90; padding:6px 14px; font-size:12px;" onclick="restoreSelectedTrash()">⏪ استعادة المحدد</button>
+          <button class="btn-del" style="padding:6px 14px; font-size:12px;" onclick="hardDeleteSelectedTrash()">🔥 حذف المحدد نهائياً</button>
+        </div>
+      </div>
     </div>`;
 
     if (!trashPosts || trashPosts.length === 0) {
@@ -1455,21 +1481,65 @@ async function loadTrashRoom() {
       html += `<div class="posts-list">` + trashPosts.map(p => {
         let vid = p.url?.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
         let media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : `<div class="pi-icon">📹</div>`;
-        return `<div class="pi">
-          <div style="width:80px; flex-shrink:0;">${media}</div>
-          <div class="pi-info">
-            <div class="pi-title">${escapeHtml(p.title)}</div>
-            <div class="pi-meta">${escapeHtml(p.description || '')} • ${p.tag || ''}</div>
+        return `<div class="pi" id="trash-item-${p.id}">
+          <div style="display:flex; align-items:center; gap:12px; flex:1;">
+            <input type="checkbox" class="trash-checkbox" value="${p.id}" style="width:18px; height:18px;">
+            <div style="width:80px; flex-shrink:0;">${media}</div>
+            <div class="pi-info">
+              <div class="pi-title">${escapeHtml(p.title)}</div>
+              <div class="pi-meta">${escapeHtml(p.description || '')} • ${p.tag || ''}</div>
+            </div>
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn-pub" style="background:#4caf90; padding:6px 12px;" onclick="restorePost(${p.id})">⏪ استعادة</button>
-            <button class="btn-del" onclick="hardDeletePost(${p.id})">🔥 حذف نهائي</button>
+            <button class="btn-pub" style="background:#4caf90; padding:6px 12px; font-size:11px;" onclick="restorePost(${p.id})">⏪ استعادة</button>
+            <button class="btn-del" style="padding:6px 12px; font-size:11px;" onclick="hardDeletePost(${p.id})">🔥 حذف</button>
           </div>
         </div>`;
       }).join('') + `</div>`;
+      
+      // Pagination
+      const totalPages = Math.ceil(count / trashPageSize);
+      if (totalPages > 1) {
+        html += `<div style="display:flex; justify-content:center; gap:8px; margin-top:20px;">`;
+        for (let i = 1; i <= totalPages; i++) {
+          const active = i === trashPage ? 'background:#ffaa00; color:#000;' : 'background:rgba(255,255,255,0.05); color:#fff;';
+          html += `<button onclick="loadTrashRoom(${i})" style="${active} border:1px solid rgba(255,255,255,0.1); padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">${i}</button>`;
+        }
+        html += `</div>`;
+      }
     }
     container.innerHTML = html;
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل المهملات</div>'; console.error(e); }
+}
+
+function toggleSelectAllTrash(checked) {
+  document.querySelectorAll('.trash-checkbox').forEach(cb => cb.checked = checked);
+}
+
+async function getSelectedTrashIds() {
+  return Array.from(document.querySelectorAll('.trash-checkbox:checked')).map(cb => parseInt(cb.value));
+}
+
+async function restoreSelectedTrash() {
+  const ids = await getSelectedTrashIds();
+  if (ids.length === 0) return alert('يرجى تحديد فيديوهات أولاً');
+  if (!confirm(`هل تريد استعادة ${ids.length} فيديو إلى الموقع؟`)) return;
+  try {
+    await supabaseClient.from('posts').update({ room: 'yt-videos' }).in('id', ids);
+    alert(`✅ تم استعادة ${ids.length} فيديو بنجاح.`);
+    loadTrashRoom(trashPage);
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+
+async function hardDeleteSelectedTrash() {
+  const ids = await getSelectedTrashIds();
+  if (ids.length === 0) return alert('يرجى تحديد فيديوهات أولاً');
+  if (!confirm(`تحذير: سيتم حذف ${ids.length} فيديو نهائياً. قد يعيد البوت جلبها مستقبلاً. استمرار؟`)) return;
+  try {
+    await supabaseClient.from('posts').delete().in('id', ids);
+    alert(`✅ تم حذف ${ids.length} فيديو نهائياً.`);
+    loadTrashRoom(trashPage);
+  } catch(e) { alert('خطأ: ' + e.message); }
 }
 
 async function restorePost(id) {
