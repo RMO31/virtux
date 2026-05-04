@@ -546,6 +546,34 @@ async function loadDashboard() {
       </div>
     </div>`;
 
+    let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
+      <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
+      <div id="roleSearchResults" class="role-search-results"></div>
+      <div style="margin-top:10px;">
+        <button class="btn-edit" onclick="refreshDashboard()" style="width:100%;">🔄 تحديث البيانات</button>
+      </div>
+    </div>`;
+
+    let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
+      <div class="fg">
+        <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
+        <input class="full" id="newsUrl" placeholder="رابط (اختياري)">
+      </div>
+      <button class="btn-pub" onclick="addNews()">➕ إضافة خبر</button>
+      <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
+    </div>`;
+
+    const ROLE_META = {
+      vip:          { label:'👑 VIP',          color:'#d4e800', bg:'#2a2000' },
+      member:       { label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e' },
+      moderator:    { label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f' },
+      youtuber:     { label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f' },
+      youtuber_vip: { label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f' },
+      guest:        { label:'🛡️ Guest',        color:'#aaa',    bg:'#222' },
+      user:         { label:'👤 User',           color:'#aabbcc', bg:'#0f1e55' },
+    };
+    window._ROLE_META = ROLE_META;
+
     let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
       const uid = u.id;
       const userRoles = getRoles(u);
