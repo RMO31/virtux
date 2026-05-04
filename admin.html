@@ -449,28 +449,31 @@ async function loadDashboard() {
       <div class="stat-card" style="border-bottom:3px solid #ff3333;"><div class="stat-number">${total}</div><div class="stat-label">👥 إجمالي المستخدمين</div></div>
       <div class="stat-card" style="border-bottom:3px solid #00ff88;"><div class="stat-number">${dailyVisitors}</div><div class="stat-label">🌐 زوار اليوم</div></div>
       
-      <!-- إحصائيات المحتوى الجديدة -->
+      <!-- إحصائيات المحتوى -->
       <div class="stat-card" style="background:rgba(255,215,0,0.05); border-bottom:3px solid gold;">
         <div class="stat-number" style="color:gold;">${totalChannels}</div>
-        <div class="stat-label">📺 القنوات المراقبة</div>
+        <div class="stat-label">📺 القنوات</div>
       </div>
       <div class="stat-card" style="background:rgba(0,191,255,0.05); border-bottom:3px solid #00bfff;">
         <div class="stat-number" style="color:#00bfff;">${totalVideos}</div>
-        <div class="stat-label">🎬 إجمالي الفيديوهات</div>
+        <div class="stat-label">🎬 الفيديوهات</div>
       </div>
       <div class="stat-card" style="background:rgba(255,0,0,0.05); border-bottom:3px solid #ff0000;">
         <div class="stat-number" style="color:#ff0000;">${totalLive}</div>
-        <div class="stat-label">🔴 البثوث المباشرة</div>
+        <div class="stat-label">🔴 البثوث</div>
       </div>
       <div class="stat-card" style="background:rgba(255,255,255,0.03); border-bottom:3px solid #fff;">
         <div class="stat-number">${totalOtherPosts}</div>
-        <div class="stat-label">📄 منشورات الغرف الأخرى</div>
+        <div class="stat-label">📄 منشورات أخرى</div>
       </div>
 
-      <div class="stat-card"><div class="stat-number" style="color:#d4e800">${vipCount}</div><div class="stat-label">👑 VIP</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#4caf90">${memberCount}</div><div class="stat-label">⭐ Member</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff9800">${modCount}</div><div class="stat-label">🛡️ Mod</div></div>
-      <div class="stat-card"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
+      <!-- إحصائيات الرتب -->
+      <div class="stat-card" style="border-bottom:2px solid #d4e800;"><div class="stat-number" style="color:#d4e800">${vipCount}</div><div class="stat-label">👑 VIP</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #4caf90;"><div class="stat-number" style="color:#4caf90">${memberCount}</div><div class="stat-label">⭐ Member</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff9800;"><div class="stat-number" style="color:#ff9800">${modCount}</div><div class="stat-label">🛡️ Mod</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff4444;"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff6b35;"><div class="stat-number" style="color:#ff6b35">${ytVipCount}</div><div class="stat-label">🔥 YT VIP</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #aabbcc;"><div class="stat-number" style="color:#aabbcc">${userCount}</div><div class="stat-label">👤 User</div></div>
     </div>`;
 
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
@@ -743,18 +746,18 @@ async function toggleRole(userId, role, add, expiryDate = null) {
       ? [...prof.roles]
       : (prof.role ? [prof.role] : ['user']);
 
-    console.log('Current roles before change:', currentRoles);
+    // تنظيف شامل للرتب (حل مشكلة RMO والبيانات القديمة)
+    currentRoles = currentRoles.filter(r => r && typeof r === 'string' && r.trim() !== '');
 
     if (add) {
-      // Simply add the role if not already present
       if (!currentRoles.includes(role)) currentRoles.push(role);
-      // Always ensure 'user' is present as a base role
-      if (!currentRoles.includes('user')) currentRoles.unshift('user');
     } else {
       currentRoles = currentRoles.filter(r => r !== role);
-      // Always ensure 'user' remains as base role
-      if (!currentRoles.includes('user')) currentRoles.unshift('user');
     }
+
+    // تنظيف التكرار وضمان وجود رتبة User كقاعدة أساسية
+    currentRoles = [...new Set(currentRoles)];
+    if (!currentRoles.includes('user')) currentRoles.unshift('user');
 
     const primaryRole = currentRoles[0];
     console.log('New roles:', currentRoles, 'Primary:', primaryRole);
