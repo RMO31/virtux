@@ -851,13 +851,26 @@ async function deletePaymentReq(reqId) {
 }
 
 // ==================== تحميل صفحة المحتوى ====================
-async function loadContentPage(room) {
+// ==================== تحميل صفحة المحتوى (مع الترقيم) ====================
+async function loadContentPage(room, page = 1) {
   let container = document.getElementById(`content-${room}`);
   if (!container) return;
-  container.innerHTML = '<div class="loading">جاري التحميل (أحدث 50)...</div>';
+  const pageSize = 30;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
+
+  container.innerHTML = '<div class="loading">جاري التحميل...</div>';
   try {
-    let { data: posts, error } = await supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false }).limit(50);
+    // جلب البيانات مع العدد الإجمالي
+    let { data: posts, error, count } = await supabaseClient
+      .from('posts')
+      .select('*', { count: 'exact' })
+      .eq('room', room)
+      .order('id', { ascending: false })
+      .range(start, end);
+
     if (error) throw error;
+    
     let addForm = getAddForm(room);
     let bulkActionsHtml = '';
     if (posts && posts.length) {
@@ -867,14 +880,14 @@ async function loadContentPage(room) {
             <div style="display:flex; align-items:center; gap:12px;">
               <input type="checkbox" id="selectAll-${room}" style="width:18px; height:18px; cursor:pointer;" onclick="toggleAllCheckboxes('${room}', this.checked)">
               <label for="selectAll-${room}" style="font-size:13px; font-weight:700; cursor:pointer;">تحديد الكل</label>
-              <button class="btn-del" style="background:#ff3333; color:white; padding:6px 14px;" onclick="deleteSelectedPosts('${room}')">🗑️ حذف المحدد</button>
+              <button class="btn-del" style="background:#ff3333; color:white; padding:6px 14px;" onclick="deleteSelectedPosts('${room}', ${page})">🗑️ حذف المحدد</button>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               <input type="text" id="postSearch-${room}" placeholder="🔍 ابحث في هذه الغرفة..." style="padding:8px 14px; border-radius:10px; border:1px solid #ff9800; background:rgba(0,0,0,0.5); color:white; font-size:13px; width:250px;" oninput="searchPostsInRoom('${room}', this.value)">
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
               <input type="text" id="channelFilter-${room}" placeholder="اسم اليوتيوبر للـ حذف" style="padding:6px 12px; border-radius:6px; border:1px solid #444; background:rgba(0,0,0,0.3); color:white; font-size:12px; width:160px;">
-              <button class="btn-del" style="padding:6px 14px;" onclick="deleteByChannelName('${room}')">🔥 حذف محتوى القناة</button>
+              <button class="btn-del" style="padding:6px 14px;" onclick="deleteByChannelName('${room}', ${page})">🔥 حذف محتوى القناة</button>
             </div>
           </div>
         </div>
@@ -884,7 +897,7 @@ async function loadContentPage(room) {
     let postsHtml = '';
     if (posts && posts.length) {
       if (room === 'yt-channels') {
-        postsHtml = `<div class="card"><h3>📋 القنوات</h3><div class="posts-list">` + posts.map(p => {
+        postsHtml = `<div class="card"><h3>📋 القنوات (صفحة ${page})</h3><div class="posts-list">` + posts.map(p => {
           let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
           return `<div class="channel-card-admin">
             <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer;">
@@ -896,12 +909,12 @@ async function loadContentPage(room) {
             </div>
             <div style="display:flex; gap:6px;">
               <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
-              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}', ${page})">🗑️</button>
             </div>
           </div>`;
         }).join('') + `</div></div>`;
       } else {
-        postsHtml = `<div class="card"><h3>📋 المنشورات</h3><div class="posts-list">` + posts.map(p => {
+        postsHtml = `<div class="card"><h3>📋 المنشورات (صفحة ${page})</h3><div class="posts-list">` + posts.map(p => {
           let media = '';
           const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
           const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
@@ -922,14 +935,26 @@ async function loadContentPage(room) {
             </div>
             <div style="display:flex; gap:6px;">
               <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
-              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️ حذف</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}', ${page})">🗑️ حذف</button>
             </div>
           </div>`;
         }).join('') + `</div></div>`;
       }
-    } else postsHtml = '<div class="card"><div class="empty">لا توجد منشورات.</div></div>';
-    container.innerHTML = addForm + bulkActionsHtml + postsHtml;
-  } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
+    } else postsHtml = '<div class="card"><div class="empty">لا توجد منشورات في هذه الصفحة.</div></div>';
+
+    // إضافة أزرار الترقيم
+    let paginationHtml = '';
+    if (count > pageSize) {
+      const totalPages = Math.ceil(count / pageSize);
+      paginationHtml = `<div style="display:flex; justify-content:center; gap:10px; margin-top:20px; padding-bottom:20px;">
+        <button class="btn-edit" ${page === 1 ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadContentPage('${room}', ${page - 1})">⬅️ السابق</button>
+        <span style="display:flex; align-items:center; font-weight:bold; color:#ff3333;">صفحة ${page} من ${totalPages}</span>
+        <button class="btn-edit" ${page >= totalPages ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadContentPage('${room}', ${page + 1})">التالي ➡️</button>
+      </div>`;
+    }
+
+    container.innerHTML = addForm + bulkActionsHtml + postsHtml + paginationHtml;
+  } catch(e) { container.innerHTML = '<div class="empty">خطأ في التحميل: ' + e.message + '</div>'; console.error(e); }
 }
 
 // --- Bulk Action Functions ---
@@ -938,22 +963,19 @@ function toggleAllCheckboxes(room, checked) {
   checkboxes.forEach(cb => cb.checked = checked);
 }
 
-async function deleteSelectedPosts(room) {
+async function deleteSelectedPosts(room, page = 1) {
   const checkboxes = document.querySelectorAll(`.post-checkbox-${room}:checked`);
   const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
   if (ids.length === 0) { alert('يرجى تحديد منشورات أولاً'); return; }
   if (!confirm(`هل أنت متأكد من حذف ${ids.length} منشور؟`)) return;
   try {
     if (room === 'yt-videos' || room === 'live') {
-      // Smart bulk delete
       let { data: channels } = await supabaseClient.from('posts').select('title').eq('room', 'yt-channels');
       let trackedNames = (channels || []).map(c => c.title);
-      
       let { data: postsToDelete } = await supabaseClient.from('posts').select('id, description').in('id', ids);
       
       let toSoftDelete = [];
       let toPermanentDelete = [];
-      
       (postsToDelete || []).forEach(p => {
         if (trackedNames.includes(p.description)) toSoftDelete.push(p.id);
         else toPermanentDelete.push(p.id);
@@ -962,30 +984,24 @@ async function deleteSelectedPosts(room) {
       if (toSoftDelete.length > 0) await supabaseClient.from('posts').update({ room: '_trash' }).in('id', toSoftDelete);
       if (toPermanentDelete.length > 0) await supabaseClient.from('posts').delete().in('id', toPermanentDelete);
       
-      alert(`✅ تم حذف ${ids.length} فيديو (${toSoftDelete.length} في المهملات و ${toPermanentDelete.length} نهائياً)`);
+      alert(`✅ تم الحذف: ${toSoftDelete.length} للمهملات و ${toPermanentDelete.length} نهائياً`);
     } else {
-      const { error } = await supabaseClient.from('posts').delete().in('id', ids);
-      if (error) throw error;
+      await supabaseClient.from('posts').delete().in('id', ids);
       alert(`✅ تم حذف ${ids.length} منشور نهائياً`);
     }
-    loadContentPage(room);
+    loadContentPage(room, page);
     loadDashboard();
   } catch(e) { alert('❌ فشل الحذف الجماعي: ' + e.message); }
 }
 
-async function deleteByChannelName(room) {
+async function deleteByChannelName(room, page = 1) {
   const channelName = document.getElementById(`channelFilter-${room}`).value.trim();
   if (!channelName) { alert('يرجى إدخال اسم اليوتيوبر / القناة'); return; }
-  if (!confirm(`هل أنت متأكد من حذف جميع محتويات "${channelName}" في هذا القسم؟`)) return;
+  if (!confirm(`هل أنت متأكد من حذف جميع محتويات "${channelName}"؟`)) return;
   try {
-    // We assume 'description' field contains the channel name for YouTube videos
-    const { error } = await supabaseClient.from('posts')
-      .update({ room: '_trash' })
-      .eq('room', room)
-      .eq('description', channelName);
-    if (error) throw error;
-    alert(`✅ تم إخفاء جميع محتويات "${channelName}" بنجاح لمنع البوت من إعادتها`);
-    loadContentPage(room);
+    await supabaseClient.from('posts').update({ room: '_trash' }).eq('room', room).eq('description', channelName);
+    alert(`✅ تم إخفاء جميع محتويات "${channelName}"`);
+    loadContentPage(room, page);
     loadDashboard();
   } catch(e) { alert('❌ فشل الحذف: ' + e.message); }
 }
@@ -1374,38 +1390,39 @@ async function addPost(room) {
   finally { if (btn) btn.disabled = false; }
 }
 function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
-async function deletePost(id, room) { 
+async function deletePost(id, room, page = 1) { 
   if (!confirm('هل أنت متأكد من الحذف؟')) return; 
   try {
     if (room === 'yt-channels') {
-      // جلب اسم القناة قبل الحذف
       let { data: channel } = await supabaseClient.from('posts').select('title').eq('id', id).single();
       if (channel) {
-        // حذف جميع الفيديوهات والبثوث التابعة لهذه القناة نهائياً (حتى من المهملات)
         await supabaseClient.from('posts').delete().eq('description', channel.title).in('room', ['yt-videos', 'live', '_trash']);
-        // حذف القناة نفسها
         await supabaseClient.from('posts').delete().eq('id', id);
-        alert(`✅ تم حذف القناة "${channel.title}" وجميع فيديوهاتها نهائياً من الموقع والمهملات.`);
+        alert(`✅ تم حذف القناة وفيديوهاتها.`);
       }
     } else if (room === 'yt-videos' || room === 'live') {
       let { data: post } = await supabaseClient.from('posts').select('description').eq('id', id).single();
       if (post) {
-        let { data: channel } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
-        if (channel && channel.length > 0) {
-          await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id); 
-          alert('✅ تم النقل للمهملات (قناة مراقبة بواسطة البوت)');
+        let { data: ch } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
+        if (ch && ch.length > 0) {
+          await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id);
+          alert('✅ تم النقل للمهملات.');
         } else {
-          await supabaseClient.from('posts').delete().eq('id', id); 
-          alert('✅ تم الحذف نهائياً (قناة غير مراقبة أو مضاف يدوياً)');
+          await supabaseClient.from('posts').delete().eq('id', id);
+          alert('✅ تم الحذف نهائياً.');
         }
+      } else {
+        // إذا لم نجد بيانات المنشور، نحذفه نهائياً كإجراء احترازي
+        await supabaseClient.from('posts').delete().eq('id', id);
+        alert('✅ تم الحذف نهائياً (بيانات مفقودة).');
       }
     } else {
-      await supabaseClient.from('posts').delete().eq('id', id); 
-      alert('✅ تم الحذف نهائياً');
+      await supabaseClient.from('posts').delete().eq('id', id);
+      alert('✅ تم الحذف نهائياً.');
     }
-    loadContentPage(room); 
+    loadContentPage(room, page); 
     loadDashboard();
-  } catch(e) { console.error(e); alert('❌ خطأ في الحذف'); }
+  } catch(e) { console.error(e); alert('❌ خطأ: ' + e.message); }
 }
 
 // ==================== إدارة سلة المحذوفات (Trash) ====================
