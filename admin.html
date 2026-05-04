@@ -853,17 +853,28 @@ async function loadDashboard() {
       return [...new Set(r.filter(x => x && typeof x === 'string').map(x => x.toLowerCase().trim()))];
     }
 
-    let counts = { vip:0, member:0, moderator:0, youtuber:0, youtuber_vip:0, guest:0, user:0, punished:0 };
+    let counts = { 
+      moderator: 0, 
+      youtuber_vip: 0, 
+      youtuber: 0, 
+      vip: 0, 
+      member: 0, 
+      user: 0, 
+      punished: 0 
+    };
+
     users.forEach(u => {
       const r = getRoles(u);
+      // كل المسجلين هم User برتبة أساسية
+      counts.user++;
+      
+      // عد الرتب الأخرى بشكل مستقل (غير حصري)
       if (r.includes('punished')) counts.punished++;
-      else if (r.includes('moderator')) counts.moderator++;
-      else if (r.includes('vip')) counts.vip++;
-      else if (r.includes('youtuber_vip')) counts.youtuber_vip++;
-      else if (r.includes('youtuber')) counts.youtuber++;
-      else if (r.includes('member')) counts.member++;
-      else if (r.includes('guest')) counts.guest++;
-      else counts.user++;
+      if (r.includes('moderator')) counts.moderator++;
+      if (r.includes('youtuber_vip')) counts.youtuber_vip++;
+      if (r.includes('youtuber')) counts.youtuber++;
+      if (r.includes('vip')) counts.vip++;
+      if (r.includes('member')) counts.member++;
     });
 
     let today = new Date().toISOString().split('T')[0];
@@ -871,20 +882,21 @@ async function loadDashboard() {
     let dailyVisitors = traffic ? traffic.filter(t => t.tag === 'visit').length : 0;
 
     let { data: postCounts } = await supabaseClient.from('posts').select('room');
-    let totalChannels = postCounts ? postCounts.filter(p => p.room === 'yt-channels').length : 0;
     let totalVideos = postCounts ? postCounts.filter(p => p.room === 'yt-videos').length : 0;
     let totalLive = postCounts ? postCounts.filter(p => p.room === 'live').length : 0;
 
     let statsHtml = `<div class="stats-grid">
-      <div class="stat-card" style="border-bottom:3px solid #ff3333;"><div class="stat-number">${total}</div><div class="stat-label">👥 إجمالي المستخدمين</div></div>
       <div class="stat-card" style="border-bottom:3px solid #00ff88;"><div class="stat-number">${dailyVisitors}</div><div class="stat-label">🌐 زوار اليوم</div></div>
       <div class="stat-card" style="border-bottom:3px solid #00bfff;"><div class="stat-number">${totalVideos}</div><div class="stat-label">🎬 الفيديوهات</div></div>
       <div class="stat-card" style="border-bottom:3px solid #ff9800;"><div class="stat-number">${totalLive}</div><div class="stat-label">🔴 البثوث</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #aabbcc;"><div class="stat-number">${counts.user}</div><div class="stat-label">👤 إجمالي المستخدمين</div></div>
       
-      <div class="stat-card" style="border-bottom:2px solid #d4e800;"><div class="stat-number" style="color:#d4e800">${counts.vip}</div><div class="stat-label">👑 VIP</div></div>
-      <div class="stat-card" style="border-bottom:2px solid #ff4444;"><div class="stat-number" style="color:#ff4444">${counts.youtuber}</div><div class="stat-label">🎬 Youtuber</div></div>
-      <div class="stat-card" style="border-bottom:2px solid #ff3333;"><div class="stat-number" style="color:#ff3333">${counts.punished}</div><div class="stat-label">🚫 معاقب</div></div>
-      <div class="stat-card" style="border-bottom:2px solid #aabbcc;"><div class="stat-number">${counts.user}</div><div class="stat-label">👤 User</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff00ff;"><div class="stat-number" style="color:#ff00ff">${counts.moderator}</div><div class="stat-label">🛠️ مراقبين</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff4444;"><div class="stat-number" style="color:#ff4444">${counts.youtuber_vip}</div><div class="stat-label">🔥 Youtuber VIP</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff7777;"><div class="stat-number" style="color:#ff7777">${counts.youtuber}</div><div class="stat-label">🎬 Youtubers</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #d4e800;"><div class="stat-number" style="color:#d4e800">${counts.vip}</div><div class="stat-label">👑 VIP Members</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #00d9ff;"><div class="stat-number" style="color:#00d9ff">${counts.member}</div><div class="stat-label">🏅 Members</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff3333;"><div class="stat-number" style="color:#ff3333">${counts.punished}</div><div class="stat-label">🚫 معاقبين</div></div>
     </div>`;
 
     let activityHtml = `<div class="card"><h3>⚡ النشاط الأخير</h3>`;
