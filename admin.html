@@ -422,13 +422,28 @@ async function loadDashboard() {
     }
     function hasRole(u, r) { return getRoles(u).includes(r); }
 
-    let vipCount       = users.filter(u => hasRole(u,'vip')).length;
-    let memberCount    = users.filter(u => hasRole(u,'member')).length;
-    let modCount       = users.filter(u => hasRole(u,'moderator')).length;
-    let youtuberCount  = users.filter(u => hasRole(u,'youtuber')).length;
-    let ytVipCount     = users.filter(u => hasRole(u,'youtuber_vip')).length;
-    let guestCount     = users.filter(u => hasRole(u,'guest')).length;
-    let userCount      = users.filter(u => { let r=getRoles(u); return r.length===0||(r.length===1&&r[0]==='user'); }).length;
+    // حساب الرتب بشكل دقيق وحصري (كل مستخدم يحسب في فئة واحدة فقط حسب الأولوية)
+    let counts = { vip:0, member:0, moderator:0, youtuber:0, youtuber_vip:0, guest:0, user:0, punished:0 };
+    users.forEach(u => {
+      const r = getRoles(u);
+      if (r.includes('punished')) counts.punished++;
+      else if (r.includes('moderator')) counts.moderator++;
+      else if (r.includes('vip')) counts.vip++;
+      else if (r.includes('youtuber_vip')) counts.youtuber_vip++;
+      else if (r.includes('youtuber')) counts.youtuber++;
+      else if (r.includes('member')) counts.member++;
+      else if (r.includes('guest')) counts.guest++;
+      else counts.user++;
+    });
+
+    let vipCount       = counts.vip;
+    let memberCount    = counts.member;
+    let modCount       = counts.moderator;
+    let youtuberCount  = counts.youtuber;
+    let ytVipCount     = counts.youtuber_vip;
+    let guestCount     = counts.guest;
+    let userCount      = counts.user;
+    let punishedCount  = counts.punished;
 
     let today = new Date().toISOString().split('T')[0];
     let { data: traffic, error: trafficErr } = await supabaseClient
@@ -490,6 +505,7 @@ async function loadDashboard() {
       <div class="stat-card" style="border-bottom:2px solid #ff4444;"><div class="stat-number" style="color:#ff4444">${youtuberCount}</div><div class="stat-label">🎬 Youtuber</div></div>
       <div class="stat-card" style="border-bottom:2px solid #ff6b35;"><div class="stat-number" style="color:#ff6b35">${ytVipCount}</div><div class="stat-label">🔥 YT VIP</div></div>
       <div class="stat-card" style="border-bottom:2px solid #aabbcc;"><div class="stat-number" style="color:#aabbcc">${userCount}</div><div class="stat-label">👤 User</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff3333;"><div class="stat-number" style="color:#ff3333">${punishedCount}</div><div class="stat-label">🚫 معاقب</div></div>
     </div>`;
 
     let recentMembersHtml = `<div class="card"><h3>🆕 آخر الأعضاء المسجلين</h3>`;
@@ -497,18 +513,19 @@ async function loadDashboard() {
       let recent = users.slice(0, 5);
       recentMembersHtml += `<div class="posts-list">`;
       recent.forEach(u => {
-        let roleColor = u.role === 'vip' ? '#d4e800' : u.role === 'member' ? '#4caf90' : u.role === 'moderator' ? '#ff9800' : '#aab';
-        let roleBg = u.role === 'vip' ? '#2a2000' : u.role === 'member' ? '#0f3d2e' : u.role === 'moderator' ? '#3d2e0f' : '#0f1e55';
-        let date = new Date(u.created_at).toLocaleDateString('ar-EG');
-        let avatarHtml = u.avatar_url 
-          ? `<img src="${u.avatar_url}" class="recent-avatar" style="object-fit:cover; border:1.5px solid #cc0000;">`
+        const roles = getRoles(u);
+        const primaryRole = roles[0] || 'user';
+        const meta = ROLE_META[primaryRole] || ROLE_META.user;
+        const date = new Date(u.created_at).toLocaleDateString('ar-EG');
+        const avatarHtml = u.avatar_url 
+          ? `<img src="${u.avatar_url}" class="recent-avatar" style="object-fit:cover; border:1.5px solid ${meta.color};">`
           : `<div class="recent-avatar">👤</div>`;
         recentMembersHtml += `<div class="recent-member-item">
           ${avatarHtml}
           <div class="pi-info">
             <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
             <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
-            <span style="display:inline-block;font-size:11px;background:${roleBg};color:${roleColor};border-radius:4px;padding:2px 8px;">${u.role?.toUpperCase() || 'USER'}</span>
+            <span style="display:inline-block;font-size:11px;background:${meta.bg};color:${meta.color};border-radius:4px;padding:2px 8px;">${meta.label}</span>
           </div>
         </div>`;
       });
