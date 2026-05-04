@@ -535,33 +535,14 @@ async function loadDashboard() {
     }
     payReqsHtml += `</div>`;
 
-    let roleManagementHtml = `<div class="card"><h3>🔧 إدارة الصلاحيات (Roles)</h3>
-      <input type="text" id="roleSearchInput" class="role-search-input" placeholder="🔍 ابحث باسم المستخدم أو البريد الإلكتروني..." oninput="searchUsersForRole(this.value)">
-      <div id="roleSearchResults" class="role-search-results"></div>
-      <div style="margin-top:10px;">
-        <button class="btn-edit" onclick="refreshDashboard()" style="width:100%;">🔄 تحديث البيانات</button>
+    let maintenanceHtml = `<div class="card" style="border:1px solid #ffaa00;">
+      <h3>🛠️ إدارة النظام وصيانة القاعدة</h3>
+      <p style="font-size:12px;color:#aaa;margin-bottom:12px;">استخدم هذه الأدوات لتنظيف البيانات المتبقية أو إصلاح الأخطاء في قاعدة البيانات.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-del" onclick="cleanupOrphanedVideos()" style="background:rgba(255,170,0,0.1); border-color:#ffaa00; color:#ffaa00; flex:1; min-width:200px;">🧹 تنظيف الفيديوهات اليتيمة (للقنوات المحذوفة)</button>
+        <button class="btn-edit" onclick="refreshDashboard()" style="flex:1;">🔄 تحديث الإحصائيات</button>
       </div>
     </div>`;
-
-    let newsHtml = `<div class="card"><h3>📰 إدارة الأخبار (Ticker)</h3>
-      <div class="fg">
-        <input class="full" id="newsTitle" placeholder="نص الخبر (مثال: فتح باب التسجيل في البطولة)">
-        <input class="full" id="newsUrl" placeholder="رابط (اختياري)">
-      </div>
-      <button class="btn-pub" onclick="addNews()">➕ إضافة خبر</button>
-      <div id="newsList" class="posts-list" style="margin-top:15px;"></div>
-    </div>`;
-
-    const ROLE_META = {
-      vip:          { label:'👑 VIP',          color:'#d4e800', bg:'#2a2000' },
-      member:       { label:'⭐ Member',        color:'#4caf90', bg:'#0f3d2e' },
-      moderator:    { label:'🛡️ Mod',          color:'#ff9800', bg:'#3d2e0f' },
-      youtuber:     { label:'🎬 Youtuber',      color:'#ff4444', bg:'#3d0f0f' },
-      youtuber_vip: { label:'🔥 Youtuber VIP',  color:'#ff6b35', bg:'#3d1a0f' },
-      guest:        { label:'🛡️ Guest',        color:'#aaa',    bg:'#222' },
-      user:         { label:'👤 User',           color:'#aabbcc', bg:'#0f1e55' },
-    };
-    window._ROLE_META = ROLE_META;
 
     let fullUsersHtml = `<div class="card"><h3>👥 جميع المستخدمين</h3><div class="posts-list">` + users.map(u => {
       const uid = u.id;
@@ -596,7 +577,7 @@ async function loadDashboard() {
       </div>`;
     }).join('') + `</div></div>`;
 
-    container.innerHTML = statsHtml + activityHtml + payReqsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
+    container.innerHTML = statsHtml + maintenanceHtml + activityHtml + payReqsHtml + recentMembersHtml + roleManagementHtml + newsHtml + fullUsersHtml;
     loadNewsList();
   } catch(e) { container.innerHTML = '<div class="empty">خطأ في تحميل البيانات</div>'; console.error(e); }
 }
@@ -1411,11 +1392,16 @@ async function deletePost(id, room, page = 1) {
     }
 
     if (room === 'yt-channels') {
-      // حذف القناة ومحتوياتها
-      await supabaseClient.from('posts').delete().eq('description', post.title).in('room', ['yt-videos', 'live', '_trash']);
+      // حذف القناة ومحتوياتها بشكل موسع لضمان التنظيف
+      const channelTitle = post.title.trim();
+      // محاولة الحذف بالاسم (مع مراعاة المسافات) وبالـ ID إذا كان مخزناً في الـ tag
+      await supabaseClient.from('posts').delete()
+        .or(`description.eq."${channelTitle}",tag.eq."auto:${id}"`)
+        .in('room', ['yt-videos', 'live', '_trash']);
+        
       const { error } = await supabaseClient.from('posts').delete().eq('id', id);
       if (error) throw error;
-      alert(`✅ تم حذف القناة "${post.title}" وجميع فيديوهاتها.`);
+      alert(`✅ تم حذف القناة "${channelTitle}" وجميع محتوياتها بنجاح.`);
     } else if (room === 'yt-videos' || room === 'live') {
       // التحقق إذا كانت القناة مراقبة
       let { data: ch } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
@@ -1821,20 +1807,68 @@ async function fetchUpcomingStream(channelId) {
 }
 
 // حفظ في DB مع منع التكرار
-async function saveToDb(item, room, tag) {
+async function saveToDb(item, room, tag, channelId = null) {
   let { data: existing } = await supabaseClient.from('posts')
     .select('id').eq('url', item.videoUrl).limit(1);
   if (existing?.length) return false;
+  
+  // إذا كان لدينا ID القناة، نخزنه في الـ tag بشكل auto:ID لضمان الحذف السهل مستقبلاً
+  const finalTag = channelId ? `auto:${channelId}` : tag;
+
   await supabaseClient.from('posts').insert({
     title:       item.title,
     description: item.channelName,
     icon:        item.thumbnail || (tag === 'Live Now' ? '🔴' : tag === 'Pre Lives' ? '⏰' : '📹'),
     url:         item.videoUrl,
-    tag:         tag,
+    tag:         finalTag,
     room:        room,
     content:     item.publishedAt || ''
   });
   return true;
+}
+
+async function cleanupOrphanedVideos() {
+  if (!confirm('سيتم حذف جميع الفيديوهات التي تنتمي لقنوات محذوفة. هل أنت متأكد؟')) return;
+  try {
+    console.log('⏳ جاري جلب البيانات للتنظيف...');
+    // 1. جلب كل القنوات الموجودة حالياً
+    let { data: channels } = await supabaseClient.from('posts').select('title').eq('room', 'yt-channels');
+    let activeChannelTitles = (channels || []).map(c => c.title.trim().toLowerCase());
+
+    // 2. جلب كل الفيديوهات والبثوث
+    let { data: videos } = await supabaseClient.from('posts').select('id, description, tag').in('room', ['yt-videos', 'live']);
+    
+    if (!videos || !videos.length) {
+      alert('لا توجد فيديوهات لفحصها.');
+      return;
+    }
+
+    // 3. تحديد الفيديوهات "اليتيمة"
+    let orphanedIds = videos.filter(v => {
+      if (!v.description) return false;
+      const channelName = v.description.trim().toLowerCase();
+      return !activeChannelTitles.includes(channelName);
+    }).map(v => v.id);
+
+    if (orphanedIds.length === 0) {
+      alert('✅ لم يتم العثور على فيديوهات يتيمة. كل شيء نظيف!');
+      return;
+    }
+
+    if (!confirm(`تم العثور على ${orphanedIds.length} فيديو تابع لقنوات محذوفة. هل تريد حذفها الآن؟`)) return;
+
+    // 4. حذف الفيديوهات على دفعات (batches)
+    const batchSize = 100;
+    for (let i = 0; i < orphanedIds.length; i += batchSize) {
+      const batch = orphanedIds.slice(i, i + batchSize);
+      await supabaseClient.from('posts').delete().in('id', batch);
+    }
+
+    alert(`✅ تم تنظيف ${orphanedIds.length} فيديو بنجاح!`);
+    loadDashboard();
+  } catch(e) {
+    alert('حدث خطأ أثناء التنظيف: ' + e.message);
+  }
 }
 
 // الفحص الشامل لكل القنوات بطريقة موفرة للكريدي
@@ -1874,22 +1908,19 @@ async function autoCheckAllChannels() {
       // ── 1. جلب الفيديوهات (تكلفة: 1 كريدي فقط) ──
       let videos = await fetchLatestVideos(uploadsPlaylistId, 5);
       for (let v of videos) {
-        if (await saveToDb(v, 'yt-videos', 'Video')) newVideos++;
+        if (await saveToDb(v, 'yt-videos', 'Video', ch.id)) newVideos++;
       }
 
       // ── 2. جلب البث المباشر (تكلفة: 100 كريدي) ──
-      // ملاحظة: نقوم بهذا الفحص مرة واحدة يومياً لكل قناة لضمان عدم تجاوز حد الـ 10,000
       let live = await fetchLiveStream(chInfo.id);
       if (live) {
-        if (await saveToDb(live, 'live', 'Live Now')) newLive++;
+        if (await saveToDb(live, 'live', 'Live Now', ch.id)) newLive++;
       }
 
-      // ── 3. جلب البث القادم (تكلفة إضافية اختيارية - تم دمجها لتقليل الاستهلاك) ──
-      // في حال كان لديك قنوات كثيرة (> 50)، يفضل تقليل فحص الـ Upcoming لتوفير الكريدي
       if (channels.length < 50) {
         let upcoming = await fetchUpcomingStream(chInfo.id);
         if (upcoming) {
-          if (await saveToDb(upcoming, 'live', 'Pre Lives')) newUpcoming++;
+          if (await saveToDb(upcoming, 'live', 'Pre Lives', ch.id)) newUpcoming++;
         }
       }
 
