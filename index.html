@@ -1741,23 +1741,13 @@ function handleThumbFile(room, file) {
 }
 
 window.openEditPost = async function(id, room) {
-  if (!window.currentUserId) { openModal(); return; }
   try {
-    const posts = allPosts[room] || [];
-    let post = posts.find(p => p.id === id);
-    if (!post) {
-      const { data, error } = await db.from('posts').select('*').eq('id', id).single();
-      if (error) throw error;
-      post = data;
+    const { data, error } = await db.from('posts').select('*').eq('id', id).single();
+    if (error) throw error;
+    if (data) {
+      currentEditPost = data;
+      window.openUserModal(room, data);
     }
-    if (!post) return;
-
-    const isAdmin = window.userHasAnyRole(['admin','moderator']);
-    const isOwner = post.user_id && post.user_id === window.currentUserId;
-    if (!isAdmin && !isOwner) return;
-
-    currentEditPost = post;
-    window.openUserModal(room, post);
   } catch(e) {
     alert(window.t('خطأ في جلب بيانات المنشور', 'Error fetching post data') + ': ' + e.message);
   }
@@ -2064,11 +2054,9 @@ async function submitUser(room) {
       url:         finalUrl,
       tag:         tag,
       room:        room,
-      content:     contentText
+      content:     contentText,
+      user_id:     window.currentUserId || null
     };
-    if (!currentEditPost) {
-      row.user_id = window.currentUserId || null;
-    }
     var dbr = currentEditPost
       ? await db.from('posts').update(row).eq('id', currentEditPost.id)
       : await db.from('posts').insert(row);
@@ -2627,7 +2615,79 @@ window.showUserProfile = function(userId) {
 };
 
 // ==================== تعديل منشور في غرف الأخبار ====================
-// Unified edit function replaced by consolidated version above.
+window.openEditPost = function(postId, room) {
+  if (!window.currentUserId) { openModal(); return; }
+  const posts = allPosts[room] || [];
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  if (post.user_id !== window.currentUserId) return;
+
+  currentEditPost = post;
+  currentEditRoom = room;
+  currentRoomFor = room;
+  currentMediaFile = null;
+  currentPreviewDataUrl = null;
+
+  const roomTitles = {
+    'gaming-news': window.t('📰 تعديل أخبار الألعاب', '📰 Edit Gaming News'),
+    'youtube-news': window.t('▶️ تعديل أخبار يوتيوب', '▶️ Edit YouTube News'),
+  };
+  document.getElementById('upm-room-title').innerText = roomTitles[room] || room;
+  const inputStyle = 'width:100%;padding:8px;margin-top:5px;background:#110000;border:1px solid #333;color:#fff;border-radius:4px;';
+  const formHtml = `
+    <div class="form-with-preview">
+      <div>
+        <div>
+          <label>عنوان المنشور</label>
+          <input id="title-${room}" style="${inputStyle}" value="${escapeHtml(post.title||'')}">
+        </div>
+        <div style="margin-top:10px;">
+          <label>الوصف</label>
+          <input id="desc-${room}" style="${inputStyle}" value="${escapeHtml(post.description||'')}">
+        </div>
+        <div style="margin-top:10px;">
+          <label>المقال / المحتوى</label>
+          <textarea id="content-${room}" style="${inputStyle}min-height:80px;">${escapeHtml(post.content||'')}</textarea>
+        </div>
+        <div style="margin-top:10px;">
+          <label>URL (اختياري)</label>
+          <input id="url-${room}" style="${inputStyle}" value="${escapeHtml(post.url||'')}">
+        </div>
+        <div style="margin-top:10px;">
+          <label style="color:#e01010;font-size:12px;">📁 ارفع ملف من الحاسوب (صورة أو فيديو)</label>
+          <input type="file" id="file-${room}-media" accept="image/*,video/*" style="display:block;margin-top:6px;width:100%;color:#ccc;font-size:12px;background:#110000;border:1px solid #333;padding:6px;border-radius:4px;cursor:pointer;">
+        </div>
+        <div style="margin-top:10px;">
+          <label>Tag</label>
+          <input id="tag-${room}" style="${inputStyle}" value="${escapeHtml(post.tag||'')}">
+        </div>
+        <input type="hidden" id="icon-${room}" value="${escapeHtml(post.icon||'')}">
+      </div>
+      <div class="preview-panel">
+        <h4 style="color:#e01010;">معاينة</h4>
+        <img id="preview-img-${room}" class="preview-media" style="display:none; object-fit:contain; max-height:250px; width:100%;">
+        <video id="preview-video-${room}" class="preview-media" controls style="display:none; object-fit:contain; max-height:250px; width:100%;"></video>
+        <div id="preview-text-${room}" style="color:#aaa;">لا توجد وسائط جديدة</div>
+        <button type="button" class="btn-del" onclick="clearMediaForRoom('${room}')" style="margin-top:8px; font-size:11px;">🗑️ إلغاء الملف</button>
+      </div>
+    </div>`;
+
+  document.getElementById('upm-form-body').innerHTML = formHtml;
+  
+  const fileInput = document.getElementById(`file-${room}-media`);
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleMediaFile(room, file);
+    });
+  }
+
+  document.getElementById('upm-ok').style.display = 'none';
+  document.getElementById('upm-err').style.display = 'none';
+  document.getElementById('upm-submit').textContent = '✏️ حفظ التعديل';
+  document.getElementById('upm-submit').onclick = () => submitUser(room);
+  document.getElementById('upm-modal').classList.add('active');
+};
 window.filterLive = function(tagVal, btn) {
   if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
   const posts = allPosts['live'] || [];

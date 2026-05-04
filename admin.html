@@ -897,7 +897,12 @@ async function loadContentPage(room, page = 1) {
     let postsHtml = '';
     if (posts && posts.length) {
       if (room === 'yt-channels') {
-        postsHtml = `<div class="card"><h3>📋 القنوات (صفحة ${page})</h3><div class="posts-list">` + posts.map(p => {
+        postsHtml = `<div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+              <h3>📋 القنوات (صفحة ${page})</h3>
+              <button class="btn-pub" style="background:#ff4444; width:auto; padding:8px 16px; font-size:12px;" onclick="manualSyncChannels()">🔄 فحص وتحديث القنوات الآن</button>
+            </div>
+            <div class="posts-list">` + posts.map(p => {
           let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<img class="channel-avatar-admin" src="${p.icon}">` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
           return `<div class="channel-card-admin">
             <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer;">
@@ -1655,7 +1660,13 @@ async function fetchYouTubeChannelInfo(url) {
     let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&${param}&key=${YOUTUBE_API_KEY}`;
     let res = await fetch(apiUrl);
     let data = await res.json();
-    if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url, channelId: data.items[0].id };
+    if (data.items && data.items[0]) return { 
+      title: data.items[0].snippet.title, 
+      subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', 
+      thumbnail: data.items[0].snippet.thumbnails?.high?.url, 
+      channelId: data.items[0].id,
+      uploadsPlaylistId: data.items[0].contentDetails?.relatedPlaylists?.uploads // إضافة معرف قائمة الرفع
+    };
     return null;
   } catch(e) { console.error('Error fetching channel info:', e); return null; }
 }
@@ -1739,12 +1750,18 @@ async function addYouTubeVideo(room) {
 async function getChannelId(parsed) {
   try {
     let param = parsed.type === 'handle' ? `forHandle=${parsed.value}` : (parsed.type === 'id' ? `id=${parsed.value}` : `forUsername=${parsed.value}`);
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet&${param}&key=${YOUTUBE_API_KEY}`);
+    // طلبنا هنا contentDetails للحصول على قائمة الرفع الموفرة للكوتا
+    let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet,contentDetails&${param}&key=${YOUTUBE_API_KEY}`);
     let d = await res.json();
-    if (d.items?.[0]) return { id: d.items[0].id, title: d.items[0].snippet.title };
+    if (d.items?.[0]) return { 
+      id: d.items[0].id, 
+      title: d.items[0].snippet.title,
+      uploadsId: d.items[0].contentDetails?.relatedPlaylists?.uploads 
+    };
   } catch(e) {}
   return null;
 }
+
 
 // جلب آخر فيديوهات عادية
 async function fetchLatestVideos(channelId, maxResults = 5, publishedAfter = null) {
@@ -1822,38 +1839,57 @@ async function saveToDb(item, room, tag) {
 // الفحص الشامل لكل القنوات
 async function autoCheckAllChannels() {
   try {
+    // جلب القنوات
     let { data: channels } = await supabaseClient.from('posts')
       .select('*').eq('room', 'yt-channels').eq('tag', 'Channel');
     if (!channels?.length) return;
 
     let newVideos = 0, newLive = 0, newUpcoming = 0;
+    const now = Date.now();
+    const ONE_DAY = 24 * 60 * 60 * 1000;
 
     for (let ch of channels) {
+      // التحقق: هل تم فحص هذه القناة في آخر 24 ساعة؟
+      let lastSync = parseInt(ch.content) || 0;
+      if (now - lastSync < ONE_DAY) {
+        console.log(`⏩ تخطي ${ch.title}: تم الفحص مؤخراً.`);
+        continue; 
+      }
+
       let parsed = parseYouTubeUrl(ch.url);
       if (!parsed) continue;
       let chInfo = await getChannelId(parsed);
       if (!chInfo) continue;
 
-      // ── فيديوهات عادية ──
-      let { data: lastVid } = await supabaseClient.from('posts')
-        .select('content').eq('room', 'yt-videos').eq('description', chInfo.title)
-        .eq('tag', 'Video').order('id', { ascending: false }).limit(1);
-      let publishedAfter = lastVid?.[0]?.content || null;
-      let videos = await fetchLatestVideos(chInfo.id, 10, publishedAfter);
-      for (let v of videos) { if (await saveToDb(v, 'yt-videos', 'Video')) newVideos++; }
+      console.log(`🔄 جاري فحص القناة: ${ch.title}...`);
 
-      // ── بث مباشر حالي → يُحفظ في غرفة live بـ tag "Live Now" ──
+      // ── فيديوهات عادية (باستخدام القائمة الموفرة) ──
+      let videos = [];
+      if (chInfo.uploadsId) {
+        videos = await fetchLatestVideos(chInfo.uploadsId, 5);
+      } else {
+        // Fallback للبحث (مكلف)
+        let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${chInfo.id}&maxResults=5&order=date&type=video&key=${YOUTUBE_API_KEY}`);
+        let d = await res.json();
+        if (d.items) videos = d.items.map(v => ({ videoId: v.id.videoId, title: v.snippet.title, channelName: v.snippet.channelTitle, thumbnail: v.snippet.thumbnails?.high?.url, publishedAt: v.snippet.publishedAt, videoUrl: `https://www.youtube.com/watch?v=${v.id.videoId}` }));
+      }
+      
+      let addedForThisChannel = 0;
+      for (let v of videos) { if (await saveToDb(v, 'yt-videos', 'Video')) { newVideos++; addedForThisChannel++; } }
+
+      // ── بث مباشر ──
       let live = await fetchLiveStream(chInfo.id);
       if (live) { if (await saveToDb(live, 'live', 'Live Now')) newLive++; }
 
-      // ── بث قادم → يُحفظ في غرفة live بـ tag "Pre Lives" ──
+      // ── بث قادم ──
       let upcoming = await fetchUpcomingStream(chInfo.id);
       if (upcoming) { if (await saveToDb(upcoming, 'live', 'Pre Lives')) newUpcoming++; }
+
+      // تحديث وقت الفحص في القاعدة لمنع التكرار لمدة 24 ساعة
+      await supabaseClient.from('posts').update({ content: now.toString() }).eq('id', ch.id);
     }
 
-    let total = newVideos + newLive + newUpcoming;
-    if (total > 0) {
-      console.log(`✅ جديد: ${newVideos} فيديو | ${newLive} بث مباشر | ${newUpcoming} قبل بث`);
+    if (newVideos + newLive + newUpcoming > 0) {
       if (document.getElementById('content-yt-videos')) loadContentPage('yt-videos');
       if (document.getElementById('content-live'))      loadContentPage('live');
     }
@@ -1863,8 +1899,9 @@ async function autoCheckAllChannels() {
 let _autoCheckInterval = null;
 function startAutoCheck() {
   if (_autoCheckInterval) clearInterval(_autoCheckInterval);
+  // سيعمل البوت مرة واحدة عند التشغيل، ثم مرة كل 24 ساعة
   autoCheckAllChannels();
-  _autoCheckInterval = setInterval(autoCheckAllChannels, 15 * 60 * 1000);
+  _autoCheckInterval = setInterval(autoCheckAllChannels, 24 * 60 * 60 * 1000); 
 }
 
 // تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
