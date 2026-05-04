@@ -600,6 +600,34 @@
       font-size: 24px;
       font-weight: 800;
     }
+    /* --- Registration Modal Styles --- */
+    .reg-section { padding: 10px 0; }
+    .reg-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px; background: rgba(255,255,255,0.03);
+      border-radius: 10px; border: 1px solid var(--vx-border);
+      margin-bottom: 8px;
+    }
+    .reg-item-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--vx-primary); }
+    .reg-item-name { font-size: 13px; font-weight: 600; color: #eee; }
+
+    /* --- Tournament Results Styles --- */
+    .tr-bracket { display: flex; gap: 40px; padding: 10px; }
+    .tr-round { display: flex; flex-direction: column; gap: 20px; }
+    .tr-match { background: rgba(255,255,255,0.03); border: 1px solid var(--vx-border); border-radius: 8px; padding: 10px; width: 200px; }
+    .tr-p { display: flex; justify-content: space-between; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin: 2px 0; }
+    .tr-p.winner { background: rgba(0, 245, 255, 0.1); color: #00f5ff; font-weight: bold; border: 1px solid rgba(0, 245, 255, 0.2); }
+    .tr-score { font-weight: 800; color: #fff; }
+    .tr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tr-table th, .tr-table td { border: 1px solid var(--vx-border); padding: 10px; text-align: center; }
+    .tr-table th { background: rgba(255,255,255,0.05); }
+    .tr-rank-card { display: flex; align-items: center; gap: 15px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; margin-bottom: 8px; border: 1px solid var(--vx-border); }
+    .tr-rank-num { font-size: 20px; font-weight: 900; color: var(--vx-primary); width: 35px; }
+    
+    .tr-group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+    .tr-group-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+    .tr-group-table th, .tr-group-table td { border: 1px solid var(--vx-border); padding: 6px; text-align: center; }
+    .tr-group-table th { background: rgba(255,255,255,0.03); color: #777; }
     .profile-avatar {
       text-align: center;
       margin-bottom: 24px;
@@ -2309,11 +2337,24 @@ function renderCards(posts, gridId, room) {
     }
     // زر تسجيل بطولة VIP
     let registerBtn = '';
-    if (room === 'tournaments' && isVIP(p)) {
-      if (canViewVIP) {
-        registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل","🏆 Register")}</button>`;
-      } else {
-        registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
+    if (room === 'tournaments') {
+      if (isVIP(p)) {
+        if (canViewVIP) {
+          registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title||'')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل","🏆 Register")}</button>`;
+        } else {
+          registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط","🔒 VIP Only")}</span>`;
+        }
+      }
+      // دعم التسجيل المباشر والنتائج
+      if (p.tag && p.tag.includes(':reg')) {
+        let tourData = null;
+        try { if(p.content && p.content.startsWith('{')) tourData = JSON.parse(p.content); } catch(e){}
+        
+        if (tourData && (tourData.status === 'ongoing' || tourData.status === 'finished')) {
+          registerBtn += `<button onclick="window.openTournamentResults(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#ff9800,#e65100);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🏆 عرض النتائج","🏆 View Results")}</button>`;
+        } else {
+          registerBtn += `<button onclick="window.openRegistrationModal(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#00f5ff,#00bbcc);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🎯 سجل الآن","🎯 Register Now")}</button>`;
+        }
       }
     }
     // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
@@ -4615,6 +4656,277 @@ window.searchYTChannels = function(query) {
 initializeAuth();
 showPage('home');
 loadTicker();
+</script>
+<!-- Registration Modal -->
+<div id="registrationModal" class="modal">
+  <div class="modal-content" style="max-width: 550px; padding: 25px;">
+    <span class="modal-close" onclick="closeRegistrationModal()">&times;</span>
+    <h3 id="reg-tournament-title" style="font-size: 20px; margin-bottom: 15px;"></h3>
+    
+    <div style="display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid var(--vx-border); padding-bottom: 10px; overflow-x: auto;">
+      <button class="filter-btn active" id="tab-reg-form" onclick="changeRegTab('form')">📝 تسجيل</button>
+      <button class="filter-btn" id="tab-reg-accepted" onclick="changeRegTab('accepted')">✅ المقبولين</button>
+      <button class="filter-btn" id="tab-reg-rejected" onclick="changeRegTab('rejected')">❌ المستبعدين</button>
+    </div>
+
+    <!-- Tab: Registration Form -->
+    <div id="reg-section-form" class="reg-section">
+      <div id="reg-auth-check">
+        <div id="reg-form-active" style="display: none;">
+          <p style="font-size: 13px; color: #aaa; margin-bottom: 15px;">هل ترغب في تسجيل اسمك في هذه البطولة؟ بمجرد الضغط سيتم إرسال طلبك للإدارة.</p>
+          <button class="btn-submit" id="reg-btn-submit" onclick="submitRegistration()">🚀 إرسال طلب التسجيل</button>
+          <div id="reg-status-msg" style="margin-top: 10px; text-align: center; font-size: 13px;"></div>
+        </div>
+        <div id="reg-form-guest" style="text-align: center; padding: 20px;">
+          <p style="font-size: 14px; color: #aaa; margin-bottom: 15px;">يجب عليك تسجيل الدخول أولاً لتتمكن من التسجيل في البطولة.</p>
+          <button class="btn-submit" onclick="closeRegistrationModal(); openAuthModal('login');">🔐 تسجيل الدخول</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Accepted -->
+    <div id="reg-section-accepted" class="reg-section" style="display: none;">
+      <div class="posts-list" id="reg-list-accepted" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <!-- Tab: Rejected -->
+    <div id="reg-section-rejected" class="reg-section" style="display: none;">
+      <div class="posts-list" id="reg-list-rejected" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== نظام التسجيل في البطولات المباشرة ====================
+window._currentRegTournamentId = null;
+
+window.openRegistrationModal = function(postId, title) {
+  window._currentRegTournamentId = postId;
+  document.getElementById('reg-tournament-title').innerText = title;
+  document.getElementById('registrationModal').classList.add('active');
+  
+  const isSignedIn = !!window.currentUserId;
+  document.getElementById('reg-form-active').style.display = isSignedIn ? 'block' : 'none';
+  document.getElementById('reg-form-guest').style.display = isSignedIn ? 'none' : 'block';
+  document.getElementById('reg-status-msg').innerText = '';
+  document.getElementById('reg-btn-submit').disabled = false;
+  
+  changeRegTab('form');
+};
+
+window.closeRegistrationModal = function() {
+  document.getElementById('registrationModal').classList.remove('active');
+};
+
+window.changeRegTab = function(tab) {
+  document.querySelectorAll('.reg-section').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('#registrationModal .filter-btn').forEach(b => b.classList.remove('active'));
+  
+  document.getElementById('reg-section-' + tab).style.display = 'block';
+  document.getElementById('tab-reg-' + tab).classList.add('active');
+  
+  if (tab === 'accepted' || tab === 'rejected') {
+    loadRegList(tab);
+  }
+};
+
+async function loadRegList(status) {
+  const listEl = document.getElementById('reg-list-' + status);
+  listEl.innerHTML = '<div class="loading-state">جاري التحميل...</div>';
+  
+  try {
+    const { data, error } = await db.from('posts')
+      .select('*')
+      .eq('room', '_registrations')
+      .eq('url', window._currentRegTournamentId)
+      .eq('description', status);
+      
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      listEl.innerHTML = `<div class="empty-state">${status === 'accepted' ? 'لا يوجد مقبولين بعد' : 'لا يوجد مستبعدون بعد'}</div>`;
+      return;
+    }
+    
+    listEl.innerHTML = data.map(reg => {
+      const avatar = reg.icon && reg.icon.startsWith('http') 
+        ? `<img src="${reg.icon}" class="reg-item-avatar">` 
+        : `<div class="reg-item-avatar" style="display:flex;align-items:center;justify-content:center;background:#222;font-size:14px;">👤</div>`;
+        
+      return `<div class="reg-item">
+        ${avatar}
+        <div class="reg-item-name">${escapeHtml(reg.title)}</div>
+      </div>`;
+    }).join('');
+    
+  } catch(e) {
+    listEl.innerHTML = '<div class="empty-state">خطأ في تحميل القائمة</div>';
+  }
+}
+
+window.submitRegistration = async function() {
+  if (!window.currentUserId) return;
+  const btn = document.getElementById('reg-btn-submit');
+  const msgEl = document.getElementById('reg-status-msg');
+  
+  btn.disabled = true;
+  btn.innerText = '⏳ جاري الإرسال...';
+  
+  try {
+    // التحقق إذا كان مسجلاً بالفعل
+    const { data: existing } = await db.from('posts')
+      .select('id')
+      .eq('room', '_registrations')
+      .eq('url', window._currentRegTournamentId)
+      .eq('user_id', window.currentUserId)
+      .maybeSingle();
+      
+    if (existing) {
+      msgEl.style.color = '#ffaa00';
+      msgEl.innerText = '⚠️ أنت مسجل بالفعل في هذه البطولة';
+      btn.innerText = '🚀 إرسال طلب التسجيل';
+      return;
+    }
+    
+    const body = {
+      title: window.currentUsername || 'User',
+      description: 'pending', // الحالة الافتراضية
+      room: '_registrations',
+      url: window._currentRegTournamentId, // ربط الطلب بالبطولة
+      user_id: window.currentUserId,
+      icon: window.currentUserAvatar || '👤'
+    };
+    
+    const { error } = await db.from('posts').insert(body);
+    if (error) throw error;
+    
+    msgEl.style.color = '#4caf50';
+    msgEl.innerText = '✅ تم إرسال طلبك بنجاح! انتظر موافقة الإدارة.';
+    btn.innerText = '✅ تم الإرسال';
+    
+  } catch(e) {
+    msgEl.style.color = '#f55';
+    msgEl.innerText = '❌ فشل التسجيل: ' + e.message;
+    btn.disabled = false;
+    btn.innerText = '🚀 إرسال طلب التسجيل';
+  }
+};
+</script>
+<!-- Tournament Results Modal -->
+<div id="tournamentResultsModal" class="modal">
+  <div class="modal-content" style="max-width: 900px; padding: 25px;">
+    <span class="modal-close" onclick="closeTournamentResults()">&times;</span>
+    <h3 id="tr-title" style="font-size: 20px; margin-bottom: 20px; color: var(--vx-primary);"></h3>
+    
+    <div id="tr-view" style="overflow-x: auto; min-height: 200px;"></div>
+    
+    <div id="tr-rankings-section" style="margin-top: 30px; display:none; border-top: 1px solid var(--vx-border); padding-top: 20px;">
+        <h4 style="margin-bottom:15px; color:#ffd2b8;">🏆 الترتيب النهائي:</h4>
+        <div id="tr-rankings-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== نظام عرض نتائج البطولات ====================
+window.openTournamentResults = async function(postId, title) {
+  document.getElementById('tr-title').innerText = title;
+  document.getElementById('tournamentResultsModal').classList.add('active');
+  const view = document.getElementById('tr-view');
+  view.innerHTML = '<div class="loading-state">جاري تحميل النتائج...</div>';
+  document.getElementById('tr-rankings-section').style.display = 'none';
+  
+  try {
+    const { data: post, error } = await db.from('posts').select('*').eq('id', postId).single();
+    if (error) throw error;
+    
+    if (!post.content || !post.content.startsWith('{')) {
+      view.innerHTML = '<div class="empty-state">لم يتم بدء مباريات البطولة بعد.</div>';
+      return;
+    }
+    
+    const tour = JSON.parse(post.content);
+    
+    if (tour.type === 'bracket') {
+      renderBracket(tour.matches, view);
+    } else if (tour.type === 'league') {
+      renderLeague(tour.league, view);
+    } else if (tour.type === 'groups_bracket') {
+      if (tour.matches && tour.matches.length > 0) {
+        let html = `<h4 style="color:#ffd2b8; margin-bottom:15px; font-size:14px; text-align:center;">🌳 المرحلة الإقصائية</h4>`;
+        view.innerHTML = html + `<div id="tr-bracket-inner"></div>`;
+        renderBracket(tour.matches, document.getElementById('tr-bracket-inner'));
+      } else {
+        renderGroups(tour.groups, view);
+      }
+    }
+    
+    if (tour.status === 'finished' && tour.rankings && tour.rankings.length > 0) {
+      document.getElementById('tr-rankings-section').style.display = 'block';
+      const rankList = document.getElementById('tr-rankings-list');
+      const icons = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+      rankList.innerHTML = tour.rankings.map((p, idx) => `
+        <div class="tr-rank-card">
+          <div class="tr-rank-num">${icons[idx] || (idx+1)}</div>
+          <div style="font-weight:700; color:#fff;">${escapeHtml(p.name)}</div>
+        </div>
+      `).join('');
+    }
+    
+  } catch(e) {
+    view.innerHTML = '<div class="empty-state">خطأ في عرض البيانات</div>';
+  }
+};
+
+window.closeTournamentResults = function() {
+  document.getElementById('tournamentResultsModal').classList.remove('active');
+};
+
+function renderBracket(matches, container) {
+  let html = `<div class="tr-bracket">`;
+  matches.forEach((round, rIdx) => {
+    html += `<div class="tr-round"><h5 style="text-align:center;color:#777;margin-bottom:10px;font-size:11px;">جولة ${rIdx+1}</h5>`;
+    round.forEach(m => {
+      html += `<div class="tr-match">
+        <div class="tr-p ${m.winner === m.p1?.id ? 'winner' : ''}">
+          <span>${escapeHtml(m.p1?.name || '???')}</span>
+          <span class="tr-score">${m.score1}</span>
+        </div>
+        <div class="tr-p ${m.winner === m.p2?.id ? 'winner' : ''}">
+          <span>${escapeHtml(m.p2?.name || '???')}</span>
+          <span class="tr-score">${m.score2}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function renderLeague(league, container) {
+  let html = `<table class="tr-table"><thead><tr><th>اللاعب</th><th>لعب</th><th>فوز</th><th>ن</th></tr></thead><tbody>`;
+  league.forEach(p => {
+    html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+function renderGroups(groups, container) {
+  let html = `<div class="tr-group-grid">`;
+  groups.forEach(g => {
+    html += `<div style="background:rgba(255,255,255,0.02); padding:15px; border-radius:10px; border:1px solid var(--vx-border);">
+      <h5 style="color:#ffd2b8; margin-bottom:10px;">${g.name}</h5>
+      <table class="tr-group-table"><thead><tr><th>اللاعب</th><th>ل</th><th>ف</th><th>ن</th></tr></thead><tbody>`;
+    g.players.forEach(p => {
+      html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+}
 </script>
 </body>
 </html>
