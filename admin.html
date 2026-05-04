@@ -914,7 +914,7 @@ async function loadContentPage(room) {
             <div style="width:80px; flex-shrink:0;">${media}</div>
             <div class="pi-info">
               <div class="pi-title">${escapeHtml(p.title)}</div>
-              <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
+              <div class="pi-meta">${(room==='yt-videos'||room==='live') ? '' : escapeHtml(p.description||'') + ' • '}${p.tag||''}</div>
               <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
             </div>
             <div style="display:flex; gap:6px;">
@@ -1021,7 +1021,7 @@ async function searchPostsInRoom(room, query) {
             <div style="width:80px; flex-shrink:0;">${media}</div>
             <div class="pi-info">
               <div class="pi-title">${escapeHtml(p.title)}</div>
-              <div class="pi-meta">${escapeHtml(p.description||'')} • ${p.tag||''}</div>
+              <div class="pi-meta">${(room==='yt-videos'||room==='live') ? '' : escapeHtml(p.description||'') + ' • '}${p.tag||''}</div>
               <span class="pi-tag">${escapeHtml(p.tag||p.room)}</span>
             </div>
             <div style="display:flex; gap:6px;">
@@ -1136,13 +1136,13 @@ function getAddForm(room) {
       <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
       <div class="form-with-preview">
         <div>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان">${room==='live' ? '' : `<input id="desc-${room}" placeholder="وصف قصير (اختياري)">`}</div>
           <div class="fg">
             <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
             <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
           </div>
           <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
-          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)">${room==='live' ? '' : `<textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea>`}</div>
           <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
         </div>
         <div class="preview-panel">
@@ -1187,7 +1187,7 @@ function getAddForm(room) {
         </div>
       </div>`;
   } else if (room === 'yt-videos') {
-    return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select><textarea class="full" id="content-${room}" placeholder="وصف"></textarea></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
+    return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
   } else {
     let tagOptions = '';
     if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
@@ -1384,13 +1384,14 @@ async function openEditModal(id) {
   const modalBodyEl = document.getElementById('editModalBody');
   if (!modalBodyEl) return;
 
+  const isMediaRoom = (data.room === 'yt-videos' || data.room === 'live');
   modalBodyEl.innerHTML = `
     <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
-    <div class="fg"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
+    <div class="fg" style="${isMediaRoom ? 'display:none;' : ''}"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description||'')}"></div>
     <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon||'')}"></div>
     <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url||'')}"></div>
     <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, data.tag)}</select></div>
-    <div class="fg"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div>
+    <div class="fg" style="${isMediaRoom ? 'display:none;' : ''}"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content||'')}</textarea></div>
     <div class="fg">
       <div class="img-upload">
         <input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()">
@@ -1454,13 +1455,14 @@ async function saveEditPost() {
     alert('لا يوجد منشور قيد التعديل');
     return;
   }
+  const getV = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
   let updated = {
-    title: document.getElementById('edit-title').value,
-    description: document.getElementById('edit-desc').value,
-    icon: document.getElementById('edit-icon').value,
-    url: document.getElementById('edit-url').value,
-    tag: document.getElementById('edit-tag').value,
-    content: document.getElementById('edit-content').value
+    title:       getV('edit-title'),
+    description: getV('edit-desc'),
+    icon:        getV('edit-icon'),
+    url:         getV('edit-url'),
+    tag:         getV('edit-tag'),
+    content:     getV('edit-content')
   };
   let imgData = document.getElementById('edit-icon')._imgData;
   if (imgData) updated.icon = imgData;
@@ -1484,7 +1486,7 @@ async function fetchYouTubeChannelInfo(url) {
   try { let handle = url.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', thumbnail: data.items[0].snippet.thumbnails?.high?.url }; return null; } catch(e) { return null; }
 }
 async function addYouTubeChannel(room) {
-  let url = document.getElementById(`url-${room}`).value.trim();
+  let url = document.getElementById(`url-${room}`)?.value?.trim();
   if (!url) { alert('أدخل رابط القناة'); return; }
   let btn = document.querySelector(`#ap-${room} .btn-pub`) || document.querySelector('.btn-pub');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ جارٍ الإضافة...'; }
@@ -1529,36 +1531,13 @@ async function addYouTubeChannel(room) {
   } catch(e) { alert('خطأ: ' + e.message); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '➕ إضافة'; } }
 }
-async function addYouTubeChannel(room) {
-  let url = document.getElementById(`url-${room}`).value.trim();
-  if (!url) { alert('أدخل رابط القناة'); return; }
-  let handle = url.split('@')[1]?.split(/[\/?]/)[0];
-  if (!handle) { alert('رابط غير صحيح. يجب أن يحتوي على @handle'); return; }
-  let extraContent = document.getElementById(`content-${room}`)?.value.trim() || '';
-  let body = {
-    title: '@' + handle,
-    description: 'YouTube Channel',
-    icon: '📺',
-    url: url,
-    tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'),
-    room: room,
-    content: extraContent
-  };
-  let { error } = await supabaseClient.from('posts').insert(body);
-  if (error) alert('❌ فشل الإضافة: ' + error.message);
-  else {
-    alert('✅ تمت إضافة القناة بنجاح');
-    document.getElementById(`url-${room}`).value = '';
-    loadContentPage(room);
-  }
-}
 
 async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
 async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
 async function addYouTubeVideo(room) {
-  let url = document.getElementById(`url-${room}`).value.trim();
+  let url = document.getElementById(`url-${room}`)?.value?.trim();
   if (!url) { alert('أدخل رابط'); return; }
-  let type = document.getElementById(`type-${room}`).value;
+  let type = document.getElementById(`type-${room}`)?.value || 'single';
   let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url);
   if (!info) { alert('تعذر جلب الفيديو'); return; }
   let body = {
@@ -1566,15 +1545,15 @@ async function addYouTubeVideo(room) {
     description: info.description,
     icon: info.thumbnail || '📹',
     url: info.videoUrl,
-    tag: document.getElementById(`tag-${room}`).value,
+    tag: document.getElementById(`tag-${room}`)?.value || 'Video',
     room: room,
-    content: document.getElementById(`content-${room}`).value.trim()
+    content: document.getElementById(`content-${room}`)?.value?.trim() || ''
   };
   let { error } = await supabaseClient.from('posts').insert(body);
   if (error) alert('❌ فشل الإضافة: ' + error.message);
   else {
     alert('✅ تمت إضافة الفيديو بنجاح');
-    document.getElementById(`url-${room}`).value = '';
+    if (document.getElementById(`url-${room}`)) document.getElementById(`url-${room}`).value = '';
     loadContentPage(room);
   }
 }
