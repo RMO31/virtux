@@ -373,22 +373,22 @@
     .read-more{font-size:12px;background:#e01010;color:#000;border-radius:5px;padding:4px 10px;text-decoration:none;font-weight:600}
     .read-more:hover{background:#e6c300}
     
-    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:12px 14px}
-    .channels-grid.subscribers-grid{display:grid !important;grid-template-columns:repeat(auto-fill,220px) !important;gap:12px !important;width:100% !important;justify-content:flex-start !important;padding:15px !important;box-sizing:border-box !important}
-    .channel-card{background:#1e1e2e;border:1px solid #333;border-radius:10px;padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:border-color 0.2s}
-    .channel-card:hover{border-color:#e01010}
-    .subscriber-card{position:relative;min-height:120px;width:220px !important;min-width:220px !important;max-width:220px !important;margin:0 !important;padding:10px 8px 12px;justify-content:flex-start;overflow:hidden;isolation:isolate}
+    .channels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;padding:8px}
+    .channels-grid.subscribers-grid{display:grid !important;grid-template-columns:repeat(auto-fill,200px) !important;gap:10px !important;width:100% !important;justify-content:flex-start !important;padding:12px !important;box-sizing:border-box !important}
+    .channel-card{background:rgba(30,30,46,0.4);border:1px solid rgba(255,255,255,0.05);border-radius:6px;padding:8px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:all 0.2s;position:relative;overflow:hidden;}
+    .channel-card:hover{border-color:#e01010;transform:translateY(-1px);background:rgba(30,30,46,0.7);}
+    .subscriber-card{position:relative;min-height:110px;width:200px !important;min-width:200px !important;max-width:200px !important;margin:0 !important;padding:8px 6px 10px;justify-content:flex-start;overflow:hidden;isolation:isolate}
     .subscriber-card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:conic-gradient(from 0deg, transparent 0deg, var(--sub-accent, rgba(224,16,16,.85)) 90deg, transparent 170deg, transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask-composite:exclude;opacity:.7;animation:subscriber-spin 4.5s linear infinite;pointer-events:none}
-    .subscriber-card .channel-avatar{width:50px;height:50px;margin-bottom:6px}
-    .subscriber-card .channel-name{font-size:14px;line-height:1.2;margin-bottom:3px;word-break:break-word}
-    .subscriber-badge{font-size:9px;border-radius:5px;padding:2px 6px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;min-height:18px}
+    .subscriber-card .channel-avatar{width:46px;height:46px;margin-bottom:4px}
+    .subscriber-card .channel-name{font-size:13px;line-height:1.2;margin-bottom:2px;word-break:break-word}
+    .subscriber-badge{font-size:8px;border-radius:4px;padding:1px 5px;font-weight:800;letter-spacing:.2px;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;min-height:16px}
     @keyframes subscriber-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-    .channel-avatar{width:60px;height:60px;border-radius:50%;object-fit:cover;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:8px}
+    .channel-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#2a2a3a;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:5px}
     .channel-info{width:100%}
-    .channel-name{font-size:13px;font-weight:600;color:#e01010;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .channel-sub{font-size:11px;color:#aaa;margin-bottom:6px}
-    .channel-link{font-size:11px;color:#e01010;text-decoration:none;border:1px solid #e01010;border-radius:5px;padding:4px 10px;display:inline-block;margin-top:4px}
-    .channel-link:hover{background:#e01010;color:#000}
+    .channel-name{font-size:11px;font-weight:600;color:#e01010;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+    .channel-sub{font-size:9px;color:#777;margin-bottom:3px}
+    .channel-link{font-size:9px;color:#e01010;text-decoration:none;border:1px solid rgba(224,16,16,0.25);border-radius:3px;padding:2px 6px;display:inline-block;margin-top:1px;width:100%;box-sizing:border-box;}
+    .channel-link:hover{background:#e01010;color:#000;border-color:#e01010}
     .empty-state{text-align:center;color:#555;padding:40px;font-size:14px}
     .loading-state{text-align:center;color:#aaa;padding:30px;font-size:13px}
     .contact-page{padding:20px}
@@ -2182,7 +2182,7 @@ function renderCards(posts, gridId, room) {
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
       const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة","Visit")}</a>` : '';
       let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `${p.description} Sub`;
+      if (p.description && !isNaN(parseInt(p.description))) subText = window.formatSubs(p.description);
       return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name" title="${escapeHtml(p.title)}">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div></div>${link}</div>`;
     }).join('')}</div>` : '<div class="empty-state">لا توجد قنوات</div>';
     return;
@@ -2426,11 +2426,11 @@ async function loadSubscribersWithVIP(el, posts, roleFilter, searchQuery) {
     const youtuberCards = posts.map(p => {
       const isImg = p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'));
       const avatar = isImg ? `<img class="channel-avatar" src="${p.icon}">` : `<div class="channel-avatar">${p.icon || '📺'}</div>`;
-      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة القناة","Visit Channel")}</a>` : '';
+      const link = p.url ? `<a href="${p.url}" target="_blank" class="channel-link">${window.t("زيارة","Visit")}</a>` : '';
       let subText = p.description || '';
-      if (p.description && !isNaN(parseInt(p.description))) subText = `👥 ${p.description} مشترك`;
-      const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:11px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
-      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
+      if (p.description && !isNaN(parseInt(p.description))) subText = window.formatSubs(p.description);
+      const badge = p.tag === 'Youtuber VIP' ? `<span style="font-size:10px;background:#1a0000;color:#e01010;border:1px solid #e01010;border-radius:4px;padding:2px 6px;margin-top:4px;display:inline-block;">👑 Youtuber VIP</span>` : '';
+      return `<div class="channel-card">${avatar}<div class="channel-info"><div class="channel-name" title="${escapeHtml(p.title)}">${escapeHtml(p.title)}</div><div class="channel-sub">${subText}</div>${badge}</div>${link}</div>`;
     }).join('');
     
     combinedHtml += `
@@ -4037,7 +4037,7 @@ function applyTranslations() {
   // Profile modal
   const saveBtn = document.getElementById('saveProfileBtn');
   if (saveBtn) saveBtn.textContent = isEN ? '💾 Save Changes' : '💾 حفظ التغييرات';
-  const closeBtn = document.getElementById('close Btn');
+  const closeBtn = document.getElementById('closeProfileBtn');
   if (closeBtn) closeBtn.textContent = isEN ? 'Close' : 'إغلاق';
   const delBtn = document.getElementById('deleteAccountBtn');
   if (delBtn && !delBtn.disabled) delBtn.textContent = isEN ? '🗑️ Delete Account Permanently' : '🗑️ حذف الحساب نهائياً';
@@ -4456,88 +4456,54 @@ function applyTranslations() {
 })();
 
 // ==================== Auto-fetch يوتيوب للقنوات ====================
-(async function autoFetchYouTubeChannels() {
+async function autoFetchYouTubeChannels() {
   try {
-    // جلب القنوات التي لها youtuber_vip
-    const { data: channels } = await db.from('posts')
-      .select('*')
-      .eq('room', 'yt-channels')
-      .not('url', 'is', null);
+    const { data: channels } = await db.from('posts').select('*').eq('room', 'yt-channels').not('url', 'is', null);
     if (!channels || !channels.length) return;
-
     const today = new Date().toISOString().split('T')[0];
-
+    
+    // فتش القنوات واحدة تلو الأخرى مع تأخير بسيط لتجنب التجميد
     for (const ch of channels) {
-      if (!ch.url || !ch.url.includes('youtube.com/channel') && !ch.url.includes('youtube.com/@') && !ch.url.includes('youtube.com/c/')) continue;
+      const channelUrl = ch.url?.trim();
+      if (!channelUrl) continue;
+      
+      const lastFetchKey = `yt_fetch_${ch.id}_${today}`;
+      if (localStorage.getItem(lastFetchKey)) continue;
 
-      // تحقق من آخر fetch
-      const lastFetchKey = `yt_fetch_${ch.id}`;
-      const { data: meta } = await db.from('posts')
-        .select('id')
-        .eq('room', 'yt-videos')
-        .eq('tag', `auto:${ch.id}`)
-        .gte('created_at', today + 'T00:00:00')
-        .limit(1);
-
-      if (meta && meta.length > 0) continue; // تم الفتش اليوم
-
-      // استخرج channel ID أو handle
-      const channelUrl = ch.url.trim();
-      let feedUrl = '';
       const chanMatch = channelUrl.match(/youtube\.com\/channel\/([A-Za-z0-9_-]+)/);
       const handleMatch = channelUrl.match(/youtube\.com\/@([^/?]+)/);
-      const cMatch = channelUrl.match(/youtube\.com\/c\/([^/?]+)/);
-
+      let feedUrl = '';
       if (chanMatch) feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${chanMatch[1]}`;
       else if (handleMatch) feedUrl = `https://www.youtube.com/feeds/videos.xml?user=${handleMatch[1]}`;
-      else if (cMatch) feedUrl = `https://www.youtube.com/feeds/videos.xml?user=${cMatch[1]}`;
       else continue;
 
       try {
-        // جرب عدة proxies
-        let resp = null;
-        const proxies = [
-          'https://corsproxy.io/?' + encodeURIComponent(feedUrl),
-          'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl),
-          'https://api.allorigins.win/get?url=' + encodeURIComponent(feedUrl),
-        ];
-        for (const proxyUrl of proxies) {
-          try {
-            const r = await fetch(proxyUrl);
-            if (r.ok) { resp = r; break; }
-          } catch(e) {}
+        const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl);
+        const r = await fetch(proxyUrl);
+        if (r.ok) {
+          const xml = await r.text();
+          const doc = new DOMParser().parseFromString(xml, 'application/xml');
+          const entries = Array.from(doc.querySelectorAll('entry')).slice(0, 3);
+          for (const entry of entries) {
+            const videoId = entry.querySelector('videoId')?.textContent;
+            if (!videoId) continue;
+            const vidUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            const { data: exists } = await db.from('posts').select('id').eq('url', vidUrl).maybeSingle();
+            if (exists) continue;
+            await db.from('posts').insert({
+              room: 'yt-videos', title: entry.querySelector('title')?.textContent || 'Video',
+              url: vidUrl, tag: `auto:${ch.id}`, icon: '🎬', user_id: ch.user_id || null,
+              description: `تم إضافته تلقائياً من قناة ${ch.title || ''}`
+            });
+          }
+          localStorage.setItem(lastFetchKey, 'true');
         }
-        if (!resp) continue;
-        if (!resp.ok) continue;
-        let xml = await resp.text();
-        try { const j = JSON.parse(xml); if (j.contents) xml = j.contents; } catch(e) {}
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(xml, 'application/xml');
-        const entries = Array.from(doc.querySelectorAll('entry')).slice(0, 5);
-
-        for (const entry of entries) {
-          const videoId = entry.querySelector('videoId')?.textContent || entry.querySelector('id')?.textContent?.split(':').pop();
-          const title = entry.querySelector('title')?.textContent || '';
-          const vidUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-          // تحقق من عدم وجوده مسبقاً
-          const { data: exists } = await db.from('posts').select('id').eq('url', vidUrl).limit(1);
-          if (exists && exists.length) continue;
-
-          await db.from('posts').insert({
-            room: 'yt-videos',
-            title: title,
-            url: vidUrl,
-            tag: `auto:${ch.id}`,
-            icon: '🎬',
-            user_id: ch.user_id || null,
-            description: `تم إضافته تلقائياً من قناة ${ch.title || ''}`,
-          });
-        }
-      } catch(e) { /* قناة لا يمكن جلبها */ }
+      } catch(e) {}
+      await new Promise(res => setTimeout(res, 2000)); // تأخير بين كل قناة
     }
-  } catch(e) { /* خطأ عام */ }
-})();
+  } catch(e) {}
+}
+setTimeout(autoFetchYouTubeChannels, 5000); // بدء الفتش بعد 5 ثواني من تحميل الصفحة
 
 
 // ===== تشغيل يوتيوب =====
@@ -4569,6 +4535,22 @@ window.fixThumb = function(img, vid) {
   } else {
     img.style.display = 'none';
   }
+};
+
+window.formatSubs = function(count) {
+  if (!count || isNaN(parseInt(count))) return count;
+  const num = parseInt(count);
+  const isEN = window._siteLanguage === 'en';
+  
+  if (num >= 1000000) {
+    const val = (num / 1000000).toFixed(1).replace(/\.0$/, '');
+    return val + (isEN ? 'M Subs' : ' مليون مشترك');
+  }
+  if (num >= 1000) {
+    const val = (num / 1000).toFixed(1).replace(/\.0$/, '');
+    return val + (isEN ? 'K Subs' : ' ألف مشترك');
+  }
+  return num + (isEN ? ' Subs' : ' مشترك');
 };
 
 // تهيئة الترجمة واللغة فوراً عند تحميل الصفحة لضمان مزامنة الواجهة
