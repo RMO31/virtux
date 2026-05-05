@@ -1938,22 +1938,43 @@ function closeEditModal() { document.getElementById('editModal').classList.remov
 // ==================== دوال يوتيوب والمستخدمين ====================
 function parseYouTubeUrl(url) {
   if (!url) return null;
+  url = url.trim();
+
+  // handle مباشر @username
+  if (url.startsWith('@')) return { type: 'handle', value: url.split(/[\/?]/)[0] };
+
+  // UC... channel ID مباشر
+  if (/^UC[\w-]{20,}$/.test(url)) return { type: 'id', value: url };
+
+  // youtube.com/@ أو youtu.be/@
   if (url.includes('@')) {
-    let h = url.split('@')[1]?.split(/[\/?]/)[0];
+    let h = url.split('@')[1]?.split(/[\/?&]/)[0];
     if (h) return { type: 'handle', value: '@' + h };
   }
+  // /channel/UCxxx
   if (url.includes('/channel/')) {
-    let id = url.split('/channel/')[1]?.split(/[\/?]/)[0];
+    let id = url.split('/channel/')[1]?.split(/[\/?&]/)[0];
     if (id) return { type: 'id', value: id };
   }
+  // /user/name
   if (url.includes('/user/')) {
-    let user = url.split('/user/')[1]?.split(/[\/?]/)[0];
+    let user = url.split('/user/')[1]?.split(/[\/?&]/)[0];
     if (user) return { type: 'user', value: user };
   }
+  // /c/name
   if (url.includes('/c/')) {
-    let c = url.split('/c/')[1]?.split(/[\/?]/)[0];
+    let c = url.split('/c/')[1]?.split(/[\/?&]/)[0];
     if (c) return { type: 'handle', value: '@' + c };
   }
+  // youtube.com/CUSTOMNAME => جرّب كـ handle
+  try {
+    const u = new URL(url.startsWith('http') ? url : 'https://' + url);
+    const parts = u.pathname.replace(/^\//, '').split('/');
+    if (parts[0] && parts[0] !== 'watch' && parts[0] !== 'shorts' && parts[0] !== 'playlist') {
+      return { type: 'handle', value: '@' + parts[0] };
+    }
+  } catch(e) {}
+
   return null;
 }
 
@@ -1961,16 +1982,22 @@ async function fetchYouTubeChannelInfo(url) {
   try {
     let parsed = parseYouTubeUrl(url);
     if (!parsed) return null;
-    let param = parsed.type === 'handle' ? `forHandle=${parsed.value}` : (parsed.type === 'id' ? `id=${parsed.value}` : `forUsername=${parsed.value}`);
-    let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&${param}&key=${YOUTUBE_API_KEY}`;
+    let param = parsed.type === 'handle' ? `forHandle=${encodeURIComponent(parsed.value)}` : (parsed.type === 'id' ? `id=${parsed.value}` : `forUsername=${parsed.value}`);
+    let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&${param}&key=${YOUTUBE_API_KEY}`;
     let res = await fetch(apiUrl);
     let data = await res.json();
+    // إذا فشل النوع user جرّب كـ forHandle
+    if ((!data.items || !data.items[0]) && parsed.type === 'user') {
+      const apiUrl2 = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&forHandle=@${parsed.value}&key=${YOUTUBE_API_KEY}`;
+      const res2 = await fetch(apiUrl2);
+      data = await res2.json();
+    }
     if (data.items && data.items[0]) return { 
       title: data.items[0].snippet.title, 
       subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', 
       thumbnail: data.items[0].snippet.thumbnails?.high?.url, 
       channelId: data.items[0].id,
-      uploadsPlaylistId: data.items[0].contentDetails?.relatedPlaylists?.uploads // إضافة معرف قائمة الرفع
+      uploadsPlaylistId: data.items[0].contentDetails?.relatedPlaylists?.uploads
     };
     return null;
   } catch(e) { console.error('Error fetching channel info:', e); return null; }
