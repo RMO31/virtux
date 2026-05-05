@@ -265,7 +265,10 @@
 
 <div id="adminPage">
   <div class="topbar">
-    <h1>🎮 Virtux Admin Panel</h1>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <img src="logo.png" alt="Logo" style="height:50px; object-fit:contain; border-radius:8px;">
+      <h1>🎮 Virtux Admin Panel</h1>
+    </div>
     <div class="topbar-right">
       <span class="conn" id="connStatus">جارٍ الاتصال...</span>
       <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
@@ -1964,16 +1967,21 @@ function parseYouTubeUrl(url) {
   // /c/name
   if (url.includes('/c/')) {
     let c = url.split('/c/')[1]?.split(/[\/?&]/)[0];
-    if (c) return { type: 'handle', value: '@' + c };
+    if (c) return { type: 'query', value: c }; 
   }
-  // youtube.com/CUSTOMNAME => جرّب كـ handle
+  // youtube.com/CUSTOMNAME => جرّب كـ query (يمكن أن يكون handle أو username)
   try {
     const u = new URL(url.startsWith('http') ? url : 'https://' + url);
     const parts = u.pathname.replace(/^\//, '').split('/');
     if (parts[0] && parts[0] !== 'watch' && parts[0] !== 'shorts' && parts[0] !== 'playlist') {
-      return { type: 'handle', value: '@' + parts[0] };
+      return { type: 'query', value: parts[0] };
     }
   } catch(e) {}
+
+  // إذا لم يكن رابطاً بل مجرد اسم قناة
+  if (!url.includes('/') && !url.includes('.')) {
+    return { type: 'query', value: url };
+  }
 
   return null;
 }
@@ -1982,30 +1990,47 @@ async function fetchYouTubeChannelInfo(url) {
   try {
     let parsed = parseYouTubeUrl(url);
     if (!parsed) return null;
-    let param = parsed.type === 'handle' ? `forHandle=${parsed.value}` : (parsed.type === 'id' ? `id=${parsed.value}` : `forUsername=${parsed.value}`);
-    let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&${param}&key=${YOUTUBE_API_KEY}`;
-    let res = await fetch(apiUrl);
-    let data = await res.json();
-    // إذا فشل النوع user جرّب كـ forHandle
-    console.log('[YT] parsed:', parsed);
-    console.log('[YT] apiUrl:', apiUrl);
-    console.log('[YT] response:', data);
-    // إذا فشل النوع user جرّب كـ forHandle
-    if ((!data.items || !data.items[0]) && parsed.type === 'user') {
-      const apiUrl2 = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&forHandle=@${parsed.value}&key=${YOUTUBE_API_KEY}`;
-      const res2 = await fetch(apiUrl2);
-      data = await res2.json();
-      console.log('[YT] fallback response:', data);
-    }
-    if (data.items && data.items[0]) return { 
-      title: data.items[0].snippet.title, 
-      subscribers: data.items[0].statistics.subscriberCount?.toLocaleString() || '0', 
-      thumbnail: data.items[0].snippet.thumbnails?.high?.url, 
-      channelId: data.items[0].id,
-      uploadsPlaylistId: data.items[0].contentDetails?.relatedPlaylists?.uploads
+
+    const fetchByParam = async (paramStr) => {
+      let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&${paramStr}&key=${YOUTUBE_API_KEY}`;
+      let res = await fetch(apiUrl);
+      let data = await res.json();
+      return data.items && data.items[0] ? data.items[0] : null;
     };
-    // أظهر خطأ API إن وجد
-    if (data.error) console.error('[YT] API error:', data.error.message);
+
+    let item = null;
+    if (parsed.type === 'id') item = await fetchByParam(`id=${parsed.value}`);
+    else if (parsed.type === 'handle') item = await fetchByParam(`forHandle=${parsed.value}`);
+    else if (parsed.type === 'user') {
+      item = await fetchByParam(`forUsername=${parsed.value}`);
+      if (!item) item = await fetchByParam(`forHandle=@${parsed.value}`);
+    } else if (parsed.type === 'query') {
+      item = await fetchByParam(`forHandle=@${parsed.value}`);
+      if (!item) item = await fetchByParam(`forUsername=${parsed.value}`);
+    }
+
+    // Fallback: search API إذا لم يجد القناة بالمعرفات السابقة
+    if (!item) {
+       console.log('[YT] Using search fallback for:', parsed.value || url);
+       let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(parsed.value || url)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
+       let searchRes = await fetch(searchUrl);
+       let searchData = await searchRes.json();
+       if (searchData.items && searchData.items[0]) {
+         item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
+       }
+    }
+
+    if (item) {
+      return { 
+        title: item.snippet.title, 
+        subscribers: item.statistics.subscriberCount?.toLocaleString() || '0', 
+        thumbnail: item.snippet.thumbnails?.high?.url, 
+        channelId: item.id,
+        uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads
+      };
+    }
+    
+    console.error('[YT] API could not find channel info.');
     return null;
   } catch(e) { console.error('[YT] Exception:', e); return null; }
 }
@@ -2089,14 +2114,36 @@ async function addYouTubeVideo(room) {
 
 async function getChannelId(parsed) {
   try {
-    let param = parsed.type === 'handle' ? `forHandle=${parsed.value}` : (parsed.type === 'id' ? `id=${parsed.value}` : `forUsername=${parsed.value}`);
-    // طلبنا هنا contentDetails للحصول على قائمة الرفع الموفرة للكوتا
-    let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet,contentDetails&${param}&key=${YOUTUBE_API_KEY}`);
-    let d = await res.json();
-    if (d.items?.[0]) return { 
-      id: d.items[0].id, 
-      title: d.items[0].snippet.title,
-      uploadsId: d.items[0].contentDetails?.relatedPlaylists?.uploads 
+    const fetchByParam = async (paramStr) => {
+      let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet,contentDetails&${paramStr}&key=${YOUTUBE_API_KEY}`);
+      let d = await res.json();
+      return d.items?.[0] || null;
+    };
+    
+    let item = null;
+    if (parsed.type === 'id') item = await fetchByParam(`id=${parsed.value}`);
+    else if (parsed.type === 'handle') item = await fetchByParam(`forHandle=${parsed.value}`);
+    else if (parsed.type === 'user') {
+      item = await fetchByParam(`forUsername=${parsed.value}`);
+      if (!item) item = await fetchByParam(`forHandle=@${parsed.value}`);
+    } else if (parsed.type === 'query') {
+      item = await fetchByParam(`forHandle=@${parsed.value}`);
+      if (!item) item = await fetchByParam(`forUsername=${parsed.value}`);
+    }
+
+    if (!item) {
+       let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(parsed.value)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
+       let searchRes = await fetch(searchUrl);
+       let searchData = await searchRes.json();
+       if (searchData.items && searchData.items[0]) {
+         item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
+       }
+    }
+
+    if (item) return { 
+      id: item.id, 
+      title: item.snippet.title,
+      uploadsId: item.contentDetails?.relatedPlaylists?.uploads 
     };
   } catch(e) {}
   return null;
