@@ -1592,8 +1592,16 @@
         let totalLive = postCounts ? postCounts.filter(p => p.room === 'live').length : 0;
         let totalChannels = postCounts ? postCounts.filter(p => p.room === 'yt-channels').length : 0;
 
+        let todayStr = new Date().toISOString().split('T')[0];
+        let todayQuota = localStorage.getItem(`yt_quota_${todayStr}`) || '0';
+
         let statsHtml = `<div class="stats-grid">
       <div class="stat-card" style="border-bottom:3px solid #00ff88;"><div class="stat-number">${dailyVisitors}</div><div class="stat-label">🌐 زوار اليوم</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #ff3333; background:rgba(255,0,0,0.05);">
+        <div class="stat-number" id="yt-quota-stat">${todayQuota}</div>
+        <div class="stat-label">📊 استهلاك API اليوم</div>
+        <div style="font-size:9px; color:#888; margin-top:2px;">من أصل 10,000 نقطة</div>
+      </div>
       <div class="stat-card" style="border-bottom:3px solid #00bfff;"><div class="stat-number">${totalVideos}</div><div class="stat-label">🎬 الفيديوهات</div></div>
       <div class="stat-card" style="border-bottom:3px solid #ff44aa;"><div class="stat-number">${totalReels}</div><div class="stat-label">🎬 Reels</div></div>
       <div class="stat-card" style="border-bottom:3px solid #ff9800;"><div class="stat-number">${totalLive}</div><div class="stat-label">🔴 البثوث</div></div>
@@ -2690,7 +2698,22 @@
       }
     }
 
-    function closeEditModal() { document.getElementById('editModal').classList.remove('open'); currentEditPost = null; }
+    function trackQuota(units) {
+      const today = new Date().toISOString().split('T')[0];
+      const key = `yt_quota_${today}`;
+      let used = parseInt(localStorage.getItem(key) || '0');
+      used += units;
+      localStorage.setItem(key, used.toString());
+      console.log(`📊 استهلاك API: +${units} | الإجمالي اليومي: ${used}`);
+      updateQuotaDisplay();
+    }
+    function updateQuotaDisplay() {
+      const today = new Date().toISOString().split('T')[0];
+      const used = localStorage.getItem(`yt_quota_${today}`) || '0';
+      const el = document.getElementById('yt-quota-stat');
+      if (el) el.textContent = used;
+    }
+    document.addEventListener('DOMContentLoaded', updateQuotaDisplay);
 
     // ==================== دوال يوتيوب والمستخدمين ====================
     function parseYouTubeUrl(url) {
@@ -2728,6 +2751,7 @@
         let parsed = parseYouTubeUrl(url);
         if (!parsed) return null;
         const fetchByParam = async (paramStr) => {
+          trackQuota(1); // channels.list costs 1
           let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&${paramStr}&key=${YOUTUBE_API_KEY}`;
           let res = await fetch(apiUrl);
           let data = await res.json();
@@ -2744,6 +2768,7 @@
           if (!item) item = await fetchByParam(`forUsername=${parsed.value}`);
         }
         if (!item) {
+          trackQuota(100); // search.list costs 100
           let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(parsed.value || url)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
           let searchRes = await fetch(searchUrl);
           let searchData = await searchRes.json();
@@ -2816,6 +2841,7 @@
 
     async function fetchLatestVideos(playlistId, maxResults = 5) {
       try {
+        trackQuota(1); // playlistItems.list costs 1
         let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=${maxResults}&key=${YOUTUBE_API_KEY}`);
         let d = await res.json();
         if (!d.items) return [];
@@ -2825,6 +2851,7 @@
 
     async function fetchLiveStream(channelId) {
       try {
+        trackQuota(100); // search.list costs 100
         let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${YOUTUBE_API_KEY}`);
         let d = await res.json();
         let v = d.items?.[0];
@@ -2835,6 +2862,7 @@
 
     async function fetchUpcomingStream(channelId) {
       try {
+        trackQuota(100); // search.list costs 100
         let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=upcoming&key=${YOUTUBE_API_KEY}`);
         let d = await res.json();
         let v = d.items?.[0];
@@ -2929,6 +2957,7 @@
 
         const ytStatusMap = {};
         for (const chunk of chunks) {
+          trackQuota(1); // videos.list costs 1
           const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${chunk.join(',')}&key=${apiKey}`);
           const json = await resp.json();
           if (json.items) {
@@ -2990,6 +3019,7 @@
         let count = 0;
 
         // 1. جلب أخبار البطولات والأحداث الكبرى (Esports Tournaments)
+        trackQuota(100); // search.list costs 100
         const eventQuery = encodeURIComponent('Esports Tournament Championship 2026 news -sports -football -rugby');
         const eventRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${eventQuery}&type=video&order=date&maxResults=5&key=${YOUTUBE_API_KEY}`);
         const eventData = await eventRes.json();
