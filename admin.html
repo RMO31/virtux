@@ -2357,23 +2357,13 @@
           if (error) throw error;
 
           alert(`✅ تم حذف القناة "${channelTitle}" وجميع محتوياتها بنجاح.`);
-        } else if (room === 'yt-videos' || room === 'live') {
-          // التحقق إذا كانت القناة مراقبة
-          let { data: ch } = await supabaseClient.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
-
-          if (ch && ch.length > 0) {
-            // نقل للمهملات
-            const { error } = await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id);
-            if (error) throw error;
-            // حذف أي تكرارات لنفس الرابط في هذه الغرفة لضمان نظافة القائمة
-            if (post.url) await supabaseClient.from('posts').delete().eq('url', post.url).eq('room', room).neq('id', id);
-            alert('✅ تم النقل للمهملات.');
-          } else {
-            // حذف نهائي
-            const { error } = await supabaseClient.from('posts').delete().eq('id', id);
-            if (error) throw error;
-            alert('✅ تم الحذف نهائياً.');
-          }
+        } else if (room === 'yt-videos' || room === 'live' || room === 'gaming-news' || room === 'youtube-news') {
+          // نقل للمهملات لمنع البوت من إعادتها
+          const { error } = await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id);
+          if (error) throw error;
+          // حذف أي تكرارات لنفس الرابط
+          if (post.url) await supabaseClient.from('posts').delete().eq('url', post.url).eq('room', room).neq('id', id);
+          alert('✅ تم النقل للمهملات.');
         } else {
           // غرف أخرى حذف نهائي
           const { error } = await supabaseClient.from('posts').delete().eq('id', id);
@@ -2409,8 +2399,8 @@
         if (error) throw error;
 
         let html = `<div class="card" style="border-color:#ffaa00;">
-      <h3>🗑️ فيديوهات في المهملات (يمنع البوت من إعادتها)</h3>
-      <p style="font-size:12px; color:#888; margin-bottom:12px;">ملاحظة: الفيديوهات هنا لن تظهر في الموقع، ولكن وجودها يمنع البوت من جلبها مرة أخرى. إذا حذفتها من هنا نهائياً، قد يعيد البوت جلبها.</p>
+      <h3>🗑️ سلة المهملات الشاملة (يمنع البوت من إعادتها)</h3>
+      <p style="font-size:12px; color:#888; margin-bottom:12px;">ملاحظة: العناصر هنا لن تظهر في الموقع، ولكن وجودها يمنع بوتات (الأخبار، الفيديوهات، العروض) من جلبها مرة أخرى.</p>
       
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05);">
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#ffaa00;">
@@ -2429,14 +2419,18 @@
         } else {
           html += `<div class="posts-list">` + trashPosts.map(p => {
             let vid = p.url?.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
-            let media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : `<div class="pi-icon">📹</div>`;
+            let media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : 
+                        (p.icon && p.icon.startsWith('http') ? `<img src="${p.icon}" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : `<div class="pi-icon">📰</div>`);
+            
+            let typeLabel = p.tag || 'News';
+            if (p.url && (p.url.includes('youtube.com') || p.url.includes('youtu.be'))) typeLabel = 'Video';
             return `<div class="pi" id="trash-item-${p.id}">
           <div style="display:flex; align-items:center; gap:12px; flex:1;">
             <input type="checkbox" class="trash-checkbox" value="${p.id}" style="width:18px; height:18px;">
             <div style="width:80px; flex-shrink:0;">${media}</div>
             <div class="pi-info">
               <div class="pi-title">${escapeHtml(p.title)}</div>
-              <div class="pi-meta">${escapeHtml(p.description || '')} • ${p.tag || ''}</div>
+              <div class="pi-meta"><span style="color:#ffaa00;">[${typeLabel}]</span> • ${escapeHtml(p.description || '')}</div>
             </div>
           </div>
           <div style="display:flex; gap:6px;">
