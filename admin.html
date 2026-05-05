@@ -947,6 +947,8 @@ async function loadDashboard() {
           <button class="btn-del" style="width:auto; padding:10px 20px;" onclick="cleanupOrphanedVideos()">🧹 تنظيف الفيديوهات اليتيمة</button>
           <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#00ff88; color:#00ff88;" onclick="manualSyncChannels()">🔄 مزامنة القنوات الآن</button>
           <button class="btn-pub" style="width:auto; padding:10px 20px; background:#aa55ff;" onclick="manualMigrateReels()">🎬 نقل الـ Reels من غرفة الفيديوهات</button>
+          <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#ffaa00; color:#ffaa00;" onclick="syncGamingNews()">📰 جلب أخبار الألعاب</button>
+          <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#ff00ff; color:#ff00ff;" onclick="syncYoutubeNews()">▶️ جلب أخبار يوتيوب</button>
         </div>
       </div>
     `;
@@ -2443,6 +2445,126 @@ async function autoCheckAllChannels(force = false) {
       if (document.getElementById('content-live'))      loadContentPage('live');
     }
   } catch(e) { console.error('autoCheck error:', e); }
+}
+
+// ==================== بوت الأخبار (Gaming & YouTube) ====================
+
+const FORBIDDEN_KEYWORDS = ['sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 'بنات', 'نساء', 'موسيقى', 'music'];
+
+function isContentSafe(text) {
+    if (!text) return true;
+    const lower = text.toLowerCase();
+    // التحقق من الكلمات الممنوعة
+    return !FORBIDDEN_KEYWORDS.some(k => lower.includes(k));
+}
+
+async function syncGamingNews() {
+    if (!confirm('هل تريد جلب آخر أخبار الألعاب من Steam و Epic Games؟')) return;
+    try {
+        console.log('⏳ جاري جلب أخبار الألعاب...');
+        // استخدام RSS feed من IGN عبر rss2json
+        const rssUrl = encodeURIComponent('https://feeds.feedburner.com/ign/all');
+        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
+        const data = await res.json();
+        
+        if (!data.items) throw new Error('تعذر جلب البيانات');
+        
+        let count = 0;
+        for (let item of data.items) {
+            const text = (item.title + ' ' + item.description).toLowerCase();
+            // تصفية المحتوى ليكون متعلقاً بالألعاب والمنصات المطلوبة
+            const isRelevant = text.includes('steam') || text.includes('epic') || text.includes('game') || text.includes('playstation') || text.includes('xbox') || text.includes('nintendo');
+            
+            if (isRelevant && isContentSafe(item.title) && isContentSafe(item.description)) {
+                let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.link).limit(1);
+                if (existing?.length) continue;
+
+                await supabaseClient.from('posts').insert({
+                    title: item.title,
+                    description: item.author || 'Gaming News',
+                    icon: item.thumbnail || item.enclosure?.link || '📰',
+                    url: item.link,
+                    tag: 'News',
+                    room: 'gaming-news',
+                    content: item.description || ''
+                });
+                count++;
+            }
+            if (count >= 10) break;
+        }
+        alert(`✅ تم جلب ${count} خبر جديد للألعاب.`);
+        loadDashboard();
+    } catch(e) { alert('❌ فشل جلب الأخبار: ' + e.message); }
+}
+
+async function syncYoutubeNews() {
+    if (!confirm('هل تريد جلب آخر منشورات القنوات وأخبار البطولات العالمية؟\n(سيتم البحث عن المحتوى المنشور خلال آخر 24 ساعة)')) return;
+    try {
+        console.log('⏳ جاري جلب الأخبار...');
+        let count = 0;
+
+        // 1. جلب أخبار البطولات والأحداث الكبرى (Gaming Tournaments)
+        const eventQuery = encodeURIComponent('Gaming Tournament Championship 2026 news');
+        const eventRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${eventQuery}&type=video&order=date&maxResults=5&key=${YOUTUBE_API_KEY}`);
+        const eventData = await eventRes.json();
+        if (eventData.items) {
+            for (let item of eventData.items) {
+                if (isContentSafe(item.snippet.title)) {
+                    const videoUrl = `https://www.youtube.com/watch?v=${item.id.videoId}`;
+                    let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', videoUrl).limit(1);
+                    if (existing?.length) continue;
+                    await supabaseClient.from('posts').insert({
+                        title: `🏆 حدث/بطولة: ${item.snippet.title}`,
+                        description: item.snippet.channelTitle,
+                        icon: item.snippet.thumbnails?.high?.url || '🏆',
+                        url: videoUrl,
+                        tag: 'Tournament News',
+                        room: 'youtube-news',
+                        content: item.snippet.description
+                    });
+                    count++;
+                }
+            }
+        }
+
+        // 2. جلب آخر منشورات القنوات المسجلة في الموقع (خلال آخر 24 ساعة)
+        let { data: channels } = await supabaseClient.from('posts').select('*').eq('room', 'yt-channels');
+        if (channels && channels.length > 0) {
+            for (let ch of channels) { 
+                let parsed = parseYouTubeUrl(ch.url);
+                let chInfo = await getChannelId(parsed);
+                if (chInfo) {
+                    let uploadsId = chInfo.uploadsId || chInfo.id.replace('UC', 'UU');
+                    let activities = await fetchLatestVideos(uploadsId, 1); 
+                    for (let v of activities) {
+                        const pubDate = new Date(v.publishedAt);
+                        // الفحص خلال آخر 24 ساعة كما طلب المستخدم
+                        const isRecent = (Date.now() - pubDate.getTime()) < (24 * 60 * 60 * 1000); 
+                        
+                        if (isRecent && isContentSafe(v.title)) {
+                            let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', v.videoUrl).limit(1);
+                            if (existing?.length) continue;
+
+                            await supabaseClient.from('posts').insert({
+                                title: `📢 تحديث قناة: ${v.title}`,
+                                description: v.channelName,
+                                icon: v.thumbnail || '🔔',
+                                url: v.videoUrl,
+                                tag: 'Channel Post',
+                                room: 'youtube-news',
+                                content: v.description || `آخر نشاط من قناة ${v.channelName}`
+                            });
+                            count++;
+                        }
+                    }
+                }
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+
+        alert(`✅ تم جلب ${count} خبر/منشور جديد خلال الـ 24 ساعة الماضية.`);
+        loadDashboard();
+    } catch(e) { alert('❌ فشل جلب الأخبار: ' + e.message); }
 }
 
 async function manualSyncChannels() {
