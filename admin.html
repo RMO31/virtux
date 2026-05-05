@@ -979,23 +979,47 @@ async function approvePayment(reqId, userId, planKey, expiry = null) {
 }
 
 async function manualMigrateReels() {
-  if (!confirm('هل تريد نقل جميع الفيديوهات القصيرة (Shorts/Reels) من غرفة الفيديوهات إلى الغرفة الجديدة؟')) return;
+  if (!confirm('هل تريد نقل جميع الفيديوهات القصيرة (Shorts/Reels) من غرفة الفيديوهات إلى الغرفة الجديدة؟\n(سيتم فحص مدة الفيديوهات لضمان الدقة)')) return;
   try {
     const { data: posts } = await supabaseClient.from('posts').select('id,url,tag').eq('room','yt-videos');
-    const reels = (posts||[]).filter(p => {
-      const isShort = p.url && (p.url.includes('/shorts/') || p.url.includes('shorts'));
-      const t = (p.tag || '').toLowerCase();
-      const isReelTag = t === 'reel' || t === 'reels' || t === 'vip reel' || t === 'short' || t === 'shorts';
-      return isShort || isReelTag;
-    });
-    if (reels.length > 0) {
-      const ids = reels.map(r => r.id);
-      const { error } = await supabaseClient.from('posts').update({ room: 'reels' }).in('id', ids);
+    if (!posts || posts.length === 0) { alert('ℹ️ لا توجد فيديوهات في غرفة الفيديوهات لنقلها.'); return; }
+    
+    let toMigrate = [];
+    let processed = 0;
+    
+    // فحص الفيديوهات على دفعات من 50 (سعة الـ API لطلب واحد)
+    for (let i = 0; i < posts.length; i += 50) {
+      const batch = posts.slice(i, i + 50);
+      const vIds = batch.map(p => {
+        const m = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+        return m ? m[1] : null;
+      }).filter(Boolean);
+      
+      if (vIds.length > 0) {
+        const durations = await fetchDurations(vIds);
+        batch.forEach(p => {
+          const vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+          const isShortByDur = vid && durations[vid];
+          const t = (p.tag || '').toLowerCase();
+          const u = (p.url || '').toLowerCase();
+          const isShortByText = t.includes('reel') || t.includes('short') || u.includes('shorts');
+          
+          if (isShortByDur || isShortByText) {
+            toMigrate.push(p.id);
+          }
+        });
+      }
+      processed += batch.length;
+      console.log(`⏳ جاري فحص الفيديوهات: ${processed}/${posts.length}...`);
+    }
+
+    if (toMigrate.length > 0) {
+      const { error } = await supabaseClient.from('posts').update({ room: 'reels', tag: 'Reel' }).in('id', toMigrate);
       if (error) throw error;
-      alert(`✅ تم نقل ${ids.length} فيديو إلى غرفة الـ Reels بنجاح.`);
+      alert(`✅ تم نقل ${toMigrate.length} فيديو إلى غرفة الـ Reels بنجاح.`);
       loadDashboard();
     } else {
-      alert('ℹ️ لم يتم العثور على فيديوهات مطابقة لنقلها.');
+      alert('ℹ️ لم يتم العثور على فيديوهات مطابقة (قصيرة) لنقلها.');
     }
   } catch(e) {
     alert('❌ فشل النقل: ' + e.message);
@@ -2322,6 +2346,25 @@ async function cleanupOrphanedVideos() {
 }
 
 // الفحص الشامل لكل القنوات بطريقة موفرة للكريدي
+async function fetchDurations(videoIds) {
+  if (!videoIds.length) return {};
+  try {
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds.join(',')}&key=${YOUTUBE_API_KEY}`);
+    const d = await res.json();
+    const map = {};
+    (d.items || []).forEach(item => {
+      const dur = item.contentDetails.duration;
+      const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const h = parseInt(match[1] || 0);
+      const m = parseInt(match[2] || 0);
+      const s = parseInt(match[3] || 0);
+      const totalSeconds = h * 3600 + m * 60 + s;
+      map[item.id] = totalSeconds <= 65; // سماحية بسيطة لـ 60 ثانية
+    });
+    return map;
+  } catch(e) { return {}; }
+}
+
 async function autoCheckAllChannels(force = false) {
   try {
     if (force) console.log('🔄 فحص قسري لجميع القنوات...');
@@ -2356,16 +2399,24 @@ async function autoCheckAllChannels(force = false) {
 
       console.log(`🔄 جاري فحص: ${ch.title}...`);
 
-      // ── 1. جلب الفيديوهات (تكلفة: 1 كريدي فقط) ──
+      // ── 1. جلب الفيديوهات (تكلفة: 1 كريدت فقط لقائمة التشغيل + 1 لتفاصيل الفيديو) ──
       let videos = await fetchLatestVideos(uploadsPlaylistId, 10);
-      for (let v of videos) {
-        // التحقق من العنوان أو الوصف إذا كان يحتوي على shorts
-        const isShort = v.title.toLowerCase().includes('shorts') || v.description.toLowerCase().includes('shorts') || v.description.toLowerCase().includes('#short');
-        const targetRoom = isShort ? 'reels' : 'yt-videos';
-        const targetTag = isShort ? 'Reel' : 'Video';
+      if (videos.length > 0) {
+        const vIds = videos.map(v => v.videoId);
+        const durations = await fetchDurations(vIds);
         
-        if (await saveToDb(v, targetRoom, targetTag, ch.id)) {
-            newVideos++;
+        for (let v of videos) {
+          // التحقق من المدة (أقل من 65 ثانية) أو وجود كلمة shorts
+          const isShortByDur = durations[v.videoId] || false;
+          const isShortByText = v.title.toLowerCase().includes('shorts') || v.description.toLowerCase().includes('shorts');
+          const isShort = isShortByDur || isShortByText;
+          
+          const targetRoom = isShort ? 'reels' : 'yt-videos';
+          const targetTag = isShort ? 'Reel' : 'Video';
+          
+          if (await saveToDb(v, targetRoom, targetTag, ch.id)) {
+              newVideos++;
+          }
         }
       }
 
