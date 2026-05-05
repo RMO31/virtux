@@ -3432,13 +3432,11 @@
             });
           }
         }
-        // في غرفة yt-videos و reels و yt-channels و gaming-news: نطبق الترقيم
+        // Apply pagination for supported rooms
         if (room === 'yt-videos' || room === 'reels') {
           renderYTVideosPaged(allPosts[room], 1, room);
-        } else if (room === 'yt-channels') {
-          renderYTChannelsPaged(allPosts[room], 1);
-        } else if (room === 'gaming-news') {
-          renderGamingNewsPaged(allPosts[room], 1);
+        } else if (room === 'yt-channels' || room === 'gaming-news' || room === 'highlights' || room === 'tournaments' || room === 'youtube-news') {
+          renderGeneralPaged(allPosts[room], 1, room);
         } else {
           renderCards(allPosts[room], `grid-${room}`, room);
         }
@@ -3937,18 +3935,18 @@
       }
     }
 
-    // ==================== ترقيم أخبار الألعاب (30 منشور/صفحة) ====================
-    window._gamingNewsPage = 1;
-    const NEWS_PAGE_SIZE = 30;
-    function renderGamingNewsPaged(posts, page) {
-      window._gamingNewsPage = page || 1;
-      const room = 'gaming-news';
+    // ==================== ترقيم الغرف العامة (30 منشور/صفحة) ====================
+    window._roomPage = {};
+    const GENERAL_PAGE_SIZE = 30;
+    function renderGeneralPaged(posts, page, room) {
+      if (!room) return;
+      window._roomPage[room] = page || 1;
       const el = document.getElementById('grid-' + room);
       if (!el) return;
       const total = (posts || []).length;
-      const totalPages = Math.ceil(total / NEWS_PAGE_SIZE);
-      const start = (window._gamingNewsPage - 1) * NEWS_PAGE_SIZE;
-      const pageData = (posts || []).slice(start, start + NEWS_PAGE_SIZE);
+      const totalPages = Math.ceil(total / GENERAL_PAGE_SIZE);
+      const start = (window._roomPage[room] - 1) * GENERAL_PAGE_SIZE;
+      const pageData = (posts || []).slice(start, start + GENERAL_PAGE_SIZE);
 
       // استخدام renderCards للبناء ولكن مع تمرير جزء من البيانات
       renderCards(pageData, 'grid-' + room, room);
@@ -3959,17 +3957,17 @@
         nav.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:8px;padding:16px;flex-wrap:wrap;grid-column:1/-1;width:100%;margin-top:20px;';
 
         // السابق
-        if (window._gamingNewsPage > 1) {
+        if (window._roomPage[room] > 1) {
           const prevBtn = document.createElement('button');
           prevBtn.textContent = '‹ سابق';
           prevBtn.style.cssText = 'background:#1a0000;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:13px;';
-          prevBtn.onclick = () => { renderGamingNewsPaged(allPosts[room], window._gamingNewsPage - 1); document.getElementById('page-' + room).scrollIntoView({ behavior: 'smooth' }); };
+          prevBtn.onclick = () => { renderGeneralPaged(allPosts[room], window._roomPage[room] - 1, room); document.getElementById('page-' + room).scrollIntoView({ behavior: 'smooth' }); };
           nav.appendChild(prevBtn);
         }
 
-        // الأرقام (مختصرة إذا كان العدد كبيراً)
+        // الأرقام
         for (let i = 1; i <= totalPages; i++) {
-          if (totalPages > 10 && (i > 3 && i < totalPages - 2 && Math.abs(i - window._gamingNewsPage) > 2)) {
+          if (totalPages > 10 && (i > 3 && i < totalPages - 2 && Math.abs(i - window._roomPage[room]) > 2)) {
             if (i === 4 || i === totalPages - 2) {
               const span = document.createElement('span');
               span.textContent = '...';
@@ -3980,28 +3978,29 @@
           }
           const pgBtn = document.createElement('button');
           pgBtn.textContent = i;
-          pgBtn.style.cssText = `background:${i === window._gamingNewsPage ? '#e01010' : '#1a0000'};border:1px solid #e01010;color:${i === window._gamingNewsPage ? '#000' : '#e01010'};padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:${i === window._gamingNewsPage ? '700' : '400'};`;
+          pgBtn.style.cssText = `background:${i === window._roomPage[room] ? '#e01010' : '#1a0000'};border:1px solid #e01010;color:${i === window._roomPage[room] ? '#000' : '#e01010'};padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:${i === window._roomPage[room] ? '700' : '400'};`;
           const pg = i;
-          pgBtn.onclick = () => { renderGamingNewsPaged(allPosts[room], pg); document.getElementById('page-' + room).scrollIntoView({ behavior: 'smooth' }); };
+          pgBtn.onclick = () => { renderGeneralPaged(allPosts[room], pg, room); document.getElementById('page-' + room).scrollIntoView({ behavior: 'smooth' }); };
           nav.appendChild(pgBtn);
         }
 
         // التالي
-        if (window._gamingNewsPage < totalPages) {
+        if (window._roomPage[room] < totalPages) {
           const nextBtn = document.createElement('button');
           nextBtn.textContent = 'تالي ›';
           nextBtn.style.cssText = 'background:#1a0000;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:13px;';
-          nextBtn.onclick = () => { renderGamingNewsPaged(allPosts[room], window._gamingNewsPage + 1); document.getElementById('page-' + room).scrollIntoView({ behavior: 'smooth' }); };
+          nextBtn.onclick = () => { renderGeneralPaged(allPosts[room], window._roomPage[room] + 1, room); document.getElementById('page-' + room).scrollIntoView({ behavior: 'smooth' }); };
           nav.appendChild(nextBtn);
         }
 
         const info = document.createElement('div');
         info.style.cssText = 'width:100%;text-align:center;font-size:11px;color:#555;margin-top:4px;';
-        info.textContent = `صفحة ${window._gamingNewsPage} من ${totalPages} | إجمالي: ${total} خبر`;
+        info.textContent = `صفحة ${window._roomPage[room]} من ${totalPages} | إجمالي: ${total}`;
         nav.appendChild(info);
         el.appendChild(nav);
       }
     }
+    window.renderGeneralPaged = renderGeneralPaged;
     window.renderYTVideosPaged = renderYTVideosPaged;
 
     // ==================== عرض معلومات مستخدم عند الضغط عليه ====================

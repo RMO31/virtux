@@ -2478,15 +2478,14 @@
         </div>`;
           }).join('') + `</div>`;
 
-          // Pagination
+          // Improved Pagination
           const totalPages = Math.ceil(count / trashPageSize);
           if (totalPages > 1) {
-            html += `<div style="display:flex; justify-content:center; gap:8px; margin-top:20px;">`;
-            for (let i = 1; i <= totalPages; i++) {
-              const active = i === trashPage ? 'background:#ffaa00; color:#000;' : 'background:rgba(255,255,255,0.05); color:#fff;';
-              html += `<button onclick="loadTrashRoom(${i})" style="${active} border:1px solid rgba(255,255,255,0.1); padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">${i}</button>`;
-            }
-            html += `</div>`;
+            html += `<div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:20px; padding-bottom:20px;">
+              <button class="btn-edit" ${trashPage === 1 ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadTrashRoom(${trashPage - 1})">⬅️ السابق</button>
+              <span style="font-weight:bold; color:#ffaa00; font-size:13px;">صفحة ${trashPage} من ${totalPages}</span>
+              <button class="btn-edit" ${trashPage >= totalPages ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadTrashRoom(${trashPage + 1})">التالي ➡️</button>
+            </div>`;
           }
         }
         container.innerHTML = html;
