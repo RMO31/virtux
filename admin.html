@@ -948,6 +948,7 @@ async function loadDashboard() {
           <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#00ff88; color:#00ff88;" onclick="manualSyncChannels()">🔄 مزامنة القنوات الآن</button>
           <button class="btn-pub" style="width:auto; padding:10px 20px; background:#aa55ff;" onclick="manualMigrateReels()">🎬 نقل الـ Reels من غرفة الفيديوهات</button>
           <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#ffaa00; color:#ffaa00;" onclick="syncGamingNews()">📰 جلب أخبار الألعاب</button>
+          <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#00ccff; color:#00ccff;" onclick="syncGiveaways()">🎁 جلب العروض المجانية</button>
           <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#ff00ff; color:#ff00ff;" onclick="syncYoutubeNews()">▶️ جلب أخبار يوتيوب</button>
         </div>
       </div>
@@ -2505,6 +2506,46 @@ async function syncGamingNews() {
         alert(`✅ تم جلب ${count} خبر جديد للألعاب الإلكترونية.`);
         loadDashboard();
     } catch(e) { alert('❌ فشل جلب الأخبار: ' + e.message); }
+}
+
+async function syncGiveaways() {
+    if (!confirm('هل تريد جلب العروض المجانية للألعاب (Steam & Epic Games)؟')) return;
+    try {
+        console.log('⏳ جاري جلب العروض المجانية...');
+        const res = await fetch(`https://www.gamerpower.com/api/giveaways?platform=pc`);
+        const data = await res.json();
+        
+        if (!Array.isArray(data)) throw new Error('تعذر جلب البيانات');
+        
+        let count = 0;
+        for (let item of data) {
+            // تصفية المنصات المطلوبة (Steam & Epic)
+            const plat = (item.platforms || '').toLowerCase();
+            const isTargetPlat = plat.includes('steam') || plat.includes('epic');
+            if (!isTargetPlat) continue;
+
+            // فلتر الأمان الصارم
+            const text = (item.title + ' ' + item.description).toLowerCase();
+            if (isContentSafe(text)) {
+                 let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.open_giveaway_url).limit(1);
+                 if (existing?.length) continue;
+
+                 await supabaseClient.from('posts').insert({
+                    title: `🎁 مجانية الآن: ${item.title}`,
+                    description: item.platforms,
+                    icon: item.image || '🎁',
+                    url: item.open_giveaway_url,
+                    tag: 'Giveaway',
+                    room: 'gaming-news',
+                    content: `🎮 المنصة: ${item.platforms}\n📝 الوصف: ${item.description}\n🚀 طريقة الحصول: ${item.instructions}`
+                });
+                count++;
+            }
+            if (count >= 10) break;
+        }
+        alert(`✅ تم جلب ${count} عرض مجاني جديد.`);
+        loadDashboard();
+    } catch(e) { alert('❌ فشل جلب العروض: ' + e.message); }
 }
 
 async function syncYoutubeNews() {
