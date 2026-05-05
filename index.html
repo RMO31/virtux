@@ -822,32 +822,40 @@
     .lang-switching { animation: lang-pulse 0.35s ease forwards; }
     
     /* Unified Translation Buttons */
-    .trans-btns { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+    .trans-btns {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+    }
     .trans-btn { 
-      background: rgba(255,255,255,0.03); 
-      border: 1px solid rgba(255,255,255,0.1); 
-      color: #aaa; 
-      font-size: 10px; 
-      padding: 3px 10px; 
-      border-radius: 6px; 
+      background: transparent; 
+      border: 1px solid transparent; 
+      color: #777; 
+      padding: 5px 12px; 
+      border-radius: 8px; 
+      font-size: 11px; 
+      font-weight: 700; 
       cursor: pointer; 
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-      font-weight: 800;
-      text-transform: uppercase;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       letter-spacing: 0.5px;
-      font-family: 'Outfit', sans-serif;
+    }
+    .trans-btn:hover:not(.active) {
+      color: #bbb;
+      background: rgba(255, 255, 255, 0.03);
     }
     .trans-btn.active { 
-      background: linear-gradient(135deg, #e01010, #800000); 
+      background: linear-gradient(135deg, #e01010, #900000); 
       color: #fff; 
-      border-color: #ff3333; 
-      box-shadow: 0 0 12px rgba(224, 16, 16, 0.4);
+      border-color: rgba(255, 50, 50, 0.3); 
+      box-shadow: 0 4px 15px rgba(224, 16, 16, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2);
       transform: translateY(-1px);
-    }
-    .trans-btn:hover:not(.active) { 
-      background: rgba(255,255,255,0.08); 
-      color: #fff; 
-      border-color: rgba(255,255,255,0.3);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
     .trans-btn:active { transform: scale(0.95); }
     </style>
@@ -859,7 +867,7 @@
     <div class="vx-logo">VIRT<span>UX</span></div>
     <div class="vx-topnav">
       <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">الأخبار ▾</button><div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 أخبار الألعاب</a><a onclick="window.showPage('youtube-news');window.closeDD()">▶️ أخبار يوتيوب</a></div></div>
-      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">يوتيوب ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 القنوات</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 الفيديوهات</a></div></div>
+      <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">يوتيوب ▾</button><div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 القنوات</a><a onclick="window.showPage('yt-videos');window.closeDD()">🎬 الفيديوهات</a><a onclick="window.showPage('reels');window.closeDD()">🎬 Reels</a></div></div>
       <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">📢 الإعلانات ▾</button><div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 التعاون</a></div></div>
     </div>
     <div id="lang-btns" style="display:flex;gap:4px;">
@@ -896,6 +904,7 @@
       <button class="sb-btn" id="sb-live" onclick="window.showPage('live')">🔴 live المباشر</button>
       <button class="sb-btn" id="sb-tournaments" onclick="window.showPage('tournaments')">🏆 البطولات</button>
       <button class="sb-btn" id="sb-highlights" onclick="window.showPage('highlights')">🎬 أبرز اللحظات</button>
+      <button class="sb-btn" id="sb-reels" onclick="window.showPage('reels')">🎬 Reels</button>
       <div class="sb-section">المجتمع</div>
       <button class="sb-btn" id="sb-subscribers" onclick="window.showPage('subscribers')">👥 المشتركون</button>
       <button class="sb-btn" id="sb-contact" onclick="window.showPage('contact')">📞 التواصل</button>
@@ -2051,7 +2060,7 @@ async function submitUser(room) {
   var desc  = descEl  ? descEl.value.trim()  : '';
   var url   = urlEl   ? urlEl.value.trim()   : '';
   if (url) url = cleanUrl(url);
-  var tag   = tagEl   ? tagEl.value : (room === 'yt-videos' ? 'Video' : room);
+  var tag   = tagEl   ? tagEl.value : (room === 'yt-videos' ? 'Video' : (room === 'reels' ? 'Reel' : room));
   var pickedIcon = iconEl ? iconEl.value : '';
   var fileIsImage = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('image/'));
   var fileIsVideo = !!(currentMediaFile && currentMediaFile.type && currentMediaFile.type.startsWith('video/'));
@@ -2063,8 +2072,8 @@ async function submitUser(room) {
   // تحقق
   if (room === 'live'      && !title && !url && !desc)    { showUPMError('أدخل عنوان أو رابط live'); return; }
   if (room === 'live'      && tag === 'مباشر Now' && !url) { showUPMError('live المباشر يحتاج رابط'); return; }
-  if (room === 'yt-videos' && !url)                       { showUPMError('أدخل رابط يوتيوب'); return; }
-  if (room === 'yt-videos' && !isValidYouTubeUrl(url))    { showUPMError('رابط يوتيوب غير صحيح'); return; }
+  if ((room === 'yt-videos' || room === 'reels') && !url)                       { showUPMError('أدخل رابط يوتيوب'); return; }
+  if ((room === 'yt-videos' || room === 'reels') && !isValidYouTubeUrl(url))    { showUPMError('رابط يوتيوب غير صحيح'); return; }
   if (room === 'highlights'&& !url && !currentMediaFile)  { showUPMError('أدخل رابط أو ارفع ملف'); return; }
 
   var btn  = document.getElementById('upm-submit');
@@ -2158,23 +2167,23 @@ function showUPMError(msg) {
 // تم الحفاظ على جميع الوظائف الأصلية دون تغيير باستثناء إضافة clearMediaForRoom  handleMediaFile
 // سأقوم بإدراج الاختصارات الضرورية للسياق
 
-const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects'];
+const rooms = ['live', 'tournaments', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'reels', 'projects'];
 const roomLabels = {
   live: '🔴 مباشر Streams', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights', subscribers: '👥 Subscribers',
   'gaming-news': '📰 أخبار الألعاب', 'youtube-news': '▶️ أخبار يوتيوب', 'yt-channels': '📺 Youtube Channels',
-  'yt-videos': '🎬 Youtube Videos', projects: '🌐 Collaboration'
+  'yt-videos': '🎬 Youtube Videos', reels: '🎬 Reels', projects: '🌐 Collaboration'
 };
 const mainContainer = document.querySelector('.vx-main');
 rooms.forEach(room => {
   const pageDiv = document.createElement('div');
   pageDiv.className = 'vx-page';
   pageDiv.id = `page-${room}`;
-  const postableRooms = ['live','tournaments','highlights','yt-videos','gaming-news','youtube-news'];
+  const postableRooms = ['live','tournaments','highlights','yt-videos','reels','gaming-news','youtube-news'];
   let buttonsHtml = '';
   if (postableRooms.includes(room)) {
     buttonsHtml = `<div class="post-actions">
       <button class="btn-user-post" data-room="${room}" onclick="window.openUserModal('${room}')">➕ ${window.t('نشر','Post')}</button>
-      ${room === 'yt-videos' ? `<button class="btn-ytvip-post" id="btn-ytvip-${room}" onclick="window.openYTVIPModal()" style="display:none;">👑 نشر فيديو VIP</button>` : ''}
+      ${(room === 'yt-videos' || room === 'reels') ? `<button class="btn-ytvip-post" id="btn-ytvip-${room}" onclick="window.openYTVIPModal('${room}')" style="display:none;">👑 نشر فيديو VIP</button>` : ''}
       ${room === 'tournaments' ? `<button class="btn-ytvip-post" id="btn-vip-tournaments" onclick="window.openTournamentsVIPModal()" style="display:none;">👑 نشر بطولة VIP</button>` : ''}
     </div>`;
   }
@@ -2195,12 +2204,12 @@ rooms.forEach(room => {
       </div>
     </div>`;
   }
-  else if (room === 'yt-videos') {
+  else if (room === 'yt-videos' || room === 'reels') {
     filterBar = `<div class="filter-bar">
       <div class="trans-btns" style="margin-left:auto;">
-        <button class="trans-btn ${window._roomTransMode?.[room]==='ar'?'active':''}" onclick="window.setRoomTranslation('yt-videos','ar',this)">AR</button>
-        <button class="trans-btn ${window._roomTransMode?.[room]==='en'?'active':''}" onclick="window.setRoomTranslation('yt-videos','en',this)">EN</button>
-        <button class="trans-btn ${!window._roomTransMode?.[room]?'active':''}" onclick="window.setRoomTranslation('yt-videos','orig',this)">OR</button>
+        <button class="trans-btn ${window._roomTransMode?.[room]==='ar'?'active':''}" onclick="window.setRoomTranslation('${room}','ar',this)">AR</button>
+        <button class="trans-btn ${window._roomTransMode?.[room]==='en'?'active':''}" onclick="window.setRoomTranslation('${room}','en',this)">EN</button>
+        <button class="trans-btn ${!window._roomTransMode?.[room]?'active':''}" onclick="window.setRoomTranslation('${room}','orig',this)">OR</button>
       </div>
     </div>`;
   }
@@ -2222,8 +2231,8 @@ async function loadPage(room) {
   el.innerHTML = `<div class="loading-state">${window.t('جاري التحميل...','Loading...')}</div>`;
   try {
     let data, error;
-    // في live و yt-videos: قنوات youtuber_vip تأخذ الأولوية
-    if (room === 'live' || room === 'yt-videos') {
+    // في live و yt-videos و reels: قنوات youtuber_vip تأخذ الأولوية
+    if (room === 'live' || room === 'yt-videos' || room === 'reels') {
       // جلب فيديوهات القنوات المضافة (tag يبدأ بـ auto:)
       const [vipRes, normalRes] = await Promise.all([
         db.from('posts').select('*').eq('room', room).like('tag', 'auto:%').order('id', {ascending:false}),
@@ -2250,9 +2259,9 @@ async function loadPage(room) {
         });
       }
     }
-    // في غرفة yt-videos و yt-channels: نطبق الترقيم
-    if (room === 'yt-videos') {
-      renderYTVideosPaged(allPosts[room], 1);
+    // في غرفة yt-videos و reels و yt-channels: نطبق الترقيم
+    if (room === 'yt-videos' || room === 'reels') {
+      renderYTVideosPaged(allPosts[room], 1, room);
     } else if (room === 'yt-channels') {
       renderYTChannelsPaged(allPosts[room], 1);
     } else {
@@ -2642,9 +2651,9 @@ function filterPosts(room, tag, btn) {
 // ==================== ترقيم فيديوهات يوتيوب (40 فيديو/صفحة) ====================
 window._ytVideoPage = 1;
 const YT_PAGE_SIZE = 40;
-function renderYTVideosPaged(posts, page) {
+function renderYTVideosPaged(posts, page, room = 'yt-videos') {
   window._ytVideoPage = page || 1;
-  const el = document.getElementById('grid-yt-videos');
+  const el = document.getElementById('grid-' + room);
   if (!el) return;
   const total = (posts || []).length;
   const totalPages = Math.ceil(total / YT_PAGE_SIZE);
@@ -2654,7 +2663,6 @@ function renderYTVideosPaged(posts, page) {
   // بناء البطاقات
   const tempEl = document.createElement('div');
   tempEl.innerHTML = pageData.map(p => {
-    const room = 'yt-videos';
     const isAutoVip = !!(p.tag && p.tag.startsWith('auto:'));
     const isManualVip = p.tag === 'VIP';
     const cardCls = isManualVip ? 'post-card gold-frame' : (isAutoVip ? 'post-card vip-ch' : 'post-card');
@@ -2723,7 +2731,7 @@ function renderYTVideosPaged(posts, page) {
       const nextBtn = document.createElement('button');
       nextBtn.textContent = 'تالي ›';
       nextBtn.style.cssText = 'background:#1a0000;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:13px;';
-      nextBtn.onclick = () => { renderYTVideosPaged(allPosts['yt-videos'], window._ytVideoPage + 1); document.getElementById('page-yt-videos').scrollIntoView({behavior:'smooth'}); };
+      nextBtn.onclick = () => { renderYTVideosPaged(allPosts[room], window._ytVideoPage + 1, room); document.getElementById('page-' + room).scrollIntoView({behavior:'smooth'}); };
       nav.appendChild(nextBtn);
     }
     const info = document.createElement('div');
@@ -2738,17 +2746,15 @@ function renderYTVideosPaged(posts, page) {
   
   // Apply translation after rendering to DOM
   if (window._roomTransMode?.[room]) {
-    setTimeout(() => {
-      const titles = el.querySelectorAll('.post-card-title');
-      titles.forEach(tEl => {
-        const card = tEl.closest('.post-card');
-        const orig = card?.dataset.originalTitle;
-        if (orig) {
-          const trans = window.tTitle(orig, window._roomTransMode[room]);
-          if (trans && trans !== orig) tEl.textContent = trans;
-        }
-      });
-    }, 50);
+    const titles = el.querySelectorAll('.post-card-title');
+    titles.forEach(tEl => {
+      const card = tEl.closest('.post-card');
+      const orig = card?.dataset.originalTitle;
+      if (orig) {
+        const trans = window.tTitle(orig, window._roomTransMode[room]);
+        if (trans && trans !== orig) tEl.textContent = trans;
+      }
+    });
   }
 }
 window.renderYTVideosPaged = renderYTVideosPaged;
@@ -2951,6 +2957,12 @@ async function updateUIAfterAuth(sessionOverride) {
       const canLivePost = userHasAnyRole(['admin','youtuber_vip']);
       document.querySelectorAll('.btn-user-post[data-room="live"]').forEach(btn => {
         btn.style.display = canLivePost ? 'inline-flex' : 'none';
+      });
+
+      // Reels Posting
+      const canReelsPost = userHasAnyRole(['admin','moderator','youtuber','youtuber_vip']);
+      document.querySelectorAll('.btn-user-post[data-room="reels"]').forEach(btn => {
+        btn.style.display = canReelsPost ? 'inline-flex' : 'none';
       });
       // نشر فيديو VIP: youtuber_vip + admin فقط
       const canVipVideo = userHasAnyRole(['admin','youtuber_vip']);
@@ -3626,6 +3638,7 @@ window.submitYTVIP = async function() {
   const url    = (document.getElementById('ytvip-url')?.value   || '').trim();
   const title  = (document.getElementById('ytvip-title')?.value || '').trim();
   const desc   = (document.getElementById('ytvip-desc')?.value  || '').trim();
+  const room   = document.getElementById('ytvip-room-field')?.value || 'yt-videos';
   const status = document.getElementById('ytvip-status');
 
   if (!url)   { status.style.color='#f55'; status.text='⚠️ أدخل رابط يوتيوب'; return; }
@@ -3648,7 +3661,7 @@ window.submitYTVIP = async function() {
       url:         url,
       icon:        thumb || '👑',
       tag:         'VIP',
-      room:        'yt-videos',
+      room:        room,
       user_id:     window.currentUserId || null
     });
     if (error) throw error;
@@ -3656,7 +3669,7 @@ window.submitYTVIP = async function() {
     status.textContent = '✅ تم النشر بنجاح!';
     setTimeout(() => {
       document.getElementById('ytvip-post-modal').style.display = 'none';
-      if (window.currentRoom === 'yt-videos' || !window.currentRoom) loadPosts('yt-videos');
+      if (window.currentRoom === room || !window.currentRoom) loadPosts(room);
     }, 1400);
   } catch(e) {
     status.style.color = '#f55';
@@ -4090,7 +4103,7 @@ window.setRoomTranslation = async function(room, mode, btn) {
   // Refresh specific room grid
   const posts = window.allPosts[room];
   if (posts) {
-    if (room === 'yt-videos') renderYTVideosPaged(posts, window._ytVideoPage || 1);
+    if (room === 'yt-videos' || room === 'reels') renderYTVideosPaged(posts, window._ytVideoPage || 1, room);
     else renderCards(posts, 'grid-' + room, room);
   }
   
@@ -4208,12 +4221,12 @@ function rebuildFilterBar(room) {
       <button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button>
       <div style="display:flex;align-items:center;margin-right:auto;gap:4px;"><input type="text" id="subscribers-search" placeholder="ابحث عن مستخدم..." onkeyup="if(event.key==='Enter')window.searchSubscribers(this.value)" style="background:#111;border:1px solid #444;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;width:150px;"><button onclick="window.searchSubscribers(document.getElementById('subscribers-search').value)" style="background:#e01010;border:none;color:#fff;border-radius:5px;padding:5px 10px;font-size:12px;font-weight:bold;cursor:pointer;">🔍 بحث</button></div>
     </div>`;
-  } else if (room === 'yt-videos') {
+  } else if (room === 'yt-videos' || room === 'reels') {
     newBar = `<div class="filter-bar">
       <div class="trans-btns" style="margin-left:auto;">
-        <button class="trans-btn ${window._roomTransMode['yt-videos']==='ar'?'active':''}" onclick="window.setRoomTranslation('yt-videos','ar',this)">AR</button>
-        <button class="trans-btn ${window._roomTransMode['yt-videos']==='en'?'active':''}" onclick="window.setRoomTranslation('yt-videos','en',this)">EN</button>
-        <button class="trans-btn ${!window._roomTransMode['yt-videos']?'active':''}" onclick="window.setRoomTranslation('yt-videos','orig',this)">OR</button>
+        <button class="trans-btn ${window._roomTransMode[room]==='ar'?'active':''}" onclick="window.setRoomTranslation('${room}','ar',this)">AR</button>
+        <button class="trans-btn ${window._roomTransMode[room]==='en'?'active':''}" onclick="window.setRoomTranslation('${room}','en',this)">EN</button>
+        <button class="trans-btn ${!window._roomTransMode[room]?'active':''}" onclick="window.setRoomTranslation('${room}','orig',this)">OR</button>
       </div>
     </div>`;
   }
@@ -4324,13 +4337,13 @@ function applyTranslations() {
     live:'🔴 Live Streams', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News',
     'youtube-news':'▶️ YouTube News', 'yt-channels':'📺 Youtube Channels',
-    'yt-videos':'🎬 Youtube Videos', projects:'🌐 Collaboration'
+    'yt-videos':'🎬 Youtube Videos', reels:'🎬 Reels', projects:'🌐 Collaboration'
   };
   const roomLabelsAR = {
     live:'🔴 بث مباشر', tournaments:'🏆 بطولات', highlights:'🎬 أبرز اللحظات',
     subscribers:'👥 المشتركون', 'gaming-news':'📰 أخبار الألعاب',
     'youtube-news':'▶️ أخبار يوتيوب', 'yt-channels':'📺 قنوات اليوتيوب',
-    'yt-videos':'🎬 فيديوهات اليوتيوب', projects:'🌐 التعاون'
+    'yt-videos':'🎬 فيديوهات اليوتيوب', reels:'🎬 Reels', projects:'🌐 التعاون'
   };
   document.querySelectorAll('.vx-page').forEach(page => {
     const room = page.id.replace('page-','');
@@ -5192,6 +5205,26 @@ function renderGroups(groups, container) {
   html += `</div>`;
   container.innerHTML = html;
 }
+// ==================== نظام هجرة الـ Reels من الفيديوهات ====================
+async function migrateReelsToNewRoom() {
+  const done = localStorage.getItem('virtux_reels_migrated_v2');
+  if (done) return;
+  try {
+    const { data: posts } = await db.from('posts').select('id,url,tag').eq('room','yt-videos');
+    const reels = (posts||[]).filter(p => {
+      const isShort = p.url && p.url.includes('/shorts/');
+      const isReelTag = p.tag && (p.tag === 'Reel' || p.tag === 'Reels' || p.tag === 'VIP Reel');
+      return isShort || isReelTag;
+    });
+    if (reels.length > 0) {
+      const ids = reels.map(r => r.id);
+      await db.from('posts').update({ room: 'reels' }).in('id', ids);
+      console.log(`[Migration] Moved ${reels.length} shorts/reels to reels room.`);
+    }
+    localStorage.setItem('virtux_reels_migrated_v2', 'true');
+  } catch(e) { console.error('Migration failed:', e); }
+}
+migrateReelsToNewRoom();
 </script>
 </body>
 </html>
