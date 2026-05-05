@@ -2180,7 +2180,28 @@ rooms.forEach(room => {
   if (room === 'yt-channels') {
     filterBar = `<div class="filter-bar"><div style="display:flex;align-items:center;width:100%;gap:10px;"><input type="text" id="yt-channels-search" placeholder="${window.t('ابحث عن قناة...','Search for a channel...')}" onkeyup="if(event.key==='Enter')window.searchYTChannels(this.value)" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid #444;color:#fff;padding:8px 12px;border-radius:10px;font-size:13px;"><button onclick="window.searchYTChannels(document.getElementById('yt-channels-search').value)" style="background:var(--vx-primary);border:none;color:#000;border-radius:10px;padding:8px 20px;font-size:13px;font-weight:bold;cursor:pointer;">🔍</button></div></div>`;
   }
-  else if (room === 'live') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button><button class="filter-btn" onclick="window.filterLive('مباشر Now',this)">مباشر Now</button><button class="filter-btn" onclick="window.filterLive('Pre Live',this)">Pre Live</button><button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button></div>`;
+  else if (room === 'live') {
+    filterBar = `<div class="filter-bar">
+      <button class="filter-btn active" onclick="window.filterPosts('live','',this)">الكل</button>
+      <button class="filter-btn" onclick="window.filterLive('مباشر Now',this)">مباشر Now</button>
+      <button class="filter-btn" onclick="window.filterLive('Pre Live',this)">Pre Live</button>
+      <button class="filter-btn" onclick="window.filterPosts('live','VIP',this)">VIP</button>
+      <div class="trans-btns" style="margin-left:auto;">
+        <button class="trans-btn ${window._roomTransMode?.[room]==='ar'?'active':''}" onclick="window.setRoomTranslation('live','ar',this)">AR</button>
+        <button class="trans-btn ${window._roomTransMode?.[room]==='en'?'active':''}" onclick="window.setRoomTranslation('live','en',this)">EN</button>
+        <button class="trans-btn ${!window._roomTransMode?.[room]?'active':''}" onclick="window.setRoomTranslation('live','orig',this)">OR</button>
+      </div>
+    </div>`;
+  }
+  else if (room === 'yt-videos') {
+    filterBar = `<div class="filter-bar">
+      <div class="trans-btns" style="margin-left:auto;">
+        <button class="trans-btn ${window._roomTransMode?.[room]==='ar'?'active':''}" onclick="window.setRoomTranslation('yt-videos','ar',this)">AR</button>
+        <button class="trans-btn ${window._roomTransMode?.[room]==='en'?'active':''}" onclick="window.setRoomTranslation('yt-videos','en',this)">EN</button>
+        <button class="trans-btn ${!window._roomTransMode?.[room]?'active':''}" onclick="window.setRoomTranslation('yt-videos','orig',this)">OR</button>
+      </div>
+    </div>`;
+  }
   else if (room === 'tournaments') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('tournaments','',this)">الكل</button><button class="filter-btn" onclick="window.filterTournaments('Register',this)">Register</button><button class="filter-btn" onclick="window.filterPosts('tournaments','عالمي',this)">عالمي</button><button class="filter-btn" onclick="window.filterPosts('tournaments','VIP',this)">VIP</button></div>`;
   else if (room === 'highlights') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterPosts('highlights','',this)">الكل</button><button class="filter-btn" onclick="window.filterPosts('highlights','Pro',this)">Pro</button><button class="filter-btn" onclick="window.filterPosts('highlights','Tournament',this)">Tournament</button><button class="filter-btn" onclick="window.filterPosts('highlights','Video',this)">Video</button><button class="filter-btn" onclick="window.filterPosts('highlights','Photo',this)">Photo</button></div>`;
   else if (room === 'subscribers') filterBar = `<div class="filter-bar"><button class="filter-btn active" onclick="window.filterSubscribers('',this)">الكل</button><button class="filter-btn" onclick="window.filterSubscribers('admin',this)">Admin</button><button class="filter-btn" onclick="window.filterSubscribers('moderator',this)">Mod</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber_vip',this)">YT VIP</button><button class="filter-btn" onclick="window.filterSubscribers('youtuber',this)">Youtuber</button><button class="filter-btn" onclick="window.filterSubscribers('vip',this)">VIP</button><button class="filter-btn" onclick="window.filterSubscribers('donor',this)">Donors</button><button class="filter-btn" onclick="window.filterSubscribers('member',this)">Member</button><button class="filter-btn" onclick="window.filterSubscribers('user',this)">User</button><div style="display:flex;align-items:center;margin-right:auto;gap:4px;"><input type="text" id="subscribers-search" placeholder="ابحث عن مستخدم..." onkeyup="if(event.key==='Enter')window.searchSubscribers(this.value)" style="background:#111;border:1px solid #444;color:#fff;padding:5px 10px;border-radius:5px;font-size:12px;width:150px;"><button onclick="window.searchSubscribers(document.getElementById('subscribers-search').value)" style="background:#e01010;border:none;color:#fff;border-radius:5px;padding:5px 10px;font-size:12px;font-weight:bold;cursor:pointer;">🔍 بحث</button></div></div>`;
@@ -2781,6 +2802,7 @@ function showPage(id) {
   if(id !== 'home' && id !== 'contact' && id !== window._currentPage) loadPage(id);
   else if(id !== 'home' && id !== 'contact' && !allPosts[id]) loadPage(id);
   window._currentPage = id;
+  if(id !== 'home' && id !== 'contact') rebuildFilterBar(id);
 }
 function toggleDD(id) { document.querySelectorAll('.dd').forEach(d=>{ if(d.id !== id) d.classList.remove('open'); }); document.getElementById(id).classList.toggle('open'); }
 function closeDD() { document.querySelectorAll('.dd').forEach(d=>d.classList.remove('open')); }
@@ -3376,21 +3398,21 @@ window.deletePost = deletePost;
         const { data: liveData } = await db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').order('id',{ascending:false}).limit(12);
         buildCarousel(liveEl,(liveData||[]),(p)=>renderLive(p,vipIds));
         // Inject toggle into section title area if not exists
-        const h3 = liveEl.parentElement.querySelector('h3');
-        if (h3 && !h3.parentElement.querySelector('.trans-btns')) {
-          h3.parentElement.style.display = 'flex';
-          h3.parentElement.style.alignItems = 'center';
-          h3.insertAdjacentHTML('afterend', transToggle('live'));
+        const head = liveEl.parentElement.querySelector('.hcp-half-head');
+        if (head && !head.parentElement.querySelector('.trans-btns')) {
+          head.style.display = 'flex';
+          head.style.alignItems = 'center';
+          head.insertAdjacentHTML('beforeend', transToggle('live'));
         }
       }
       if(videosEl){ 
         const { data: vidData } = await db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').order('id',{ascending:false}).limit(16);
         buildCarousel(videosEl,(vidData||[]),(p)=>renderVideo(p,vipIds));
-        const h3 = videosEl.parentElement.querySelector('h3');
-        if (h3 && !h3.parentElement.querySelector('.trans-btns')) {
-          h3.parentElement.style.display = 'flex';
-          h3.parentElement.style.alignItems = 'center';
-          h3.insertAdjacentHTML('afterend', transToggle('yt-videos'));
+        const head = videosEl.parentElement.querySelector('.hcp-half-head');
+        if (head && !head.parentElement.querySelector('.trans-btns')) {
+          head.style.display = 'flex';
+          head.style.alignItems = 'center';
+          head.insertAdjacentHTML('beforeend', transToggle('yt-videos'));
         }
       }
     }catch(e){
@@ -4056,6 +4078,9 @@ window.toggleLanguage = function() {
 
 
 function rebuildFilterBar(room) {
+  if (!window._roomTransMode) window._roomTransMode = {};
+  if (!window._roomTransMode[room]) window._roomTransMode[room] = 'orig';
+
   const page = document.getElementById('page-' + room);
   if (!page) return;
   const existing = page.querySelector('.filter-bar');
