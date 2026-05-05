@@ -9,14 +9,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --vx-primary: #00d4ff;
-      --vx-primary-rgb: 0, 212, 255;
-      --vx-accent: #ffffff;
-      --vx-bg: #030a16;
-      --vx-surface: rgba(10, 25, 47, 0.75);
-      --vx-border: rgba(0, 212, 255, 0.15);
-      --vx-glow: 0 0 20px rgba(0, 212, 255, 0.3);
-      --vx-glass: blur(15px);
+      --vx-primary: hsl(345, 100%, 55%);
+      --vx-primary-rgb: 255, 0, 64;
+      --vx-accent: hsl(185, 100%, 50%);
+      --vx-bg: #050508;
+      --vx-surface: rgba(20, 20, 25, 0.7);
+      --vx-border: rgba(255, 255, 255, 0.08);
+      --vx-glow: 0 0 20px rgba(255, 0, 64, 0.3);
+      --vx-glass: blur(12px);
     }
     *{margin:0;padding:0;box-sizing:border-box}
     body{
@@ -32,19 +32,10 @@
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
       background: 
-        radial-gradient(circle at 10% 10%, rgba(0, 212, 255, 0.1), transparent 40%),
-        radial-gradient(circle at 90% 90%, rgba(255, 255, 255, 0.05), transparent 40%),
-        radial-gradient(circle at 50% 50%, #051937, #030a16);
+        radial-gradient(circle at 10% 10%, rgba(255, 0, 64, 0.08), transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(0, 245, 255, 0.05), transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(20, 20, 30, 1), #050508);
       z-index: -1;
-    }
-    #snow-canvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      pointer-events: none;
     }
     h1, h2, h3, .vx-logo { font-family: 'Outfit', sans-serif; }
     .vx-root{display:flex;flex-direction:column;min-height:100vh; position: relative; z-index: 1;}
@@ -106,29 +97,6 @@
     }
     .dd-menu a:last-child{border-bottom:none}
     .dd-menu a:hover{background:var(--vx-primary);color:#000}
-    
-    /* ستايل علامة مجانية الآن */
-    .free-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: var(--vx-primary);
-      color: #000;
-      padding: 3px 10px;
-      border-radius: 6px;
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      z-index: 10;
-      box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
-      pointer-events: none;
-      animation: pulse-glow 2s infinite;
-    }
-    @keyframes pulse-glow {
-      0% { box-shadow: 0 0 5px rgba(0, 212, 255, 0.4); }
-      50% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.8); }
-      100% { box-shadow: 0 0 5px rgba(0, 212, 255, 0.4); }
-    }
     
     .post-actions { display: flex; gap: 12px; align-items: center; margin-left: auto; flex-wrap: wrap; }
     .btn-user-post, .btn-ytvip-post {
@@ -1136,8 +1104,6 @@
     </div>
   </div>
 </div>
-
-<canvas id="snow-canvas"></canvas>
 
 <div id="upm-modal">
   <div class="upm-box">
@@ -2534,20 +2500,9 @@ function renderCards(posts, gridId, room) {
     const summaryHtml = (room === 'live' || room === 'yt-videos') ? '' : `<div class="post-card-summary">${summary}</div>`;
     
     // Store original title in data attribute for global translation
-    let rawTitle = p.title || '';
-    const isEN = window._siteLanguage === 'en';
-    const isGiveaway = p.tag === 'Giveaway' || rawTitle.includes('مجانية الآن') || rawTitle.includes('Free now');
+    const displayTitle = isVideoOrLive ? (window._roomTransMode?.[room] === 'ar' ? window.tTitle(p.title, 'ar') : (window._roomTransMode?.[room] === 'en' ? window.tTitle(p.title, 'en') : p.title)) : (window.tTitle(p.title) || window.t('منشور','Post'));
     
-    // تنظيف العنوان من البادئة
-    if (isGiveaway) {
-      rawTitle = rawTitle.replace(/🎁 مجانية الآن: /g, '').replace(/🎁 Free now: /g, '').replace(/مجانية الآن: /g, '').replace(/Free now: /g, '');
-    }
-
-    const freeBadge = isGiveaway ? `<div class="free-badge">${window.t('مجانية الآن','Free now')}</div>` : '';
-
-    const displayTitle = isVideoOrLive ? (window._roomTransMode?.[room] === 'ar' ? window.tTitle(rawTitle, 'ar') : (window._roomTransMode?.[room] === 'en' ? window.tTitle(rawTitle, 'en') : rawTitle)) : (window.tTitle(rawTitle) || window.t('منشور','Post'));
-    
-    return `<div class="${cardCls}" data-original-title="${escapeHtml(rawTitle)}">${freeBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(displayTitle)}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+    return `<div class="${cardCls}" data-original-title="${escapeHtml(p.title)}">${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(displayTitle)}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -5345,66 +5300,6 @@ async function migrateReelsToNewRoom() {
   } catch(e) { console.error('Migration V3 failed:', e); }
 }
 migrateReelsToNewRoom();
-
-// ==================== محرك الثلج المتطور (Winter 4K) ====================
-(function() {
-    const canvas = document.getElementById('snow-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let width, height, particles = [];
-
-    function init() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-        particles = [];
-        const count = Math.floor(width / 4); // كثافة الثلج
-        for (let i = 0; i < count; i++) {
-            particles.push({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                r: Math.random() * 2.5 + 0.5, // حجم الحبة
-                d: Math.random() * count, 
-                v: Math.random() * 1.2 + 0.3, // سرعة السقوط هادئة
-                s: Math.random() * 1 - 0.5 // تأرجح خفيف
-            });
-        }
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.beginPath();
-        for (let i = 0; i < particles.length; i++) {
-            const p = particles[i];
-            ctx.moveTo(p.x, p.y);
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
-        }
-        ctx.fill();
-        update();
-    }
-
-    function update() {
-        for (let i = 0; i < particles.length; i++) {
-            const p = particles[i];
-            p.y += p.v;
-            p.x += p.s;
-            if (p.y > height) {
-                particles[i] = { x: Math.random() * width, y: -5, r: p.r, v: p.v, s: p.s };
-            }
-            if (p.x > width) p.x = 0;
-            if (p.x < 0) p.x = width;
-        }
-    }
-
-    function anim() {
-        draw();
-        requestAnimationFrame(anim);
-    }
-
-    window.addEventListener('resize', init);
-    init();
-    anim();
-})();
 </script>
 </body>
 </html>
