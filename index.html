@@ -821,33 +821,35 @@
     }
     .lang-switching { animation: lang-pulse 0.35s ease forwards; }
     
-    /* Manual Translation Buttons */
-    .trans-btns { display: flex; gap: 4px; margin-top: 6px; }
-    .trans-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #aaa;
-      font-size: 9px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-weight: 700;
-      font-family: 'Outfit', sans-serif;
+    /* Unified Translation Buttons */
+    .trans-btns { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+    .trans-btn { 
+      background: rgba(255,255,255,0.03); 
+      border: 1px solid rgba(255,255,255,0.1); 
+      color: #aaa; 
+      font-size: 10px; 
+      padding: 3px 10px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      font-family: 'Outfit', sans-serif;
     }
-    .trans-btn:hover {
-      background: var(--vx-primary);
-      color: #000;
-      border-color: var(--vx-primary);
-      box-shadow: 0 0 10px rgba(255, 0, 64, 0.3);
+    .trans-btn.active { 
+      background: linear-gradient(135deg, #e01010, #800000); 
+      color: #fff; 
+      border-color: #ff3333; 
+      box-shadow: 0 0 12px rgba(224, 16, 16, 0.4);
+      transform: translateY(-1px);
     }
-    .trans-btn.active {
-      background: rgba(255, 0, 64, 0.2);
-      color: var(--vx-primary);
-      border-color: var(--vx-primary);
+    .trans-btn:hover:not(.active) { 
+      background: rgba(255,255,255,0.08); 
+      color: #fff; 
+      border-color: rgba(255,255,255,0.3);
     }
+    .trans-btn:active { transform: scale(0.95); }
     </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2614,7 +2616,29 @@ window.filterSubscribers = function(roleKey, btn) {
   loadSubscribersWithVIP(el, allPosts['subscribers'] || [], window._subscribersRoleFilter, window._subscribersSearchQuery || '');
 };
 
-function filterPosts(room, tag, btn) { if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); renderCards(filtered, `grid-${room}`, room); }
+function filterPosts(room, tag, btn) { 
+  if(btn && btn.closest('.filter-bar')){ btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); } 
+  const filtered = tag ? (allPosts[room]||[]).filter(p=>p.tag===tag) : (allPosts[room]||[]); 
+  const gridId = `grid-${room}`;
+  renderCards(filtered, gridId, room); 
+  
+  // Apply room translation state
+  if (window._roomTransMode?.[room]) {
+    const el = document.getElementById(gridId);
+    if (el) {
+      setTimeout(() => {
+        el.querySelectorAll('.post-card-title').forEach(tEl => {
+          const card = tEl.closest('.post-card');
+          const orig = card?.dataset.originalTitle;
+          if (orig) {
+            const trans = window.tTitle(orig, window._roomTransMode[room]);
+            if (trans && trans !== orig) tEl.textContent = trans;
+          }
+        });
+      }, 50);
+    }
+  }
+}
 // ==================== ترقيم فيديوهات يوتيوب (40 فيديو/صفحة) ====================
 window._ytVideoPage = 1;
 const YT_PAGE_SIZE = 40;
@@ -2711,6 +2735,21 @@ function renderYTVideosPaged(posts, page) {
   } else {
     el.innerHTML = tempEl.innerHTML || '<div class="empty-state">لا توجد فيديوهات بعد 🎮</div>';
   }
+  
+  // Apply translation after rendering to DOM
+  if (window._roomTransMode?.[room]) {
+    setTimeout(() => {
+      const titles = el.querySelectorAll('.post-card-title');
+      titles.forEach(tEl => {
+        const card = tEl.closest('.post-card');
+        const orig = card?.dataset.originalTitle;
+        if (orig) {
+          const trans = window.tTitle(orig, window._roomTransMode[room]);
+          if (trans && trans !== orig) tEl.textContent = trans;
+        }
+      });
+    }, 50);
+  }
 }
 window.renderYTVideosPaged = renderYTVideosPaged;
 
@@ -2778,6 +2817,22 @@ window.filterLive = function(tagVal, btn) {
     return p.tag === tagVal || p.tag.includes(cleanTag);
   });
   renderCards(filtered, 'grid-live', 'live');
+  
+  if (window._roomTransMode?.['live']) {
+    const el = document.getElementById('grid-live');
+    if (el) {
+      setTimeout(() => {
+        el.querySelectorAll('.post-card-title').forEach(tEl => {
+          const card = tEl.closest('.post-card');
+          const orig = card?.dataset.originalTitle;
+          if (orig) {
+            const trans = window.tTitle(orig, window._roomTransMode['live']);
+            if (trans && trans !== orig) tEl.textContent = trans;
+          }
+        });
+      }, 50);
+    }
+  }
 };
 // فلترة البطولات — تسجيل يشمل كل من tag يحتوي كلمة registration أو تسجيل أو Register
 window.filterTournaments = function(type, btn) {
@@ -3397,6 +3452,19 @@ window.deletePost = deletePost;
       if(liveEl){ 
         const { data: liveData } = await db.from('posts').select('id,title,description,url,icon,tag').eq('room','live').order('id',{ascending:false}).limit(12);
         buildCarousel(liveEl,(liveData||[]),(p)=>renderLive(p,vipIds));
+        
+        // Immediate translation sync for carousel
+        if (window._roomTransMode?.['live']) {
+          liveEl.querySelectorAll('.hc-info-title').forEach(tEl => {
+            const wrap = tEl.closest('.hc-playable, a');
+            const orig = wrap?.dataset.originalTitle;
+            if (orig) {
+              const trans = window.tTitle(orig, window._roomTransMode['live']);
+              if (trans && trans !== orig) tEl.textContent = trans;
+            }
+          });
+        }
+
         // Inject toggle into section title area if not exists
         const head = liveEl.parentElement.querySelector('.hcp-half-head');
         if (head && !head.parentElement.querySelector('.trans-btns')) {
@@ -3408,6 +3476,19 @@ window.deletePost = deletePost;
       if(videosEl){ 
         const { data: vidData } = await db.from('posts').select('id,title,description,url,icon,tag').eq('room','yt-videos').order('id',{ascending:false}).limit(16);
         buildCarousel(videosEl,(vidData||[]),(p)=>renderVideo(p,vipIds));
+
+        // Immediate translation sync for carousel
+        if (window._roomTransMode?.['yt-videos']) {
+          videosEl.querySelectorAll('.hc-info-title').forEach(tEl => {
+            const wrap = tEl.closest('.hc-playable, a');
+            const orig = wrap?.dataset.originalTitle;
+            if (orig) {
+              const trans = window.tTitle(orig, window._roomTransMode['yt-videos']);
+              if (trans && trans !== orig) tEl.textContent = trans;
+            }
+          });
+        }
+
         const head = videosEl.parentElement.querySelector('.hcp-half-head');
         if (head && !head.parentElement.querySelector('.trans-btns')) {
           head.style.display = 'flex';
@@ -3927,18 +4008,18 @@ window.tTitle = function(title, forceLang) {
   let t = title;
   if (isEN) {
     t = t.replace(/بث مباشر/g, 'Live Stream');
-    t = t.replace(/مباشر على Twitch/g, 'Live on Twitch');
-    t = t.replace(/Facebook مباشر/g, 'Facebook Live');
-    t = t.replace(/TikTok مباشر/g, 'TikTok Live');
+    t = t.replace(/مباشر على/g, 'Live on');
     t = t.replace(/منشور/g, 'Post');
     t = t.replace(/فيديو/g, 'Video');
+    t = t.replace(/مشاهدة/g, 'Watch');
+    t = t.replace(/الآن/g, 'Now');
   } else {
     t = t.replace(/Live Stream/gi, 'بث مباشر');
-    t = t.replace(/Live on Twitch/gi, 'مباشر على Twitch');
-    t = t.replace(/Facebook Live/gi, 'Facebook مباشر');
-    t = t.replace(/TikTok Live/gi, 'TikTok مباشر');
+    t = t.replace(/Live on/gi, 'مباشر على');
     t = t.replace(/Post/gi, 'منشور');
     t = t.replace(/Video/gi, 'فيديو');
+    t = t.replace(/Watch/gi, 'مشاهدة');
+    t = t.replace(/Now/gi, 'الآن');
   }
   
   if (t !== title) return t; // تم ترجمتها يدوياً
