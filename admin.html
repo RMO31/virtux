@@ -946,6 +946,7 @@ async function loadDashboard() {
         <div style="display:flex; gap:15px; flex-wrap:wrap;">
           <button class="btn-del" style="width:auto; padding:10px 20px;" onclick="cleanupOrphanedVideos()">🧹 تنظيف الفيديوهات اليتيمة</button>
           <button class="btn-edit" style="width:auto; padding:10px 20px; border-color:#00ff88; color:#00ff88;" onclick="manualSyncChannels()">🔄 مزامنة القنوات الآن</button>
+          <button class="btn-pub" style="width:auto; padding:10px 20px; background:#aa55ff;" onclick="manualMigrateReels()">🎬 نقل الـ Reels من غرفة الفيديوهات</button>
         </div>
       </div>
     `;
@@ -974,6 +975,30 @@ async function approvePayment(reqId, userId, planKey, expiry = null) {
     else loadDashboard();
   } catch(e) {
     alert('❌ حدث خطأ: ' + e.message);
+  }
+}
+
+async function manualMigrateReels() {
+  if (!confirm('هل تريد نقل جميع الفيديوهات القصيرة (Shorts/Reels) من غرفة الفيديوهات إلى الغرفة الجديدة؟')) return;
+  try {
+    const { data: posts } = await supabaseClient.from('posts').select('id,url,tag').eq('room','yt-videos');
+    const reels = (posts||[]).filter(p => {
+      const isShort = p.url && (p.url.includes('/shorts/') || p.url.includes('shorts'));
+      const t = (p.tag || '').toLowerCase();
+      const isReelTag = t === 'reel' || t === 'reels' || t === 'vip reel' || t === 'short' || t === 'shorts';
+      return isShort || isReelTag;
+    });
+    if (reels.length > 0) {
+      const ids = reels.map(r => r.id);
+      const { error } = await supabaseClient.from('posts').update({ room: 'reels' }).in('id', ids);
+      if (error) throw error;
+      alert(`✅ تم نقل ${ids.length} فيديو إلى غرفة الـ Reels بنجاح.`);
+      loadDashboard();
+    } else {
+      alert('ℹ️ لم يتم العثور على فيديوهات مطابقة لنقلها.');
+    }
+  } catch(e) {
+    alert('❌ فشل النقل: ' + e.message);
   }
 }
 

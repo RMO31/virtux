@@ -5207,22 +5207,28 @@ function renderGroups(groups, container) {
 }
 // ==================== نظام هجرة الـ Reels من الفيديوهات ====================
 async function migrateReelsToNewRoom() {
-  const done = localStorage.getItem('virtux_reels_migrated_v2');
+  const done = localStorage.getItem('virtux_reels_migrated_v3');
   if (done) return;
   try {
     const { data: posts } = await db.from('posts').select('id,url,tag').eq('room','yt-videos');
     const reels = (posts||[]).filter(p => {
-      const isShort = p.url && p.url.includes('/shorts/');
-      const isReelTag = p.tag && (p.tag === 'Reel' || p.tag === 'Reels' || p.tag === 'VIP Reel');
+      const isShort = p.url && (p.url.includes('/shorts/') || p.url.includes('shorts'));
+      const t = (p.tag || '').toLowerCase();
+      const isReelTag = t === 'reel' || t === 'reels' || t === 'vip reel' || t === 'short' || t === 'shorts';
       return isShort || isReelTag;
     });
     if (reels.length > 0) {
       const ids = reels.map(r => r.id);
-      await db.from('posts').update({ room: 'reels' }).in('id', ids);
-      console.log(`[Migration] Moved ${reels.length} shorts/reels to reels room.`);
+      const { error } = await db.from('posts').update({ room: 'reels' }).in('id', ids);
+      if (error) throw error;
+      console.log(`[Migration V3] Moved ${ids.length} items to reels room.`);
+      // Reload if we are on a page that would be affected
+      if (window._currentPage === 'reels' || window._currentPage === 'yt-videos') {
+         setTimeout(() => window.location.reload(), 500);
+      }
     }
-    localStorage.setItem('virtux_reels_migrated_v2', 'true');
-  } catch(e) { console.error('Migration failed:', e); }
+    localStorage.setItem('virtux_reels_migrated_v3', 'true');
+  } catch(e) { console.error('Migration V3 failed:', e); }
 }
 migrateReelsToNewRoom();
 </script>
