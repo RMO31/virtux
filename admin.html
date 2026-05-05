@@ -291,6 +291,7 @@
       <div class="sb-sec">يوتيوب</div>
       <button class="sb-btn" id="sb-yt-channels" onclick="showPage('yt-channels')">📺 Channels</button>
       <button class="sb-btn" id="sb-yt-videos" onclick="showPage('yt-videos')">🎬 Videos</button>
+      <button class="sb-btn" id="sb-reels" onclick="showPage('reels')">🎬 Reels</button>
       <div class="sb-sec">تعاون</div>
       <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
       <div class="sb-sec">إدارة النظام</div>
@@ -801,7 +802,7 @@ function logout() { window.location.reload(); }
 function buildPages() {
   let main = document.getElementById('mainContainer');
   main.innerHTML = '';
-  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'registrations', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'projects', 'contact', 'ranks', 'trash'];
+  let rooms = ['dashboard', 'home', 'live', 'tournaments', 'registrations', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'reels', 'projects', 'contact', 'ranks', 'trash'];
   rooms.forEach(room => {
     let div = document.createElement('div');
     div.className = 'ap';
@@ -814,7 +815,7 @@ function getRoomTitle(room) {
   let titles = {
     dashboard:'📊 Dashboard', home:'🏠 إدارة الصفحة الرئيسية', live:'🔴 Live', tournaments:'🏆 Tournaments', highlights:'🎬 Highlights',
     subscribers:'👥 Subscribers', 'gaming-news':'📰 Gaming News', 'youtube-news':'▶️ Youtube News',
-    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos',
+    'yt-channels':'📺 Youtube Channels', 'yt-videos':'🎬 Youtube Videos', reels:'🎬 Reels',
     projects:'🌐 Collaboration', contact:'📞 Contact', ranks:'💎 الميزات والرتب', trash: '🗑️ سلة المحذوفات (البوت)',
     registrations: '📋 طلبات التسجيل'
   };
@@ -886,12 +887,14 @@ async function loadDashboard() {
 
     let { data: postCounts } = await supabaseClient.from('posts').select('room');
     let totalVideos = postCounts ? postCounts.filter(p => p.room === 'yt-videos').length : 0;
+    let totalReels = postCounts ? postCounts.filter(p => p.room === 'reels').length : 0;
     let totalLive = postCounts ? postCounts.filter(p => p.room === 'live').length : 0;
     let totalChannels = postCounts ? postCounts.filter(p => p.room === 'yt-channels').length : 0;
 
     let statsHtml = `<div class="stats-grid">
       <div class="stat-card" style="border-bottom:3px solid #00ff88;"><div class="stat-number">${dailyVisitors}</div><div class="stat-label">🌐 زوار اليوم</div></div>
       <div class="stat-card" style="border-bottom:3px solid #00bfff;"><div class="stat-number">${totalVideos}</div><div class="stat-label">🎬 الفيديوهات</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #ff44aa;"><div class="stat-number">${totalReels}</div><div class="stat-label">🎬 Reels</div></div>
       <div class="stat-card" style="border-bottom:3px solid #ff9800;"><div class="stat-number">${totalLive}</div><div class="stat-label">🔴 البثوث</div></div>
       <div class="stat-card" style="border-bottom:3px solid #aa55ff;"><div class="stat-number">${totalChannels}</div><div class="stat-label">📺 القنوات</div></div>
       <div class="stat-card" style="border-bottom:3px solid #aabbcc;"><div class="stat-number">${counts.user}</div><div class="stat-label">👤 إجمالي المستخدمين</div></div>
@@ -1437,8 +1440,10 @@ function getAddForm(room) {
           <div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>
         </div>
       </div>`;
-  } else if (room === 'yt-videos') {
-    return `<div class="card"><h3>➕ إضافة فيديو يوتيوب</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}"><option value="Video">📹 Video</option><option value="VIP">👑 VIP</option></select></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
+  } else if (room === 'yt-videos' || room === 'reels') {
+    const titleLabel = room === 'reels' ? '➕ إضافة Reel (Shorts)' : '➕ إضافة فيديو يوتيوب';
+    const tagOptions = room === 'reels' ? '<option value="Reel">🎬 Reel</option><option value="VIP">👑 VIP Reel</option>' : '<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>';
+    return `<div class="card"><h3>${titleLabel}</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}">${tagOptions}</select></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
   } else {
     let tagOptions = '';
     if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
