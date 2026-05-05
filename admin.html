@@ -205,6 +205,9 @@
       background:rgba(255,255,255,.02);
       border-color:rgba(255,120,120,.35);
     }
+    .tm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:2000;align-items:center;justify-content:center}
+    .tm-modal.active{display:flex}
+    .tm-box{background:#120000;border:1px solid #cc0000;border-radius:14px;width:90%;max-width:800px;max-height:90vh;overflow-y:auto;padding:20px;position:relative}
     @media (max-width:768px){
       .sidebar{width:188px}
       .main{padding:18px}
@@ -265,10 +268,7 @@
 
 <div id="adminPage">
   <div class="topbar">
-    <div style="display:flex; align-items:center; gap:12px;">
-      <img src="logo.png" alt="Logo" style="height:50px; object-fit:contain; border-radius:8px;">
-      <h1>🎮 Virtux Admin Panel</h1>
-    </div>
+    <h1>🎮 Virtux Admin Panel</h1>
     <div class="topbar-right">
       <span class="conn" id="connStatus">جارٍ الاتصال...</span>
       <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
@@ -881,21 +881,23 @@ async function loadDashboard() {
     });
 
     let today = new Date().toISOString().split('T')[0];
-    let { data: traffic } = await supabaseClient.from('posts').select('tag').eq('room', '_traffic').eq('description', today);
-    let dailyVisitors = traffic ? traffic.filter(t => t.tag === 'visit').length : 0;
+    let { data: traffic } = await supabaseClient.from('posts').select('tag, title').eq('room', '_traffic').eq('description', today);
+    let dailyVisitors = traffic ? new Set(traffic.filter(t => t.tag === 'visit' && t.title).map(t => t.title)).size : 0;
 
     let { data: postCounts } = await supabaseClient.from('posts').select('room');
     let totalVideos = postCounts ? postCounts.filter(p => p.room === 'yt-videos').length : 0;
     let totalLive = postCounts ? postCounts.filter(p => p.room === 'live').length : 0;
+    let totalChannels = postCounts ? postCounts.filter(p => p.room === 'yt-channels').length : 0;
 
     let statsHtml = `<div class="stats-grid">
       <div class="stat-card" style="border-bottom:3px solid #00ff88;"><div class="stat-number">${dailyVisitors}</div><div class="stat-label">🌐 زوار اليوم</div></div>
       <div class="stat-card" style="border-bottom:3px solid #00bfff;"><div class="stat-number">${totalVideos}</div><div class="stat-label">🎬 الفيديوهات</div></div>
       <div class="stat-card" style="border-bottom:3px solid #ff9800;"><div class="stat-number">${totalLive}</div><div class="stat-label">🔴 البثوث</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #aa55ff;"><div class="stat-number">${totalChannels}</div><div class="stat-label">📺 القنوات</div></div>
       <div class="stat-card" style="border-bottom:3px solid #aabbcc;"><div class="stat-number">${counts.user}</div><div class="stat-label">👤 إجمالي المستخدمين</div></div>
       
       <div class="stat-card" style="border-bottom:2px solid #ff00ff;"><div class="stat-number" style="color:#ff00ff">${counts.moderator}</div><div class="stat-label">🛠️ مراقبين</div></div>
-      <div class="stat-card" style="border-bottom:2px solid #ff4444;"><div class="stat-number" style="color:#ff4444">${counts.youtuber_vip}</div><div class="stat-label">🔥 Youtuber VIP</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff4444;"><div class="stat-number" style="color:#ff4444">${counts.youtuber_vip}</div><div class="stat-label">⭐ Youtuber VIP</div></div>
       <div class="stat-card" style="border-bottom:2px solid #ff7777;"><div class="stat-number" style="color:#ff7777">${counts.youtuber}</div><div class="stat-label">🎬 Youtubers</div></div>
       <div class="stat-card" style="border-bottom:2px solid #d4e800;"><div class="stat-number" style="color:#d4e800">${counts.vip}</div><div class="stat-label">👑 VIP Members</div></div>
       <div class="stat-card" style="border-bottom:2px solid #00d9ff;"><div class="stat-number" style="color:#00d9ff">${counts.member}</div><div class="stat-label">🏅 Members</div></div>
