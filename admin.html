@@ -3111,7 +3111,11 @@
 
     // ==================== بوت الأخبار (Gaming & YouTube) ====================
 
-    const FORBIDDEN_KEYWORDS = ['sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 'بنات', 'نساء', 'موسيقى', 'music'];
+    const FORBIDDEN_KEYWORDS = [
+      'sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 
+      'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 
+      'rugby', 'football', 'soccer', 'basketball', 'tennis', 'olympics', 'wrestling', 'wwe', 'boxing', 'ufc', 'رياضة', 'مباراة'
+    ];
 
     function isContentSafe(text) {
       if (!text) return true;
@@ -3175,7 +3179,9 @@
         console.log('⏳ جاري جلب العروض المجانية...');
         // استخدام بروكسي لتجنب مشاكل الـ CORS في المتصفح
         const targetUrl = 'https://www.gamerpower.com/api/giveaways?platform=pc';
-        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`);
+        // استخدام بروكسي بديل أكثر استقراراً
+        const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
+        if (!res.ok) throw new Error('Proxy error');
         const data = await res.json();
 
         if (!Array.isArray(data)) throw new Error('تعذر جلب البيانات');
@@ -3217,13 +3223,14 @@
         console.log('⏳ جاري جلب الأخبار...');
         let count = 0;
 
-        // 1. جلب أخبار البطولات والأحداث الكبرى (Gaming Tournaments)
-        const eventQuery = encodeURIComponent('Gaming Tournament Championship 2026 news');
+        // 1. جلب أخبار البطولات والأحداث الكبرى (Esports Tournaments)
+        const eventQuery = encodeURIComponent('Esports Tournament Championship 2026 news -sports -football -rugby');
         const eventRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${eventQuery}&type=video&order=date&maxResults=5&key=${YOUTUBE_API_KEY}`);
         const eventData = await eventRes.json();
         if (eventData.items) {
           for (let item of eventData.items) {
-            if (isContentSafe(item.snippet.title)) {
+            const combinedText = (item.snippet.title + ' ' + item.snippet.description).toLowerCase();
+            if (isContentSafe(combinedText)) {
               const videoUrl = `https://www.youtube.com/watch?v=${item.id.videoId}`;
               let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', videoUrl).limit(1);
               if (existing?.length) continue;
