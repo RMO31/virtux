@@ -26,6 +26,24 @@
     .loading{text-align:center;padding:60px;color:#7de9ff}
     .error{text-align:center;padding:60px;color:#ff8d8d}
     iframe, video{max-width:100%;border-radius:18px;margin:14px 0;border:1px solid rgba(255,255,255,0.08);background:#000}
+    
+    /* Manual Translation Buttons */
+    .trans-btns { display: flex; gap: 8px; margin-bottom: 16px; }
+    .trans-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #aaa;
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .trans-btn:hover { background: #e01010; color: #000; border-color: #e01010; }
+    .trans-btn.active { background: rgba(224, 16, 16, 0.2); color: #e01010; border-color: #e01010; }
+
     @media (max-width:640px){body{padding:14px}.header{padding:20px}.header h1{font-size:22px}.content{padding:20px}.title{font-size:24px}.article-body{font-size:15px}}
   </style>
 </head>
@@ -90,6 +108,7 @@ async function loadArticle() {
     if (!data) throw new Error('Article not found');
 
     const post = data;
+    window._postTitle = post.title;
     let mediaHtml = '';
     let isUploadedMediaUrl = false;
     if (post.url && (post.url.match(/\.(mp4|webm|mov|ogg)$/i) || post.url.includes('/storage/v1/object/public/videos/'))) {
@@ -139,11 +158,20 @@ async function loadArticle() {
       </div>
     `;
 
+    const isVideoOrLive = post.room === 'live' || post.room === 'yt-videos' || (post.url && (post.url.includes('youtube.com') || post.url.includes('youtu.be') || post.url.includes('twitch.tv')));
+    const transBtnsHtml = isVideoOrLive ? `
+      <div class="trans-btns">
+        <button class="trans-btn" onclick="manualTranslatePost(this, 'ar')">AR</button>
+        <button class="trans-btn" onclick="manualTranslatePost(this, 'en')">EN</button>
+      </div>
+    ` : '';
+
     document.getElementById('article-content').innerHTML = `
       ${mediaHtml}
       <div class="content">
         ${langBtns}
         <h1 class="title">${escapeHtml(post.title)}</h1>
+        ${transBtnsHtml}
         ${metaHtml}
         <div class="article-body">${contentHtml}</div>
         ${extraLink}
@@ -169,14 +197,16 @@ async function loadArticle() {
       }
     }
 
-    // Translate Title
-    const urlTitle = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(post.title)}`;
-    fetch(urlTitle)
-    .then(r => r.json())
-    .then(j => {
-      const t = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('');
-      if (t) document.querySelector('.title').textContent = t;
-    }).catch(e => console.error('Title translation error:', e));
+    // Translate Title (Only if NOT a video/live, to respect "stop auto translation" request)
+    if (!isVideoOrLive) {
+      const urlTitle = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(post.title)}`;
+      fetch(urlTitle)
+      .then(r => r.json())
+      .then(j => {
+        const t = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('');
+        if (t) document.querySelector('.title').textContent = t;
+      }).catch(e => console.error('Title translation error:', e));
+    }
     
     // Translate Content
     const textToTranslate = cleanContent.substring(0, 2000);
@@ -195,6 +225,30 @@ async function loadArticle() {
     console.error(err);
     document.getElementById('article-content').innerHTML = `<div class="error">${escapeHtml(err.message || 'Unknown error')}</div>`;
   }
+}
+
+window._postTitle = '';
+async function manualTranslatePost(btn, targetLang) {
+  if (!window._postTitle) return;
+  const titleEl = document.querySelector('.title');
+  if (!titleEl) return;
+  
+  const originalBtnText = btn.textContent;
+  btn.textContent = '...';
+  titleEl.style.opacity = '0.5';
+
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(window._postTitle)}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    const t = j?.[0]?.map(x=>x?.[0]).filter(Boolean).join('');
+    if (t) titleEl.textContent = t;
+    btn.classList.add('active');
+    setTimeout(() => btn.classList.remove('active'), 1000);
+  } catch(e) { console.error(e); }
+  
+  titleEl.style.opacity = '1';
+  btn.textContent = originalBtnText;
 }
 
 loadArticle();
