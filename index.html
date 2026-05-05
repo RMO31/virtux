@@ -2428,7 +2428,8 @@ function renderCards(posts, gridId, room) {
     const editableRooms = ['gaming-news','youtube-news','live','yt-videos','highlights','tournaments'];
     const isAdmin = window.userHasAnyRole(['admin','moderator']);
     const isOwnerEdit = window.currentUserId && p.user_id && p.user_id === window.currentUserId;
-    const canEdit = isOwnerEdit || isAdmin;
+    // منشورات البطولة: للإدارة فقط — لا يحق للمستخدم العادي تعديلها حتى لو هو صاحبها
+    const canEdit = (room === 'tournaments') ? isAdmin : (isOwnerEdit || isAdmin);
     
     const editBtn = (canEdit && editableRooms.includes(room))
       ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="${window.t('تعديل','Edit')}">✏️</button>`
