@@ -41,15 +41,14 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      min-width: 110%;
-      min-height: 110%;
+      min-width: 100%;
+      min-height: 100%;
       width: auto;
       height: auto;
       transform: translate(-50%, -50%);
       object-fit: cover;
-      filter: brightness(0.35) contrast(1.1); /* Darker for admin panels */
-      transition: transform 0.15s ease-out;
-      will-change: transform;
+      filter: brightness(0.4) contrast(1.2) saturate(1.1); /* Enhanced for admin */
+      will-change: auto;
     }
     #bg-video-overlay {
       position: fixed;
@@ -60,49 +59,13 @@
       pointer-events: none;
     }
 
-    /* Winter Overlay for Admin */
-    body::before {
-      content: '';
+    #bg-video-overlay {
       position: fixed;
       inset: 0;
-      background: linear-gradient(180deg, rgba(0, 191, 255, 0.05) 0%, rgba(0, 0, 50, 0.15) 100%);
-      pointer-events: none;
       z-index: -1;
-    }
-
-    #bgCanvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
+      background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.5) 100%),
+                  rgba(0, 0, 0, 0.3);
       pointer-events: none;
-      opacity: 0.4; /* Soften the tunnel background to let snow show */
-    }
-    /* Winter Theme - Snow Animation */
-    #snow-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 2; /* Between bgCanvas and content */
-      background: transparent;
-    }
-    .snowflake {
-      position: absolute;
-      top: -10px;
-      color: #fff;
-      font-size: 1em;
-      user-select: none;
-      z-index: 2;
-      pointer-events: none;
-      animation-name: snowfall;
-      animation-timing-function: linear;
-      animation-iteration-count: infinite;
-    }
-    @keyframes snowfall {
-      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-      100% { transform: translateY(100vh) rotate(360deg); opacity: 0.3; }
     }
 
     #loginPage,
@@ -943,7 +906,6 @@
     </video>
   </div>
   <div id="bg-video-overlay"></div>
-  <div id="snow-overlay"></div>
   <canvas id="bgCanvas"></canvas>
 
   <!-- Tournament Management Modal -->
@@ -3562,15 +3524,6 @@
         container.appendChild(flake);
       }
     })();
-
-    // ==================== تأثير تحريك الماوس (Parallax Video) ====================
-    document.addEventListener('mousemove', (e) => {
-      const video = document.getElementById('bg-video');
-      if (!video) return;
-      const x = (window.innerWidth / 2 - e.clientX) * 0.01;
-      const y = (window.innerHeight / 2 - e.clientY) * 0.01;
-      video.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1.05)`;
-    });
   </script>
 
   <script>
