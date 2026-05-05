@@ -1987,10 +1987,15 @@ async function fetchYouTubeChannelInfo(url) {
     let res = await fetch(apiUrl);
     let data = await res.json();
     // إذا فشل النوع user جرّب كـ forHandle
+    console.log('[YT] parsed:', parsed);
+    console.log('[YT] apiUrl:', apiUrl);
+    console.log('[YT] response:', data);
+    // إذا فشل النوع user جرّب كـ forHandle
     if ((!data.items || !data.items[0]) && parsed.type === 'user') {
       const apiUrl2 = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&forHandle=@${parsed.value}&key=${YOUTUBE_API_KEY}`;
       const res2 = await fetch(apiUrl2);
       data = await res2.json();
+      console.log('[YT] fallback response:', data);
     }
     if (data.items && data.items[0]) return { 
       title: data.items[0].snippet.title, 
@@ -1999,8 +2004,10 @@ async function fetchYouTubeChannelInfo(url) {
       channelId: data.items[0].id,
       uploadsPlaylistId: data.items[0].contentDetails?.relatedPlaylists?.uploads
     };
+    // أظهر خطأ API إن وجد
+    if (data.error) console.error('[YT] API error:', data.error.message);
     return null;
-  } catch(e) { console.error('Error fetching channel info:', e); return null; }
+  } catch(e) { console.error('[YT] Exception:', e); return null; }
 }
 async function addYouTubeChannel(room) {
   let url = document.getElementById(`url-${room}`)?.value?.trim();
@@ -2009,7 +2016,7 @@ async function addYouTubeChannel(room) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ جارٍ الإضافة...'; }
   try {
     let info = await fetchYouTubeChannelInfo(url);
-    if (!info) { alert('تعذر جلب معلومات القناة'); return; }
+    if (!info) { alert('تعذر جلب معلومات القناة\n\n🔍 افتح Developer Console (F12) وابحث عن [YT] لرؤية سبب الخطأ التفصيلي'); return; }
     let extraContent = document.getElementById(`content-${room}`)?.value?.trim() || '';
     let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'), room: room, content: extraContent };
     let { error } = await supabaseClient.from('posts').insert(body);
