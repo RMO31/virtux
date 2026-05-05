@@ -17,11 +17,22 @@
     }
 
     body {
-      font-family: 'Poppins', sans-serif;
-      background: #0a0000;
+      margin: 0;
+      background: radial-gradient(circle at center, #001a33 0%, #000810 100%);
       color: #fff;
+      font-family: 'Cairo', sans-serif;
+      overflow-x: hidden;
       min-height: 100vh;
-      overflow: hidden
+    }
+
+    /* Winter Overlay for Admin */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 191, 255, 0.05) 0%, rgba(0, 0, 50, 0.15) 100%);
+      pointer-events: none;
+      z-index: -1;
     }
 
     #bgCanvas {
@@ -901,6 +912,8 @@
 
       <div id="tm-setup" style="display:none; text-align:center; padding:40px;">
         <p style="color:#aaa; margin-bottom:20px;">البطولة جاهزة للبدء. اختر نظام البطولة:</p>
+        <button class="action-btn" onclick="syncLiveStreamsStatus()" style="background:#cc2222;">🤖 بوت مراقب البثوث</button>
+        <button class="action-btn" onclick="syncYouTubeNews()" style="background:#cc0000;">🔄 مزامنة أخبار يوتيوب</button>
         <div style="display:flex; justify-content:center; gap:20px;">
           <button class="btn-pub" onclick="initializeTournament('bracket')"
             style="background:#00f5ff; color:#000; width:150px;">🌳 شجرة</button>
@@ -1509,6 +1522,7 @@
       return titles[room] || room;
     }
     function showPage(id) {
+      window.currentContentRoom = id;
       document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
       let target = document.getElementById(`ap-${id}`);
@@ -2682,47 +2696,30 @@
     function parseYouTubeUrl(url) {
       if (!url) return null;
       url = url.trim();
-
-      // handle مباشر @username
       if (url.startsWith('@')) return { type: 'handle', value: url.split(/[\/?]/)[0] };
-
-      // UC... channel ID مباشر
       if (/^UC[\w-]{20,}$/.test(url)) return { type: 'id', value: url };
-
-      // youtube.com/@ أو youtu.be/@
       if (url.includes('@')) {
         let h = url.split('@')[1]?.split(/[\/?&]/)[0];
         if (h) return { type: 'handle', value: '@' + h };
       }
-      // /channel/UCxxx
       if (url.includes('/channel/')) {
         let id = url.split('/channel/')[1]?.split(/[\/?&]/)[0];
         if (id) return { type: 'id', value: id };
       }
-      // /user/name
       if (url.includes('/user/')) {
         let user = url.split('/user/')[1]?.split(/[\/?&]/)[0];
         if (user) return { type: 'user', value: user };
       }
-      // /c/name
       if (url.includes('/c/')) {
         let c = url.split('/c/')[1]?.split(/[\/?&]/)[0];
         if (c) return { type: 'query', value: c };
       }
-      // youtube.com/CUSTOMNAME => جرّب كـ query (يمكن أن يكون handle أو username)
       try {
         const u = new URL(url.startsWith('http') ? url : 'https://' + url);
         const parts = u.pathname.replace(/^\//, '').split('/');
-        if (parts[0] && parts[0] !== 'watch' && parts[0] !== 'shorts' && parts[0] !== 'playlist') {
-          return { type: 'query', value: parts[0] };
-        }
+        if (parts[0] && parts[0] !== 'watch' && parts[0] !== 'shorts' && parts[0] !== 'playlist') return { type: 'query', value: parts[0] };
       } catch (e) { }
-
-      // إذا لم يكن رابطاً بل مجرد اسم قناة
-      if (!url.includes('/') && !url.includes('.')) {
-        return { type: 'query', value: url };
-      }
-
+      if (!url.includes('/') && !url.includes('.')) return { type: 'query', value: url };
       return null;
     }
 
@@ -2730,14 +2727,12 @@
       try {
         let parsed = parseYouTubeUrl(url);
         if (!parsed) return null;
-
         const fetchByParam = async (paramStr) => {
           let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&${paramStr}&key=${YOUTUBE_API_KEY}`;
           let res = await fetch(apiUrl);
           let data = await res.json();
           return data.items && data.items[0] ? data.items[0] : null;
         };
-
         let item = null;
         if (parsed.type === 'id') item = await fetchByParam(`id=${parsed.value}`);
         else if (parsed.type === 'handle') item = await fetchByParam(`forHandle=${parsed.value}`);
@@ -2748,109 +2743,48 @@
           item = await fetchByParam(`forHandle=@${parsed.value}`);
           if (!item) item = await fetchByParam(`forUsername=${parsed.value}`);
         }
-
-        // Fallback: search API إذا لم يجد القناة بالمعرفات السابقة
         if (!item) {
-          console.log('[YT] Using search fallback for:', parsed.value || url);
           let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(parsed.value || url)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
           let searchRes = await fetch(searchUrl);
           let searchData = await searchRes.json();
-          if (searchData.items && searchData.items[0]) {
-            item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
-          }
+          if (searchData.items && searchData.items[0]) item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
         }
-
-        if (item) {
-          return {
-            title: item.snippet.title,
-            subscribers: item.statistics.subscriberCount?.toLocaleString() || '0',
-            thumbnail: item.snippet.thumbnails?.high?.url,
-            channelId: item.id,
-            uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads
-          };
-        }
-
-        console.error('[YT] API could not find channel info.');
+        if (item) return { title: item.snippet.title, subscribers: item.statistics.subscriberCount?.toLocaleString() || '0', thumbnail: item.snippet.thumbnails?.high?.url, channelId: item.id, uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads };
         return null;
-      } catch (e) { console.error('[YT] Exception:', e); return null; }
+      } catch (e) { return null; }
     }
+
     async function addYouTubeChannel(room) {
       let url = document.getElementById(`url-${room}`)?.value?.trim();
       if (!url) { alert('أدخل رابط القناة'); return; }
       let btn = document.querySelector(`#ap-${room} .btn-pub`) || document.querySelector('.btn-pub');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ جارٍ الإضافة...'; }
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الإضافة...'; }
       try {
         let info = await fetchYouTubeChannelInfo(url);
-        if (!info) { alert('تعذر جلب معلومات القناة\n\n🔍 افتح Developer Console (F12) وابحث عن [YT] لرؤية سبب الخطأ التفصيلي'); return; }
+        if (!info) { alert('تعذر جلب معلومات القناة'); return; }
         let extraContent = document.getElementById(`content-${room}`)?.value?.trim() || '';
         let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'), room: room, content: extraContent };
         let { error } = await supabaseClient.from('posts').insert(body);
         if (error) throw error;
-
-        // ── جلب فوري: فيديوهات + بث مباشر + قبل بث ──
         let parsed = parseYouTubeUrl(url);
         if (parsed) {
-          if (btn) btn.textContent = '📥 جاري تنزيل المحتوى...';
           let chInfo = await getChannelId(parsed);
           if (chInfo) {
-            // فيديوهات - استخدام uploadsId الموفر للكوتا
             let playlistId = chInfo.uploadsId || chInfo.id.replace('UC', 'UU');
             let videos = await fetchLatestVideos(playlistId, 5);
-            let vCount = 0;
-            for (let v of videos) { if (await saveToDb(v, 'yt-videos', 'Video', chInfo.id)) vCount++; }
-            // بث مباشر
+            for (let v of videos) await saveToDb(v, 'yt-videos', 'Video', chInfo.id);
             let live = await fetchLiveStream(chInfo.id);
-            let lCount = 0;
-            if (live) { if (await saveToDb(live, 'live', 'Live Now', chInfo.id)) lCount++; }
-            // قبل بث
+            if (live) await saveToDb(live, 'live', 'Live Now', chInfo.id);
             let upcoming = await fetchUpcomingStream(chInfo.id);
-            let uCount = 0;
-            if (upcoming) { if (await saveToDb(upcoming, 'live', 'Pre Lives', chInfo.id)) uCount++; }
-            console.log(`✅ ${chInfo.title}: ${vCount} فيديو | ${lCount} بث | ${uCount} قبل بث`);
+            if (upcoming) await saveToDb(upcoming, 'live', 'Pre Lives', chInfo.id);
           }
         }
-
         document.getElementById(`url-${room}`).value = '';
-        if (document.getElementById(`content-${room}`)) document.getElementById(`content-${room}`).value = '';
-        let okDiv = document.getElementById(`ok-${room}`);
-        if (okDiv) { okDiv.style.display = 'block'; okDiv.textContent = '✅ تمت الإضافة وتنزيل المحتوى!'; setTimeout(() => { okDiv.style.display = 'none'; okDiv.textContent = '✅ تمت الإضافة!'; }, 3500); }
         loadContentPage(room);
-        if (document.getElementById('content-yt-videos')) loadContentPage('yt-videos');
-        if (document.getElementById('content-live')) loadContentPage('live');
         loadDashboard();
       } catch (e) { alert('خطأ: ' + e.message); }
       finally { if (btn) { btn.disabled = false; btn.textContent = '➕ إضافة'; } }
     }
-
-    async function fetchYouTubeVideoInfo(url) { let vid = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; if (!vid) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${vid}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); if (data.items && data.items[0]) return { title: data.items[0].snippet.title, description: data.items[0].snippet.channelTitle, thumbnail: data.items[0].snippet.thumbnails?.high?.url, videoUrl: url }; return null; }
-    async function fetchVideoFromChannel(channelUrl) { let handle = channelUrl.split('@')[1]?.split(/[\/?]/)[0]; if (!handle) return null; let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${handle}&key=${YOUTUBE_API_KEY}`; let res = await fetch(apiUrl); let data = await res.json(); let channelId = data.items?.[0]?.id; if (!channelId) return null; let videosApi = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=1&order=date&type=video&key=${YOUTUBE_API_KEY}`; let videosRes = await fetch(videosApi); let videosData = await videosRes.json(); let video = videosData.items?.[0]; if (video) return { title: video.snippet.title, description: video.snippet.channelTitle, thumbnail: video.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${video.id.videoId}` }; return null; }
-    async function addYouTubeVideo(room) {
-      let url = document.getElementById(`url-${room}`)?.value?.trim();
-      if (!url) { alert('أدخل رابط'); return; }
-      let type = document.getElementById(`type-${room}`)?.value || 'single';
-      let info = type === 'single' ? await fetchYouTubeVideoInfo(url) : await fetchVideoFromChannel(url);
-      if (!info) { alert('تعذر جلب الفيديو'); return; }
-      let body = {
-        title: info.title,
-        description: info.description,
-        icon: info.thumbnail || '📹',
-        url: info.videoUrl,
-        tag: document.getElementById(`tag-${room}`)?.value || 'Video',
-        room: room,
-        content: document.getElementById(`content-${room}`)?.value?.trim() || ''
-      };
-      let { error } = await supabaseClient.from('posts').insert(body);
-      if (error) alert('❌ فشل الإضافة: ' + error.message);
-      else {
-        alert('✅ تمت إضافة الفيديو بنجاح');
-        if (document.getElementById(`url-${room}`)) document.getElementById(`url-${room}`).value = '';
-        loadContentPage(room);
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════
-    // 🔄 AUTO-FETCH ENGINE — فيديوهات + بث مباشر + قبل البث
-    // ══════════════════════════════════════════════════════════════════
 
     async function getChannelId(parsed) {
       try {
@@ -2859,7 +2793,6 @@
           let d = await res.json();
           return d.items?.[0] || null;
         };
-
         let item = null;
         if (parsed.type === 'id') item = await fetchByParam(`id=${parsed.value}`);
         else if (parsed.type === 'handle') item = await fetchByParam(`forHandle=${parsed.value}`);
@@ -2870,76 +2803,26 @@
           item = await fetchByParam(`forHandle=@${parsed.value}`);
           if (!item) item = await fetchByParam(`forUsername=${parsed.value}`);
         }
-
         if (!item) {
           let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(parsed.value)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
           let searchRes = await fetch(searchUrl);
           let searchData = await searchRes.json();
-          if (searchData.items && searchData.items[0]) {
-            item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
-          }
+          if (searchData.items && searchData.items[0]) item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
         }
-
-        if (item) return {
-          id: item.id,
-          title: item.snippet.title,
-          uploadsId: item.contentDetails?.relatedPlaylists?.uploads
-        };
+        if (item) return { id: item.id, title: item.snippet.title, uploadsId: item.contentDetails?.relatedPlaylists?.uploads };
       } catch (e) { }
       return null;
     }
 
-
-    // جلب آخر فيديوهات عادية بطريقة موفرة جداً (1 كريدي بدلاً من 100)
     async function fetchLatestVideos(playlistId, maxResults = 5) {
       try {
-        // التكلفة: 1 كريدي فقط
         let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=${maxResults}&key=${YOUTUBE_API_KEY}`);
         let d = await res.json();
         if (!d.items) return [];
-        return d.items.map(v => ({
-          videoId: v.snippet.resourceId.videoId,
-          title: v.snippet.title,
-          description: v.snippet.description || '', // إضافة الوصف
-          channelName: v.snippet.channelTitle,
-          thumbnail: v.snippet.thumbnails?.high?.url || '',
-          publishedAt: v.snippet.publishedAt,
-          videoUrl: `https://www.youtube.com/watch?v=${v.snippet.resourceId.videoId}`,
-          type: 'video'
-        }));
-      } catch (e) { console.error('fetchLatestVideos error:', e); return []; }
+        return d.items.map(v => ({ videoId: v.snippet.resourceId.videoId, title: v.snippet.title, description: v.snippet.description || '', channelName: v.snippet.channelTitle, thumbnail: v.snippet.thumbnails?.high?.url || '', publishedAt: v.snippet.publishedAt, videoUrl: `https://www.youtube.com/watch?v=${v.snippet.resourceId.videoId}`, type: 'video' }));
+      } catch (e) { return []; }
     }
 
-    // جلب الأنشطة (بث مباشر + قادم) بطريقة موفرة جداً (1 كريدي بدلاً من 200)
-    async function fetchActivities(channelId) {
-      try {
-        let res = await fetch(`https://www.googleapis.com/youtube/v3/activities?part=snippet,contentDetails&channelId=${channelId}&maxResults=5&key=${YOUTUBE_API_KEY}`);
-        let d = await res.json();
-        if (!d.items) return [];
-
-        return d.items
-          .filter(item => item.snippet.type === 'liveStreaming')
-          .map(item => {
-            const vid = item.contentDetails.liveStreaming.videoId;
-            const title = item.snippet.title;
-            // تحديد النوع (قادم أم مباشر) بناءً على العنوان أو البيانات المتاحة
-            let type = 'live';
-            if (title.toLowerCase().includes('upcoming') || title.toLowerCase().includes('waiting')) type = 'upcoming';
-
-            return {
-              videoId: vid,
-              title: title,
-              channelName: item.snippet.channelTitle,
-              thumbnail: item.snippet.thumbnails?.high?.url || '',
-              publishedAt: item.snippet.publishedAt,
-              videoUrl: `https://www.youtube.com/watch?v=${vid}`,
-              type: type
-            };
-          });
-      } catch (e) { console.error('fetchActivities error:', e); return []; }
-    }
-
-    // جلب بث مباشر فعلي (تكلفة: 1 كريدي)
     async function fetchLiveStream(channelId) {
       try {
         let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${YOUTUBE_API_KEY}`);
@@ -2950,7 +2833,6 @@
       return null;
     }
 
-    // جلب بث قادم (تكلفة: 1 كريدي)
     async function fetchUpcomingStream(channelId) {
       try {
         let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=upcoming&key=${YOUTUBE_API_KEY}`);
@@ -2961,284 +2843,147 @@
       return null;
     }
 
-    // حفظ في DB مع منع التكرار
     async function saveToDb(item, room, tag, channelId = null) {
-      let { data: existing } = await supabaseClient.from('posts')
-        .select('id').eq('url', item.videoUrl).limit(1);
+      let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.videoUrl).limit(1);
       if (existing?.length) return false;
-
-      // إذا كان لدينا ID القناة، نخزنه في الـ tag بشكل auto:ID لضمان الحذف السهل مستقبلاً
       const finalTag = channelId ? `auto:${channelId}` : tag;
-
-      await supabaseClient.from('posts').insert({
-        title: item.title,
-        description: item.channelName,
-        icon: item.thumbnail || (tag === 'Live Now' ? '🔴' : tag === 'Pre Lives' ? '⏰' : '📹'),
-        url: item.videoUrl,
-        tag: finalTag,
-        room: room,
-        content: item.publishedAt || ''
-      });
+      await supabaseClient.from('posts').insert({ title: item.title, description: item.channelName, icon: item.thumbnail || '📹', url: item.videoUrl, tag: finalTag, room: room, content: item.publishedAt || '' });
       return true;
     }
 
-    async function cleanupOrphanedVideos() {
-      if (!confirm('سيتم حذف جميع الفيديوهات التي تنتمي لقنوات محذوفة. هل أنت متأكد؟')) return;
-      try {
-        console.log('⏳ جاري جلب البيانات للتنظيف...');
-        // 1. جلب كل القنوات الموجودة حالياً
-        let { data: channels } = await supabaseClient.from('posts').select('title').eq('room', 'yt-channels');
-        let activeChannelTitles = (channels || []).map(c => c.title.trim().toLowerCase());
-
-        // 2. جلب كل الفيديوهات والبثوث مع معرف الناشر
-        let { data: videos } = await supabaseClient.from('posts').select('id, description, tag, user_id').in('room', ['yt-videos', 'live']);
-
-        if (!videos || !videos.length) {
-          alert('لا توجد فيديوهات لفحصها.');
-          return;
-        }
-
-        // 3. تحديد الفيديوهات "اليتيمة" (التي جلبها البوت فقط ومسؤولها null)
-        let orphanedIds = videos.filter(v => {
-          // استثناء: إذا كان الفيديو منشورا يدويا (يملك user_id)، لا نلمسه أبدا
-          if (v.user_id !== null) return false;
-
-          if (!v.description) return false;
-          const channelName = v.description.trim().toLowerCase();
-          return !activeChannelTitles.includes(channelName);
-        }).map(v => v.id);
-
-        if (orphanedIds.length === 0) {
-          alert('✅ لم يتم العثور على فيديوهات يتيمة. كل شيء نظيف!');
-          return;
-        }
-
-        if (!confirm(`تم العثور على ${orphanedIds.length} فيديو تابع لقنوات محذوفة. هل تريد حذفها الآن؟`)) return;
-
-        // 4. حذف الفيديوهات على دفعات (batches)
-        const batchSize = 100;
-        for (let i = 0; i < orphanedIds.length; i += batchSize) {
-          const batch = orphanedIds.slice(i, i + batchSize);
-          await supabaseClient.from('posts').delete().in('id', batch);
-        }
-
-        alert(`✅ تم تنظيف ${orphanedIds.length} فيديو بنجاح!`);
-        loadDashboard();
-      } catch (e) {
-        alert('حدث خطأ أثناء التنظيف: ' + e.message);
-      }
-    }
-
-    // الفحص الشامل لكل القنوات بطريقة موفرة للكريدي
-    async function fetchDurations(videoIds) {
-      if (!videoIds.length) return {};
-      try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds.join(',')}&key=${YOUTUBE_API_KEY}`);
-        const d = await res.json();
-        const map = {};
-        (d.items || []).forEach(item => {
-          const dur = item.contentDetails.duration;
-          const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-          const h = parseInt(match[1] || 0);
-          const m = parseInt(match[2] || 0);
-          const s = parseInt(match[3] || 0);
-          const totalSeconds = h * 3600 + m * 60 + s;
-          map[item.id] = totalSeconds <= 65; // سماحية بسيطة لـ 60 ثانية
-        });
-        return map;
-      } catch (e) { return {}; }
-    }
-
-    async function autoCheckAllChannels(force = false) {
-      try {
-        if (force) console.log('🔄 فحص قسري لجميع القنوات...');
-        // جلب القنوات المراقبة
-        let { data: channels } = await supabaseClient.from('posts')
-          .select('*').eq('room', 'yt-channels').eq('tag', 'Channel');
-        if (!channels?.length) return;
-
-        console.log(`🚀 بدء فحص ${channels.length} قناة...`);
-
-        let newVideos = 0, newLive = 0, newUpcoming = 0;
-        const now = Date.now();
-        const ONE_DAY = 24 * 60 * 60 * 1000;
-
-        for (let ch of channels) {
-          // التحقق: هل تم فحص هذه القناة في آخر 24 ساعة؟ (إلا إذا كان الفحص قسرياً)
-          let lastSync = parseInt(ch.content) || 0;
-          if (!force && (now - lastSync < ONE_DAY)) {
-            // console.log(`⏩ تخطي ${ch.title}: تم الفحص مؤخراً.`);
-            continue;
-          }
-
-          let parsed = parseYouTubeUrl(ch.url);
-          if (!parsed) continue;
-
-          // جلب ID القناة (أو استنتاجه لتوفير الكوتا)
-          let chInfo = await getChannelId(parsed);
-          if (!chInfo) continue;
-
-          // معرف قائمة الرفع (Uploads ID) هو نفس معرف القناة مع استبدال UC بـ UU
-          let uploadsPlaylistId = chInfo.uploadsId || chInfo.id.replace('UC', 'UU');
-
-          console.log(`🔄 جاري فحص: ${ch.title}...`);
-
-          // ── 1. جلب الفيديوهات (تكلفة: 1 كريدت فقط لقائمة التشغيل + 1 لتفاصيل الفيديو) ──
-          let videos = await fetchLatestVideos(uploadsPlaylistId, 10);
-          if (videos.length > 0) {
-            const vIds = videos.map(v => v.videoId);
-            const durations = await fetchDurations(vIds);
-
-            for (let v of videos) {
-              // التحقق من المدة (أقل من 65 ثانية) أو وجود كلمة shorts
-              const isShortByDur = durations[v.videoId] || false;
-              const isShortByText = v.title.toLowerCase().includes('shorts') || v.description.toLowerCase().includes('shorts');
-              const isShort = isShortByDur || isShortByText;
-
-              const targetRoom = isShort ? 'reels' : 'yt-videos';
-              const targetTag = isShort ? 'Reel' : 'Video';
-
-              if (await saveToDb(v, targetRoom, targetTag, ch.id)) {
-                newVideos++;
-              }
-            }
-          }
-
-          // ── 2. جلب البث المباشر والقادم (تكلفة: 1 كريدي فقط) ──
-          let activities = await fetchActivities(chInfo.id);
-          for (let act of activities) {
-            if (act.type === 'live') {
-              if (await saveToDb(act, 'live', 'Live Now', ch.id)) newLive++;
-            } else {
-              if (await saveToDb(act, 'live', 'Pre Lives', ch.id)) newUpcoming++;
-            }
-          }
-
-          // تحديث وقت الفحص لمنع التكرار لمدة 24 ساعة
-          await supabaseClient.from('posts').update({ content: now.toString() }).eq('id', ch.id);
-
-          // تأخير بسيط لتجنب ضغط الطلبات
-          await new Promise(r => setTimeout(r, 200));
-        }
-
-        console.log(`✅ انتهى الفحص: +${newVideos} فيديو | +${newLive} مباشر`);
-        if (newVideos + newLive + newUpcoming > 0) {
-          if (document.getElementById('content-yt-videos')) loadContentPage('yt-videos');
-          if (document.getElementById('content-live')) loadContentPage('live');
-        }
-      } catch (e) { console.error('autoCheck error:', e); }
-    }
-
-    // ==================== بوت الأخبار (Gaming & YouTube) ====================
-
-    const FORBIDDEN_KEYWORDS = [
-      'sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 
-      'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 'romance', 'kiss',
-      'rugby', 'football', 'soccer', 'basketball', 'tennis', 'olympics', 'wrestling', 'wwe', 'boxing', 'ufc', 'رياضة', 'مباراة',
-      'girl', 'woman', 'lady', 'female', 'dating', 'sexual'
-    ];
-
-    function isContentSafe(text) {
-      if (!text) return true;
-      const lower = text.toLowerCase();
-      // التحقق من الكلمات الممنوعة
-      return !FORBIDDEN_KEYWORDS.some(k => lower.includes(k));
-    }
+    const FORBIDDEN_KEYWORDS = ['sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 'romance', 'kiss', 'girl', 'woman', 'lady', 'female', 'dating', 'sexual'];
+    function isContentSafe(text) { if (!text) return true; const lower = text.toLowerCase(); return !FORBIDDEN_KEYWORDS.some(k => lower.includes(k)); }
 
     async function syncGamingNews(silent = false) {
-      if (!silent && !confirm('هل تريد جلب آخر أخبار الألعاب الإلكترونية؟\n(سيتم استهداف أخبار PC, Console والمنصات الرسمية)')) return;
+      if (!silent && !confirm('هل تريد جلب آخر أخبار الألعاب؟')) return;
       try {
-        console.log('⏳ جاري جلب أخبار الألعاب...');
-        // استخدام رابط تغذية مخصص للألعاب فقط من IGN لتجنب أخبار الأفلام والمنوعات
         const rssUrl = encodeURIComponent('https://feeds.feedburner.com/ign/games-all');
         const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
         const data = await res.json();
-
-        if (!data.items) throw new Error('تعذر جلب البيانات');
-
-        const EXCLUDE_KEYWORDS = ['movie', 'film', 'netflix', 'series', 'tv show', 'marvel', 'dc', 'disney', 'cinema', 'أفلام', 'مسلسل', 'فيلم'];
         let count = 0;
         for (let item of data.items) {
-          const title = item.title.toLowerCase();
-          const desc = (item.description || '').toLowerCase();
-          const text = title + ' ' + desc;
-
-          // 1. استبعاد الكلمات غير المرتبطة بالألعاب الإلكترونية (أفلام، مسلسلات، إلخ)
-          const hasExclude = EXCLUDE_KEYWORDS.some(k => text.includes(k));
-          if (hasExclude) continue;
-
-          // 2. تصفية المحتوى ليكون متعلقاً بالألعاب والمنصات المطلوبة حصراً
-          const isRelevant = text.includes('videogame') || text.includes('gameplay') || text.includes('steam') || text.includes('epic') ||
-            text.includes('playstation') || text.includes('ps5') || text.includes('xbox') || text.includes('nintendo') ||
-            text.includes('pc gaming') || text.includes('patch notes') || text.includes('remake') || text.includes('rpg') || text.includes('fps');
-
-          if (isRelevant && isContentSafe(item.title) && isContentSafe(item.description)) {
+          if (isContentSafe(item.title + ' ' + item.description)) {
             let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.link).limit(1);
             if (existing?.length) continue;
-
-            await supabaseClient.from('posts').insert({
-              title: item.title,
-              description: item.author || 'Gaming News',
-              icon: item.thumbnail || item.enclosure?.link || '📰',
-              url: item.link,
-              tag: 'News',
-              room: 'gaming-news',
-              content: item.description || ''
-            });
+            await supabaseClient.from('posts').insert({ title: item.title, description: item.author || 'Gaming News', icon: item.thumbnail || '📰', url: item.link, tag: 'News', room: 'gaming-news', content: item.description || '' });
             count++;
           }
           if (count >= 10) break;
         }
-        if (!silent) alert(`✅ تم جلب ${count} خبر جديد للألعاب الإلكترونية.`);
+        if (!silent) alert(`✅ تم جلب ${count} خبر جديد.`);
         loadDashboard();
-      } catch (e) { if (!silent) alert('❌ فشل جلب الأخبار: ' + e.message); }
+      } catch (e) { if (!silent) alert('❌ فشل جلب الأخبار'); }
     }
 
     async function syncGiveaways(silent = false) {
-      if (!silent && !confirm('هل تريد جلب العروض المجانية للألعاب (Steam & Epic Games)؟')) return;
+      if (!silent && !confirm('هل تريد جلب العروض المجانية؟')) return;
       try {
-        console.log('⏳ جاري جلب العروض المجانية...');
-        // استخدام بروكسي لتجنب مشاكل الـ CORS في المتصفح
         const targetUrl = 'https://www.gamerpower.com/api/giveaways?platform=pc';
-        // استخدام بروكسي بديل أكثر استقراراً
         const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
-        if (!res.ok) throw new Error('Proxy error');
         const data = await res.json();
-
-        if (!Array.isArray(data)) throw new Error('تعذر جلب البيانات');
-
         let count = 0;
         for (let item of data) {
-          // تصفية المنصات المطلوبة (Steam & Epic)
           const plat = (item.platforms || '').toLowerCase();
-          const isTargetPlat = plat.includes('steam') || plat.includes('epic');
-          if (!isTargetPlat) continue;
-
-          // فلتر الأمان الصارم
-          const text = (item.title + ' ' + item.description).toLowerCase();
-          if (isContentSafe(text)) {
+          if ((plat.includes('steam') || plat.includes('epic')) && isContentSafe(item.title + ' ' + item.description)) {
             let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.open_giveaway_url).limit(1);
             if (existing?.length) continue;
-
-            await supabaseClient.from('posts').insert({
-              title: `🎁 مجانية الآن: ${item.title}`,
-              description: item.platforms,
-              icon: item.image || '🎁',
-              url: item.open_giveaway_url,
-              tag: 'Giveaway',
-              room: 'gaming-news',
-              content: `🎮 المنصة: ${item.platforms}\n📝 الوصف: ${item.description}\n🚀 طريقة الحصول: ${item.instructions}`
-            });
+            await supabaseClient.from('posts').insert({ title: `🎁 مجانية الآن: ${item.title}`, description: item.platforms, icon: item.image || '🎁', url: item.open_giveaway_url, tag: 'Giveaway', room: 'gaming-news', content: item.description });
             count++;
           }
           if (count >= 10) break;
         }
-        if (!silent) alert(`✅ تم جلب ${count} عرض مجاني جديد.`);
+        if (!silent) alert(`✅ تم جلب ${count} عرض جديد.`);
         loadDashboard();
-      } catch (e) { if (!silent) alert('❌ فشل جلب العروض: ' + e.message); }
+      } catch (e) { if (!silent) alert('❌ فشل جلب العروض'); }
     }
 
-    async function syncYoutubeNews() {
+    // ======== بوت مراقب البثوث (Live Streams Bot) ========
+    async function syncLiveStreamsStatus() {
+      console.log('🚀 بدء فحص حالة البثوث المباشرة...');
+      try {
+        // 1. جلب كل البثوث من غرفة live
+        const { data: streams, error: fetchError } = await supabaseClient
+          .from('posts')
+          .select('id, url, tag, user_id')
+          .eq('room', 'live');
+
+        if (fetchError) throw fetchError;
+        if (!streams || streams.length === 0) {
+          console.log('ℹ️ لا توجد بثوث لفحصها.');
+          return;
+        }
+
+        // 2. تصفية روابط يوتيوب فقط واستخراج الـ IDs
+        const ytStreams = streams.filter(s => s.url && (s.url.includes('youtube.com') || s.url.includes('youtu.be')));
+        const videoIds = ytStreams.map(s => {
+          const match = s.url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+          return match ? match[1] : null;
+        }).filter(Boolean);
+
+        if (videoIds.length === 0) return;
+
+        // 3. جلب حالة البثوث من YouTube API (بشكل دفعات)
+        const apiKey = window.YOUTUBE_API_KEY;
+        const chunks = [];
+        for (let i = 0; i < videoIds.length; i += 50) chunks.push(videoIds.slice(i, i + 50));
+
+        const ytStatusMap = {};
+        for (const chunk of chunks) {
+          const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${chunk.join(',')}&key=${apiKey}`);
+          const json = await resp.json();
+          if (json.items) {
+            json.items.forEach(item => {
+              ytStatusMap[item.id] = item.snippet.liveBroadcastContent; // 'live', 'upcoming', or 'none'
+            });
+          }
+        }
+
+        // 4. جلب رتب أصحاب البثوث
+        const userIds = [...new Set(streams.map(s => s.user_id).filter(Boolean))];
+        const { data: profiles } = await supabaseClient.from('profiles').select('id, roles').in('id', userIds);
+        const userRolesMap = {};
+        if (profiles) {
+          profiles.forEach(p => {
+            let r = p.roles;
+            if (typeof r === 'string') try { r = JSON.parse(r); } catch(e) { r = []; }
+            userRolesMap[p.id] = Array.isArray(r) ? r : [p.role];
+          });
+        }
+
+        // 5. تحديث الحالات في قاعدة البيانات
+        for (const stream of ytStreams) {
+          const vid = stream.url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/)?.[1];
+          const ytStatus = ytStatusMap[vid];
+          const userRoles = userRolesMap[stream.user_id] || [];
+          const isVipUser = userRoles.includes('youtuber_vip') || userRoles.includes('admin') || userRoles.includes('moderator');
+
+          let newTag = stream.tag;
+
+          if (isVipUser) {
+            newTag = 'VIP'; // رتبة الـ VIP لها الأولوية في التصنيف
+          } else if (ytStatus === 'live') {
+            newTag = 'مباشر Now';
+          } else if (ytStatus === 'upcoming') {
+            newTag = 'Pre Live';
+          } else if (ytStatus === 'none' && stream.tag !== 'VIP') {
+            // إذا انتهى البث ولم يكن صاحبه VIP، يمكن تركه أو تحويله لـ "منتهي"
+            // لن نغيره حالياً لترك الحرية للمدير
+          }
+
+          if (newTag !== stream.tag) {
+            console.log(`Updating stream ${stream.id} to tag: ${newTag}`);
+            await supabaseClient.from('posts').update({ tag: newTag }).eq('id', stream.id);
+          }
+        }
+
+        console.log('✅ تم تحديث حالات البثوث بنجاح.');
+        if (window.currentContentRoom === 'live') loadContentPage('live');
+      } catch (err) {
+        console.error('❌ خطأ في بوت البثوث:', err);
+      }
+    }
+
+    async function syncYouTubeNews() {
       if (!confirm('هل تريد جلب آخر منشورات القنوات وأخبار البطولات العالمية؟\n(سيتم البحث عن المحتوى المنشور خلال آخر 24 ساعة)')) return;
       try {
         console.log('⏳ جاري جلب الأخبار...');
