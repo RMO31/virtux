@@ -27,6 +27,52 @@
       overflow-x: hidden;
       position: relative;
     }
+    /* Winter Theme - Snow Animation */
+    #snow-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      background: transparent;
+    }
+    .snowflake {
+      position: absolute;
+      top: -10px;
+      color: #fff;
+      font-size: 1em;
+      user-select: none;
+      z-index: 10;
+      pointer-events: none;
+      animation-name: snowfall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    @keyframes snowfall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0.3; }
+    }
+    
+    .now-free-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: linear-gradient(135deg, #00f5ff, #00d2ff);
+      color: #000;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 4px;
+      z-index: 5;
+      text-transform: uppercase;
+      box-shadow: 0 0 15px rgba(0, 245, 255, 0.4);
+      animation: pulse-glow 2s infinite;
+    }
+    @keyframes pulse-glow {
+      0% { box-shadow: 0 0 5px rgba(0, 245, 255, 0.4); }
+      50% { box-shadow: 0 0 15px rgba(0, 245, 255, 0.7); }
+      100% { box-shadow: 0 0 5px rgba(0, 245, 255, 0.4); }
+    }
+
     body::before {
       content: "";
       position: fixed;
@@ -2500,9 +2546,20 @@ function renderCards(posts, gridId, room) {
     const summaryHtml = (room === 'live' || room === 'yt-videos') ? '' : `<div class="post-card-summary">${summary}</div>`;
     
     // Store original title in data attribute for global translation
-    const displayTitle = isVideoOrLive ? (window._roomTransMode?.[room] === 'ar' ? window.tTitle(p.title, 'ar') : (window._roomTransMode?.[room] === 'en' ? window.tTitle(p.title, 'en') : p.title)) : (window.tTitle(p.title) || window.t('منشور','Post'));
+    let displayTitle = isVideoOrLive ? (window._roomTransMode?.[room] === 'ar' ? window.tTitle(p.title, 'ar') : (window._roomTransMode?.[room] === 'en' ? window.tTitle(p.title, 'en') : p.title)) : (window.tTitle(p.title) || window.t('منشور','Post'));
     
-    return `<div class="${cardCls}" data-original-title="${escapeHtml(p.title)}">${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(displayTitle)}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
+    // "Now Free" Badge Logic
+    let freeBadge = '';
+    const isFreeAR = displayTitle.includes('مجانية الآن');
+    const isFreeEN = displayTitle.includes('Now Free') || displayTitle.includes('Free Now');
+    
+    if (isFreeAR || isFreeEN) {
+      freeBadge = `<div class="now-free-badge">${window.t('مجانية الآن','Now Free')}</div>`;
+      displayTitle = displayTitle.replace(/مجانية الآن/g, '').replace(/Now Free/gi, '').replace(/Free Now/gi, '').replace(/🎁/g, '').trim();
+      if (displayTitle.startsWith(':')) displayTitle = displayTitle.substring(1).trim();
+    }
+
+    return `<div class="${cardCls}" data-original-title="${escapeHtml(p.title)}">${freeBadge}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(displayTitle)}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn||''}${editBtn}${deleteBtn}</div></div></div></div>`;
   }).join('');
 }
 
@@ -4093,7 +4150,7 @@ window.tTitle = function(title, forceLang) {
     t = t.replace(/فيديو/g, 'Video');
     t = t.replace(/مشاهدة/g, 'Watch');
     t = t.replace(/الآن/g, 'Now');
-    t = t.replace(/مجانية الآن/g, 'Free Now');
+    t = t.replace(/مجانية الآن/g, 'Now Free');
   } else {
     t = t.replace(/Live Stream/gi, 'بث مباشر');
     t = t.replace(/Live on/gi, 'مباشر على');
@@ -4101,6 +4158,7 @@ window.tTitle = function(title, forceLang) {
     t = t.replace(/Video/gi, 'فيديو');
     t = t.replace(/Watch/gi, 'مشاهدة');
     t = t.replace(/Now/gi, 'الآن');
+    t = t.replace(/Now Free/gi, 'مجانية الآن');
     t = t.replace(/Free Now/gi, 'مجانية الآن');
   }
   
@@ -4537,6 +4595,25 @@ function applyTranslations() {
     const pp = document.getElementById('page-pricing');
     if (pp) pp.innerHTML = buildPricingPage();
   };
+
+  // ======== Snow Animation Init ========
+  (function createSnow() {
+    const container = document.createElement('div');
+    container.id = 'snow-overlay';
+    document.body.appendChild(container);
+    const count = 50;
+    for (let i = 0; i < count; i++) {
+      const flake = document.createElement('div');
+      flake.className = 'snowflake';
+      flake.innerHTML = '❄';
+      flake.style.left = Math.random() * 100 + 'vw';
+      flake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      flake.style.opacity = Math.random();
+      flake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+      flake.style.animationDelay = Math.random() * 5 + 's';
+      container.appendChild(flake);
+    }
+  })();
 
   // ======== Modal الدفع ========
   const payModalEl = document.createElement('div');

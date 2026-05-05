@@ -31,7 +31,32 @@
       width: 100%;
       height: 100%;
       z-index: 0;
-      pointer-events: none
+      pointer-events: none;
+      opacity: 0.4; /* Soften the tunnel background to let snow show */
+    }
+    /* Winter Theme - Snow Animation */
+    #snow-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 2; /* Between bgCanvas and content */
+      background: transparent;
+    }
+    .snowflake {
+      position: absolute;
+      top: -10px;
+      color: #fff;
+      font-size: 1em;
+      user-select: none;
+      z-index: 2;
+      pointer-events: none;
+      animation-name: snowfall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    @keyframes snowfall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0.3; }
     }
 
     #loginPage,
@@ -393,15 +418,16 @@
     }
 
     .pi-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 6px;
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
       object-fit: cover;
       display: flex;
       align-items: center;
       justify-content: center;
       background: #2a0000;
-      font-size: 20px
+      font-size: 32px;
+      flex-shrink: 0;
     }
 
     .pi-info {
@@ -3107,8 +3133,9 @@
 
     const FORBIDDEN_KEYWORDS = [
       'sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 
-      'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 
-      'rugby', 'football', 'soccer', 'basketball', 'tennis', 'olympics', 'wrestling', 'wwe', 'boxing', 'ufc', 'رياضة', 'مباراة'
+      'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 'romance', 'kiss',
+      'rugby', 'football', 'soccer', 'basketball', 'tennis', 'olympics', 'wrestling', 'wwe', 'boxing', 'ufc', 'رياضة', 'مباراة',
+      'girl', 'woman', 'lady', 'female', 'dating', 'sexual'
     ];
 
     function isContentSafe(text) {
@@ -3689,6 +3716,24 @@
     window.updateRegStatusInTour = updateRegStatusInTour;
     window.toggleAllCheckboxes = toggleAllCheckboxes;
     window.toggleAllCheckboxes = toggleAllCheckboxes; window.deleteSelectedPosts = deleteSelectedPosts; window.deleteByChannelName = deleteByChannelName; window.cleanupOrphanedVideos = cleanupOrphanedVideos;
+    // ======== Snow Animation Init ========
+    (function createSnow() {
+      const container = document.createElement('div');
+      container.id = 'snow-overlay';
+      document.body.appendChild(container);
+      const count = 50;
+      for (let i = 0; i < count; i++) {
+        const flake = document.createElement('div');
+        flake.className = 'snowflake';
+        flake.innerHTML = '❄';
+        flake.style.left = Math.random() * 100 + 'vw';
+        flake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        flake.style.opacity = Math.random();
+        flake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+        flake.style.animationDelay = Math.random() * 5 + 's';
+        container.appendChild(flake);
+      }
+    })();
   </script>
 
   <script>
