@@ -3450,17 +3450,12 @@
     async function deletePost(id, room) {
       if (!confirm(window.t('حذف هذا المنشور؟', 'Delete this post?'))) return;
       try {
-        if (room === 'yt-videos' || room === 'live') {
-          // جلب بيانات المنشور للتحقق من القناة
-          let { data: post } = await db.from('posts').select('description').eq('id', id).single();
+        if (room === 'yt-videos' || room === 'live' || room === 'gaming-news' || room === 'youtube-news' || room === 'reels') {
+          // جلب بيانات المنشور للتحقق من القناة (في حال كان فيديو) أو الحذف مباشرة للمهملات للأخبار
+          let { data: post } = await db.from('posts').select('description, url').eq('id', id).single();
           if (post) {
-            // التحقق إذا كانت القناة مراقبة من البوت
-            let { data: channel } = await db.from('posts').select('id').eq('room', 'yt-channels').eq('title', post.description).limit(1);
-            if (channel && channel.length > 0) {
-              await db.from('posts').update({ room: '_trash' }).eq('id', id);
-            } else {
-              await db.from('posts').delete().eq('id', id);
-            }
+            // أي خبر أو فيديو من الغرف المدعومة يذهب للمهملات لضمان عدم عودته
+            await db.from('posts').update({ room: '_trash' }).eq('id', id);
           }
         } else {
           await db.from('posts').delete().eq('id', id);
@@ -3673,15 +3668,16 @@
         // Store original title in data attribute for global translation
         let displayTitle = isVideoOrLive ? (window._roomTransMode?.[room] === 'ar' ? window.tTitle(p.title, 'ar') : (window._roomTransMode?.[room] === 'en' ? window.tTitle(p.title, 'en') : p.title)) : (window.tTitle(p.title) || window.t('منشور', 'Post'));
 
-        // "Now Free" Badge Logic
+        // "Now Free" Badge Logic (Optimized for Translation)
         let freeBadge = '';
-        const isFreeAR = displayTitle.includes('مجانية الآن');
-        const isFreeEN = displayTitle.includes('Now Free') || displayTitle.includes('Free Now');
+        const lowerTitle = (p.title || '').toLowerCase();
+        const lowerTag = (p.tag || '').toLowerCase();
+        const isFree = lowerTitle.includes('مجانية الآن') || lowerTitle.includes('free') || lowerTag.includes('giveaway');
 
-        if (isFreeAR || isFreeEN) {
+        if (isFree) {
           freeBadge = `<div class="now-free-badge">${window.t('مجانية الآن', 'Now Free')}</div>`;
-          displayTitle = displayTitle.replace(/مجانية الآن/g, '').replace(/Now Free/gi, '').replace(/Free Now/gi, '').replace(/🎁/g, '').trim();
-          if (displayTitle.startsWith(':')) displayTitle = displayTitle.substring(1).trim();
+          // تنظيف العنوان المعروض من الكلمات التكرارية
+          displayTitle = displayTitle.replace(/مجانية الآن/g, '').replace(/Now Free/gi, '').replace(/Free Now/gi, '').replace(/🎁/g, '').replace(/Free/gi, '').replace(/^[:\s\-]+/, '').trim();
         }
 
         return `<div class="${cardCls}" data-original-title="${escapeHtml(p.title)}">${freeBadge}${vipBadgeHtml}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(displayTitle)}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn || ''}${editBtn}${deleteBtn}</div></div></div></div>`;

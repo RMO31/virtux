@@ -1886,10 +1886,14 @@
               const isImage = p.url && p.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i);
 
               if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
-              else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
+              else if (isYouTube) { 
+                let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; 
+                media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; 
+              }
               else if (isImage) media = `<img src="${p.url}" style="width:80px; height:60px; border-radius:6px; object-fit:cover;">`;
-              else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
+              else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:80px; height:60px; border-radius:6px; object-fit:cover;">`;
               else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
+
               return `<div class="pi" id="pi-${p.id}">
             <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer; margin-right:5px;">
             <div style="width:80px; flex-shrink:0;">${media}</div>
@@ -1933,43 +1937,25 @@
       const checkboxes = document.querySelectorAll(`.post-checkbox-${room}:checked`);
       const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
       if (ids.length === 0) { alert('يرجى تحديد منشورات أولاً'); return; }
-      if (!confirm(`هل أنت متأكد من حذف ${ids.length} منشور؟`)) return;
+      const isTrashable = ['yt-videos', 'live', 'gaming-news', 'youtube-news', 'reels'].includes(room);
+      if (!confirm(isTrashable ? `هل تريد نقل ${ids.length} منشور للمهملات؟` : `هل تريد حذف ${ids.length} منشور نهائياً؟`)) return;
       try {
-        if (room === 'yt-videos' || room === 'live') {
-          let { data: channels } = await supabaseClient.from('posts').select('title').eq('room', 'yt-channels');
-          let trackedNames = (channels || []).map(c => c.title);
-          let { data: postsToDelete } = await supabaseClient.from('posts').select('id, description').in('id', ids);
-
-          let toSoftDelete = [];
-          let toPermanentDelete = [];
-          (postsToDelete || []).forEach(p => {
-            if (trackedNames.includes(p.description)) toSoftDelete.push(p.id);
-            else toPermanentDelete.push(p.id);
-          });
-
-          if (toSoftDelete.length > 0) await supabaseClient.from('posts').update({ room: '_trash' }).in('id', toSoftDelete);
-          if (toPermanentDelete.length > 0) await supabaseClient.from('posts').delete().in('id', toPermanentDelete);
-
-          alert(`✅ تم الحذف: ${toSoftDelete.length} للمهملات و ${toPermanentDelete.length} نهائياً`);
-        } else {
-          await supabaseClient.from('posts').delete().in('id', ids);
-          alert(`✅ تم حذف ${ids.length} منشور نهائياً`);
-        }
-        loadContentPage(room, page);
-        loadDashboard();
+        if (isTrashable) { await supabaseClient.from('posts').update({ room: '_trash' }).in('id', ids); }
+        else { await supabaseClient.from('posts').delete().in('id', ids); }
+        alert('✅ تم تنفيذ العملية بنجاح');
+        loadContentPage(room, page); loadDashboard();
       } catch (e) { alert('❌ فشل الحذف الجماعي: ' + e.message); }
     }
 
     async function deleteByChannelName(room, page = 1) {
       const channelName = document.getElementById(`channelFilter-${room}`).value.trim();
-      if (!channelName) { alert('يرجى إدخال اسم اليوتيوبر / القناة'); return; }
-      if (!confirm(`هل أنت متأكد من حذف جميع محتويات "${channelName}"؟`)) return;
+      if (!channelName) { alert('يرجى إدخال اسم القناة'); return; }
+      if (!confirm(`هل تريد نقل جميع محتويات "${channelName}" للمهملات؟`)) return;
       try {
         await supabaseClient.from('posts').update({ room: '_trash' }).eq('room', room).eq('description', channelName);
-        alert(`✅ تم إخفاء جميع محتويات "${channelName}"`);
-        loadContentPage(room, page);
-        loadDashboard();
-      } catch (e) { alert('❌ فشل الحذف: ' + e.message); }
+        alert(`✅ تم إخفاء محتويات "${channelName}" (نقل للمهملات).`);
+        loadContentPage(room, page); loadDashboard();
+      } catch (e) { alert('❌ فشل العملية: ' + e.message); }
     }
 
     let _searchTimeout = null;
@@ -2405,13 +2391,17 @@
           if (error) throw error;
 
           alert(`✅ تم حذف القناة "${channelTitle}" وجميع محتوياتها بنجاح.`);
-        } else if (room === 'yt-videos' || room === 'live' || room === 'gaming-news' || room === 'youtube-news') {
-          // نقل للمهملات لمنع البوت من إعادتها
+        } else if (room === 'yt-videos' || room === 'live' || room === 'gaming-news' || room === 'youtube-news' || room === 'reels') {
+          // نقل للمهملات لمنع البوت من إعادتها (Soft Delete)
           const { error } = await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id);
           if (error) throw error;
-          // حذف أي تكرارات لنفس الرابط
-          if (post.url) await supabaseClient.from('posts').delete().eq('url', post.url).eq('room', room).neq('id', id);
-          alert('✅ تم النقل للمهملات.');
+          
+          // تأكيد حذف أي تكرارات بروابط مشابهة لضمان نظافة السجل
+          if (post.url) {
+            const norm = normalizeUrl(post.url);
+            await supabaseClient.from('posts').delete().or(`url.eq.${post.url},url.eq.${norm}`).neq('id', id);
+          }
+          alert('✅ تم النقل للمهملات (لن يعود المنشور مرة أخرى).');
         } else {
           // غرف أخرى حذف نهائي
           const { error } = await supabaseClient.from('posts').delete().eq('id', id);
@@ -2879,8 +2869,24 @@
       return true;
     }
 
-    const FORBIDDEN_KEYWORDS = ['sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 'romance', 'kiss', 'girl', 'woman', 'lady', 'female', 'dating', 'sexual'];
-    function isContentSafe(text) { if (!text) return true; const lower = text.toLowerCase(); return !FORBIDDEN_KEYWORDS.some(k => lower.includes(k)); }
+    const FORBIDDEN_KEYWORDS = [
+      'sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 'romance', 'kiss', 'girl', 'woman', 'lady', 'female', 'dating', 'sexual',
+      'ufc', 'mma', 'fighting championship', 'boxing', 'business', 'market', 'stock', 'finance', 'economy', 'politics', 'سياسة', 'اقتصاد', 'أسهم', 'بورصة', 'تجارة', 'أعمال', 'مصارعة', 'قتال', 'fashion', 'lifestyle'
+    ];
+    function isContentSafe(text) { 
+      if (!text) return true; 
+      const lower = text.toLowerCase(); 
+      // منع المنشورات التي تحتوي على كلمات عامة غير متعلقة بالألعاب إذا كانت في سياق مشبوه
+      return !FORBIDDEN_KEYWORDS.some(k => lower.includes(k)); 
+    }
+    function normalizeUrl(url) {
+      if (!url) return '';
+      try {
+        const u = new URL(url);
+        // إزالة معاملات التتبع التي قد تجعل الرابط يبدو جديداً للبوت
+        return u.origin + u.pathname;
+      } catch(e) { return url; }
+    }
 
     async function syncGamingNews(silent = false) {
       if (!silent && !confirm('هل تريد جلب آخر أخبار الألعاب؟')) return;
@@ -2890,13 +2896,15 @@
         const data = await res.json();
         let count = 0;
         for (let item of data.items) {
+          const normUrl = normalizeUrl(item.link);
           if (isContentSafe(item.title + ' ' + item.description)) {
-            let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.link).limit(1);
+            // فحص وجود الرابط في أي غرفة (بما فيها سلة المهملات)
+            let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${item.link},url.eq.${normUrl}`).limit(1);
             if (existing?.length) continue;
-            await supabaseClient.from('posts').insert({ title: item.title, description: item.author || 'Gaming News', icon: item.thumbnail || '📰', url: item.link, tag: 'News', room: 'gaming-news', content: item.description || '' });
+            await supabaseClient.from('posts').insert({ title: item.title, description: item.author || 'Gaming News', icon: item.thumbnail || '📰', url: normUrl, tag: 'News', room: 'gaming-news', content: item.description || '' });
             count++;
           }
-          if (count >= 10) break;
+          if (count >= 15) break;
         }
         if (!silent) alert(`✅ تم جلب ${count} خبر جديد.`);
         loadDashboard();
@@ -2912,10 +2920,12 @@
         let count = 0;
         for (let item of data) {
           const plat = (item.platforms || '').toLowerCase();
+          const normUrl = normalizeUrl(item.open_giveaway_url);
           if ((plat.includes('steam') || plat.includes('epic')) && isContentSafe(item.title + ' ' + item.description)) {
-            let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.open_giveaway_url).limit(1);
+            // فحص الرابط في كل الغرف بما فيها السلة
+            let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${item.open_giveaway_url},url.eq.${normUrl}`).limit(1);
             if (existing?.length) continue;
-            await supabaseClient.from('posts').insert({ title: `🎁 مجانية الآن: ${item.title}`, description: item.platforms, icon: item.image || '🎁', url: item.open_giveaway_url, tag: 'Giveaway', room: 'gaming-news', content: item.description });
+            await supabaseClient.from('posts').insert({ title: `🎁 مجانية الآن: ${item.title}`, description: item.platforms, icon: item.image || '🎁', url: normUrl, tag: 'Giveaway', room: 'gaming-news', content: item.description });
             count++;
           }
           if (count >= 10) break;
@@ -3059,14 +3069,15 @@
                 const isRecent = (Date.now() - pubDate.getTime()) < (24 * 60 * 60 * 1000);
 
                 if (isRecent && isContentSafe(v.title)) {
-                  let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', v.videoUrl).limit(1);
+                  const normVUrl = normalizeUrl(v.videoUrl);
+                  let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${v.videoUrl},url.eq.${normVUrl}`).limit(1);
                   if (existing?.length) continue;
 
                   await supabaseClient.from('posts').insert({
                     title: `📢 تحديث قناة: ${v.title}`,
                     description: v.channelName,
                     icon: v.thumbnail || '🔔',
-                    url: v.videoUrl,
+                    url: normVUrl,
                     tag: 'Channel Post',
                     room: 'youtube-news',
                     content: v.description || `آخر نشاط من قناة ${v.channelName}`
