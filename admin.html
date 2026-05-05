@@ -2192,6 +2192,7 @@ async function fetchLatestVideos(playlistId, maxResults = 5) {
     return d.items.map(v => ({
       videoId:     v.snippet.resourceId.videoId,
       title:       v.snippet.title,
+      description: v.snippet.description || '', // إضافة الوصف
       channelName: v.snippet.channelTitle,
       thumbnail:   v.snippet.thumbnails?.high?.url || '',
       publishedAt: v.snippet.publishedAt,
@@ -2356,9 +2357,16 @@ async function autoCheckAllChannels(force = false) {
       console.log(`🔄 جاري فحص: ${ch.title}...`);
 
       // ── 1. جلب الفيديوهات (تكلفة: 1 كريدي فقط) ──
-      let videos = await fetchLatestVideos(uploadsPlaylistId, 5);
+      let videos = await fetchLatestVideos(uploadsPlaylistId, 10);
       for (let v of videos) {
-        if (await saveToDb(v, 'yt-videos', 'Video', ch.id)) newVideos++;
+        // التحقق من العنوان أو الوصف إذا كان يحتوي على shorts
+        const isShort = v.title.toLowerCase().includes('shorts') || v.description.toLowerCase().includes('shorts') || v.description.toLowerCase().includes('#short');
+        const targetRoom = isShort ? 'reels' : 'yt-videos';
+        const targetTag = isShort ? 'Reel' : 'Video';
+        
+        if (await saveToDb(v, targetRoom, targetTag, ch.id)) {
+            newVideos++;
+        }
       }
 
       // ── 2. جلب البث المباشر والقادم (تكلفة: 1 كريدي فقط) ──
