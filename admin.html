@@ -2882,30 +2882,54 @@
     }
 
     async function syncGamingNews(silent = false) {
-      if (!silent && !confirm('هل تريد جلب آخر أخبار الألعاب؟')) return;
+      if (!silent && !confirm('هل تريد جلب آخر أخبار الألعاب المعروفة؟')) return;
       try {
+        const famousGames = [
+          'GTA', 'Grand Theft Auto', 'Call of Duty', 'Warzone', 'FIFA', 'FC 25', 'FC 24', 'Assassin', 'God of War', 
+          'Spider-Man', 'Elden Ring', 'Resident Evil', 'Cyberpunk', 'Last of Us', 'Minecraft', 'Fortnite', 'Valorant', 
+          'League of Legends', 'CS2', 'Counter-Strike', 'Zelda', 'Mario', 'Red Dead', 'RDR2', 'Witcher', 'Diablo', 
+          'Overwatch', 'PUBG', 'Apex Legends', 'Final Fantasy', 'Tekken', 'Mortal Kombat', 'Street Fighter', 'Starfield', 
+          'Fallout', 'Skyrim', 'PlayStation', 'PS5', 'Xbox', 'Nintendo', 'Steam', 'Epic Games', 'Marvel', 'Batman', 
+          'Star Wars', 'Harry Potter', 'Hogwarts Legacy', 'Ghost of Tsushima', 'Hades', 'Alan Wake', 'Monster Hunter',
+          'Dragon Age', 'Silent Hill', 'Metal Gear', 'Halo', 'Gears of War', 'Uncharted', 'Ratchet', 'Forza', 'Gran Turismo',
+          'Pokemon', 'Sonic', 'Genshin Impact', 'Honkai', 'Destiny', 'Battlefield', 'Far Cry', 'Tomb Raider', 'Borderlands'
+        ];
         const rssUrl = encodeURIComponent('https://feeds.feedburner.com/ign/games-all');
         const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
         const data = await res.json();
         let count = 0;
         for (let item of data.items) {
+          const text = (item.title + ' ' + item.description).toLowerCase();
+          const isFamous = famousGames.some(kw => text.includes(kw.toLowerCase()));
+          
+          // شرط: اللعبة معروفة + وجود صورة مصغرة
+          if (!isFamous) continue;
+          if (!item.thumbnail || item.thumbnail.includes('placeholder')) continue;
+
           const normUrl = normalizeUrl(item.link);
-          if (isContentSafe(item.title + ' ' + item.description)) {
-            // فحص وجود الرابط في أي غرفة (بما فيها سلة المهملات)
+          if (isContentSafe(text)) {
             let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${item.link},url.eq.${normUrl}`).limit(1);
             if (existing?.length) continue;
-            await supabaseClient.from('posts').insert({ title: item.title, description: item.author || 'Gaming News', icon: item.thumbnail || '📰', url: normUrl, tag: 'News', room: 'gaming-news', content: item.description || '' });
+            await supabaseClient.from('posts').insert({ 
+              title: item.title, 
+              description: item.author || 'IGN News', 
+              icon: item.thumbnail, 
+              url: normUrl, 
+              tag: 'News', 
+              room: 'gaming-news', 
+              content: item.description || '' 
+            });
             count++;
           }
           if (count >= 15) break;
         }
-        if (!silent) alert(`✅ تم جلب ${count} خبر جديد.`);
+        if (!silent) alert(`✅ تم جلب ${count} خبر جديد عن ألعاب معروفة.`);
         loadDashboard();
       } catch (e) { if (!silent) alert('❌ فشل جلب الأخبار'); }
     }
 
     async function syncGiveaways(silent = false) {
-      if (!silent && !confirm('هل تريد جلب العروض المجانية؟')) return;
+      if (!silent && !confirm('هل تريد جلب عروض Steam و Epic Games؟')) return;
       try {
         const targetUrl = 'https://www.gamerpower.com/api/giveaways?platform=pc';
         const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
@@ -2914,16 +2938,26 @@
         for (let item of data) {
           const plat = (item.platforms || '').toLowerCase();
           const normUrl = normalizeUrl(item.open_giveaway_url);
-          if ((plat.includes('steam') || plat.includes('epic')) && isContentSafe(item.title + ' ' + item.description)) {
-            // فحص الرابط في كل الغرف بما فيها السلة
+          
+          // شرط: منصة Steam/Epic + وجود صورة للعرض
+          const isTargetPlatform = plat.includes('steam') || plat.includes('epic');
+          if (isTargetPlatform && item.image && isContentSafe(item.title + ' ' + item.description)) {
             let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${item.open_giveaway_url},url.eq.${normUrl}`).limit(1);
             if (existing?.length) continue;
-            await supabaseClient.from('posts').insert({ title: `🎁 مجانية الآن: ${item.title}`, description: item.platforms, icon: item.image || '🎁', url: normUrl, tag: 'Giveaway', room: 'gaming-news', content: item.description });
+            await supabaseClient.from('posts').insert({ 
+              title: `🎁 مجانية الآن: ${item.title}`, 
+              description: item.platforms, 
+              icon: item.image, 
+              url: normUrl, 
+              tag: 'Giveaway', 
+              room: 'gaming-news', 
+              content: item.description 
+            });
             count++;
           }
           if (count >= 10) break;
         }
-        if (!silent) alert(`✅ تم جلب ${count} عرض جديد.`);
+        if (!silent) alert(`✅ تم جلب ${count} عرض جديد من Steam/Epic.`);
         loadDashboard();
       } catch (e) { if (!silent) alert('❌ فشل جلب العروض'); }
     }
