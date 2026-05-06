@@ -142,7 +142,7 @@
       backdrop-filter: var(--vx-glass);
       -webkit-backdrop-filter: var(--vx-glass);
       border-bottom: 1px solid var(--vx-border);
-      gap: 16px;
+      gap: 12px;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -2035,13 +2035,14 @@
             الدخول</a>
         </div>
         <div id="btn-user-area" style="display:none;align-items:center;gap:6px;">
-          <div style="display:flex; align-items:center; gap:6px; max-width:320px; flex-wrap:wrap;">
-            <div style="width:30px; height:30px; border-radius:50%; overflow:hidden; border:1.5px solid #e01010; box-shadow:0 0 5px rgba(224,16,16,0.3); flex-shrink:0; display:none;" id="user-avatar-wrapper">
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <div style="width:32px; height:32px; border-radius:50%; overflow:hidden; border:1.5px solid #e01010; box-shadow:0 0 5px rgba(224,16,16,0.3); flex-shrink:0; display:none;" id="user-avatar-wrapper">
               <img id="user-avatar-img" src=""
                 style="width:100%; height:100%; object-fit:cover; transform:scale(1.2);">
             </div>
-            <span id="user-name" style="font-size:12px;color:#e01010;white-space:nowrap;"></span>
-            <div id="user-role-badge" style="display:none;flex-wrap:wrap;gap:2px;align-items:center;max-width:160px;">
+            <div style="display:flex; flex-direction:column; justify-content:center; gap:1px;">
+              <span id="user-name" style="font-size:12px;color:#e01010;white-space:nowrap;font-weight:700;"></span>
+              <div id="user-role-badge" style="display:none;flex-wrap:wrap;gap:2px;align-items:center;"></div>
             </div>
           </div>
           <button id="profileButton"
@@ -3446,8 +3447,37 @@
     const contactPage = document.createElement('div');
     contactPage.className = 'vx-page';
     contactPage.id = 'page-contact';
-    contactPage.innerHTML = `<div class="page-header"><h2>📞 ${window.t("التواصل", "Contact")} Virtux</h2></div><div class="contact-page"><div class="contact-cards"><div class="contact-card" onclick="window.open('https://discord.gg/45fJNmww6D','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">discord.gg/45fJNmww6D</div></div><div class="contact-card" onclick="window.location.href='mailto:menouer.rayane310201@gmail.com'"><div class="cc-icon">📧</div><div class="cc-name">${window.t("البريد الإلكتروني", "Email")}</div><div class="cc-handle" style="font-size:10px;word-break:break-all;">menouer.rayane310201@gmail.com</div></div></div></div>`;
+    contactPage.innerHTML = `<div class="page-header"><h2>📞 ${window.t("التواصل", "Contact")} Virtux</h2></div><div class="contact-page" id="contact-content-area"><div style="text-align:center;padding:40px;color:#888;">⏳ ${window.t("جاري التحميل...", "Loading...")}</div></div>`;
     mainContainer.appendChild(contactPage);
+
+    window.loadContactInfo = async function() {
+      const area = document.getElementById('contact-content-area');
+      if (!area) return;
+      try {
+        let { data, error } = await db.from('posts').select('*').eq('room', '_contact').single();
+        let discord = 'https://discord.gg/45fJNmww6D', email = 'menouer.rayane310201@gmail.com', whatsapp = '';
+        if (data) {
+          discord = data.title || discord;
+          email = data.description || email;
+          whatsapp = data.tag || '';
+        }
+
+        let html = `<div class="contact-cards">`;
+        if (discord) {
+          html += `<div class="contact-card" onclick="window.open('${discord}','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">${discord.replace('https://','').replace('http://','')}</div></div>`;
+        }
+        if (email) {
+          html += `<div class="contact-card" onclick="window.location.href='mailto:${email}'"><div class="cc-icon">📧</div><div class="cc-name">${window.t("البريد الإلكتروني", "Email")}</div><div class="cc-handle" style="font-size:10px;word-break:break-all;">${email}</div></div>`;
+        }
+        if (whatsapp) {
+           html += `<div class="contact-card" onclick="window.open('https://wa.me/${whatsapp.replace('+','')}','_blank')"><div class="cc-icon">📱</div><div class="cc-name">WhatsApp</div><div class="cc-handle">${whatsapp}</div></div>`;
+        }
+        html += `</div>`;
+        area.innerHTML = html;
+      } catch (e) {
+        area.innerHTML = `<div style="text-align:center;padding:40px;color:#f55;">❌ ${window.t("فشل تحميل المعلومات", "Failed to load information")}</div>`;
+      }
+    };
 
     async function loadPage(room) {
       const el = document.getElementById(`grid-${room}`);
@@ -4157,8 +4187,9 @@
       if (page) page.classList.add('active');
       const btn = document.getElementById(`sb-${id}`);
       if (btn) btn.classList.add('active');
-      if (id !== 'home' && id !== 'contact' && id !== window._currentPage) loadPage(id);
-      else if (id !== 'home' && id !== 'contact' && !allPosts[id]) loadPage(id);
+      if (id === 'contact') window.loadContactInfo();
+      else if (id !== 'home' && id !== window._currentPage) loadPage(id);
+      else if (id !== 'home' && !allPosts[id]) loadPage(id);
       window._currentPage = id;
       if (id !== 'home' && id !== 'contact') rebuildFilterBar(id);
     }
@@ -4234,9 +4265,9 @@
 
           if (profile?.avatar_url) {
             userAvatarImg.src = profile.avatar_url;
-            userAvatarImg.style.display = 'inline-block';
+            userAvatarWrapper.style.display = 'block';
           } else {
-            userAvatarImg.style.display = 'none';
+            userAvatarWrapper.style.display = 'none';
           }
 
           window.userRoles = roles.length ? roles : ['user'];

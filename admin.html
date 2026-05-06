@@ -988,6 +988,7 @@
         <button class="sb-btn" id="sb-reels" onclick="showPage('reels')">🎬 Reels</button>
         <div class="sb-sec">تعاون</div>
         <button class="sb-btn" id="sb-projects" onclick="showPage('projects')">🌐 Collaboration</button>
+        <button class="sb-btn" id="sb-contact" onclick="showPage('contact')">📞 Contact</button>
         <div class="sb-sec">إدارة النظام</div>
         <button class="sb-btn" id="sb-trash" onclick="showPage('trash')" style="color:#ffaa00;">🗑️ المحذوفات
           (البوت)</button>
@@ -1533,9 +1534,76 @@
       else if (id === 'registrations') loadRegistrations();
       else loadContentPage(id);
     }
-    function loadContact() {
+    async function loadContact() {
       let container = document.getElementById('content-contact');
-      container.innerHTML = `<div class="card"><h3>معلومات الاتصال</h3><p>بريد: admin@virtux.gg</p><p>ديسكورد: virtux_official</p></div>`;
+      container.innerHTML = '<div class="loading">جاري تحميل بيانات الاتصال...</div>';
+      try {
+        let { data, error } = await supabaseClient.from('posts').select('*').eq('room', '_contact').single();
+        let discord = '', email = '', whatsapp = '';
+        if (data) {
+          discord = data.title || '';
+          email = data.description || '';
+          whatsapp = data.tag || '';
+        }
+
+        container.innerHTML = `
+          <div class="card">
+            <h3>📢 إدارة معلومات الاتصال</h3>
+            <p style="font-size:12px; color:#888; margin-bottom:15px;">هذه المعلومات ستظهر في صفحة "تواصل معنا" في الموقع الرئيسي.</p>
+            <div class="fg"><label>رابط ديسكورد:</label><input class="full" id="contact-discord" value="${escapeHtml(discord)}" placeholder="https://discord.gg/..."></div>
+            <div class="fg"><label>البريد الإلكتروني:</label><input class="full" id="contact-email" value="${escapeHtml(email)}" placeholder="example@domain.com"></div>
+            <div class="fg"><label>رقم واتساب (اختياري):</label><input class="full" id="contact-whatsapp" value="${escapeHtml(whatsapp)}" placeholder="+213..."></div>
+            <button class="btn-pub" onclick="saveContact()">💾 حفظ التغييرات</button>
+          </div>
+        `;
+      } catch (e) {
+        container.innerHTML = '<div class="empty">خطأ في التحميل، سيتم إنشاء بيانات جديدة عند الحفظ.</div>';
+        // Show empty form anyway
+        container.innerHTML += `
+          <div class="card">
+            <h3>📢 إدارة معلومات الاتصال</h3>
+            <div class="fg"><label>رابط ديسكورد:</label><input class="full" id="contact-discord" placeholder="https://discord.gg/..."></div>
+            <div class="fg"><label>البريد الإلكتروني:</label><input class="full" id="contact-email" placeholder="example@domain.com"></div>
+            <div class="fg"><label>رقم واتساب (اختياري):</label><input class="full" id="contact-whatsapp" placeholder="+213..."></div>
+            <button class="btn-pub" onclick="saveContact()">💾 حفظ التغييرات</button>
+          </div>
+        `;
+      }
+    }
+
+    async function saveContact() {
+      const discord = document.getElementById('contact-discord').value.trim();
+      const email = document.getElementById('contact-email').value.trim();
+      const whatsapp = document.getElementById('contact-whatsapp').value.trim();
+
+      try {
+        // نستخدم upsert بناءً على الـ room ليكون منشورا فريدا
+        // أولا نبحث عن المنشور إذا كان موجودا لتحديثه أو إنشاء واحد جديد
+        let { data: existing } = await supabaseClient.from('posts').select('id').eq('room', '_contact').single();
+        
+        let payload = {
+          title: discord,
+          description: email,
+          tag: whatsapp,
+          room: '_contact',
+          content: 'Contact Information Page Data'
+        };
+
+        let error;
+        if (existing) {
+          let { error: err } = await supabaseClient.from('posts').update(payload).eq('id', existing.id);
+          error = err;
+        } else {
+          let { error: err } = await supabaseClient.from('posts').insert(payload);
+          error = err;
+        }
+
+        if (error) throw error;
+        alert('✅ تم حفظ معلومات الاتصال بنجاح.');
+        loadContact();
+      } catch (e) {
+        alert('❌ فشل الحفظ: ' + e.message);
+      }
     }
 
     // ==================== Dashboard ====================
