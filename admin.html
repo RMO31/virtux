@@ -1613,7 +1613,7 @@
         let activityHtml = `<div class="card"><h3>⚡ النشاط الأخير</h3>`;
         // جلب النشاط مع محاولة جلب اسم المستخدم والصورة إذا وجدت
         let { data: recentTraffic, error: trafficErr } = await supabaseClient.from('posts')
-          .select('*, profiles:user_id(username, avatar_url)')
+          .select('*, profiles(username, avatar_url)')
           .eq('room', '_traffic')
           .order('id', { ascending: false })
           .limit(15);
@@ -1622,12 +1622,14 @@
 
         if (recentTraffic && recentTraffic.length) {
           activityHtml += `<div class="posts-list">` + recentTraffic.map(act => {
-            const username = act.profiles?.username || 'زائر';
-            const avatar = act.profiles?.avatar_url;
+            // التعامل مع احتمال أن يكون profiles مصفوفة أو كائن مفرد
+            const profile = Array.isArray(act.profiles) ? act.profiles[0] : act.profiles;
+            const username = profile?.username || 'زائر';
+            const avatar = profile?.avatar_url;
             const time = act.created_at ? new Date(act.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--';
             const typeIcon = act.tag === 'login' ? '🔑' : '🌐';
             const actionText = act.tag === 'login' ? 'سجل دخوله' : 'زار الموقع';
-            const iconHtml = avatar ? `<img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">` : `<span style="font-size:16px;">${typeIcon}</span>`;
+            const iconHtml = avatar ? `<img src="${avatar}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';"><span style="display:none; font-size:16px;">${typeIcon}</span>` : `<span style="font-size:16px;">${typeIcon}</span>`;
 
             return `
           <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12.5px; align-items:center;">
