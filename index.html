@@ -77,16 +77,6 @@
       pointer-events: none;
     }
 
-    #bg-video-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%),
-        rgba(0, 5, 15, 0.2);
-      /* Deep blue tint */
-      pointer-events: none;
-    }
-
     .now-free-badge {
       position: absolute;
       top: 15px;
@@ -978,49 +968,29 @@
       font-size: 13px
     }
 
-    .contact-page {
-      padding: 20px
-    }
+    .contact-page { padding: 30px 20px; }
+    .contact-cards { display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%; }
+    .contact-card { background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 32px; text-align: center; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; width: 100%; }
+    .contact-card:hover { transform: translateY(-5px); border-color: var(--vx-primary); background: rgba(255,0,64,0.04); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
+    .cc-icon { font-size: 44px; margin-bottom: 12px; }
+    .cc-name { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; font-family: 'Outfit', sans-serif; letter-spacing: 0.5px; }
+    .cc-handle { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+    .copy-btn { margin-top: 15px; background: rgba(255,0,64,0.1); border: 1px solid var(--vx-primary); color: var(--vx-primary); padding: 8px 24px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .copy-btn:hover { background: var(--vx-primary); color: #000; box-shadow: var(--vx-glow); }
 
-    .contact-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 15px;
-    }
-
-    .contact-card {
-      background: #1e1e2e;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 14px;
-      text-align: center;
-      cursor: pointer
-    }
-
-    .contact-card:hover {
-      border-color: #e01010
-    }
-
-    .cc-icon {
-      font-size: 28px;
-      margin-bottom: 6px
-    }
-
-    .cc-name {
-      font-size: 13px;
-      color: #e01010;
-      font-weight: 600
-    }
-
-    .cc-handle {
-      font-size: 11px;
-      color: #aaa;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.4;
-      margin-top: 4px;
-    }
+    /* Tournament Bracket & Results Visualization */
+    .bracket-container { display: flex; gap: 60px; padding: 30px; overflow-x: auto; background: rgba(0,0,0,0.4); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+    .bracket-round-view { display: flex; flex-direction: column; justify-content: space-around; gap: 40px; min-width: 240px; }
+    .match-card-view { background: rgba(20,20,25,0.8); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 14px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); }
+    .match-team-view { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; color: #eee; transition: 0.2s; }
+    .match-team-view.winner { color: var(--vx-primary); background: rgba(255,0,64,0.08); font-weight: 800; text-shadow: 0 0 12px rgba(255,0,64,0.3); }
+    .match-team-view:last-child { border-bottom: none; }
+    .match-score-view { font-family: 'Outfit', monospace; color: var(--vx-primary); font-weight: 800; background: rgba(0,0,0,0.6); padding: 3px 10px; border-radius: 6px; font-size: 13px; }
+    .league-table-view { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 15px; }
+    .league-table-view th { color: #888; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .league-table-view tr { background: rgba(255,255,255,0.02); border-radius: 10px; }
+    .league-table-view td { padding: 14px; text-align: center; font-size: 14px; color: #eee; }
+    .league-table-view tr:hover { background: rgba(255,255,255,0.05); }
 
     .page-header {
       padding: 14px 20px 10px;
@@ -1098,6 +1068,75 @@
       font-weight: 600;
       color: rgba(255, 255, 255, 0.6);
     }
+
+    /* Tournament Details & Bracket Styles */
+    .tour-modal-box {
+      max-width: 1000px;
+      width: 95%;
+      background: #0a0000;
+      border: 1.5px solid #e01010;
+      border-radius: 18px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 25px;
+      color: #fff;
+      position: relative;
+      box-shadow: 0 0 30px rgba(224, 16, 16, 0.2);
+    }
+    .bracket-container {
+      display: flex;
+      gap: 30px;
+      overflow-x: auto;
+      padding: 20px 0;
+    }
+    .bracket-round-view {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      gap: 15px;
+      min-width: 200px;
+    }
+    .match-card-view {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 13px;
+      transition: 0.2s;
+    }
+    .match-card-view:hover {
+      border-color: #e01010;
+      background: rgba(224, 16, 16, 0.05);
+    }
+    .match-team-view {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      align-items: center;
+    }
+    .match-team-view.winner {
+      color: #e01010;
+      font-weight: 700;
+    }
+    .match-score-view {
+      font-weight: 800;
+      background: #000;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #fff;
+    }
+    .league-table-view {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+    .league-table-view th, .league-table-view td {
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: center;
+    }
+    .league-table-view th { background: rgba(255, 255, 255, 0.05); color: #e01010; font-weight: 700; }
 
     .form-group input {
       width: 100%;
@@ -3469,15 +3508,29 @@
           whatsapp = data.tag || '';
         }
 
-        let html = `<div class="contact-cards">`;
+        let html = `<div class="contact-cards" style="display:flex; flex-direction:column; gap:20px; align-items:center; width:100%;">`;
         if (discord) {
-          html += `<div class="contact-card" onclick="window.open('${discord}','_blank')"><div class="cc-icon">💬</div><div class="cc-name">Discord</div><div class="cc-handle">${window.t("انضم إلينا", "Join Us")}</div></div>`;
+          html += `
+            <div class="contact-card" onclick="window.open('${discord}','_blank')" style="width:100%; max-width:550px; cursor:pointer; border-color: #5865F2;">
+              <div class="cc-icon">💬</div>
+              <div class="cc-name" style="color:#5865F2;">Discord</div>
+              <div class="cc-handle" style="color:#aaa; font-size:15px;">${window.t("انضم إلى مجتمعنا مباشرة", "Join our community directly")}</div>
+              <div style="margin-top:15px; color:#5865F2; font-weight:bold; font-size:12px;">🔗 CLICK TO JOIN</div>
+            </div>`;
         }
         if (email) {
-          html += `<div class="contact-card" onclick="window.location.href='mailto:${email}'"><div class="cc-icon">📧</div><div class="cc-name">${window.t("البريد الإلكتروني", "Email")}</div><div class="cc-handle" style="font-size:10px;word-break:break-all;">${email}</div></div>`;
+          html += `
+            <div class="contact-card" style="width:100%; max-width:650px; cursor:default; border-color: #ea4335;">
+              <div class="cc-icon">📧</div>
+              <div class="cc-name" style="color:#ea4335;">Gmail</div>
+              <div class="cc-handle" style="font-size:16px; color:#fff; background:rgba(0,0,0,0.3); padding:15px; border-radius:12px; border:1px solid rgba(234,67,53,0.2); margin-top:10px; user-select:all; display:flex; justify-content:center; align-items:center; gap:15px; font-family:monospace; letter-spacing:1px;">
+                <span>${email}</span>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('${email}'); alert('${window.t("تم نسخ البريد الإلكتروني", "Email copied!")}')" style="margin:0; padding:5px 12px;">📋 Copy</button>
+              </div>
+            </div>`;
         }
         if (whatsapp) {
-          html += `<div class="contact-card" onclick="window.open('https://wa.me/${whatsapp.replace('+', '')}','_blank')"><div class="cc-icon">📱</div><div class="cc-name">WhatsApp</div><div class="cc-handle">${whatsapp}</div></div>`;
+          html += `<div class="contact-card" onclick="window.open('https://wa.me/${whatsapp.replace('+', '')}','_blank')" style="width:100%; max-width:550px; cursor:pointer; border-color: #25D366;"><div class="cc-icon">📱</div><div class="cc-name" style="color:#25D366;">WhatsApp</div><div class="cc-handle" style="color:#fff; font-size:18px; font-weight:bold;">${whatsapp}</div></div>`;
         }
         html += `</div>`;
         area.innerHTML = html;
@@ -3597,176 +3650,138 @@
 
           if (isImageUrl) {
             media = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
-          }
-          else if (isLocalVideo) {
+          } else if (isLocalVideo) {
             const poster = (p.icon && p.icon.startsWith('http')) ? `poster="${p.icon}"` : '';
             media = `<div class="post-card-video"><video src="${p.url}" ${poster} controls preload="metadata" style="width:100%;height:100%;background:#000;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video><div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;color:#f55;font-size:12px;background:#0a0000;">❌ تعذر تحميل الفيديو</div></div>`;
-          }
-          else if (isYouTube) {
+          } else if (isYouTube) {
             const videoId = extractYouTubeId(p.url);
             if (videoId) {
               const isLiveVid = p.url.includes('/live/') || p.tag === 'مباشر Now' || p.tag === 'Live Now';
-              const liveBadgeHtml = isLiveVid ? '<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;">&#9679; LIVE</div>' : '';
+              const liveBadgeHtml = isLiveVid ? '<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;">● LIVE</div>' : '';
               media = '<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;" data-vid="' + videoId + '" onclick="window.playYT(this)">'
                 + '<img src="https://i.ytimg.com/vi/' + videoId + '/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="window.fixThumb(this,this.closest(\'[data-vid]\').dataset.vid)">'
                 + liveBadgeHtml
                 + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>'
                 + '</div>';
-            } else {
-              media = '<div class="post-card-emoji">🎬</div>';
-            }
-          }
-          else if (isTwitch) {
+            } else { media = '<div class="post-card-emoji">🎬</div>'; }
+          } else if (isTwitch) {
             const twitchMatch = p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-            if (twitchMatch) {
-              media = `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe></div>`;
-            } else {
-              media = `<div class="post-card-emoji">📺</div>`;
-            }
-          }
-          else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+            media = twitchMatch ? `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe></div>` : `<div class="post-card-emoji">📺</div>`;
+          } else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
             media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
-          }
-          else {
-            // منشور بدون وسائط — أيقونة مع خلفية بدل شاشة سوداء
-            const liveTag = room === 'live' && (p.tag === 'مباشر Now' || p.tag === 'Live Now')
-              ? `<div class="live-badge">${window.t('مباشر', 'LIVE')}</div>` : '';
+          } else {
+            const liveTag = room === 'live' && (p.tag === 'مباشر Now' || p.tag === 'Live Now') ? `<div class="live-badge">${window.t('مباشر', 'LIVE')}</div>` : '';
             media = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0a0a1a,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">${liveTag}<span style="font-size:36px;">${p.icon || '📄'}</span></div>`;
           }
         }
+
+        const tourAction = room === 'tournaments' ? `onclick="window.showTourDetails(${p.id})"` : '';
         const rawSummary = p.content || p.description || '';
-        // إخفاء أي ISO date خام من الملخص
         const cleanSummary = rawSummary.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?/g, '').trim();
-        let summary = cleanSummary.substring(0, 150);
-        if (cleanSummary.length > 150) summary += '...';
+        let summary = cleanSummary.substring(0, 150); if (cleanSummary.length > 150) summary += '...';
+
         const articleRooms = ['gaming-news', 'youtube-news', 'highlights', 'tournaments'];
-        const readMoreLink = (articleRooms.includes(room)) ? `<a href="post.html?id=${p.id}" class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;">📖 ${window.t("اقرأ المزيد", "Read More")}</a>` : '';
+        let readMoreLink = articleRooms.includes(room) ? `<a href="post.html?id=${p.id}" class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;">📖 ${window.t("اقرأ المزيد", "Read More")}</a>` : '';
+        if (room === 'tournaments') {
+          readMoreLink = `<div class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;cursor:pointer;" ${tourAction}>🏆 ${window.t("عرض الشجرة والنتائج", "View Bracket & Results")}</div>`;
+        }
+
         let actions = '';
         if (!isRestricted && p.url) {
           const isStorageFile = p.url.includes('/storage/v1/object/public/');
           const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
           const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
           const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
-          const forceDownload = p.tag && p.tag.includes(':dl');
-
-          if (forceDownload || isVideoFile || isImageFile) {
-            actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل", "Download")}</a>`;
-          } else if (!isYouTubeUrl) {
-            actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط", "Link")}</a>`;
-          }
+          if (p.tag?.includes(':dl') || isVideoFile || isImageFile) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل", "Download")}</a>`;
+          else if (!isYouTubeUrl) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط", "Link")}</a>`;
         }
-        // زر تسجيل بطولة VIP
+
         let registerBtn = '';
         if (room === 'tournaments') {
           if (isVIP(p)) {
-            if (canViewVIP) {
-              registerBtn = `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title || '')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل", "🏆 Register")}</button>`;
-            } else {
-              registerBtn = `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط", "🔒 VIP Only")}</span>`;
-            }
+            registerBtn = canViewVIP ? `<button onclick="window.registerTournamentVIP(${p.id},'${encodeURIComponent(p.title || '')}')" style="background:linear-gradient(135deg,#e01010,#bb0000);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">${window.t("🏆 تسجيل", "🏆 Register")}</button>` : `<span style="color:#888;font-size:11px;">${window.t("🔒 VIP فقط", "🔒 VIP Only")}</span>`;
           }
-          // دعم التسجيل المباشر والنتائج
-          if (p.tag && p.tag.includes(':reg')) {
-            let tourData = null;
-            try { if (p.content && p.content.startsWith('{')) tourData = JSON.parse(p.content); } catch (e) { }
-
-            if (tourData && (tourData.status === 'ongoing' || tourData.status === 'finished')) {
-              registerBtn += `<button onclick="window.openTournamentResults(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#ff9800,#e65100);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🏆 عرض النتائج", "🏆 View Results")}</button>`;
-            } else {
-              registerBtn += `<button onclick="window.openRegistrationModal(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#00f5ff,#00bbcc);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🎯 سجل الآن", "🎯 Register Now")}</button>`;
-            }
+          if (p.tag?.includes(':reg')) {
+            let tData = null; try { if (p.content?.startsWith('{')) tData = JSON.parse(p.content); } catch (e) { }
+            if (tData && (tData.status === 'ongoing' || tData.status === 'finished')) registerBtn += `<button onclick="window.openTournamentResults(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#ff9800,#e65100);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🏆 عرض النتائج", "🏆 View Results")}</button>`;
+            else registerBtn += `<button onclick="window.openRegistrationModal(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#00f5ff,#00bbcc);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🎯 سجل الآن", "🎯 Register Now")}</button>`;
           }
         }
-        // زر الحذف — يظهر فقط لصاحب المنشور أو الادمن
+
         const currentUid = window.currentUserId;
         const isOwner = currentUid && p.user_id && p.user_id === currentUid;
-        const deleteBtn = isOwner
-          ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>`
-          : '';
+        const deleteBtn = isOwner ? `<button onclick="window.deletePost(${p.id},'${room}')" style="background:transparent;border:1px solid #f55;color:#f55;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="delete">🗑️</button>` : '';
 
-        // تمييز فيديوهات قنوات YT VIP أو التي تحمل وسم VIP
-        const isVip = p.tag === 'VIP' || (p.tag && p.tag.startsWith('auto:'));
+        const isVip = p.tag === 'VIP' || p.tag?.startsWith('auto:');
         const cardCls = isVip ? 'post-card vip-ch' : 'post-card';
-        const vipBadgeHtml = isVip ? `<div class="vip-channel-badge" style="z-index: 11;">${p.tag === 'VIP' ? '👑 VIP' : '🔥 YT VIP'}</div>` : '';
+        const vipBadgeHtml = isVip ? `<div class="vip-channel-badge" style="z-index:11;">${p.tag === 'VIP' ? '👑 VIP' : '🔥 YT VIP'}</div>` : '';
 
-        // تنظيف التاج من العلامات التقنية للعرض
-        let shownTag = p.tag || '';
-        if (shownTag.startsWith('auto:')) shownTag = '🔥 YT VIP';
-        else {
-          shownTag = shownTag.split(':')[0]; // إزالة :reg و :dl من العرض
-        }
+        let shownTag = p.tag || ''; if (shownTag.startsWith('auto:')) shownTag = '🔥 YT VIP'; else shownTag = shownTag.split(':')[0];
 
         let dateLabel = '';
         if (p.created_at) {
-          const isEN = window._siteLanguage === 'en';
-          const d = new Date(p.created_at);
-          const now = new Date();
-          const diff = Math.floor((now - d) / 1000);
+          const isEN = window._siteLanguage === 'en', d = new Date(p.created_at), now = new Date(), diff = Math.floor((now - d) / 1000);
           let rel = '';
           if (diff < 60) rel = isEN ? 'Just now' : 'الآن';
           else if (diff < 3600) { const m = Math.floor(diff / 60); rel = isEN ? m + 'm ago' : 'منذ ' + m + ' د'; }
           else if (diff < 86400) { const h = Math.floor(diff / 3600); rel = isEN ? h + 'h ago' : 'منذ ' + h + ' س'; }
           else if (diff < 604800) { const dd = Math.floor(diff / 86400); rel = isEN ? dd + 'd ago' : 'منذ ' + dd + ' يوم'; }
-          else {
-            const opts = { year: 'numeric', month: 'short', day: 'numeric' };
-            rel = d.toLocaleDateString(isEN ? 'en-US' : 'ar-EG', opts);
-          }
+          else rel = d.toLocaleDateString(isEN ? 'en-US' : 'ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
           dateLabel = `<span style="font-size:10px;color:#555;">${rel}</span>`;
         }
-        // معلومات صاحب المنشور — highlights و gaming-news و youtube-news
+
         let authorHtml = '';
         const newsRooms = ['highlights', 'gaming-news', 'youtube-news'];
         if (newsRooms.includes(room) && p.user_id) {
           const profilesCache = window._newsProfiles || window._highlightsProfiles || {};
           const pr = profilesCache[p.user_id];
-          const authorName = pr?.username || '';
-          const authorAvatar = pr?.avatar_url || '';
-          if (authorName || authorAvatar) {
-            const avatarEl = authorAvatar
-              ? `<div style="width:20px;height:20px;border-radius:50%;overflow:hidden;border:1px solid #555;flex-shrink:0;cursor:pointer;" onclick="window.showUserProfile('${p.user_id}')"><img src="${authorAvatar}" style="width:100%;height:100%;object-fit:cover;transform:scale(1.2);"></div>`
-              : `<span style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;cursor:pointer;" onclick="window.showUserProfile('${p.user_id}')">👤</span>`;
-            authorHtml = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;"><span onclick="window.showUserProfile('${p.user_id}')" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${avatarEl}<span style="font-size:11px;color:#e01010;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">@${escapeHtml(authorName)}</span></span></div>`;
+          if (pr?.username || pr?.avatar_url) {
+            const avatarEl = pr.avatar_url ? `<div style="width:20px;height:20px;border-radius:50%;overflow:hidden;border:1px solid #555;flex-shrink:0;cursor:pointer;" onclick="window.showUserProfile('${p.user_id}')"><img src="${pr.avatar_url}" style="width:100%;height:100%;object-fit:cover;transform:scale(1.2);"></div>` : `<span style="width:20px;height:20px;border-radius:50%;background:#2a2a3a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;cursor:pointer;" onclick="window.showUserProfile('${p.user_id}')">👤</span>`;
+            authorHtml = `<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;"><span onclick="window.showUserProfile('${p.user_id}')" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${avatarEl}<span style="font-size:11px;color:#e01010;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">@${escapeHtml(pr.username)}</span></span></div>`;
           }
         }
-        // زر الرابط الاجتماعي في highlights
-        let socialLinkBtn = '';
-        if (room === 'highlights' && p.content && (p.content.startsWith('http://') || p.content.startsWith('https://'))) {
-          const socialDomain = (() => {
-            try { const u = new URL(p.content); return u.hostname.replace('www.', ''); } catch (e) { return ''; }
-          })();
-          const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
-          socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد', 'Watch')}</a>`;
-        }
-        // زر التعديل — يظهر لصاحب المنشور أو الادمن
-        const editableRooms = ['gaming-news', 'youtube-news', 'live', 'yt-videos', 'highlights', 'tournaments'];
-        const isAdmin = window.userHasAnyRole(['admin', 'moderator']);
-        const isOwnerEdit = window.currentUserId && p.user_id && p.user_id === window.currentUserId;
-        // منشورات البطولة: للإدارة فقط — لا يحق للمستخدم العادي تعديلها حتى لو هو صاحبها
-        const canEdit = (room === 'tournaments') ? isAdmin : (isOwnerEdit || isAdmin);
 
-        const editBtn = (canEdit && editableRooms.includes(room))
-          ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="${window.t('تعديل', 'Edit')}">✏️</button>`
-          : '';
+        let socialLinkBtn = '';
+        if (room === 'highlights' && p.content?.startsWith('http')) {
+          try {
+            const u = new URL(p.content), socialDomain = u.hostname.replace('www.', '');
+            const socialIcon = socialDomain.includes('youtube') ? '▶️' : socialDomain.includes('instagram') ? '📸' : socialDomain.includes('tiktok') ? '🎵' : socialDomain.includes('twitter') || socialDomain.includes('x.com') ? '🐦' : '🔗';
+            socialLinkBtn = `<a href="${p.content}" target="_blank" class="post-link" style="font-size:11px;padding:3px 8px;">${socialIcon} ${window.t('شاهد', 'Watch')}</a>`;
+          } catch (e) { }
+        }
+
+        const isAdmin = window.userHasAnyRole(['admin', 'moderator']), isOwnerEdit = window.currentUserId && p.user_id === window.currentUserId;
+        const canEdit = (room === 'tournaments') ? isAdmin : (isOwnerEdit || isAdmin);
+        const editBtn = (canEdit && ['gaming-news', 'youtube-news', 'live', 'yt-videos', 'highlights', 'tournaments'].includes(room)) ? `<button onclick="window.openEditPost(${p.id},'${room}')" style="background:transparent;border:1px solid #4af;color:#4af;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;" title="Edit">✏️</button>` : '';
 
         const isVideoOrLive = room === 'live' || room === 'yt-videos';
-        const summaryHtml = (room === 'live' || room === 'yt-videos') ? '' : `<div class="post-card-summary">${summary}</div>`;
-
-        // Store original title in data attribute for global translation
+        const summaryHtml = isVideoOrLive ? '' : `<div class="post-card-summary">${summary}</div>`;
         let displayTitle = isVideoOrLive ? (window._roomTransMode?.[room] === 'ar' ? window.tTitle(p.title, 'ar') : (window._roomTransMode?.[room] === 'en' ? window.tTitle(p.title, 'en') : p.title)) : (window.tTitle(p.title) || window.t('منشور', 'Post'));
 
-        // "Now Free" Badge Logic (Optimized for Translation)
         let freeBadge = '';
-        const lowerTitle = (p.title || '').toLowerCase();
-        const lowerTag = (p.tag || '').toLowerCase();
-        const isFree = lowerTitle.includes('مجانية الآن') || lowerTitle.includes('free') || lowerTag.includes('giveaway');
-
-        if (isFree) {
+        const lowerTitle = (p.title || '').toLowerCase(), lowerTag = (p.tag || '').toLowerCase();
+        if (lowerTitle.includes('مجانية الآن') || lowerTitle.includes('free') || lowerTag.includes('giveaway')) {
           freeBadge = `<div class="now-free-badge">${window.t('مجانية الآن', 'Now Free')}</div>`;
-          // تنظيف العنوان المعروض من الكلمات التكرارية
           displayTitle = displayTitle.replace(/مجانية الآن/g, '').replace(/Now Free/gi, '').replace(/Free Now/gi, '').replace(/🎁/g, '').replace(/Free/gi, '').replace(/^[:\s\-]+/, '').trim();
         }
 
-        return `<div class="${cardCls}" data-original-title="${escapeHtml(p.title)}">${freeBadge}${vipBadgeHtml}${media}<div class="post-card-body">${authorHtml}<div class="post-card-title">${escapeHtml(displayTitle)}</div>${summaryHtml}<div class="post-card-footer"><span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${readMoreLink}${socialLinkBtn}${actions}${registerBtn || ''}${editBtn}${deleteBtn}</div></div></div></div>`;
+        const tAttr = room === 'tournaments' ? tourAction : '';
+        const tStyle = room === 'tournaments' ? 'cursor:pointer;' : '';
+
+        return `<div class="${cardCls}" data-original-title="${escapeHtml(p.title)}" ${tAttr} style="${tStyle}">
+          ${freeBadge}${vipBadgeHtml}${media}
+          <div class="post-card-body">
+            ${authorHtml}
+            <div class="post-card-title">${escapeHtml(displayTitle)}</div>
+            ${summaryHtml}
+            <div class="post-card-footer">
+              <span class="post-tag">${escapeHtml(shownTag)}</span>${dateLabel}
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                ${readMoreLink}${socialLinkBtn}${actions}${registerBtn}${editBtn}${deleteBtn}
+              </div>
+            </div>
+          </div>
+        </div>`;
       }).join('');
     }
 
@@ -6580,7 +6595,114 @@
       } catch (e) { console.error('Migration V3 failed:', e); }
     }
     migrateReelsToNewRoom();
+    // ==================== تفاصيل البطولات والشجرة ====================
+    window.showTourDetails = async function(postId) {
+      const posts = allPosts['tournaments'] || [];
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      let tourData = null;
+      try {
+        if (post.content && post.content.startsWith('{')) tourData = JSON.parse(post.content);
+      } catch(e) {}
+
+      let existing = document.getElementById('tour-details-modal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'tour-details-modal';
+      modal.className = 'modal active';
+      
+      let contentHtml = `<div style="text-align:center; padding:50px; color:#666; font-size:16px;">⏳ ${window.t("البطولة قيد الإعداد، سيتم عرض النتائج هنا فور البدء.", "Tournament is being prepared. Results will appear here soon.")}</div>`;
+      
+      if (tourData && tourData.status !== 'registration') {
+        if (tourData.type === 'bracket') {
+          contentHtml = `<div class="bracket-container">`;
+          tourData.matches.forEach((round, rIdx) => {
+            contentHtml += `<div class="bracket-round-view">
+              <div style="text-align:center; color:var(--vx-primary); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2); padding-bottom:5px;">
+                ${window.t('الجولة', 'Round')} ${rIdx + 1}
+              </div>`;
+            round.forEach(m => {
+              contentHtml += `<div class="match-card-view">
+                <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
+                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${escapeHtml(m.p1?.name || '???')}</span>
+                  <span class="match-score-view">${m.score1}</span>
+                </div>
+                <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}">
+                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${escapeHtml(m.p2?.name || '???')}</span>
+                  <span class="match-score-view">${m.score2}</span>
+                </div>
+              </div>`;
+            });
+            contentHtml += `</div>`;
+          });
+          contentHtml += `</div>`;
+        } else if (tourData.type === 'league') {
+          contentHtml = `
+          <div style="padding:10px;">
+            <h3 style="color:#ffd2b8; text-align:center; margin-bottom:20px; font-family:'Outfit';">🏆 ${window.t('جدول الترتيب', 'League Standings')}</h3>
+            <table class="league-table-view">
+              <thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('فوز', 'W')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead>
+              <tbody>`;
+          tourData.league.sort((a,b)=> b.pts - a.pts || b.w - a.w).forEach((p,idx) => {
+            contentHtml += `<tr><td>${idx+1}</td><td style="text-align:left; font-weight:700;">${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:800;">${p.pts}</td></tr>`;
+          });
+          contentHtml += `</tbody></table></div>`;
+        } else if (tourData.type === 'groups_bracket') {
+            if (tourData.matches && tourData.matches.length > 0) {
+                 contentHtml = `<h3 style="color:#ffd2b8; text-align:center; margin-bottom:20px; font-family:'Outfit';">🌳 ${window.t('المرحلة الإقصائية', 'Elimination Stage')}</h3><div class="bracket-container">`;
+                 tourData.matches.forEach((round, rIdx) => {
+                    contentHtml += `<div class="bracket-round-view"><div style="text-align:center; color:var(--vx-primary); font-size:12px; font-weight:800; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2);">${window.t('الجولة', 'Round')} ${rIdx+1}</div>`;
+                    round.forEach(m => {
+                      contentHtml += `<div class="match-card-view">
+                        <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
+                          <span>${escapeHtml(m.p1?.name || '???')}</span>
+                          <span class="match-score-view">${m.score1}</span>
+                        </div>
+                        <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}">
+                          <span>${escapeHtml(m.p2?.name || '???')}</span>
+                          <span class="match-score-view">${m.score2}</span>
+                        </div>
+                      </div>`;
+                    });
+                    contentHtml += `</div>`;
+                 });
+                 contentHtml += `</div>`;
+            } else {
+              contentHtml = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">`;
+              tourData.groups.forEach(g => {
+                contentHtml += `<div style="background:rgba(255,255,255,0.02); padding:20px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
+                  <h4 style="color:#ffd2b8; margin-bottom:15px; text-align:center;">${g.name}</h4>
+                  <table class="league-table-view">
+                    <thead><tr><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('فوز', 'W')}</th><th>${window.t('ن', 'PTS')}</th></tr></thead>
+                    <tbody>`;
+                g.players.sort((a,b)=>b.pts-a.pts).forEach(p => {
+                  contentHtml += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
+                });
+                contentHtml += `</tbody></table></div>`;
+              });
+              contentHtml += `</div>`;
+            }
+        }
+      }
+
+      modal.innerHTML = `
+        <div class="tour-modal-box">
+          <button onclick="document.getElementById('tour-details-modal').remove()" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.05); border:1px solid #333; color:#aaa; width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:20px; z-index:10;">✕</button>
+          <div style="margin-bottom:30px; text-align:center;">
+            <h2 style="color:#fff; font-family:'Outfit'; font-size:26px; margin-bottom:10px;">🏆 ${escapeHtml(post.title)}</h2>
+            <p style="color:#888; font-size:14px;">${window.t('تفاصيل البطولة والنتائج المباشرة', 'Tournament Details & Live Results')}</p>
+          </div>
+          <div id="tour-details-content">${contentHtml}</div>
+        </div>
+      `;
+      modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+      document.body.appendChild(modal);
+    };
+
+    window.openTournamentResults = function(postId) { window.showTourDetails(postId); };
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m); }
   </script>
 </body>
-
 </html>
