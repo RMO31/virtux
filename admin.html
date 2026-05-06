@@ -848,6 +848,70 @@
 
     .btn-del {
       background: rgba(255, 255, 255, .02);
+      border-color: rgba(255, 255, 255, .1);
+      color: #f55;
+    }
+
+    /* Tournament Bracket & Draw UI */
+    .tm-draw-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .tm-draw-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .tm-draw-item img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .bracket-round {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      gap: 20px;
+    }
+    .match-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      width: 200px;
+      overflow: hidden;
+    }
+    .match-p {
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .match-p:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .match-p.winner {
+      background: rgba(0, 245, 255, 0.1);
+      color: #00f5ff;
+    }
+    .match-p input {
+      width: 40px;
+      background: #000;
+      border: 1px solid #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 4px;
+      font-size: 11px;
+    }
       border-color: rgba(255, 120, 120, .35);
     }
 
@@ -908,19 +972,28 @@
       <h2 id="tm-title" style="color:#00f5ff; margin-bottom:20px; font-size:22px;"></h2>
 
       <div id="tm-setup" style="display:none; text-align:center; padding:40px;">
-        <p style="color:#aaa; margin-bottom:20px;">البطولة جاهزة للبدء. اختر نظام البطولة:</p>
-        <button class="action-btn" onclick="syncLiveStreamsStatus()" style="background:#cc2222;">🤖 بوت مراقب البثوث</button>
-        <button class="action-btn" onclick="syncYouTubeNews()" style="background:#cc0000;">🔄 مزامنة أخبار يوتيوب</button>
+        <p style="color:#aaa; margin-bottom:20px;">البطولة جاهزة للإعداد. اختر نظام البطولة للبدء في القرعة:</p>
         <div style="display:flex; justify-content:center; gap:20px;">
-          <button class="btn-pub" onclick="initializeTournament('bracket')"
+          <button class="btn-pub" onclick="openTournamentDraw('bracket')"
             style="background:#00f5ff; color:#000; width:150px;">🌳 شجرة</button>
-          <button class="btn-pub" onclick="initializeTournament('league')"
+          <button class="btn-pub" onclick="openTournamentDraw('league')"
             style="background:#ffd2b8; color:#000; width:150px;">📋 دوري</button>
-          <button class="btn-pub" onclick="initializeTournament('groups_bracket')"
+          <button class="btn-pub" onclick="openTournamentDraw('groups_bracket')"
             style="background:#ff9800; color:#000; width:150px;">🧬 مجموعات + شجرة</button>
         </div>
         <div id="tm-setup-msg" style="margin-top:15px; font-size:12px; color:#888;">سيتم جلب جميع اللاعبين "المقبولين"
-          تلقائياً.</div>
+          تلقائياً للقرعة.</div>
+      </div>
+
+      <div id="tm-draw" style="display:none; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h3 style="color:#00f5ff;">🎲 مرحلة القرعة (Tournament Draw)</h3>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-pub" onclick="shufflePlayers()" style="background:#4caf90; width:auto; padding:8px 16px;">🔀 خلط اللاعبين</button>
+            <button class="btn-pub" id="btn-start-tour" onclick="startTournamentFromDraw()" style="background:#e01010; color:#fff; width:auto; padding:8px 20px;">🚀 بدء البطولة الآن</button>
+          </div>
+        </div>
+        <div id="tm-draw-content" class="tm-draw-list"></div>
       </div>
 
       <div id="tm-dashboard" style="display:none;">
@@ -930,6 +1003,8 @@
           <div style="display:flex; gap:10px;">
             <button class="btn-pub" onclick="saveTournamentData()"
               style="background:#4caf90; width:auto; padding:8px 16px;">💾 حفظ التغييرات</button>
+            <button class="btn-del" id="btn-reset-tour" onclick="resetTournament()"
+              style="width:auto; padding:8px 16px; color:#aaa; border-color:#444;">♻️ إعادة البطولة</button>
             <button class="btn-del" id="btn-finish-tour" onclick="finishTournament()"
               style="width:auto; padding:8px 16px;">🏁 إنهاء البطولة</button>
           </div>
@@ -1065,16 +1140,21 @@
 
     function renderTourDashboard() {
       const setup = document.getElementById('tm-setup');
+      const draw = document.getElementById('tm-draw');
       const dash = document.getElementById('tm-dashboard');
       const finished = document.getElementById('tm-finished');
 
       setup.style.display = 'none';
+      draw.style.display = 'none';
       dash.style.display = 'none';
       finished.style.display = 'none';
 
       if (!currentTourData || !currentTourData.status) {
         setup.style.display = 'block';
-      } else if (currentTourData.status === 'registration' || currentTourData.status === 'ongoing') {
+      } else if (currentTourData.status === 'draw') {
+        draw.style.display = 'block';
+        renderDrawView();
+      } else if (currentTourData.status === 'ongoing') {
         dash.style.display = 'block';
         renderMatchView();
       } else if (currentTourData.status === 'finished') {
@@ -1083,9 +1163,7 @@
       }
     }
 
-    async function initializeTournament(type) {
-      if (!confirm('هل تريد بدء البطولة بنظام ' + (type === 'bracket' ? 'الشجرة' : 'الدوري') + '؟ سيتم جلب قائمة المقبولين الآن.')) return;
-
+    async function openTournamentDraw(type) {
       try {
         const { data: regs, error } = await supabaseClient.from('posts')
           .select('*')
@@ -1095,7 +1173,7 @@
 
         if (error) throw error;
         if (!regs || regs.length < 2) {
-          alert('يجب وجود لاعبين مقبولين (2 على الأقل) لبدء البطولة.');
+          alert('يجب وجود لاعبين مقبولين (2 على الأقل) لبدء القرعة.');
           return;
         }
 
@@ -1105,61 +1183,83 @@
           avatar: r.icon
         }));
 
-        let data = {
+        currentTourData = {
           type: type,
-          status: 'ongoing',
+          status: 'draw',
           participants: players,
           matches: [],
           rankings: []
         };
 
-        if (type === 'bracket') {
-          let firstRound = [];
-          for (let i = 0; i < players.length; i += 2) {
-            firstRound.push({
-              id: 'r1-m' + (i / 2),
-              p1: players[i],
-              p2: players[i + 1] || { name: 'BYE', id: 'bye' },
-              score1: 0,
-              score2: 0,
-              winner: (players[i + 1] ? null : players[i].id)
-            });
-          }
-          data.matches = [firstRound];
-        } else if (type === 'league') {
-          data.league = players.map(p => ({
-            ...p,
-            p: 0, w: 0, d: 0, l: 0, pts: 0
-          }));
-        } else if (type === 'groups_bracket') {
-          // نظام مجموعات + شجرة
-          const numGroups = parseInt(prompt('عدد المجموعات؟', '2')) || 2;
-          const advPerGroup = parseInt(prompt('عدد المتأهلين من كل مجموعة؟', '2')) || 2;
-          data.groups = [];
-          data.advPerGroup = advPerGroup;
+        renderTourDashboard();
+      } catch (e) {
+        alert('فشل جلب اللاعبين: ' + e.message);
+      }
+    }
 
-          // توزيع اللاعبين بشكل عشوائي
-          const shuffled = [...players].sort(() => 0.5 - Math.random());
-          for (let i = 0; i < numGroups; i++) {
-            data.groups.push({
-              name: `المجموعة ${i + 1}`,
-              players: []
-            });
-          }
-          shuffled.forEach((p, idx) => {
-            data.groups[idx % numGroups].players.push({
-              ...p, p: 0, w: 0, d: 0, l: 0, pts: 0
-            });
+    function renderDrawView() {
+      const container = document.getElementById('tm-draw-content');
+      container.innerHTML = currentTourData.participants.map(p => `
+        <div class="tm-draw-item">
+          <img src="${p.avatar || 'https://via.placeholder.com/24'}" alt="">
+          <span>${escapeHtml(p.name)}</span>
+        </div>
+      `).join('');
+    }
+
+    function shufflePlayers() {
+      currentTourData.participants.sort(() => 0.5 - Math.random());
+      renderDrawView();
+    }
+
+    async function startTournamentFromDraw() {
+      if (!confirm('هل أنت متأكد من توزيع اللاعبين وبدء البطولة الآن؟ سيختفي زر البدء بعد هذه الخطوة.')) return;
+
+      const players = currentTourData.participants;
+      const type = currentTourData.type;
+
+      if (type === 'bracket') {
+        let firstRound = [];
+        for (let i = 0; i < players.length; i += 2) {
+          firstRound.push({
+            id: 'r1-m' + (i / 2),
+            p1: players[i],
+            p2: players[i + 1] || { name: 'BYE', id: 'bye' },
+            score1: 0,
+            score2: 0,
+            winner: (players[i + 1] ? null : players[i].id)
           });
         }
+        currentTourData.matches = [firstRound];
+      } else if (type === 'league') {
+        currentTourData.league = players.map(p => ({
+          ...p,
+          p: 0, w: 0, d: 0, l: 0, pts: 0
+        }));
+      } else if (type === 'groups_bracket') {
+        const numGroups = parseInt(prompt('عدد المجموعات؟', '2')) || 2;
+        const advPerGroup = parseInt(prompt('عدد المتأهلين من كل مجموعة؟', '2')) || 2;
+        currentTourData.groups = [];
+        currentTourData.advPerGroup = advPerGroup;
 
-        currentTourData = data;
-        await saveTournamentData();
-        renderTourDashboard();
-
-      } catch (e) {
-        alert('فشل تهيئة البطولة: ' + e.message);
+        for (let i = 0; i < numGroups; i++) {
+          currentTourData.groups.push({ name: `المجموعة ${i + 1}`, players: [] });
+        }
+        players.forEach((p, idx) => {
+          currentTourData.groups[idx % numGroups].players.push({ ...p, p: 0, w: 0, d: 0, l: 0, pts: 0 });
+        });
       }
+
+      currentTourData.status = 'ongoing';
+      await saveTournamentData();
+      renderTourDashboard();
+    }
+
+    async function resetTournament() {
+      if (!confirm('⚠️ تحذير: سيتم حذف جميع النتائج والمباريات الحالية والعودة لمرحلة الإعداد. هل أنت متأكد؟')) return;
+      currentTourData = null;
+      await saveTournamentData();
+      renderTourDashboard();
     }
 
     function renderMatchView() {
