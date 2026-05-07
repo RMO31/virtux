@@ -881,20 +881,37 @@
       object-fit: cover;
     }
 
+    .match-p.winner {
+      background: rgba(0, 245, 255, 0.15);
+      color: #00f5ff;
+      border-left: 3px solid #00f5ff;
+    }
+
+    /* تحسين عرض الشجرة في لوحة الإدارة */
+    .bracket-container {
+      display: flex;
+      gap: 50px;
+      padding: 20px 0;
+      position: relative;
+    }
+
     .bracket-round {
       display: flex;
       flex-direction: column;
       justify-content: space-around;
-      gap: 20px;
+      position: relative;
     }
 
     .match-box {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
-      width: 200px;
-      overflow: hidden;
+      width: 220px;
+      margin: 15px 0;
+      position: relative;
+      transition: transform 0.2s;
     }
+    .match-box:hover { transform: translateX(5px); border-color: #444; }
 
     .match-p {
       padding: 8px 12px;
@@ -986,6 +1003,9 @@
         <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:15px; padding:30px; margin-bottom:20px;">
           <h3 style="color:#ffd2b8; margin-bottom:10px;">🛠️ إعداد البطولة الجديدة</h3>
           <p style="color:#aaa; margin-bottom:25px; font-size:14px;">يرجى اختيار نظام المسابقة للبدء في توليد القرعة:</p>
+          
+          <div id="tm-accepted-count" style="margin-bottom:20px; color:#00f5ff; font-weight:bold; font-size:15px;"></div>
+
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
             <button class="btn-pub" onclick="openTournamentDraw('bracket')" style="background:#00f5ff; color:#000; height:100px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;">
               <span style="font-size:24px;">🌳</span>
@@ -1001,13 +1021,15 @@
             </button>
           </div>
         </div>
-        <div id="tm-setup-msg" style="font-size:12px; color:#888;">💡 سيتم جلب جميع اللاعبين الذين تم قبول طلباتهم (Accepted) تلقائياً.</div>
+        <div id="tm-setup-msg" style="font-size:12px; color:#888;">💡 سيتم جلب جميع اللاعبين المقبولين (Accepted) من قسم طلبات التسجيل.</div>
       </div>
 
       <div id="tm-draw" style="display:none; padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
           <h3 style="color:#00f5ff;">🎲 مرحلة القرعة (Tournament Draw)</h3>
-          <div style="display:flex; gap:10px;">
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-pub" onclick="addManualPlayer()"
+              style="background:#00f5ff; color:#000; width:auto; padding:8px 16px;">➕ إضافة لاعب يدوياً</button>
             <button class="btn-pub" onclick="shufflePlayers()"
               style="background:#4caf90; width:auto; padding:8px 16px;">🔀 خلط اللاعبين</button>
             <button class="btn-pub" id="btn-start-tour" onclick="startTournamentFromDraw()"
@@ -1148,8 +1170,18 @@
         } catch (e) { }
 
         currentTourData = tourData;
-        renderTourDashboard();
+        
+        // تحديث عدد اللاعبين المقبولين في شاشة الإعداد
+        const { count: acceptedCount } = await supabaseClient.from('posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('room', '_registrations')
+          .eq('url', postId)
+          .eq('description', 'accepted');
+        
+        const countEl = document.getElementById('tm-accepted-count');
+        if (countEl) countEl.innerText = `عدد اللاعبين المقبولين حالياً: ${acceptedCount || 0}`;
 
+        renderTourDashboard();
       } catch (e) {
         alert('خطأ في جلب بيانات البطولة: ' + e.message);
       }
@@ -1220,12 +1252,29 @@
 
     function renderDrawView() {
       const container = document.getElementById('tm-draw-content');
-      container.innerHTML = currentTourData.participants.map(p => `
-        <div class="tm-draw-item">
+      container.innerHTML = currentTourData.participants.map((p, idx) => `
+        <div class="tm-draw-item" style="position:relative;">
           <img src="${p.avatar || 'https://via.placeholder.com/24'}" alt="">
           <span>${escapeHtml(p.name)}</span>
+          <button onclick="removeParticipantFromDraw(${idx})" style="position:absolute; top:2px; right:2px; background:rgba(255,0,0,0.2); border:none; color:#ff4444; border-radius:4px; width:18px; height:18px; cursor:pointer; font-size:10px;">✕</button>
         </div>
       `).join('');
+    }
+
+    function addManualPlayer() {
+      const name = prompt('اسم اللاعب الجديد؟');
+      if (!name) return;
+      currentTourData.participants.push({
+        id: 'manual-' + Date.now(),
+        name: name,
+        avatar: null
+      });
+      renderDrawView();
+    }
+
+    function removeParticipantFromDraw(idx) {
+      currentTourData.participants.splice(idx, 1);
+      renderDrawView();
     }
 
     function shufflePlayers() {
@@ -1461,7 +1510,14 @@
     }
 
     function updateMatchScore(r, m, pIdx, val) {
-      currentTourData.matches[r][m]['score' + pIdx] = parseInt(val) || 0;
+      const match = currentTourData.matches[r][m];
+      match['score' + pIdx] = parseInt(val) || 0;
+      
+      // تلقائياً حدد الفائز بناءً على النتيجة إذا كانت واضحة
+      if (match.score1 > match.score2) match.winner = match.p1.id;
+      else if (match.score2 > match.score1) match.winner = match.p2.id;
+      
+      renderMatchView();
     }
 
     function setMatchWinner(r, m, pIdx) {
@@ -2791,20 +2847,21 @@
       if (!modalBodyEl) return;
 
       const isMediaRoom = (data.room === 'yt-videos' || data.room === 'live');
+      const safeTag = (data.tag || '').split(':')[0];
       modalBodyEl.innerHTML = `
     <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
     <div class="fg" style="${isMediaRoom ? 'display:none;' : ''}"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description || '')}"></div>
     <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon || '')}"></div>
     <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url || '')}"></div>
-    <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, data.tag.split(':')[0])}</select></div>
+    <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, safeTag)}</select></div>
     
     ${data.room === 'tournaments' ? `
     <div style="margin-bottom:12px; padding:10px; background:rgba(255,210,0,0.05); border:1px solid rgba(255,210,0,0.1); border-radius:10px; display:flex; gap:15px; flex-wrap:wrap;">
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#ffd2b8;">
-        <input type="checkbox" id="edit-reg-enabled" ${data.tag.includes(':reg') ? 'checked' : ''} style="width:18px; height:18px;"> 🚀 تفعيل التسجيل المباشر
+        <input type="checkbox" id="edit-reg-enabled" ${(data.tag || '').includes(':reg') ? 'checked' : ''} style="width:18px; height:18px;"> 🚀 تفعيل التسجيل المباشر
       </label>
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#00f5ff;">
-        <input type="checkbox" id="edit-dl-enabled" ${data.tag.includes(':dl') ? 'checked' : ''} style="width:18px; height:18px;"> ⬇️ تفعيل زر التحميل
+        <input type="checkbox" id="edit-dl-enabled" ${(data.tag || '').includes(':dl') ? 'checked' : ''} style="width:18px; height:18px;"> ⬇️ تفعيل زر التحميل
       </label>
     </div>` : ''}
 
@@ -2889,7 +2946,7 @@
         const dlCb = document.getElementById('edit-dl-enabled');
         if (dlCb && dlCb.checked) updated.tag += ':dl';
       }
-      let imgData = document.getElementById('edit-icon')._imgData;
+      let imgData = document.getElementById('edit-icon')?._imgData;
       if (imgData) updated.icon = imgData;
       try {
         const roomToReload = currentEditPost.room;

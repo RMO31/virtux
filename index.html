@@ -3683,7 +3683,11 @@
         const articleRooms = ['gaming-news', 'youtube-news', 'highlights', 'tournaments'];
         let readMoreLink = articleRooms.includes(room) ? `<a href="post.html?id=${p.id}" class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;">📖 ${window.t("اقرأ المزيد", "Read More")}</a>` : '';
         if (room === 'tournaments') {
-          readMoreLink = `<div class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;cursor:pointer;" ${tourAction}>🏆 ${window.t("عرض الشجرة والنتائج", "View Bracket & Results")}</div>`;
+          // للمسابقات، لا نريد "اقرأ المزيد" التقليدي، بل نريد رابط البطولة أو عرض النتائج
+          readMoreLink = ''; 
+          if (p.url && !p.url.includes('youtube.com') && !p.url.includes('youtu.be')) {
+            readMoreLink = `<a href="${p.url}" target="_blank" class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;">🔗 ${window.t("رابط البطولة", "Tournament Link")}</a>`;
+          }
         }
 
         let actions = '';
@@ -3692,8 +3696,11 @@
           const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
           const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
           const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
-          if (p.tag?.includes(':dl') || isVideoFile || isImageFile) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل", "Download")}</a>`;
-          else if (!isYouTubeUrl) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط", "Link")}</a>`;
+          
+          if (room !== 'tournaments') {
+            if (p.tag?.includes(':dl') || isVideoFile || isImageFile) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل", "Download")}</a>`;
+            else if (!isYouTubeUrl) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط", "Link")}</a>`;
+          }
         }
 
         let registerBtn = '';
@@ -3706,6 +3713,7 @@
             if (tData && (tData.status === 'ongoing' || tData.status === 'finished')) registerBtn += `<button onclick="window.openTournamentResults(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#ff9800,#e65100);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🏆 عرض النتائج", "🏆 View Results")}</button>`;
             else registerBtn += `<button onclick="window.openRegistrationModal(${p.id}, '${escapeHtml(p.title)}')" style="background:linear-gradient(135deg,#00f5ff,#00bbcc);color:#000;font-weight:700;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;margin-right:5px;">${window.t("🎯 سجل الآن", "🎯 Register Now")}</button>`;
           }
+          // إذا لم تكن البطولة قد بدأت، وكان هناك رابط، يظهر بالفعل عبر readMoreLink المعدل أعلاه
         }
 
         const currentUid = window.currentUserId;
