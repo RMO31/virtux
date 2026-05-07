@@ -1034,8 +1034,8 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
           <h3 style="color:#00f5ff;">🎲 مرحلة القرعة (Tournament Draw)</h3>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn-pub" onclick="addManualPlayer()"
-              style="background:#00f5ff; color:#000; width:auto; padding:8px 16px;">➕ إضافة لاعب يدوياً</button>
+            <button class="btn-pub" onclick="openBulkEntry()"
+              style="background:#00f5ff; color:#000; width:auto; padding:8px 16px;">➕ إضافة لاعبين (بالجملة)</button>
             <button class="btn-pub" onclick="shufflePlayers()"
               style="background:#4caf90; width:auto; padding:8px 16px;">🔀 خلط اللاعبين</button>
             <button class="btn-pub" id="btn-start-tour" onclick="startTournamentFromDraw()"
@@ -1297,15 +1297,47 @@
       `).join('');
     }
 
-    function addManualPlayer() {
-      const name = prompt('اسم اللاعب الجديد؟');
-      if (!name) return;
-      currentTourData.participants.push({
-        id: 'manual-' + Date.now(),
-        name: name,
-        avatar: null
+    function openBulkEntry() {
+      const modal = document.createElement('div');
+      modal.id = 'bulkEntryModal';
+      modal.className = 'tm-modal active';
+      modal.style.zIndex = '3000';
+      modal.innerHTML = `
+        <div class="tm-box" style="max-width:450px; padding:25px; background:#0a0a0a; border:1px solid #333;">
+          <h3 style="color:#00f5ff; margin-bottom:15px; font-size:18px;">➕ إضافة لاعبين (بالجملة)</h3>
+          <p style="color:#888; font-size:12px; margin-bottom:12px; line-height:1.4;">أدخل أسماء اللاعبين (اسم واحد في كل سطر).<br>يمكنك نسخ ولصق قائمة كاملة من ملف خارجي.</p>
+          <textarea id="bulkNames" placeholder="مثلاً:\nلاعب 1\nلاعب 2\nلاعب 3" style="width:100%; height:280px; background:#111; border:1px solid #444; color:#fff; padding:12px; border-radius:10px; font-family:'Outfit', sans-serif; resize:none; font-size:13px; line-height:1.6;"></textarea>
+          <div style="display:flex; gap:10px; margin-top:20px;">
+            <button onclick="processBulkEntry()" style="flex:2; background:#00f5ff; color:#000; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; transition:0.3s;">إضافة القائمة كاملة</button>
+            <button onclick="this.closest('.tm-modal').remove()" style="flex:1; background:#333; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer; font-size:14px;">إلغاء</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.getElementById('bulkNames').focus();
+    }
+
+    function processBulkEntry() {
+      const text = document.getElementById('bulkNames').value;
+      if (!text) return;
+      const names = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+      if (names.length === 0) return;
+      
+      names.forEach(name => {
+        currentTourData.participants.push({
+          id: 'manual-' + Math.random().toString(36).substr(2, 9),
+          name: name,
+          avatar: null
+        });
       });
+      
+      const modal = document.getElementById('bulkEntryModal');
+      if (modal) modal.remove();
       renderDrawView();
+    }
+
+    function addManualPlayer() {
+      openBulkEntry();
     }
 
     function removeParticipantFromDraw(idx) {
