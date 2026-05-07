@@ -996,7 +996,13 @@
   <div id="tournamentManagementModal" class="tm-modal">
     <div class="tm-box">
       <button onclick="closeTournamentManagement()"
-        style="position:absolute; top:15px; right:15px; background:transparent; border:1px solid #444; color:#aaa; width:30px; height:30px; border-radius:5px; cursor:pointer;">✕</button>
+        style="position:absolute; top:15px; right:15px; background:transparent; border:1px solid #444; color:#aaa; width:30px; height:30px; border-radius:5px; cursor:pointer; z-index:10;">✕</button>
+      
+      <div style="position:absolute; top:15px; right:60px; display:flex; gap:5px; background:rgba(0,0,0,0.5); padding:4px; border-radius:8px; border:1px solid #333; z-index:10;">
+        <button id="tm-mode-auto" onclick="setTourEntryMode('auto')" style="background:#00f5ff; color:#000; border:none; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:700; cursor:pointer; transition:0.3s;">أوتوماتيكياً</button>
+        <button id="tm-mode-manual" onclick="setTourEntryMode('manual')" style="background:transparent; color:#888; border:none; border-radius:6px; padding:4px 12px; font-size:11px; font-weight:700; cursor:pointer; transition:0.3s;">يدوياً</button>
+      </div>
+
       <h2 id="tm-title" style="color:#00f5ff; margin-bottom:20px; font-size:22px;"></h2>
 
       <div id="tm-setup" style="display:none; text-align:center; padding:30px;">
@@ -1152,9 +1158,27 @@
     // ==================== نظام إدارة البطولات ====================
     let currentTourId = null;
     let currentTourData = null;
+    let currentTourEntryMode = 'auto';
+
+    function setTourEntryMode(mode) {
+      currentTourEntryMode = mode;
+      const btnAuto = document.getElementById('tm-mode-auto');
+      const btnManual = document.getElementById('tm-mode-manual');
+      if (btnAuto && btnManual) {
+        btnAuto.style.background = mode === 'auto' ? '#00f5ff' : 'transparent';
+        btnAuto.style.color = mode === 'auto' ? '#000' : '#888';
+        btnManual.style.background = mode === 'manual' ? '#00f5ff' : 'transparent';
+        btnManual.style.color = mode === 'manual' ? '#000' : '#888';
+      }
+      const msg = document.getElementById('tm-setup-msg');
+      if (msg) {
+        msg.innerText = mode === 'auto' ? '💡 سيتم جلب جميع اللاعبين المقبولين (Accepted) من قسم طلبات التسجيل.' : '💡 ستقوم بإضافة أسماء اللاعبين يدوياً في الخطوة التالية.';
+      }
+    }
 
     async function openTournamentManagement(postId, title) {
       currentTourId = postId;
+      setTourEntryMode('auto'); // Reset to auto by default
       document.getElementById('tm-title').innerText = 'إدارة البطولة: ' + title;
       document.getElementById('tournamentManagementModal').classList.add('active');
 
@@ -1217,6 +1241,18 @@
     }
 
     async function openTournamentDraw(type) {
+      if (currentTourEntryMode === 'manual') {
+        currentTourData = {
+          type: type,
+          status: 'draw',
+          participants: [],
+          matches: [],
+          rankings: []
+        };
+        renderTourDashboard();
+        return;
+      }
+
       try {
         const { data: regs, error } = await supabaseClient.from('posts')
           .select('*')
@@ -1226,7 +1262,7 @@
 
         if (error) throw error;
         if (!regs || regs.length < 2) {
-          alert('يجب وجود لاعبين مقبولين (2 على الأقل) لبدء القرعة.');
+          alert('يجب وجود لاعبين مقبولين (2 على الأقل) لبدء القرعة أوتوماتيكياً. أو استخدم الوضع اليدوي.');
           return;
         }
 
