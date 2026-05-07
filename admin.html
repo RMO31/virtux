@@ -906,7 +906,7 @@
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
-      width: 140px;
+      width: 120px;
       margin: 5px 0;
       position: relative;
       transition: all 0.3s ease;
@@ -917,25 +917,40 @@
     .match-box::after {
       content: "";
       position: absolute;
-      right: -30px;
+      right: -15px;
       top: 50%;
-      width: 30px;
+      width: 15px;
       height: 1px;
-      background: rgba(0, 245, 255, 0.3);
+      background: rgba(0, 245, 255, 0.4);
     }
     .bracket-round:last-child .match-box::after { display: none; }
 
     .match-box:nth-child(odd)::before {
       content: "";
       position: absolute;
-      right: -30px;
+      right: -15px;
       top: 50%;
       width: 1px;
       height: var(--connector-height, 50px);
-      background: rgba(0, 245, 255, 0.3);
+      background: rgba(0, 245, 255, 0.4);
     }
     .bracket-round:last-child .match-box::before { display: none; }
     .bracket-round .match-box:only-child::before { display: none; }
+
+    /* وصلة من اليسار للمربعات في الأدوار التالية */
+    .bracket-round:not(:first-child) .match-box::before {
+      content: "";
+      position: absolute;
+      left: -15px;
+      top: 50%;
+      width: 15px;
+      height: 1px;
+      background: rgba(0, 245, 255, 0.4);
+    }
+    /* إلغاء تداخل الخط الرأسي مع وصلة اليسار في المربعات الفردية */
+    .bracket-round:not(:first-child) .match-box:nth-child(odd)::before {
+      box-shadow: -15px 0 0 0 transparent; /* لمنع التعارض */
+    }
 
     .match-p {
       padding: 6px 10px;
@@ -1385,8 +1400,8 @@
       }
 
       let previewHtml = `
-        <h4 style="color:#ffd2b8; margin-bottom:15px; text-align:center; font-size:13px;">🌳 معاينة الشجرة (اسحب الأسماء للتغيير)</h4>
-        <div class="bracket-container" style="justify-content: flex-start; gap:30px; transform: scale(0.85); transform-origin: top left; padding-bottom:50px;">`;
+        <h4 style="color:#ffd2b8; margin-bottom:10px; text-align:center; font-size:12px;">🌳 معاينة الشجرة (اسحب للترتيب)</h4>
+        <div class="bracket-container" style="justify-content: flex-start; gap:30px; transform: scale(0.75); transform-origin: top left; padding-bottom:50px;">`;
 
       let currentRoundPlayers = players;
       for (let r = 0; r < numRounds; r++) {
@@ -1395,8 +1410,8 @@
           <h5 style="color:#00f5ff; font-size:9px; text-align:center; margin-bottom:10px; opacity:0.6;">${finalTitle}</h5>`;
         
         let nextRoundCount = currentRoundPlayers.length / 2;
-        const connHeight = Math.pow(2, r) * 75; // المسافة بين مركزي مباراتين
-        const marginVal = (connHeight - 59) / 2; // الهامش المطلوب للتمركز الدقيق
+        const connHeight = Math.pow(2, r) * 60; // المسافة بين مركزي مباراتين (أقل بـ 15)
+        const marginVal = (connHeight - 47) / 2; // الهامش للتمركز (47 هو طول المربع الجديد)
 
         for (let m = 0; m < nextRoundCount; m++) {
           const p1Idx = m * 2;
@@ -1412,11 +1427,11 @@
 
           previewHtml += `
             <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px;">
-              <div class="match-p" ${dragAttr1} ${dropAttr1} style="padding:4px 8px; height:28px; cursor:${r===0?'move':'default'};">
-                <span style="font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p1.name)}</span>
+              <div class="match-p" ${dragAttr1} ${dropAttr1} style="padding:2px 8px; height:22px; cursor:${r===0?'move':'default'};">
+                <span style="font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p1.name)}</span>
               </div>
-              <div class="match-p" ${dragAttr2} ${dropAttr2} style="border-top:1px solid rgba(255,255,255,0.05); padding:4px 8px; height:28px; cursor:${r===0?'move':'default'};">
-                <span style="font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p2.name)}</span>
+              <div class="match-p" ${dragAttr2} ${dropAttr2} style="border-top:1px solid rgba(255,255,255,0.05); padding:2px 8px; height:22px; cursor:${r===0?'move':'default'};">
+                <span style="font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p2.name)}</span>
               </div>
             </div>`;
         }
@@ -1580,30 +1595,30 @@
       info.innerText = `النظام: ${currentTourData.type === 'bracket' ? 'شجرة' : 'دوري'} • عدد المتنافسين: ${currentTourData.participants.length}`;
 
       if (currentTourData.type === 'bracket') {
-        let html = `<div class="bracket-container" style="transform: scale(0.85); transform-origin: top left; gap:30px; min-width: max-content; padding-bottom:100px;">`;
+        let html = `<div class="bracket-container" style="transform: scale(0.7); transform-origin: top left; gap:30px; min-width: max-content; padding-bottom:150px;">`;
         currentTourData.matches.forEach((round, rIndex) => {
           html += `<div class="bracket-round">
-            <h4 style="color:#00f5ff; font-size:10px; margin-bottom:10px; text-align:center; opacity:0.6;">جولة ${rIndex + 1}</h4>`;
+            <h4 style="color:#00f5ff; font-size:9px; margin-bottom:8px; text-align:center; opacity:0.6;">جولة ${rIndex + 1}</h4>`;
           round.forEach((m, mIndex) => {
-            const connHeight = Math.pow(2, rIndex) * 75;
-            const marginVal = (connHeight - 59) / 2;
+            const connHeight = Math.pow(2, rIndex) * 60;
+            const marginVal = (connHeight - 47) / 2;
             html += `
             <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px;">
-              <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)" style="height:32px;">
-                <span style="font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p1?.name || '???')}</span>
-                <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()" style="width:30px; background:rgba(0,0,0,0.5); border:1px solid #444; color:#fff; text-align:center; border-radius:4px; font-size:10px; padding:2px;">
+              <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)" style="height:23px; padding:2px 8px;">
+                <span style="font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p1?.name || '???')}</span>
+                <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()" style="width:28px; font-size:9px;">
               </div>
-              <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)" style="border-top:1px solid rgba(255,255,255,0.05); height:32px;">
-                <span style="font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p2?.name || '???')}</span>
-                <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()" style="width:30px; background:rgba(0,0,0,0.5); border:1px solid #444; color:#fff; text-align:center; border-radius:4px; font-size:10px; padding:2px;">
+              <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)" style="border-top:1px solid rgba(255,255,255,0.05); height:23px; padding:2px 8px;">
+                <span style="font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p2?.name || '???')}</span>
+                <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()" style="width:28px; font-size:9px;">
               </div>
             </div>`;
           });
           html += `</div>`;
         });
 
-        html += `<div style="display:flex; align-items:center; padding-left:40px;">
-          <button class="btn-pub" onclick="generateNextRound()" style="background:#00f5ff; color:#000; border:none; width:120px; font-size:10px; font-weight:700; height:36px; border-radius:8px;">➕ الجولة التالية</button>
+        html += `<div style="display:flex; align-items:center; padding-left:20px;">
+          <button class="btn-pub" onclick="generateNextRound()" style="background:#00f5ff; color:#000; border:none; width:100px; font-size:9px; font-weight:700; height:32px; border-radius:8px;">➕ الجولة التالية</button>
         </div>`;
 
         html += `</div>`;
