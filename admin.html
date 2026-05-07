@@ -1288,20 +1288,53 @@
 
     function renderDrawView() {
       const container = document.getElementById('tm-draw-content');
-      container.innerHTML = currentTourData.participants.map((p, idx) => `
-        <div class="tm-draw-item" style="position:relative;">
-          <img src="${p.avatar || 'https://via.placeholder.com/24'}" alt="">
-          <span>${escapeHtml(p.name)}</span>
-          <button onclick="removeParticipantFromDraw(${idx})" style="position:absolute; top:2px; right:2px; background:rgba(255,0,0,0.2); border:none; color:#ff4444; border-radius:4px; width:18px; height:18px; cursor:pointer; font-size:10px;">✕</button>
+      container.innerHTML = currentTourData.participants.map((p, idx) => {
+        const avatarHtml = p.avatar ? `<img src="${p.avatar}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">` : '';
+        return `
+        <div class="tm-draw-item" style="position:relative; display:flex; align-items:center; gap:8px;">
+          ${avatarHtml}
+          <span style="font-size:13px; font-weight:600;">${escapeHtml(p.name)}</span>
+          <button onclick="removeParticipantFromDraw(${idx})" style="position:absolute; top:2px; right:2px; background:rgba(255,0,0,0.1); border:1px solid rgba(255,0,0,0.2); color:#ff4444; border-radius:4px; width:18px; height:18px; cursor:pointer; font-size:10px; display:flex; align-items:center; justify-content:center;">✕</button>
         </div>
-      `).join('');
+      `}).join('');
+
+      // إضافة معاينة الشجرة إذا كان النظام شجرة
+      if (currentTourData.type === 'bracket' && currentTourData.participants.length >= 2) {
+        renderBracketPreview();
+      }
+    }
+
+    function renderBracketPreview() {
+      const container = document.getElementById('tm-draw-content');
+      const players = [...currentTourData.participants];
+      const matches = [];
+      for (let i = 0; i < players.length; i += 2) {
+        matches.push({ p1: players[i], p2: players[i+1] || null });
+      }
+
+      let previewHtml = `<div style="width:100%; margin-top:30px; border-top:1px solid #333; padding-top:20px; grid-column: 1 / -1;">
+        <h4 style="color:#ffd2b8; margin-bottom:15px; text-align:center;">🔍 معاينة المباريات الأولية (جولة 1)</h4>
+        <div style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center;">`;
+      
+      matches.forEach(m => {
+        previewHtml += `
+          <div style="background:rgba(255,255,255,0.03); border:1px solid #444; border-radius:10px; padding:10px; min-width:180px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px;">
+              <span>${escapeHtml(m.p1.name)}</span>
+              <span style="color:#888;">VS</span>
+              <span>${escapeHtml(m.p2 ? m.p2.name : 'BYE')}</span>
+            </div>
+          </div>`;
+      });
+      previewHtml += `</div></div>`;
+      container.innerHTML += previewHtml;
     }
 
     function openBulkEntry() {
       const modal = document.createElement('div');
       modal.id = 'bulkEntryModal';
       modal.className = 'tm-modal active';
-      modal.style.zIndex = '3000';
+      modal.style.zIndex = '10001'; // أعلى من المودال الأساسي
       modal.innerHTML = `
         <div class="tm-box" style="max-width:450px; padding:25px; background:#0a0a0a; border:1px solid #333;">
           <h3 style="color:#00f5ff; margin-bottom:15px; font-size:18px;">➕ إضافة لاعبين (بالجملة)</h3>
