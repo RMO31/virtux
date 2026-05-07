@@ -890,7 +890,7 @@
     /* تحسين عرض الشجرة في لوحة الإدارة */
     .bracket-container {
       display: flex;
-      gap: 50px;
+      gap: 30px;
       padding: 20px 0;
       position: relative;
     }
@@ -898,44 +898,47 @@
     .bracket-round {
       display: flex;
       flex-direction: column;
-      justify-content: space-around;
+      justify-content: center;
       position: relative;
     }
 
-    .match-box:hover { transform: translateX(5px); border-color: #444; }
-
-    /* Connectors for the bracket tree */
-    .bracket-round {
-      padding: 10px 0;
+    .match-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      width: 140px;
+      margin: 5px 0;
+      position: relative;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
     }
+    .match-box:hover { border-color: #00f5ff; transform: scale(1.02); }
+
     .match-box::after {
       content: "";
       position: absolute;
-      right: -50px;
+      right: -30px;
       top: 50%;
-      width: 50px;
+      width: 30px;
       height: 1px;
-      background: rgba(255, 255, 255, 0.15);
-      z-index: 1;
+      background: rgba(0, 245, 255, 0.3);
     }
     .bracket-round:last-child .match-box::after { display: none; }
-    
+
     .match-box:nth-child(odd)::before {
       content: "";
       position: absolute;
-      right: -50px;
+      right: -30px;
       top: 50%;
-      width: 2px;
-      height: calc(100% + 15px);
-      background: rgba(255, 255, 255, 0.15);
-      z-index: 1;
+      width: 1px;
+      height: var(--connector-height, 50px);
+      background: rgba(0, 245, 255, 0.3);
     }
     .bracket-round:last-child .match-box::before { display: none; }
-    /* Hide vertical line on the very last match of each round if it's single */
     .bracket-round .match-box:only-child::before { display: none; }
 
     .match-p {
-      padding: 8px 12px;
+      padding: 6px 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -953,14 +956,15 @@
     }
 
     .match-p input {
-      width: 45px;
-      background: rgba(0,0,0,0.5);
-      border: 1px solid rgba(255,255,255,0.1);
+      width: 35px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #00f5ff;
       color: #fff;
       text-align: center;
       border-radius: 4px;
-      font-size: 11px;
-      padding: 2px;
+      font-size: 10px;
+      padding: 1px;
+      outline: none;
     }
 
     .tm-modal {
@@ -1381,30 +1385,37 @@
       }
 
       let previewHtml = `
-        <h4 style="color:#ffd2b8; margin-bottom:25px; text-align:center; font-size:15px;">🌳 معاينة شجرة البطولة المتوقعة</h4>
-        <div class="bracket-container" style="justify-content: flex-start; min-width: max-content; padding-bottom:20px;">`;
+        <h4 style="color:#ffd2b8; margin-bottom:15px; text-align:center; font-size:13px;">🌳 معاينة الشجرة (اسحب الأسماء للتغيير)</h4>
+        <div class="bracket-container" style="justify-content: flex-start; gap:30px; transform: scale(0.85); transform-origin: top left; padding-bottom:50px;">`;
 
       let currentRoundPlayers = players;
       for (let r = 0; r < numRounds; r++) {
-        const roundTitle = r === numRounds - 1 ? 'نصف النهائي' : (r === numRounds - 2 ? 'ربع النهائي' : `الجولة ${r + 1}`);
-        const finalTitle = r === numRounds - 1 ? 'النهائي' : roundTitle;
-
+        const finalTitle = r === numRounds - 1 ? 'النهائي' : `جولة ${r + 1}`;
         previewHtml += `<div class="bracket-round">
-          <h5 style="color:#00f5ff; font-size:10px; text-align:center; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px; opacity:0.7;">${finalTitle}</h5>`;
+          <h5 style="color:#00f5ff; font-size:9px; text-align:center; margin-bottom:10px; opacity:0.6;">${finalTitle}</h5>`;
         
         let nextRoundCount = currentRoundPlayers.length / 2;
-        const marginVal = Math.pow(2, r) * 20;
+        const connHeight = Math.pow(2, r) * 75; // المسافة بين مركزي مباراتين
+        const marginVal = (connHeight - 59) / 2; // الهامش المطلوب للتمركز الدقيق
 
         for (let m = 0; m < nextRoundCount; m++) {
-          const p1 = currentRoundPlayers[m * 2];
-          const p2 = currentRoundPlayers[m * 2 + 1];
+          const p1Idx = m * 2;
+          const p2Idx = m * 2 + 1;
+          const p1 = currentRoundPlayers[p1Idx];
+          const p2 = currentRoundPlayers[p2Idx];
           
+          // السماح بالسحب والإفلات فقط في الجولة الأولى
+          const dragAttr1 = (r === 0 && p1.id !== 'bye') ? `draggable="true" ondragstart="handleDragStart(${p1Idx})"` : '';
+          const dragAttr2 = (r === 0 && p2.id !== 'bye') ? `draggable="true" ondragstart="handleDragStart(${p2Idx})"` : '';
+          const dropAttr1 = (r === 0) ? `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(${p1Idx})"` : '';
+          const dropAttr2 = (r === 0) ? `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(${p2Idx})"` : '';
+
           previewHtml += `
-            <div class="match-box" style="margin: ${marginVal}px 0; border-color: rgba(255,255,255,0.08); width:180px;">
-              <div class="match-p" style="padding:6px 10px;">
+            <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px;">
+              <div class="match-p" ${dragAttr1} ${dropAttr1} style="padding:4px 8px; height:28px; cursor:${r===0?'move':'default'};">
                 <span style="font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p1.name)}</span>
               </div>
-              <div class="match-p" style="border-top:1px solid rgba(255,255,255,0.05); padding:6px 10px;">
+              <div class="match-p" ${dragAttr2} ${dropAttr2} style="border-top:1px solid rgba(255,255,255,0.05); padding:4px 8px; height:28px; cursor:${r===0?'move':'default'};">
                 <span style="font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p2.name)}</span>
               </div>
             </div>`;
@@ -1419,10 +1430,10 @@
       }
       
       previewHtml += `<div class="bracket-round">
-        <h5 style="color:gold; font-size:10px; text-align:center; margin-bottom:15px; opacity:0.7;">🏆 البطل</h5>
-        <div class="match-box" style="border-color:gold; background:rgba(255,215,0,0.05); margin: auto 0; width:180px;">
-          <div class="match-p" style="justify-content:center; height:50px; flex-direction:column; gap:2px;">
-            <span style="color:gold; font-weight:900; font-size:12px; letter-spacing:1px;">CHAMPION</span>
+        <h5 style="color:gold; font-size:9px; text-align:center; margin-bottom:10px; opacity:0.6;">🏆 البطل</h5>
+        <div class="match-box" style="border-color:gold; background:rgba(255,215,0,0.05); margin: auto 0; width:150px;">
+          <div class="match-p" style="justify-content:center; height:40px;">
+            <span style="color:gold; font-weight:900; font-size:11px;">CHAMPION</span>
           </div>
         </div>
       </div></div>`;
@@ -1569,28 +1580,31 @@
       info.innerText = `النظام: ${currentTourData.type === 'bracket' ? 'شجرة' : 'دوري'} • عدد المتنافسين: ${currentTourData.participants.length}`;
 
       if (currentTourData.type === 'bracket') {
-        let html = `<div style="display:flex; gap:40px;">`;
+        let html = `<div class="bracket-container" style="transform: scale(0.85); transform-origin: top left; gap:30px; min-width: max-content; padding-bottom:100px;">`;
         currentTourData.matches.forEach((round, rIndex) => {
           html += `<div class="bracket-round">
-        <h4 style="color:#00f5ff; font-size:12px; margin-bottom:10px;">الجولة ${rIndex + 1}</h4>`;
+            <h4 style="color:#00f5ff; font-size:10px; margin-bottom:10px; text-align:center; opacity:0.6;">جولة ${rIndex + 1}</h4>`;
           round.forEach((m, mIndex) => {
-            html += `<div class="match-box">
-          <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)">
-            <span>${escapeHtml(m.p1?.name || '???')}</span>
-            <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()">
-          </div>
-          <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)">
-            <span>${escapeHtml(m.p2?.name || '???')}</span>
-            <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()">
-          </div>
-        </div>`;
+            const connHeight = Math.pow(2, rIndex) * 75;
+            const marginVal = (connHeight - 59) / 2;
+            html += `
+            <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px;">
+              <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)" style="height:32px;">
+                <span style="font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p1?.name || '???')}</span>
+                <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()" style="width:30px; background:rgba(0,0,0,0.5); border:1px solid #444; color:#fff; text-align:center; border-radius:4px; font-size:10px; padding:2px;">
+              </div>
+              <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)" style="border-top:1px solid rgba(255,255,255,0.05); height:32px;">
+                <span style="font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p2?.name || '???')}</span>
+                <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()" style="width:30px; background:rgba(0,0,0,0.5); border:1px solid #444; color:#fff; text-align:center; border-radius:4px; font-size:10px; padding:2px;">
+              </div>
+            </div>`;
           });
           html += `</div>`;
         });
 
-        html += `<div style="display:flex; align-items:center;">
-      <button class="btn-pub" onclick="generateNextRound()" style="background:rgba(0,245,255,0.1); color:#00f5ff; border:1px dashed #00f5ff; width:120px; font-size:11px;">➕ توليد الجولة التالية</button>
-    </div>`;
+        html += `<div style="display:flex; align-items:center; padding-left:40px;">
+          <button class="btn-pub" onclick="generateNextRound()" style="background:#00f5ff; color:#000; border:none; width:120px; font-size:10px; font-weight:700; height:36px; border-radius:8px;">➕ الجولة التالية</button>
+        </div>`;
 
         html += `</div>`;
         container.innerHTML = html;
