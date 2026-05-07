@@ -1306,26 +1306,69 @@
 
     function renderBracketPreview() {
       const container = document.getElementById('tm-draw-content');
-      const players = [...currentTourData.participants];
-      const matches = [];
-      for (let i = 0; i < players.length; i += 2) {
-        matches.push({ p1: players[i], p2: players[i+1] || null });
+      const participants = [...currentTourData.participants];
+      if (participants.length < 2) return;
+
+      // حساب عدد الجولات بناءً على عدد المشاركين
+      const numRounds = Math.ceil(Math.log2(participants.length));
+      const totalSlots = Math.pow(2, numRounds);
+      
+      // إكمال اللاعبين بـ BYE إذا لزم الأمر
+      const players = [...participants];
+      while (players.length < totalSlots) {
+        players.push({ name: 'BYE', id: 'bye' });
       }
 
-      let previewHtml = `<div style="width:100%; margin-top:30px; border-top:1px solid #333; padding-top:20px; grid-column: 1 / -1;">
-        <h4 style="color:#ffd2b8; margin-bottom:15px; text-align:center;">🔍 معاينة المباريات الأولية (جولة 1)</h4>
-        <div style="display:flex; flex-wrap:wrap; gap:15px; justify-content:center;">`;
+      let previewHtml = `<div style="width:100%; margin-top:30px; border-top:1px solid #333; padding-top:20px; grid-column: 1 / -1; overflow-x:auto;">
+        <h4 style="color:#ffd2b8; margin-bottom:25px; text-align:center;">🌳 معاينة شجرة البطولة المتوقعة (بناءً على الترتيب الحالي)</h4>
+        <div class="bracket-container" style="justify-content: flex-start; min-width: max-content; padding-bottom:40px;">`;
+
+      let currentRoundPlayers = players;
+      for (let r = 0; r < numRounds; r++) {
+        const roundTitle = r === numRounds - 1 ? 'نصف النهائي' : (r === numRounds - 2 ? 'ربع النهائي' : `الجولة ${r + 1}`);
+        const finalTitle = r === numRounds - 1 ? 'النهائي' : roundTitle;
+
+        previewHtml += `<div class="bracket-round">
+          <h5 style="color:#00f5ff; font-size:11px; text-align:center; margin-bottom:20px; text-transform:uppercase; letter-spacing:1px;">${finalTitle}</h5>`;
+        
+        let nextRoundCount = currentRoundPlayers.length / 2;
+        // حساب المسافة بين المباريات لتبدو كشجرة
+        const marginVal = Math.pow(2, r) * 20;
+
+        for (let m = 0; m < nextRoundCount; m++) {
+          const p1 = currentRoundPlayers[m * 2];
+          const p2 = currentRoundPlayers[m * 2 + 1];
+          
+          previewHtml += `
+            <div class="match-box" style="margin: ${marginVal}px 0; border-color: rgba(255,255,255,0.08);">
+              <div class="match-p">
+                <span style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p1.name)}</span>
+              </div>
+              <div class="match-p" style="border-top:1px solid rgba(255,255,255,0.05);">
+                <span style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p2.name)}</span>
+              </div>
+            </div>`;
+        }
+        previewHtml += `</div>`;
+        
+        // تحضير أسماء الجولة التالية
+        let nextRoundPlayers = [];
+        for (let m = 0; m < nextRoundCount; m++) {
+          nextRoundPlayers.push({ name: `الفائز م${m+1}`, id: 'winner' });
+        }
+        currentRoundPlayers = nextRoundPlayers;
+      }
       
-      matches.forEach(m => {
-        previewHtml += `
-          <div style="background:rgba(255,255,255,0.03); border:1px solid #444; border-radius:10px; padding:10px; min-width:180px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px;">
-              <span>${escapeHtml(m.p1.name)}</span>
-              <span style="color:#888;">VS</span>
-              <span>${escapeHtml(m.p2 ? m.p2.name : 'BYE')}</span>
-            </div>
-          </div>`;
-      });
+      // خانة البطل النهائي
+      previewHtml += `<div class="bracket-round">
+        <h5 style="color:gold; font-size:11px; text-align:center; margin-bottom:20px;">🏆 البطل</h5>
+        <div class="match-box" style="border-color:gold; background:rgba(255,215,0,0.05); margin: auto 0;">
+          <div class="match-p" style="justify-content:center; height:60px; flex-direction:column; gap:5px;">
+            <span style="color:gold; font-weight:900; font-size:14px; letter-spacing:1px;">CHAMPION</span>
+          </div>
+        </div>
+      </div>`;
+
       previewHtml += `</div></div>`;
       container.innerHTML += previewHtml;
     }
