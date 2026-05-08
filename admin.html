@@ -1115,6 +1115,8 @@
           style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid #30363d; padding-bottom:15px;">
           <div id="tm-info" style="font-size:14px; color:#aaa;"></div>
           <div style="display:flex; gap:10px;">
+            <button class="btn-pub" id="tm-next-round-btn" onclick="generateNextRound()"
+              style="background: linear-gradient(135deg, #00f5ff, #00d2ff); color:#000; border:none; width:auto; padding:8px 20px; font-weight:900; border-radius:10px; box-shadow: 0 4px 15px rgba(0,245,255,0.2); display:none;">🚀 الجولة التالية</button>
             <button class="btn-pub" onclick="saveTournamentData()"
               style="background:#4caf90; width:auto; padding:8px 16px;">💾 حفظ التغييرات</button>
             <button class="btn-del" id="btn-reset-tour" onclick="resetTournament()"
@@ -1285,11 +1287,13 @@
       const draw = document.getElementById('tm-draw');
       const dash = document.getElementById('tm-dashboard');
       const finished = document.getElementById('tm-finished');
+      const nextRoundBtn = document.getElementById('tm-next-round-btn');
 
       setup.style.display = 'none';
       draw.style.display = 'none';
       dash.style.display = 'none';
       finished.style.display = 'none';
+      if (nextRoundBtn) nextRoundBtn.style.display = 'none';
 
       if (!currentTourData || !currentTourData.status) {
         setup.style.display = 'block';
@@ -1659,32 +1663,34 @@
             const isPlaceholder = !currentTourData.matches[rIndex] || !currentTourData.matches[rIndex][mIndex];
             const clickHandler = isPlaceholder ? '' : `onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)"`;
             const clickHandler2 = isPlaceholder ? '' : `onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)"`;
-            const inputStyle = isPlaceholder ? 'display:none;' : 'width:38px; font-size:12px; height:26px;';
+            const inputStyle = isPlaceholder ? 'display:none;' : 'width:35px; font-size:13px; height:28px; text-align:center; background:rgba(0,0,0,0.4); border:1px solid #333; color:#00f5ff; border-radius:6px; font-weight:bold; outline:none;';
 
             html += `
             <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px; opacity: ${isPlaceholder ? 0.4 : 1};">
               <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" ${clickHandler} style="height:48px; padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center;">
                 ${m.p1?.id === 'bye' || m.p1?.id === 'placeholder' ? '' : p1Avatar}
                 <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; font-weight:700; color:${m.p1?.id==='placeholder'?'#555':'#eee'};">${p1Name}</span>
-                <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()" style="${inputStyle}">
+                <input type="text" inputmode="numeric" value="${m.score1}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()" style="${inputStyle}">
               </div>
               <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" ${clickHandler2} style="height:48px; padding:6px 14px; display:flex; align-items:center;">
                 ${m.p2?.id === 'bye' || m.p2?.id === 'placeholder' ? '' : p2Avatar}
                 <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; font-weight:700; color:${m.p2?.id==='placeholder'?'#555':'#eee'};">${p2Name}</span>
-                <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()" style="${inputStyle}">
+                <input type="text" inputmode="numeric" value="${m.score2}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()" style="${inputStyle}">
               </div>
             </div>`;
           }
           html += `</div>`;
         }
 
-        html += `<div style="display:flex; align-items:center; padding: 0 60px;">
-          <button class="btn-pub" onclick="generateNextRound()" style="background: linear-gradient(135deg, #00f5ff, #00d2ff); color:#000; border:none; width:170px; font-size:13px; font-weight:900; height:50px; border-radius:14px; box-shadow: 0 4px 25px rgba(0,245,255,0.3); letter-spacing:1px; transition: 0.3s; cursor:pointer;">🚀 الجولة التالية</button>
-        </div>`;
+        const nextRoundBtn = document.getElementById('tm-next-round-btn');
+        if (nextRoundBtn) {
+          nextRoundBtn.style.display = 'block';
+        }
 
         html += `</div>`;
         container.innerHTML = html;
       } else if (currentTourData.type === 'league') {
+        if (document.getElementById('tm-next-round-btn')) document.getElementById('tm-next-round-btn').style.display = 'none';
         let html = `<table class="league-table">
       <thead>
         <tr><th>اللاعب</th><th>لعب</th><th>فوز</th><th>تعادل</th><th>خسارة</th><th>نقاط</th><th>إجراء</th></tr>
