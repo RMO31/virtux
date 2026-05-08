@@ -3396,7 +3396,13 @@
       const today = new Date().toISOString().split('T')[0];
       const used = localStorage.getItem(`yt_quota_${today}`) || '0';
       const el = document.getElementById('yt-quota-stat');
-      if (el) el.textContent = used;
+      if (el) {
+        el.textContent = used;
+        // تغيير اللون إذا اقترب من الحد
+        if (parseInt(used) > 8000) el.style.color = '#ff3333';
+        else if (parseInt(used) > 5000) el.style.color = '#ff9800';
+        else el.style.color = '#00ff88';
+      }
     }
     document.addEventListener('DOMContentLoaded', updateQuotaDisplay);
 
@@ -3751,15 +3757,46 @@
       }
     }
 
+    async function autoCheckAllChannels(manual = false) {
+      if (!window.YOUTUBE_API_KEY) return;
+      console.log('🤖 بدء الفحص التلقائي للقنوات...');
+      try {
+        let { data: channels } = await supabaseClient.from('posts').select('*').eq('room', 'yt-channels');
+        if (!channels || channels.length === 0) return;
+
+        for (let ch of channels) {
+          let parsed = parseYouTubeUrl(ch.url);
+          let chInfo = await getChannelId(parsed);
+          if (chInfo) {
+            // 1. فحص الفيديوهات الجديدة
+            let playlistId = chInfo.uploadsId || chInfo.id.replace('UC', 'UU');
+            let videos = await fetchLatestVideos(playlistId, 3);
+            for (let v of videos) await saveToDb(v, 'yt-videos', 'Video', chInfo.id);
+
+            // 2. فحص البثوث المباشرة
+            let live = await fetchLiveStream(chInfo.id);
+            if (live) await saveToDb(live, 'live', 'Live Now', chInfo.id);
+
+            // 3. فحص البثوث القادمة
+            let upcoming = await fetchUpcomingStream(chInfo.id);
+            if (upcoming) await saveToDb(upcoming, 'live', 'Pre Lives', chInfo.id);
+          }
+          // تأخير بسيط لتجنب الضغط على API
+          await new Promise(r => setTimeout(r, 500));
+        }
+        console.log('✅ اكتمل الفحص التلقائي.');
+        if (manual) loadDashboard();
+      } catch (e) { console.error('❌ خطأ في الفحص التلقائي:', e); }
+    }
+
     async function syncYouTubeNews() {
-      if (!confirm('هل تريد جلب آخر منشورات القنوات وأخبار البطولات العالمية؟\n(سيتم البحث عن المحتوى المنشور خلال آخر 24 ساعة)')) return;
       try {
         console.log('⏳ جاري جلب الأخبار...');
         let count = 0;
 
-        // 1. جلب أخبار البطولات والأحداث الكبرى (Esports Tournaments)
-        trackQuota(100); // search.list costs 100
-        const eventQuery = encodeURIComponent('Esports Tournament Championship 2026 news -sports -football -rugby');
+        // 1. جلب أخبار البطولات والأحداث الكبرى
+        trackQuota(100); 
+        const eventQuery = encodeURIComponent('Esports Tournament Championship news 2026 -sports');
         const eventRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${eventQuery}&type=video&order=date&maxResults=5&key=${YOUTUBE_API_KEY}`);
         const eventData = await eventRes.json();
         if (eventData.items) {
@@ -3770,7 +3807,7 @@
               let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', videoUrl).limit(1);
               if (existing?.length) continue;
               await supabaseClient.from('posts').insert({
-                title: `🏆 حدث/بطولة: ${item.snippet.title}`,
+                title: `🏆 حدث: ${item.snippet.title}`,
                 description: item.snippet.channelTitle,
                 icon: item.snippet.thumbnails?.high?.url || '🏆',
                 url: videoUrl,
@@ -3783,7 +3820,7 @@
           }
         }
 
-        // 2. جلب آخر منشورات القنوات المسجلة في الموقع (خلال آخر 24 ساعة)
+        // 2. جلب آخر منشورات القنوات (آخر 24 ساعة)
         let { data: channels } = await supabaseClient.from('posts').select('*').eq('room', 'yt-channels');
         if (channels && channels.length > 0) {
           for (let ch of channels) {
@@ -3791,37 +3828,31 @@
             let chInfo = await getChannelId(parsed);
             if (chInfo) {
               let uploadsId = chInfo.uploadsId || chInfo.id.replace('UC', 'UU');
-              let activities = await fetchLatestVideos(uploadsId, 1);
+              let activities = await fetchLatestVideos(uploadsId, 2);
               for (let v of activities) {
                 const pubDate = new Date(v.publishedAt);
-                // الفحص خلال آخر 24 ساعة كما طلب المستخدم
                 const isRecent = (Date.now() - pubDate.getTime()) < (24 * 60 * 60 * 1000);
-
                 if (isRecent && isContentSafe(v.title)) {
                   const normVUrl = normalizeUrl(v.videoUrl);
                   let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${v.videoUrl},url.eq.${normVUrl}`).limit(1);
                   if (existing?.length) continue;
-
                   await supabaseClient.from('posts').insert({
-                    title: `📢 تحديث قناة: ${v.title}`,
+                    title: `📢 تحديث: ${v.title}`,
                     description: v.channelName,
                     icon: v.thumbnail || '🔔',
                     url: normVUrl,
                     tag: 'Channel Post',
                     room: 'youtube-news',
-                    content: v.description || `آخر نشاط من قناة ${v.channelName}`
+                    content: v.description || `آخر نشاط من ${v.channelName}`
                   });
                   count++;
                 }
               }
             }
-            await new Promise(r => setTimeout(r, 100));
           }
         }
-
-        alert(`✅ تم جلب ${count} خبر/منشور جديد خلال الـ 24 ساعة الماضية.`);
-        loadDashboard();
-      } catch (e) { alert('❌ فشل جلب الأخبار: ' + e.message); }
+        console.log(`✅ تم جلب ${count} خبر جديد.`);
+      } catch (e) { console.error('❌ فشل جلب الأخبار:', e); }
     }
 
     async function manualSyncChannels() {
@@ -3838,19 +3869,22 @@
     function startAutoCheck() {
       if (_autoCheckInterval) clearInterval(_autoCheckInterval);
       autoCheckAllChannels();
-      _autoCheckInterval = setInterval(autoCheckAllChannels, 24 * 60 * 60 * 1000);
+      // فحص القنوات كل ساعة بدلاً من 24 ساعة
+      _autoCheckInterval = setInterval(autoCheckAllChannels, 60 * 60 * 1000);
     }
 
     let _newsSyncInterval = null;
     function startNewsAutoSync() {
       if (_newsSyncInterval) clearInterval(_newsSyncInterval);
-      // فحص كل ربع ساعة للأخبار والعروض (صامت)
-      syncGamingNews(true);
-      syncGiveaways(true);
-      _newsSyncInterval = setInterval(() => {
+      // فحص الأخبار والعروض وحالة البثوث كل 20 دقيقة
+      const runSync = () => {
         syncGamingNews(true);
         syncGiveaways(true);
-      }, 15 * 60 * 1000);
+        syncYouTubeNews();
+        syncLiveStreamsStatus();
+      };
+      runSync();
+      _newsSyncInterval = setInterval(runSync, 20 * 60 * 1000);
     }
 
     // تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة

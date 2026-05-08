@@ -3734,17 +3734,18 @@
         const articleRooms = ['gaming-news', 'youtube-news', 'highlights', 'tournaments'];
         let readMoreLink = articleRooms.includes(room) ? `<a href="post.html?id=${p.id}" class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;">📖 ${window.t("اقرأ المزيد", "Read More")}</a>` : '';
         if (room === 'tournaments') {
-          const resultsLabel = window.t("نتائج البطولة", "Tournament Results");
           const tourLinkLabel = window.t("رابط البطولة", "Tournament Link");
           const readMoreLabel = window.t("اقرأ المزيد", "Read More");
           
-          const resultsBtn = `<button onclick="event.stopPropagation(); window.showTourDetails(${p.id})" style="display:inline-block;margin-top:8px;color:#00f5ff;background:rgba(0,245,255,0.05);border:1px solid #00f5ff;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:8px;transition:0.3s;">🏆 ${resultsLabel}</button>`;
-          const tourLink = (p.url && !p.url.includes('youtube.com') && !p.url.includes('youtu.be')) ? `<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="display:inline-block;margin-top:8px;color:var(--vx-primary);background:rgba(255,0,64,0.05);border:1px solid var(--vx-primary);border-radius:6px;padding:4px 10px;font-size:11px;text-decoration:none;font-weight:700;margin-right:8px;transition:0.3s;">🔗 ${tourLinkLabel}</a>` : '';
+          let tourData = null;
+          try { if (p.content && p.content.startsWith('{')) tourData = JSON.parse(p.content); } catch(e){}
+          const isFinished = tourData && tourData.status === 'finished';
+
+          const tourLink = (!isFinished && p.url && !p.url.includes('youtube.com') && !p.url.includes('youtu.be')) ? `<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="display:inline-block;margin-top:8px;color:var(--vx-primary);background:rgba(255,0,64,0.05);border:1px solid var(--vx-primary);border-radius:6px;padding:4px 10px;font-size:11px;text-decoration:none;font-weight:700;margin-right:8px;transition:0.3s;">🔗 ${tourLinkLabel}</a>` : '';
           
           readMoreLink = `
             <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
               <a href="post.html?id=${p.id}" onclick="event.stopPropagation()" style="display:inline-block;margin-top:8px;color:#fff;background:rgba(255,255,255,0.05);border:1px solid #444;border-radius:6px;padding:4px 10px;font-size:11px;text-decoration:none;font-weight:700;margin-right:8px;transition:0.3s;">📖 ${readMoreLabel}</a>
-              ${resultsBtn}
               ${tourLink}
             </div>`;
         }
@@ -6773,28 +6774,32 @@
         if (post.content && post.content.startsWith('{')) tourData = JSON.parse(post.content);
       } catch(e) {}
 
+      let contentHtml = `
+        <div style="padding:20px; color:#eee; border-bottom:1px solid #333; margin-bottom:20px;">
+          ${post.image_url ? `<img src="${post.image_url}" style="width:100%; border-radius:15px; margin-bottom:20px; border:1px solid #333;">` : ''}
+          <div style="background:rgba(255,255,255,0.03); border:1px solid #333; border-radius:15px; padding:20px;">
+            <h3 style="color:#00f5ff; margin-bottom:15px;">📝 معلومات البطولة</h3>
+            <div style="line-height:1.6; color:#ccc; font-size:15px; white-space:pre-wrap;">${escapeHtml(post.description || '')}</div>
+          </div>
+        </div>
+      `;
+
       if (!tourData || tourData.status === 'registration') {
-        container.innerHTML = `
-          <div style="padding:20px; color:#eee;">
-            ${post.image_url ? `<img src="${post.image_url}" style="width:100%; border-radius:15px; margin-bottom:20px; border:1px solid #333;">` : ''}
-            <div style="background:rgba(255,255,255,0.03); border:1px solid #333; border-radius:15px; padding:20px;">
-              <h3 style="color:#00f5ff; margin-bottom:15px;">📝 معلومات البطولة</h3>
-              <div style="line-height:1.6; color:#ccc; font-size:15px; white-space:pre-wrap;">${escapeHtml(post.description || '')}</div>
-              <div style="margin-top:25px; text-align:center;">
-                <div style="background:rgba(0,245,255,0.1); color:#00f5ff; padding:15px; border-radius:10px; border:1px dashed #00f5ff; display:inline-block;">
-                  ⏳ التسجيل مفتوح حالياً! سيتم عرض شجرة المواجهات هنا فور اكتمال العدد وبدء البطولة.
-                </div>
-              </div>
+        contentHtml += `
+          <div style="padding:0 20px 20px; text-align:center;">
+            <div style="background:rgba(0,245,255,0.1); color:#00f5ff; padding:15px; border-radius:10px; border:1px dashed #00f5ff; display:inline-block;">
+              ⏳ التسجيل مفتوح حالياً! سيتم عرض شجرة المواجهات هنا فور اكتمال العدد وبدء البطولة.
             </div>
           </div>
         `;
+        container.innerHTML = contentHtml;
         return;
       }
 
-      let contentHtml = '';
+      let tourDetailsHtml = '';
       if (tourData.type === 'bracket') {
         const numRounds = tourData.matches.length;
-        contentHtml = `<div id="tour-bracket-wrapper" style="overflow:hidden; width:100%; min-height:500px; background:rgba(0,0,0,0.1); border-radius:12px;"><div class="bracket-container" style="transform: scale(${tourZoomScale});">`;
+        tourDetailsHtml = `<div id="tour-bracket-wrapper" style="overflow:hidden; width:100%; min-height:500px; background:rgba(0,0,0,0.1); border-radius:12px;"><div class="bracket-container" style="transform: scale(${tourZoomScale});">`;
         tourData.matches.forEach((round, rIdx) => {
           let roundTitle = `${window.t('الجولة', 'Round')} ${rIdx + 1}`;
           const distFromFinal = numRounds - 1 - rIdx;
@@ -6803,10 +6808,10 @@
           else if (distFromFinal === 2) roundTitle = 'ربع النهائي';
           else if (distFromFinal === 3) roundTitle = 'ثمن النهائي';
 
-          contentHtml += `<div class="bracket-round-view">
+          tourDetailsHtml += `<div class="bracket-round-view">
             <div style="text-align:center; color:var(--vx-primary); font-size:11px; font-weight:800; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2);">${roundTitle}</div>`;
           round.forEach(m => {
-            contentHtml += `<div class="match-card-view">
+            tourDetailsHtml += `<div class="match-card-view">
               <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
                 <span>${escapeHtml(m.p1?.name || '---')}</span>
                 <span class="match-score-view">${m.score1}</span>
@@ -6817,15 +6822,15 @@
               </div>
             </div>`;
           });
-          contentHtml += `</div>`;
+          tourDetailsHtml += `</div>`;
         });
-        contentHtml += `</div></div>`;
+        tourDetailsHtml += `</div></div>`;
       } else if (tourData.type === 'league') {
-        contentHtml = `<div style="padding:10px;"><table class="league-table-view"><thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead><tbody>`;
+        tourDetailsHtml = `<div style="padding:10px;"><table class="league-table-view"><thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead><tbody>`;
         tourData.league.sort((a,b)=> b.pts - a.pts).forEach((p,idx) => {
-          contentHtml += `<tr><td>${idx+1}</td><td style="text-align:left;">${escapeHtml(p.name)}</td><td>${p.p}</td><td style="color:var(--vx-primary); font-weight:800;">${p.pts}</td></tr>`;
+          tourDetailsHtml += `<tr><td>${idx+1}</td><td style="text-align:left;">${escapeHtml(p.name)}</td><td>${p.p}</td><td style="color:var(--vx-primary); font-weight:800;">${p.pts}</td></tr>`;
         });
-        contentHtml += `</tbody></table></div>`;
+        tourDetailsHtml += `</tbody></table></div>`;
       }
 
       // عرض الترتيب النهائي إذا انتهت البطولة
@@ -6861,8 +6866,11 @@
         }
         
         rankingsHtml += `</div>`;
-        contentHtml = rankingsHtml + contentHtml;
+        contentHtml += rankingsHtml;
       }
+
+      contentHtml += tourDetailsHtml;
+      container.innerHTML = contentHtml;
 
       container.innerHTML = contentHtml;
       setTimeout(initTourPanning, 100);
