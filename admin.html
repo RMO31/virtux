@@ -1957,17 +1957,40 @@
 
       if (currentTourData.type === 'bracket') {
         let rank = [];
-        const lastRound = currentTourData.matches[currentTourData.matches.length - 1];
-        if (lastRound[0].winner) {
-          const winner = lastRound[0].winner === lastRound[0].p1.id ? lastRound[0].p1 : lastRound[0].p2;
-          const loser = lastRound[0].winner === lastRound[0].p1.id ? lastRound[0].p2 : lastRound[0].p1;
-          rank.push(winner);
-          rank.push(loser);
+        let addedIds = new Set();
+
+        // الترتيب من الجولة الأخيرة للأولى
+        for (let i = currentTourData.matches.length - 1; i >= 0; i--) {
+          const round = currentTourData.matches[i];
+          let roundWinners = [];
+          let roundLosers = [];
+
+          round.forEach(m => {
+            if (m.winner) {
+              const winner = m.winner === m.p1.id ? m.p1 : m.p2;
+              const loser = m.winner === m.p1.id ? m.p2 : m.p1;
+              if (winner && !addedIds.has(winner.id)) roundWinners.push(winner);
+              if (loser && !addedIds.has(loser.id)) roundLosers.push(loser);
+            }
+          });
+
+          // في النهائي (آخر جولة)، أضف الفائز أولاً ثم الخاسر
+          if (i === currentTourData.matches.length - 1) {
+            roundWinners.forEach(p => { if (!addedIds.has(p.id)) { rank.push(p); addedIds.add(p.id); } });
+          }
+          // في كل جولة، أضف الخاسرين (الذين خرجوا في هذه الجولة)
+          roundLosers.forEach(p => { if (!addedIds.has(p.id)) { rank.push(p); addedIds.add(p.id); } });
         }
+
+        // أضف أي لاعب لم يشارك أو لم يلعب (احتياط)
+        currentTourData.participants.forEach(p => {
+          if (!addedIds.has(p.id)) { rank.push(p); addedIds.add(p.id); }
+        });
+
         currentTourData.rankings = rank;
       } else {
         sortLeague();
-        currentTourData.rankings = currentTourData.league.slice(0, 5);
+        currentTourData.rankings = currentTourData.league;
       }
 
       await saveTournamentData();
@@ -1977,24 +2000,39 @@
     function renderRankings() {
       const container = document.getElementById('tm-rankings');
       let html = `<div style="background:rgba(0,245,255,0.02); padding:30px; border-radius:16px; border:1px solid rgba(0,245,255,0.1); text-align:center;">
-        <h2 style="color:#ffd2b8; margin-bottom:25px; font-size:24px; font-weight:900;">🏆 الترتيب النهائي للبطولة</h2>
-        <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap;">`;
+        <h2 style="color:#ffd2b8; margin-bottom:25px; font-size:24px; font-weight:900;">🏆 الترتيب النهائي للبطولة</h2>`;
 
       if (!currentTourData.rankings || currentTourData.rankings.length === 0) {
         html += `<p style="color:#888;">لم يتم تحديد فائزين بعد.</p>`;
       } else {
-        currentTourData.rankings.forEach((p, idx) => {
-          const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-          const colors = ['#ffd700', '#c0c0c0', '#cd7f32', '#aaa', '#aaa'];
+        // المراكز الثلاثة الأولى
+        html += `<div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; margin-bottom:40px;">`;
+        currentTourData.rankings.slice(0, 3).forEach((p, idx) => {
+          const medals = ['🥇', '🥈', '🥉'];
+          const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
           html += `
-            <div style="background:rgba(255,255,255,0.03); border:1px solid ${idx<3 ? colors[idx] : '#333'}; border-radius:15px; padding:20px; width:180px; display:flex; flex-direction:column; align-items:center; gap:10px; transition:0.3s; box-shadow: ${idx<3 ? `0 0 20px ${colors[idx]}22` : 'none'};">
-              <span style="font-size:40px;">${medals[idx] || (idx + 1)}</span>
+            <div style="background:rgba(255,255,255,0.03); border:1px solid ${colors[idx]}; border-radius:15px; padding:20px; width:180px; display:flex; flex-direction:column; align-items:center; gap:10px; transition:0.3s; box-shadow: 0 0 20px ${colors[idx]}22;">
+              <span style="font-size:40px;">${medals[idx]}</span>
               <div style="font-weight:900; color:#fff; font-size:16px;">${escapeHtml(p.name)}</div>
-              <div style="font-size:11px; color:${colors[idx]}; font-weight:bold; letter-spacing:1px;">${idx===0?'البطل':(idx===1?'الوصيف':(idx===2?'المركز الثالث':`المركز ${idx+1}`))}</div>
+              <div style="font-size:11px; color:${colors[idx]}; font-weight:bold; letter-spacing:1px;">${idx===0?'البطل':(idx===1?'الوصيف':'المركز الثالث')}</div>
             </div>`;
         });
+        html += `</div>`;
+
+        // بقية المراكز
+        if (currentTourData.rankings.length > 3) {
+          html += `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px; border-top:1px solid #333; padding-top:20px;">`;
+          currentTourData.rankings.slice(3).forEach((p, idx) => {
+            html += `
+              <div style="background:rgba(255,255,255,0.02); border:1px solid #222; border-radius:8px; padding:10px 15px; display:flex; align-items:center; gap:10px; text-align:left;">
+                <span style="color:#666; font-size:11px; font-weight:bold; width:20px;">${idx + 4}</span>
+                <div style="color:#aaa; font-size:13px;">${escapeHtml(p.name)}</div>
+              </div>`;
+          });
+          html += `</div>`;
+        }
       }
-      html += `</div></div>`;
+      html += `</div>`;
       container.innerHTML = html;
     }
 
