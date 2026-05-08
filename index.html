@@ -6673,8 +6673,9 @@
       modal.id = 'tour-details-modal';
       modal.className = 'modal active';
       modal.innerHTML = `
-        <div class="tour-modal-box" style="max-width:95%; width:1200px;">
-          <button onclick="document.getElementById('tour-details-modal').remove()" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.05); border:1px solid #333; color:#aaa; width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:20px; z-index:10;">✕</button>
+        <div class="tour-modal-box" id="tour-modal-box" style="max-width:95%; width:1200px; position:relative;">
+          <button onclick="document.getElementById('tour-details-modal').remove()" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.05); border:1px solid #333; color:#aaa; width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:20px; z-index:100;">✕</button>
+          <button onclick="toggleTourModalSize()" style="position:absolute; top:20px; right:65px; background:rgba(255,255,255,0.05); border:1px solid #333; color:#aaa; width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:18px; z-index:100;">🔳</button>
           
           <div style="margin-bottom:20px; text-align:center;">
             <h2 style="color:#fff; font-family:'Outfit'; font-size:24px; margin-bottom:5px;">🏆 ${escapeHtml(post.title)}</h2>
@@ -6716,6 +6717,48 @@
       const root = document.querySelector('.bracket-container');
       if (root) root.style.transform = `scale(${tourZoomScale})`;
     };
+
+    window.toggleTourModalSize = function() {
+      const box = document.getElementById('tour-modal-box');
+      if (!box) return;
+      if (box.style.width === '100%') {
+        box.style.width = '1200px';
+        box.style.height = 'auto';
+        box.style.maxWidth = '95%';
+      } else {
+        box.style.width = '100%';
+        box.style.height = '100%';
+        box.style.maxWidth = '100%';
+      }
+    };
+
+    let tourPanning = false;
+    let tourStartX, tourStartY, tourScrollLeft, tourScrollTop;
+    function initTourPanning() {
+      const area = document.getElementById('tour-details-content');
+      if (!area) return;
+      area.style.cursor = 'grab';
+      area.addEventListener('mousedown', (e) => {
+        tourPanning = true;
+        area.style.cursor = 'grabbing';
+        tourStartX = e.pageX - area.offsetLeft;
+        tourStartY = e.pageY - area.offsetTop;
+        tourScrollLeft = area.scrollLeft;
+        tourScrollTop = area.scrollTop;
+      });
+      area.addEventListener('mouseleave', () => { tourPanning = false; area.style.cursor = 'grab'; });
+      area.addEventListener('mouseup', () => { tourPanning = false; area.style.cursor = 'grab'; });
+      area.addEventListener('mousemove', (e) => {
+        if (!tourPanning) return;
+        e.preventDefault();
+        const x = e.pageX - area.offsetLeft;
+        const y = e.pageY - area.offsetTop;
+        const walkX = (x - tourStartX) * 1.5;
+        const walkY = (y - tourStartY) * 1.5;
+        area.scrollLeft = tourScrollLeft - walkX;
+        area.scrollTop = tourScrollTop - walkY;
+      });
+    }
 
     function renderTourContent(post) {
       const container = document.getElementById('tour-details-content');
@@ -6763,14 +6806,16 @@
       // عرض الترتيب النهائي إذا انتهت البطولة
       if (tourData.status === 'finished' && tourData.rankings) {
         const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-        let rankingsHtml = `<div style="margin-top:30px; border-top:1px solid #333; padding-top:20px;">
-          <h3 style="color:#ffd2b8; margin-bottom:15px; text-align:center;">🏆 الترتيب النهائي</h3>
+        const colors = ['#ffd700', '#c0c0c0', '#cd7f32', '#aaa', '#aaa'];
+        let rankingsHtml = `<div style="margin-top:30px; border-top:1px solid #333; padding-top:20px; text-align:center;">
+          <h3 style="color:#ffd2b8; margin-bottom:20px; font-weight:900;">🏆 الترتيب النهائي</h3>
           <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">`;
         tourData.rankings.forEach((p, idx) => {
           rankingsHtml += `
-            <div style="background:rgba(255,255,255,0.03); border:1px solid #333; border-radius:12px; padding:12px 20px; display:flex; align-items:center; gap:12px;">
-              <span style="font-size:24px;">${medals[idx] || (idx+1)}</span>
-              <div style="font-weight:800; color:#fff;">${escapeHtml(p.name)}</div>
+            <div style="background:rgba(255,255,255,0.03); border:1px solid ${idx<3 ? colors[idx] : '#333'}; border-radius:15px; padding:15px 20px; min-width:140px; display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <span style="font-size:32px;">${medals[idx] || (idx+1)}</span>
+              <div style="font-weight:900; color:#fff; font-size:14px;">${escapeHtml(p.name)}</div>
+              <div style="font-size:10px; color:${colors[idx]}; font-weight:800;">${idx===0?'البطل':(idx===1?'الوصيف':(idx===2?'المركز الثالث':`المركز ${idx+1}`))}</div>
             </div>`;
         });
         rankingsHtml += `</div></div>`;
@@ -6778,6 +6823,7 @@
       }
 
       container.innerHTML = contentHtml;
+      setTimeout(initTourPanning, 100);
     }
 
     window.openTournamentResults = function(postId) { window.showTourDetails(postId); };
