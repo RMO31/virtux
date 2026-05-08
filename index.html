@@ -596,6 +596,72 @@
       display: none;
     }
 
+    /* Premium League Table Styles */
+    .tr-league-container {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--vx-border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .tr-table-premium {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .tr-table-premium th {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 14px 16px;
+      text-align: right;
+      color: #888;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .tr-table-premium td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: #eee;
+    }
+    .tr-table-premium tr:last-child td { border-bottom: none; }
+    .tr-table-premium .rank { width: 50px; color: #666; font-weight: 800; }
+    .tr-table-premium .name { font-weight: 700; color: #fff; }
+    .tr-table-premium .stat { text-align: center; width: 60px; color: #aaa; }
+    .tr-table-premium .pts-val { text-align: center; width: 70px; color: var(--vx-accent); font-weight: 900; }
+    .tr-table-premium tr.top-rank { background: rgba(255, 255, 255, 0.02); }
+    .tr-table-premium tr.top-rank .rank { color: var(--vx-primary); }
+
+    /* Group Card Styles */
+    .tr-group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .tr-group-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--vx-border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: 0.3s;
+    }
+    .tr-group-card:hover {
+      border-color: rgba(0, 245, 255, 0.3);
+      transform: translateY(-5px);
+    }
+    .tr-group-header {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px 16px;
+      font-weight: 800;
+      color: #ffd2b8;
+      border-bottom: 1px solid var(--vx-border);
+      font-size: 14px;
+    }
+    .tr-table-premium.mini { font-size: 12px; }
+    .tr-table-premium.mini th, .tr-table-premium.mini td { padding: 10px 12px; }
+    .tr-table-premium.mini tr.qualified { background: rgba(0, 245, 255, 0.03); }
+
     .filter-bar {
       display: flex;
       gap: 6px;
@@ -6616,22 +6682,75 @@
     }
 
     function renderLeague(league, container) {
-      let html = `<table class="tr-table"><thead><tr><th>اللاعب</th><th>لعب</th><th>فوز</th><th>ن</th></tr></thead><tbody>`;
-      league.forEach(p => {
-        html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
+      // Sort league by points, then goal difference, then wins
+      league.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.w - a.w);
+
+      let html = `<div class="tr-league-container" style="background:none; border:none;">
+        <div style="display:grid; gap:10px; padding:5px;">`;
+      
+      league.forEach((p, idx) => {
+        const isTop = idx < 3;
+        const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
+        const borderColor = isTop ? colors[idx] : 'rgba(255,255,255,0.08)';
+        const shadow = isTop ? `0 0 15px ${colors[idx]}22` : 'none';
+        
+        html += `
+          <div class="tr-league-card" style="background:rgba(255,255,255,0.03); border:1px solid ${borderColor}; border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:15px; box-shadow:${shadow}; position:relative; overflow:hidden;">
+            ${isTop ? `<div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${colors[idx]};"></div>` : ''}
+            <div style="font-size:18px; font-weight:900; color:${isTop ? colors[idx] : '#555'}; width:30px; text-align:center;">${idx + 1}</div>
+            
+            <div style="flex:1; display:flex; align-items:center; gap:12px;">
+              <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; font-size:16px; border:1px solid ${borderColor}44;">👤</div>
+              <div>
+                <div style="font-weight:800; color:#fff; font-size:14px; margin-bottom:2px;">${escapeHtml(p.name)}</div>
+                <div style="font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1px;">${isTop ? (idx===0?'Champion':(idx===1?'Runner up':'3rd Place')) : 'Competitor'}</div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:15px; align-items:center; text-align:center;">
+              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">P</div><div style="font-weight:700; color:#aaa;">${p.p || 0}</div></div>
+              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">W</div><div style="font-weight:700; color:#00ff88;">${p.w || 0}</div></div>
+              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">L</div><div style="font-weight:700; color:#ff3333;">${p.l || 0}</div></div>
+              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">G</div><div style="font-weight:700; color:#ffd2b8;">${(p.gf || 0)}-${(p.ga || 0)}</div></div>
+              <div style="min-width:50px; background:rgba(255,255,255,0.03); padding:5px; border-radius:8px; border:1px solid ${isTop ? borderColor : 'rgba(255,255,255,0.05)'};">
+                <div style="font-size:9px; color:${isTop ? borderColor : '#555'}; margin-bottom:2px;">PTS</div>
+                <div style="font-weight:900; color:${isTop ? borderColor : '#00f5ff'}; font-size:15px;">${p.pts || 0}</div>
+              </div>
+            </div>
+          </div>`;
       });
-      html += `</tbody></table>`;
+      
+      html += `</div></div>`;
       container.innerHTML = html;
     }
 
     function renderGroups(groups, container) {
-      let html = `<div class="tr-group-grid">`;
+      let html = `<div class="tr-group-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:20px;">`;
       groups.forEach(g => {
-        html += `<div style="background:rgba(255,255,255,0.02); padding:15px; border-radius:10px; border:1px solid var(--vx-border);">
-      <h5 style="color:#ffd2b8; margin-bottom:10px;">${g.name}</h5>
-      <table class="tr-group-table"><thead><tr><th>اللاعب</th><th>ل</th><th>ف</th><th>ن</th></tr></thead><tbody>`;
-        g.players.forEach(p => {
-          html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
+        html += `
+        <div class="tr-group-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden;">
+          <div class="tr-group-header" style="background:rgba(0,245,255,0.05); color:#00f5ff; padding:12px 15px; font-weight:800; border-bottom:1px solid rgba(0,245,255,0.1); font-size:14px;">${escapeHtml(g.name)}</div>
+          <table class="tr-table-premium mini" style="width:100%; border-collapse:collapse; font-size:11px;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.02);">
+                <th style="padding:8px 10px; color:#666; text-align:center;">#</th>
+                <th style="padding:8px 10px; color:#aaa;">اللاعب</th>
+                <th title="لعب" style="padding:8px 5px; text-align:center;">P</th>
+                <th title="فوز" style="padding:8px 5px; text-align:center; color:#00ff88;">W</th>
+                <th title="نقاط" style="padding:8px 5px; text-align:center; color:#ffaa00;">Pts</th>
+              </tr>
+            </thead>
+            <tbody>`;
+        g.players.forEach((p, idx) => {
+          const isQualified = idx < 2;
+          html += `
+          <tr class="${isQualified ? 'qualified' : ''}" style="border-bottom:1px solid rgba(255,255,255,0.02); ${isQualified ? 'background:rgba(0,255,200,0.03);' : ''}">
+            <td style="padding:10px; text-align:center; font-weight:900; color:${isQualified ? '#00ffcc' : '#555'};">${idx + 1}</td>
+            <td style="padding:10px; font-weight:700; color:#eee;">${escapeHtml(p.name)}</td>
+            <td style="text-align:center; color:#888;">${p.p || 0}</td>
+            <td style="text-align:center; color:#00ff88;">${p.w || 0}</td>
+            <td style="text-align:center; font-weight:900; color:#ffaa00;">${p.pts || 0}</td>
+          </tr>`;
         });
         html += `</tbody></table></div>`;
       });
@@ -6740,29 +6859,40 @@
     let tourPanning = false;
     let tourStartX, tourStartY, tourScrollLeft, tourScrollTop;
     window.initTourPanning = function() {
-      const area = document.getElementById('tour-bracket-wrapper');
+      const area = document.getElementById('tour-details-content') || document.getElementById('tour-bracket-wrapper') || document.getElementById('tr-view');
       if (!area) return;
       area.style.cursor = 'grab';
-      area.addEventListener('mousedown', (e) => {
+      area.style.userSelect = 'none';
+      
+      const onDown = (e) => {
+        if (e.target.closest('button')) return;
         tourPanning = true;
         area.style.cursor = 'grabbing';
-        tourStartX = e.pageX - area.offsetLeft;
-        tourStartY = e.pageY - area.offsetTop;
+        tourStartX = e.pageX || e.touches[0].pageX;
+        tourStartY = e.pageY || e.touches[0].pageY;
         tourScrollLeft = area.scrollLeft;
         tourScrollTop = area.scrollTop;
-      });
-      area.addEventListener('mouseleave', () => { tourPanning = false; area.style.cursor = 'grab'; });
-      area.addEventListener('mouseup', () => { tourPanning = false; area.style.cursor = 'grab'; });
-      area.addEventListener('mousemove', (e) => {
+      };
+
+      const onMove = (e) => {
         if (!tourPanning) return;
         e.preventDefault();
-        const x = e.pageX - area.offsetLeft;
-        const y = e.pageY - area.offsetTop;
+        const x = e.pageX || e.touches[0].pageX;
+        const y = e.pageY || e.touches[0].pageY;
         const walkX = (x - tourStartX) * 1.5;
         const walkY = (y - tourStartY) * 1.5;
         area.scrollLeft = tourScrollLeft - walkX;
         area.scrollTop = tourScrollTop - walkY;
-      });
+      };
+
+      const onUp = () => { tourPanning = false; area.style.cursor = 'grab'; };
+
+      area.addEventListener('mousedown', onDown);
+      area.addEventListener('touchstart', onDown, { passive: false });
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchend', onUp);
     }
 
     function renderTourContent(post) {
