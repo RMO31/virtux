@@ -887,6 +887,88 @@
       border-left: 3px solid #00f5ff;
     }
 
+    /* تحسين عرض الشجرة في لوحة الإدارة */
+    .bracket-container {
+      display: flex;
+      gap: 50px;
+      padding: 20px 0;
+      position: relative;
+    }
+
+    .bracket-round {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      position: relative;
+    }
+
+    .match-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      width: 220px;
+      margin: 15px 0;
+      position: relative;
+      transition: transform 0.2s;
+    }
+    .match-box:hover { transform: translateX(5px); border-color: #444; }
+
+    .match-p {
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .match-p:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .match-p.winner {
+      background: rgba(0, 245, 255, 0.1);
+      color: #00f5ff;
+    }
+
+    .match-p input {
+      width: 45px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      text-align: center;
+      border-radius: 4px;
+      font-size: 11px;
+      padding: 2px;
+    }
+
+    .tm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.94);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .tm-modal.active {
+      display: flex;
+    }
+
+    .tm-box {
+      background: #120000;
+      border: 1px solid #cc0000;
+      border-radius: 14px;
+      width: 95%;
+      max-width: 1200px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 20px;
+      position: relative;
+    }
+
     .bracket-container {
       display: flex;
       gap: 60px;
@@ -894,29 +976,6 @@
       min-width: max-content;
       transition: transform 0.2s ease-out;
       transform-origin: top right;
-    }
-
-    .rank-card {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 15px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-bottom: 10px;
-      transition: 0.3s;
-    }
-
-    .rank-icon {
-      font-size: 24px;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.3);
-      border-radius: 50%;
     }
 
     .bracket-round {
@@ -1012,33 +1071,6 @@
       outline: none;
     }
 
-    .tm-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.94);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(10px);
-    }
-
-    .tm-modal.active {
-      display: flex;
-    }
-
-    .tm-box {
-      background: #120000;
-      border: 1px solid #cc0000;
-      border-radius: 14px;
-      width: 95%;
-      max-width: 1200px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 20px;
-      position: relative;
-    }
-
     @media (max-width:768px) {
       .sidebar {
         width: 188px;
@@ -1114,19 +1146,17 @@
         </div>
         
         <div style="display:flex; gap:20px; align-items:flex-start;">
-          <!-- الجهة اليسرى: الشجرة (تأخذ أكبر حيز) -->
           <div id="tm-draw-preview" style="flex:1; background:rgba(255,255,255,0.015); border:1px solid #333; border-radius:12px; padding:15px; overflow-x:auto; min-height:500px; border-top: 3px solid #00f5ff;">
-            <!-- سيتم وضع الشجرة هنا -->
+            <!-- Bracket preview will be here -->
           </div>
           
-          <!-- الجهة اليمنى: قائمة اللاعبين (شريط جانبي) -->
           <div style="width:280px; background:rgba(0,0,0,0.4); border:1px solid #444; border-radius:12px; padding:15px; position:sticky; top:0;">
             <h4 style="color:#888; font-size:13px; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px; display:flex; justify-content:space-between;">
               <span>📋 المتنافسون</span>
               <span id="tm-draw-count-badge" style="background:#00f5ff; color:#000; padding:1px 6px; border-radius:10px; font-size:10px;">0</span>
             </h4>
             <div id="tm-draw-content" style="display:flex; flex-direction:column; gap:8px; max-height:500px; overflow-y:auto; padding-right:5px;">
-              <!-- سيتم وضع قائمة اللاعبين هنا -->
+              <!-- Player list will be here -->
             </div>
           </div>
         </div>
@@ -1160,7 +1190,11 @@
       </div>
 
       <div id="tm-finished" style="display:none; text-align:center;">
+        <h3 style="color:#4caf50; margin-bottom:20px;">🏁 انتهت البطولة!</h3>
         <div id="tm-rankings" style="max-width:600px; margin:0 auto; text-align:left;"></div>
+        <button class="btn-pub" onclick="reopenTournament()"
+          style="margin-top:20px; width:auto; padding:8px 20px; background:rgba(255,255,255,0.05); color:#aaa; border:1px solid #444;">♻️
+          إعادة فتح البطولة (تعديل النتائج)</button>
       </div>
     </div>
   </div>
@@ -1270,7 +1304,7 @@
 
     async function openTournamentManagement(postId, title) {
       currentTourId = postId;
-      setTourEntryMode('auto');
+      setTourEntryMode('auto'); // Reset to auto by default
       document.getElementById('tm-title').innerText = 'إدارة البطولة: ' + title;
       document.getElementById('tournamentManagementModal').classList.add('active');
 
@@ -1287,6 +1321,7 @@
 
         currentTourData = tourData;
         
+        // تحديث عدد اللاعبين المقبولين في شاشة الإعداد
         const { count: acceptedCount } = await supabaseClient.from('posts')
           .select('*', { count: 'exact', head: true })
           .eq('room', '_registrations')
@@ -1311,13 +1346,11 @@
       const draw = document.getElementById('tm-draw');
       const dash = document.getElementById('tm-dashboard');
       const finished = document.getElementById('tm-finished');
-      const nextRoundBtn = document.getElementById('tm-next-round-btn');
 
       setup.style.display = 'none';
       draw.style.display = 'none';
       dash.style.display = 'none';
       finished.style.display = 'none';
-      if (nextRoundBtn) nextRoundBtn.style.display = 'none';
 
       if (!currentTourData || !currentTourData.status) {
         setup.style.display = 'block';
@@ -1330,63 +1363,6 @@
       } else if (currentTourData.status === 'finished') {
         finished.style.display = 'block';
         renderRankings();
-      }
-    }
-
-    async function finishTournament() {
-      if (!confirm('🏁 هل أنت متأكد من إنهاء البطولة وإعلان النتائج النهائية؟')) return;
-
-      if (currentTourData.type === 'bracket') {
-        const rounds = currentTourData.matches;
-        if (rounds.length > 0) {
-          const finalRound = rounds[rounds.length - 1];
-          const finalMatch = finalRound[0];
-          if (finalMatch && finalMatch.winner) {
-            const winner = finalMatch.winner === finalMatch.p1?.id ? finalMatch.p1 : finalMatch.p2;
-            const second = finalMatch.winner === finalMatch.p1?.id ? finalMatch.p2 : finalMatch.p1;
-            
-            let third = [];
-            if (rounds.length >= 2) {
-              const semiFinals = rounds[rounds.length - 2];
-              semiFinals.forEach(m => {
-                if (m.winner) {
-                  const loser = m.winner === m.p1?.id ? m.p2 : m.p1;
-                  if (loser && loser.id !== 'bye') third.push(loser);
-                }
-              });
-            }
-
-            currentTourData.rankings = [
-              { ...winner, rank: 1 },
-              { ...second, rank: 2 },
-              ...third.map(p => ({ ...p, rank: 3 }))
-            ];
-          }
-        }
-      } else if (currentTourData.type === 'league') {
-        currentTourData.rankings = [...currentTourData.league]
-          .sort((a, b) => b.pts - a.pts || (b.w - a.w))
-          .slice(0, 5)
-          .map((p, idx) => ({ ...p, rank: idx + 1 }));
-      }
-
-      currentTourData.status = 'finished';
-      await saveTournamentData();
-      renderTourDashboard();
-    }
-
-    function adjustBracketZoom(delta) {
-      bracketZoomScale = Math.max(0.3, Math.min(2.0, bracketZoomScale + delta));
-      const root = document.getElementById('bracket-root');
-      if (root) {
-        root.style.transform = `scale(${bracketZoomScale})`;
-      }
-    }
-    function resetBracketZoom() {
-      bracketZoomScale = 1.0;
-      const root = document.getElementById('bracket-root');
-      if (root) {
-        root.style.transform = `scale(1)`;
       }
     }
 
@@ -1544,12 +1520,12 @@
       const modal = document.createElement('div');
       modal.id = 'bulkEntryModal';
       modal.className = 'tm-modal active';
-      modal.style.zIndex = '10001';
+      modal.style.zIndex = '10001'; // أعلى من المودال الأساسي
       modal.innerHTML = `
         <div class="tm-box" style="max-width:450px; padding:25px; background:#0a0a0a; border:1px solid #333;">
           <h3 style="color:#00f5ff; margin-bottom:15px; font-size:18px;">➕ إضافة لاعبين (بالجملة)</h3>
-          <p style="color:#888; font-size:12px; margin-bottom:12px; line-height:1.4;">أدخل أسماء اللاعبين (اسم واحد في كل سطر).</p>
-          <textarea id="bulkNames" placeholder="مثلاً:\nلاعب 1\nلاعب 2" style="width:100%; height:280px; background:#111; border:1px solid #444; color:#fff; padding:12px; border-radius:10px; font-family:'Outfit', sans-serif; resize:none; font-size:13px; line-height:1.6;"></textarea>
+          <p style="color:#888; font-size:12px; margin-bottom:12px; line-height:1.4;">أدخل أسماء اللاعبين (اسم واحد في كل سطر).<br>يمكنك نسخ ولصق قائمة كاملة من ملف خارجي.</p>
+          <textarea id="bulkNames" placeholder="مثلاً:\nلاعب 1\nلاعب 2\nلاعب 3" style="width:100%; height:280px; background:#111; border:1px solid #444; color:#fff; padding:12px; border-radius:10px; font-family:'Outfit', sans-serif; resize:none; font-size:13px; line-height:1.6;"></textarea>
           <div style="display:flex; gap:10px; margin-top:20px;">
             <button onclick="processBulkEntry()" style="flex:2; background:#00f5ff; color:#000; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer; font-size:14px; transition:0.3s;">إضافة القائمة كاملة</button>
             <button onclick="this.closest('.tm-modal').remove()" style="flex:1; background:#333; color:#fff; border:none; padding:12px; border-radius:8px; cursor:pointer; font-size:14px;">إلغاء</button>
@@ -1579,6 +1555,10 @@
       renderDrawView();
     }
 
+    function addManualPlayer() {
+      openBulkEntry();
+    }
+
     function removeParticipantFromDraw(idx) {
       currentTourData.participants.splice(idx, 1);
       renderDrawView();
@@ -1597,7 +1577,14 @@
         btn.style.opacity = '0.5';
       }
 
-      if (!confirm('هل أنت متأكد من توزيع اللاعبين وبدء البطولة الآن؟')) return;
+      if (!confirm('هل أنت متأكد من توزيع اللاعبين وبدء البطولة الآن؟ سيختفي زر البدء بعد هذه الخطوة.')) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '🚀 بدء البطولة الآن';
+          btn.style.opacity = '1';
+        }
+        return;
+      }
 
       if (!currentTourData.participants || currentTourData.participants.length < 2) {
         alert('يجب أن يكون هناك لاعبين على الأقل لبدء البطولة.');
@@ -1610,10 +1597,11 @@
       }
 
       const players = currentTourData.participants;
+      const type = currentTourData.type;
       currentTourData.status = 'ongoing';
       currentTourData.startDate = new Date().toISOString();
 
-      if (currentTourData.type === 'bracket') {
+      if (type === 'bracket') {
         let firstRound = [];
         for (let i = 0; i < players.length; i += 2) {
           firstRound.push({
@@ -1626,8 +1614,23 @@
           });
         }
         currentTourData.matches = [firstRound];
-      } else if (currentTourData.type === 'league') {
-        currentTourData.league = players.map(p => ({ ...p, p: 0, w: 0, d: 0, l: 0, pts: 0 }));
+      } else if (type === 'league') {
+        currentTourData.league = players.map(p => ({
+          ...p,
+          p: 0, w: 0, d: 0, l: 0, pts: 0
+        }));
+      } else if (type === 'groups_bracket') {
+        const numGroups = parseInt(prompt('عدد المجموعات؟', '2')) || 2;
+        const advPerGroup = parseInt(prompt('عدد المتأهلين من كل مجموعة؟', '2')) || 2;
+        currentTourData.groups = [];
+        currentTourData.advPerGroup = advPerGroup;
+
+        for (let i = 0; i < numGroups; i++) {
+          currentTourData.groups.push({ name: `المجموعة ${i + 1}`, players: [] });
+        }
+        players.forEach((p, idx) => {
+          currentTourData.groups[idx % numGroups].players.push({ ...p, p: 0, w: 0, d: 0, l: 0, pts: 0 });
+        });
       }
 
       await saveTournamentData();
@@ -1635,14 +1638,31 @@
     }
 
     async function resetTournament() {
-      if (!confirm('⚠️ تحذير: سيتم حذف جميع النتائج والقرعة.')) return;
+      if (!confirm('⚠️ تحذير: سيتم حذف جميع النتائج والمباريات الحالية والعودة لمرحلة الإعداد. هل أنت متأكد؟')) return;
       currentTourData = null;
+      // تحديث قاعدة البيانات بمسح المحتوى وإرجاع الحالة لـ open إذا كان هناك حقل حالة منفصل، 
+      // لكن هنا الحالة مخزنة داخل الـ JSON (content). سنقوم بمسح الـ content.
       try {
         await supabaseClient.from('posts').update({ content: null }).eq('id', currentTourId);
         alert('✅ تم إعادة ضبط البطولة بنجاح.');
         renderTourDashboard();
       } catch (e) {
         alert('❌ فشل إعادة الضبط: ' + e.message);
+      }
+    }
+
+    function adjustBracketZoom(delta) {
+      bracketZoomScale = Math.max(0.3, Math.min(2.0, bracketZoomScale + delta));
+      const root = document.getElementById('bracket-root');
+      if (root) {
+        root.style.transform = `scale(${bracketZoomScale})`;
+      }
+    }
+    function resetBracketZoom() {
+      bracketZoomScale = 1.0;
+      const root = document.getElementById('bracket-root');
+      if (root) {
+        root.style.transform = `scale(1)`;
       }
     }
 
@@ -1687,101 +1707,320 @@
         }
         document.getElementById('tm-next-round-btn').style.display = 'block';
         container.innerHTML = html + `</div></div>`;
+      } else if (currentTourData.type === 'league') {
+        let html = `<table class="league-table">
+      <thead>
+        <tr><th>اللاعب</th><th>لعب</th><th>فوز</th><th>تعادل</th><th>خسارة</th><th>نقاط</th><th>إجراء</th></tr>
+      </thead>
+      <tbody>`;
+        currentTourData.league.forEach((p, idx) => {
+          html += `<tr>
+        <td>${escapeHtml(p.name)}</td>
+        <td><input type="number" value="${p.p}" onchange="updateLeagueStat(${idx}, 'p', this.value)"></td>
+        <td><input type="number" value="${p.w}" onchange="updateLeagueStat(${idx}, 'w', this.value)"></td>
+        <td><input type="number" value="${p.d}" onchange="updateLeagueStat(${idx}, 'd', this.value)"></td>
+        <td><input type="number" value="${p.l}" onchange="updateLeagueStat(${idx}, 'l', this.value)"></td>
+        <td><input type="number" value="${p.pts}" onchange="updateLeagueStat(${idx}, 'pts', this.value)"></td>
+        <td><button class="btn-del" onclick="removeFromLeague(${idx})" style="padding:2px 8px; font-size:10px;">🗑️</button></td>
+      </tr>`;
+        });
+        html += `</tbody></table>
+    <button class="btn-pub" onclick="sortLeague()" style="margin-top:15px; width:auto; font-size:12px; background:#ffd2b8; color:#000;">🔄 ترتيب حسب النقاط</button>`;
+        container.innerHTML = html;
+      } else if (currentTourData.type === 'groups_bracket') {
+        if (currentTourData.matches && currentTourData.matches.length > 0) {
+          // عرض الشجرة بعد انتهاء المجموعات
+          let html = `<h4 style="color:#ffd2b8; margin-bottom:15px;">🌳 المرحلة الإقصائية</h4><div style="display:flex; gap:40px;">`;
+          currentTourData.matches.forEach((round, rIndex) => {
+            html += `<div class="bracket-round"><h4 style="color:#00f5ff; font-size:12px; margin-bottom:10px;">الجولة ${rIndex + 1}</h4>`;
+            round.forEach((m, mIndex) => {
+              html += `<div class="match-box">
+             <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)">
+               <span>${escapeHtml(m.p1?.name || '???')}</span>
+               <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()">
+             </div>
+             <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)">
+               <span>${escapeHtml(m.p2?.name || '???')}</span>
+               <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()">
+             </div>
+           </div>`;
+            });
+            html += `</div>`;
+          });
+          html += `<div style="display:flex; align-items:center;"><button class="btn-pub" onclick="generateNextRound()" style="background:rgba(0,245,255,0.1); color:#00f5ff; border:1px dashed #00f5ff; width:120px; font-size:11px;">➕ توليد الجولة التالية</button></div></div>`;
+          container.innerHTML = html;
+        } else {
+          // عرض المجموعات
+          let html = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap:20px;">`;
+          currentTourData.groups.forEach((g, gIdx) => {
+            html += `<div class="card" style="margin:0; border:1px solid #333;">
+          <h4 style="color:#ffd2b8; margin-bottom:10px;">${g.name}</h4>
+          <table class="league-table" style="font-size:11px;">
+            <thead><tr><th>اللاعب</th><th>لعب</th><th>فوز</th><th>ن</th><th>إجراء</th></tr></thead>
+            <tbody>`;
+            g.players.forEach((p, pIdx) => {
+              html += `<tr>
+            <td>${escapeHtml(p.name)}</td>
+            <td><input type="number" value="${p.p}" style="width:30px;" onchange="updateGroupStat(${gIdx}, ${pIdx}, 'p', this.value)"></td>
+            <td><input type="number" value="${p.w}" style="width:30px;" onchange="updateGroupStat(${gIdx}, ${pIdx}, 'w', this.value)"></td>
+            <td><input type="number" value="${p.pts}" style="width:30px;" onchange="updateGroupStat(${gIdx}, ${pIdx}, 'pts', this.value)"></td>
+            <td><button class="btn-del" onclick="removeFromGroup(${gIdx}, ${pIdx})" style="padding:2px 6px;">🗑️</button></td>
+          </tr>`;
+            });
+            html += `</tbody></table></div>`;
+          });
+          html += `</div>
+      <button class="btn-pub" onclick="startEliminationFromGroups()" style="margin-top:20px; background:#ff9800; color:#000; width:auto; padding:10px 25px;">🚀 إنهاء المجموعات وبدء التصفيات (الشجرة)</button>`;
+          container.innerHTML = html;
+        }
       }
     }
 
-    function setMatchWinner(r, m, pIdx) {
-      const match = currentTourData.matches[r][m];
-      const player = match['p' + pIdx];
-      if (!player || player.id === 'bye' || player.id === 'placeholder') return;
-      match.winner = (match.winner === player.id) ? null : player.id;
+    function updateGroupStat(gIdx, pIdx, key, val) {
+      currentTourData.groups[gIdx].players[pIdx][key] = parseInt(val) || 0;
+    }
+
+    function removeFromGroup(gIdx, pIdx) {
+      if (!confirm('حذف هذا اللاعب من المجموعة؟')) return;
+      currentTourData.groups[gIdx].players.splice(pIdx, 1);
+      renderMatchView();
+    }
+
+    function removeFromLeague(idx) {
+      if (!confirm('حذف هذا اللاعب من الدوري؟')) return;
+      currentTourData.league.splice(idx, 1);
+      renderMatchView();
+    }
+
+    function startEliminationFromGroups() {
+      if (!confirm('هل انتهت مباريات المجموعات؟ سيتم تأهيل المتصدرين وبناء الشجرة الإقصائية.')) return;
+
+      let advancers = [];
+      currentTourData.groups.forEach(g => {
+        // ترتيب المجموعة
+        g.players.sort((a, b) => b.pts - a.pts || b.w - a.w);
+        // أخذ المتأهلين
+        advancers.push(...g.players.slice(0, currentTourData.advPerGroup));
+      });
+
+      if (advancers.length < 2) { alert('عدد المتأهلين قليل جداً!'); return; }
+
+      // بناء الجولة الأولى من الشجرة
+      let firstRound = [];
+      for (let i = 0; i < advancers.length; i += 2) {
+        firstRound.push({
+          id: 'r1-m' + (i / 2),
+          p1: advancers[i],
+          p2: advancers[i + 1] || { name: 'BYE', id: 'bye' },
+          score1: 0,
+          score2: 0,
+          winner: (advancers[i + 1] ? null : advancers[i].id)
+        });
+      }
+      currentTourData.matches = [firstRound];
       renderMatchView();
     }
 
     function updateMatchScore(r, m, pIdx, val) {
       const match = currentTourData.matches[r][m];
       match['score' + pIdx] = parseInt(val) || 0;
+      
+      // تلقائياً حدد الفائز بناءً على النتيجة إذا كانت واضحة
+      if (match.score1 > match.score2) match.winner = match.p1.id;
+      else if (match.score2 > match.score1) match.winner = match.p2.id;
+      
+      renderMatchView();
+    }
+
+    function setMatchWinner(r, m, pIdx) {
+      const match = currentTourData.matches[r][m];
+      const player = match['p' + pIdx];
+      if (!player || player.id === 'bye') return;
+      match.winner = (match.winner === player.id) ? null : player.id;
       renderMatchView();
     }
 
     function generateNextRound() {
       const lastRound = currentTourData.matches[currentTourData.matches.length - 1];
-      let winners = lastRound.map(m => m.winner === m.p1?.id ? m.p1 : (m.winner === m.p2?.id ? m.p2 : null));
-      if (winners.includes(null)) { alert('يرجى تحديد الفائزين أولاً'); return; }
+      if (lastRound.length === 1 && lastRound[0].winner) {
+        alert('تم تحديد الفائز بالبطولة! يمكنك الضغط على "إنهاء البطولة".');
+        return;
+      }
+
+      let winners = lastRound.map(m => {
+        if (m.winner === m.p1?.id) return m.p1;
+        if (m.winner === m.p2?.id) return m.p2;
+        return null;
+      });
+
+      if (winners.includes(null)) {
+        alert('يرجى تحديد جميع الفائزين في الجولة الحالية أولاً (اضغط على اسم اللاعب الفائز).');
+        return;
+      }
 
       let nextRound = [];
       for (let i = 0; i < winners.length; i += 2) {
-        nextRound.push({ id: `r${currentTourData.matches.length + 1}-m${i/2}`, p1: winners[i], p2: winners[i+1] || { name: 'BYE', id: 'bye' }, score1: 0, score2: 0, winner: null });
+        nextRound.push({
+          id: `r${currentTourData.matches.length + 1}-m${i / 2}`,
+          p1: winners[i],
+          p2: winners[i + 1] || { name: 'BYE', id: 'bye' },
+          score1: 0,
+          score2: 0,
+          winner: (winners[i + 1] ? null : winners[i].id)
+        });
       }
+
       currentTourData.matches.push(nextRound);
+      renderMatchView();
+    }
+
+    function updateLeagueStat(idx, key, val) {
+      currentTourData.league[idx][key] = parseInt(val) || 0;
+    }
+
+    function sortLeague() {
+      currentTourData.league.sort((a, b) => b.pts - a.pts || (b.w - a.w));
       renderMatchView();
     }
 
     async function saveTournamentData() {
       try {
-        await supabaseClient.from('posts').update({ content: JSON.stringify(currentTourData) }).eq('id', currentTourId);
-        console.log('Saved.');
-      } catch (e) { alert(e.message); }
+        const { error } = await supabaseClient.from('posts')
+          .update({ content: JSON.stringify(currentTourData) })
+          .eq('id', currentTourId);
+
+        if (error) throw error;
+        console.log('Saved tournament data.');
+      } catch (e) {
+        alert('فشل حفظ البيانات: ' + e.message);
+      }
+    }
+
+    async function finishTournament() {
+      if (!confirm('هل أنت متأكد من إنهاء البطولة؟ سيتم إغلاق التعديل وعرض النتائج النهائية.')) return;
+
+      currentTourData.status = 'finished';
+
+      if (currentTourData.type === 'bracket') {
+        let rank = [];
+        const lastRound = currentTourData.matches[currentTourData.matches.length - 1];
+        if (lastRound[0].winner) {
+          const winner = lastRound[0].winner === lastRound[0].p1.id ? lastRound[0].p1 : lastRound[0].p2;
+          const loser = lastRound[0].winner === lastRound[0].p1.id ? lastRound[0].p2 : lastRound[0].p1;
+          rank.push(winner);
+          rank.push(loser);
+        }
+        currentTourData.rankings = rank;
+      } else {
+        sortLeague();
+        currentTourData.rankings = currentTourData.league.slice(0, 5);
+      }
+
+      await saveTournamentData();
+      renderTourDashboard();
     }
 
     function renderRankings() {
-      const container = document.getElementById('tm-finished');
-      let rankingsHtml = '';
-      if (currentTourData.rankings) {
-        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-        rankingsHtml = `<div style="margin-top:30px; border-top:1px solid #333; padding-top:20px;">
-          <h3 style="color:#ffd2b8; margin-bottom:20px; text-align:center;">🏆 الترتيب النهائي للبطولة</h3>
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">`;
-        currentTourData.rankings.forEach((p, idx) => {
-          rankingsHtml += `
-            <div class="rank-card">
-              <div class="rank-icon">${medals[idx] || (idx + 1)}</div>
-              <div>
-                <div style="font-weight:bold; color:#fff;">${escapeHtml(p.name)}</div>
-                <div style="font-size:11px; color:#888;">المركز ${p.rank}</div>
-              </div>
-            </div>`;
-        });
-        rankingsHtml += `</div></div>`;
-      }
+      const container = document.getElementById('tm-rankings');
+      let html = `<div style="background:rgba(0,245,255,0.05); padding:20px; border-radius:12px; border:1px solid #30363d;">`;
 
-      container.innerHTML = `
-        <div style="text-align:center; padding:40px;">
-          <div style="font-size:60px; margin-bottom:20px;">🎉</div>
-          <h2 style="color:#fff; margin-bottom:10px;">انتهت البطولة بنجاح!</h2>
-          <p style="color:#aaa;">تم إعلان النتائج النهائية وحفظها في الأرشيف.</p>
-          ${rankingsHtml}
-          <div style="margin-top:30px;">
-            <button class="btn-pub" onclick="resetTournament()" style="width:auto; padding:10px 25px; background:#444;">♻️ إعادة فتح البطولة (تعديل)</button>
-          </div>
-        </div>
-      `;
+      if (!currentTourData.rankings || currentTourData.rankings.length === 0) {
+        html += `<p style="color:#888;">لم يتم تحديد فائزين بعد.</p>`;
+      } else {
+        currentTourData.rankings.forEach((p, idx) => {
+          const icons = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+          html += `<div class="ranking-item">
+        <div class="ranking-rank">${icons[idx] || (idx + 1)}</div>
+        <div class="ranking-name" style="font-weight:700;">${escapeHtml(p.name)}</div>
+      </div>`;
+        });
+      }
+      html += `</div>`;
+      container.innerHTML = html;
     }
 
-    // ==================== دوال عامة ومساندة ====================
+    async function reopenTournament() {
+      if (!confirm('إعادة فتح البطولة؟')) return;
+      currentTourData.status = 'ongoing';
+      await saveTournamentData();
+      renderTourDashboard();
+    }
+
+    // ==================== نظام تتبع النشاط التلقائي (بدون SQL) ====================
+    async function logActivity(type) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const storageKey = `virtux_last_${type}_${today}`;
+        if (localStorage.getItem(storageKey)) return;
+
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const userId = session?.user?.id || null;
+
+        let visitorId = localStorage.getItem('virtux_visitor_id');
+        if (!visitorId) {
+          visitorId = 'v_' + Math.random().toString(36).substring(2, 15);
+          localStorage.setItem('virtux_visitor_id', visitorId);
+        }
+
+        const payload = {
+          room: '_traffic',
+          tag: type,
+          description: today,
+          title: userId || visitorId,
+          user_id: userId,
+          icon: '📊'
+        };
+
+        const { data: existing } = await supabaseClient.from('posts')
+          .select('id').eq('room', '_traffic').eq('tag', type).eq('description', today).eq('title', payload.title).limit(1);
+
+        if (!existing || existing.length === 0) {
+          await supabaseClient.from('posts').insert(payload);
+        }
+        localStorage.setItem(storageKey, 'true');
+      } catch (e) {
+        console.debug('Traffic log skipped:', e.message);
+      }
+    }
+
+    // تسجيل زيارة عند دخول لوحة التحكم
+    logActivity('visit');
+
+    async function resetTournamentOnCard(postId) {
+      if (!confirm('⚠️ هل أنت متأكد من إعادة ضبط هذه البطولة؟ سيتم حذف جميع النتائج والقرعة.')) return;
+      try {
+        const { error } = await supabaseClient.from('posts').update({ content: null }).eq('id', postId);
+        if (error) throw error;
+        alert('✅ تم إعادة ضبط البطولة بنجاح.');
+        loadContentPage('tournaments');
+      } catch (e) {
+        alert('❌ فشل إعادة الضبط: ' + e.message);
+      }
+    }
+
     function escapeHtml(str) {
       if (!str && str !== 0) return '';
       return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m);
     }
 
-    // دوال الأدمين الأساسية (تتضمن تسجيل الدخول، بناء الصفحات، تحميل البيانات)
-    function buildPages() {
-      let main = document.getElementById('mainContainer');
-      main.innerHTML = '';
-      let rooms = ['dashboard', 'home', 'live', 'tournaments', 'registrations', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'reels', 'projects', 'contact', 'ranks', 'trash'];
-      rooms.forEach(room => {
-        let div = document.createElement('div');
-        div.className = 'ap';
-        div.id = `ap-${room}`;
-        div.innerHTML = `<div class="page-title">${room}</div><div id="content-${room}">جاري التحميل...</div>`;
-        main.appendChild(div);
-      });
+    // ==================== تسجيل الدخول ====================
+    async function checkConn() {
+      try {
+        let res = await fetch(`${SUPABASE_URL}/rest/v1/posts?limit=1`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+        let el = document.getElementById('connStatus');
+        if (res.ok) { el.textContent = '✅ متصل'; el.className = 'conn'; }
+        else { el.textContent = '❌ خطأ'; el.className = 'conn fail'; }
+      } catch (e) {
+        document.getElementById('connStatus').textContent = '❌ لا إنترنت';
+        document.getElementById('connStatus').className = 'conn fail';
+      }
     }
 
     function login() {
       if (document.getElementById('pw').value === ADMIN_PASSWORD) {
         document.getElementById('loginPage').style.display = 'none';
         document.getElementById('adminPage').style.display = 'flex';
+        checkConn();
         buildPages();
         showPage('dashboard');
       } else {
@@ -1790,7 +2029,31 @@
     }
     function logout() { window.location.reload(); }
 
+    // ==================== بناء الصفحات ====================
+    function buildPages() {
+      let main = document.getElementById('mainContainer');
+      main.innerHTML = '';
+      let rooms = ['dashboard', 'home', 'live', 'tournaments', 'registrations', 'highlights', 'subscribers', 'gaming-news', 'youtube-news', 'yt-channels', 'yt-videos', 'reels', 'projects', 'contact', 'ranks', 'trash'];
+      rooms.forEach(room => {
+        let div = document.createElement('div');
+        div.className = 'ap';
+        div.id = `ap-${room}`;
+        div.innerHTML = `<div class="page-title">${getRoomTitle(room)}</div><div id="content-${room}">جاري التحميل...</div>`;
+        main.appendChild(div);
+      });
+    }
+    function getRoomTitle(room) {
+      let titles = {
+        dashboard: '📊 Dashboard', home: '🏠 إدارة الصفحة الرئيسية', live: '🔴 Live', tournaments: '🏆 Tournaments', highlights: '🎬 Highlights',
+        subscribers: '👥 Subscribers', 'gaming-news': '📰 Gaming News', 'youtube-news': '▶️ Youtube News',
+        'yt-channels': '📺 Youtube Channels', 'yt-videos': '🎬 Youtube Videos', reels: '🎬 Reels',
+        projects: '🌐 Collaboration', contact: '📞 Contact', ranks: '💎 الميزات والرتب', trash: '🗑️ سلة المحذوفات (البوت)',
+        registrations: '📋 طلبات التسجيل'
+      };
+      return titles[room] || room;
+    }
     function showPage(id) {
+      window.currentContentRoom = id;
       document.querySelectorAll('.ap').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
       let target = document.getElementById(`ap-${id}`);
@@ -1798,16 +2061,343 @@
       let btn = document.getElementById(`sb-${id}`);
       if (btn) btn.classList.add('active');
       if (id === 'dashboard') loadDashboard();
-      else if (id === 'tournaments') loadContentPage('tournaments');
+      else if (id === 'contact') loadContact();
+      else if (id === 'ranks') loadRanks();
+      else if (id === 'trash') loadTrashRoom();
       else if (id === 'registrations') loadRegistrations();
-      else if (id === 'subscribers') loadSubscribersAdmin();
+      else loadContentPage(id);
+    }
+    async function loadContact() {
+      let container = document.getElementById('content-contact');
+      container.innerHTML = '<div class="loading">جاري تحميل بيانات الاتصال...</div>';
+      try {
+        let { data, error } = await supabaseClient.from('posts').select('*').eq('room', '_contact').single();
+        let discord = '', email = '', whatsapp = '';
+        if (data) {
+          discord = data.title || '';
+          email = data.description || '';
+          whatsapp = data.tag || '';
+        }
+
+        container.innerHTML = `
+          <div class="card">
+            <h3>📢 إدارة معلومات الاتصال</h3>
+            <p style="font-size:12px; color:#888; margin-bottom:15px;">هذه المعلومات ستظهر في صفحة "تواصل معنا" في الموقع الرئيسي.</p>
+            <div class="fg"><label>رابط ديسكورد:</label><input class="full" id="contact-discord" value="${escapeHtml(discord)}" placeholder="https://discord.gg/..."></div>
+            <div class="fg"><label>البريد الإلكتروني:</label><input class="full" id="contact-email" value="${escapeHtml(email)}" placeholder="example@domain.com"></div>
+            <div class="fg"><label>رقم واتساب (اختياري):</label><input class="full" id="contact-whatsapp" value="${escapeHtml(whatsapp)}" placeholder="+213..."></div>
+            <button class="btn-pub" onclick="saveContact()">💾 حفظ التغييرات</button>
+          </div>
+        `;
+      } catch (e) {
+        container.innerHTML = '<div class="empty">خطأ في التحميل، سيتم إنشاء بيانات جديدة عند الحفظ.</div>';
+        // Show empty form anyway
+        container.innerHTML += `
+          <div class="card">
+            <h3>📢 إدارة معلومات الاتصال</h3>
+            <div class="fg"><label>رابط ديسكورد:</label><input class="full" id="contact-discord" placeholder="https://discord.gg/..."></div>
+            <div class="fg"><label>البريد الإلكتروني:</label><input class="full" id="contact-email" placeholder="example@domain.com"></div>
+            <div class="fg"><label>رقم واتساب (اختياري):</label><input class="full" id="contact-whatsapp" placeholder="+213..."></div>
+            <button class="btn-pub" onclick="saveContact()">💾 حفظ التغييرات</button>
+          </div>
+        `;
+      }
     }
 
+    async function saveContact() {
+      const discord = document.getElementById('contact-discord').value.trim();
+      const email = document.getElementById('contact-email').value.trim();
+      const whatsapp = document.getElementById('contact-whatsapp').value.trim();
+
+      try {
+        // نستخدم upsert بناءً على الـ room ليكون منشورا فريدا
+        // أولا نبحث عن المنشور إذا كان موجودا لتحديثه أو إنشاء واحد جديد
+        let { data: existing } = await supabaseClient.from('posts').select('id').eq('room', '_contact').single();
+
+        let payload = {
+          title: discord,
+          description: email,
+          tag: whatsapp,
+          room: '_contact',
+          content: 'Contact Information Page Data'
+        };
+
+        let error;
+        if (existing) {
+          let { error: err } = await supabaseClient.from('posts').update(payload).eq('id', existing.id);
+          error = err;
+        } else {
+          let { error: err } = await supabaseClient.from('posts').insert(payload);
+          error = err;
+        }
+
+        if (error) throw error;
+        alert('✅ تم حفظ معلومات الاتصال بنجاح.');
+        loadContact();
+      } catch (e) {
+        alert('❌ فشل الحفظ: ' + e.message);
+      }
+    }
+
+    // ==================== Dashboard ====================
     async function loadDashboard() {
-        const container = document.getElementById('content-dashboard');
-        container.innerHTML = "📊 لوحة التحكم الرئيسية.";
+      let container = document.getElementById('content-dashboard');
+      container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+      try {
+        let { data: users, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        if (!users) users = [];
+        let total = users.length;
+        function getRoles(u) {
+          let r = [];
+          if (Array.isArray(u.roles)) r = u.roles;
+          else if (u.role) r = [u.role];
+          if (!r || r.length === 0) r = ['user'];
+          return [...new Set(r.filter(x => x && typeof x === 'string').map(x => x.toLowerCase().trim()))];
+        }
+
+        let counts = {
+          moderator: 0,
+          youtuber_vip: 0,
+          youtuber: 0,
+          vip: 0,
+          member: 0,
+          user: 0,
+          punished: 0
+        };
+
+        users.forEach(u => {
+          const r = getRoles(u);
+          // كل المسجلين هم User برتبة أساسية
+          counts.user++;
+
+          // عد الرتب الأخرى بشكل مستقل (غير حصري)
+          if (r.includes('punished')) counts.punished++;
+          if (r.includes('moderator')) counts.moderator++;
+          if (r.includes('youtuber_vip')) counts.youtuber_vip++;
+          if (r.includes('youtuber')) counts.youtuber++;
+          if (r.includes('vip')) counts.vip++;
+          if (r.includes('member')) counts.member++;
+        });
+
+        let today = new Date().toISOString().split('T')[0];
+        let { data: traffic } = await supabaseClient.from('posts').select('tag, title').eq('room', '_traffic').eq('description', today);
+        let dailyVisitors = traffic ? new Set(traffic.filter(t => t.tag === 'visit' && t.title).map(t => t.title)).size : 0;
+
+        let { data: postCounts } = await supabaseClient.from('posts').select('room');
+        let totalVideos = postCounts ? postCounts.filter(p => p.room === 'yt-videos').length : 0;
+        let totalReels = postCounts ? postCounts.filter(p => p.room === 'reels').length : 0;
+        let totalLive = postCounts ? postCounts.filter(p => p.room === 'live').length : 0;
+        let totalChannels = postCounts ? postCounts.filter(p => p.room === 'yt-channels').length : 0;
+
+        let todayStr = new Date().toISOString().split('T')[0];
+        let todayQuota = localStorage.getItem(`yt_quota_${todayStr}`) || '0';
+
+        let statsHtml = `<div class="stats-grid">
+      <div class="stat-card" style="border-bottom:3px solid #00ff88;"><div class="stat-number">${dailyVisitors}</div><div class="stat-label">🌐 زوار اليوم</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #ff3333; background:rgba(255,0,0,0.05);">
+        <div class="stat-number" id="yt-quota-stat">${todayQuota}</div>
+        <div class="stat-label">📊 استهلاك API اليوم</div>
+        <div style="font-size:9px; color:#888; margin-top:2px;">من أصل 10,000 نقطة</div>
+      </div>
+      <div class="stat-card" style="border-bottom:3px solid #00bfff;"><div class="stat-number">${totalVideos}</div><div class="stat-label">🎬 الفيديوهات</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #ff44aa;"><div class="stat-number">${totalReels}</div><div class="stat-label">🎬 Reels</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #ff9800;"><div class="stat-number">${totalLive}</div><div class="stat-label">🔴 البثوث</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #aa55ff;"><div class="stat-number">${totalChannels}</div><div class="stat-label">📺 القنوات</div></div>
+      <div class="stat-card" style="border-bottom:3px solid #aabbcc;"><div class="stat-number">${counts.user}</div><div class="stat-label">👤 إجمالي المستخدمين</div></div>
+      
+      <div class="stat-card" style="border-bottom:2px solid #ff00ff;"><div class="stat-number" style="color:#ff00ff">${counts.moderator}</div><div class="stat-label">🛠️ مراقبين</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff4444;"><div class="stat-number" style="color:#ff4444">${counts.youtuber_vip}</div><div class="stat-label">⭐ Youtuber VIP</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff7777;"><div class="stat-number" style="color:#ff7777">${counts.youtuber}</div><div class="stat-label">🎬 Youtubers</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #d4e800;"><div class="stat-number" style="color:#d4e800">${counts.vip}</div><div class="stat-label">👑 VIP Members</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #00d9ff;"><div class="stat-number" style="color:#00d9ff">${counts.member}</div><div class="stat-label">🏅 Members</div></div>
+      <div class="stat-card" style="border-bottom:2px solid #ff3333;"><div class="stat-number" style="color:#ff3333">${counts.punished}</div><div class="stat-label">🚫 معاقبين</div></div>
+    </div>`;
+
+        let activityHtml = `<div class="card"><h3>⚡ النشاط الأخير</h3>`;
+        // جلب النشاط مع محاولة جلب اسم المستخدم والصورة إذا وجدت
+        let { data: recentTraffic, error: trafficErr } = await supabaseClient.from('posts')
+          .select('*, profiles(username, avatar_url)')
+          .eq('room', '_traffic')
+          .order('id', { ascending: false })
+          .limit(15);
+
+        if (trafficErr) console.error('Traffic Fetch Error:', trafficErr);
+
+        if (recentTraffic && recentTraffic.length) {
+          activityHtml += `<div class="posts-list">` + recentTraffic.map(act => {
+            // التعامل مع احتمال أن يكون profiles مصفوفة أو كائن مفرد
+            const profile = Array.isArray(act.profiles) ? act.profiles[0] : act.profiles;
+            const username = profile?.username || 'زائر';
+            const avatar = profile?.avatar_url;
+            const time = act.created_at ? new Date(act.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+            const typeIcon = act.tag === 'login' ? '🔑' : '🌐';
+            const actionText = act.tag === 'login' ? 'سجل دخوله' : 'زار الموقع';
+            const iconHtml = avatar ? `<div style="width:24px; height:24px; border-radius:50%; overflow:hidden; display:inline-block; vertical-align:middle; border:1px solid rgba(255,255,255,0.1);"><img src="${avatar}" style="width:100%; height:100%; object-fit:cover; transform:scale(1.2);" onerror="this.parentElement.style.display='none'; this.parentElement.nextElementSibling.style.display='inline-block';"></div><span style="display:none; font-size:16px;">${typeIcon}</span>` : `<span style="font-size:16px;">${typeIcon}</span>`;
+
+            return `
+          <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12.5px; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              ${iconHtml}
+              <span><strong>${escapeHtml(username)}</strong> ${actionText}</span>
+            </div>
+            <span style="color:#666; font-family:monospace; font-size:11px;">${time}</span>
+          </div>`;
+          }).join('') + `</div>`;
+        } else {
+          activityHtml += '<div class="empty" style="padding:40px;">لا يوجد نشاط مسجل بعد اليوم.</div>';
+        }
+        activityHtml += `</div>`;
+
+        container.innerHTML = statsHtml + activityHtml;
+      } catch (e) { container.innerHTML = '<div class="empty">خطأ في التحميل</div>'; console.error(e); }
+    }
+    async function approvePayment(reqId, userId, planKey, expiry = null) {
+      if (!confirm('هل تريد قبول هذا الطلب وتفعيله؟')) return;
+      try {
+        let { error } = await supabaseClient.from('payment_requests').update({ status: 'approved' }).eq('id', reqId);
+        if (error) throw error;
+
+        if (userId && userId !== 'null' && userId !== 'undefined') {
+          let success = await toggleRole(userId, planKey, true, expiry);
+          if (success) {
+            alert('✅ تم قبول الطلب وتفعيل الرتبة بنجاح.');
+          } else {
+            alert('⚠️ تم قبول الطلب ولكن فشل تفعيل الرتبة. قم بتفعيلها يدوياً.');
+          }
+        } else {
+          alert('✅ تم قبول الطلب بنجاح (لا يوجد User ID).');
+        }
+        let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
+        if (currentPage === 'ranks') loadRanks();
+        else loadDashboard();
+      } catch (e) {
+        alert('❌ حدث خطأ: ' + e.message);
+      }
     }
 
+    async function manualMigrateReels() {
+      if (!confirm('هل تريد نقل جميع الفيديوهات القصيرة (Shorts/Reels) من غرفة الفيديوهات إلى الغرفة الجديدة؟\n(سيتم فحص مدة الفيديوهات لضمان الدقة)')) return;
+      try {
+        const { data: posts } = await supabaseClient.from('posts').select('id,url,tag').eq('room', 'yt-videos');
+        if (!posts || posts.length === 0) { alert('ℹ️ لا توجد فيديوهات في غرفة الفيديوهات لنقلها.'); return; }
+
+        let toMigrate = [];
+        let processed = 0;
+
+        // فحص الفيديوهات على دفعات من 50 (سعة الـ API لطلب واحد)
+        for (let i = 0; i < posts.length; i += 50) {
+          const batch = posts.slice(i, i + 50);
+          const vIds = batch.map(p => {
+            const m = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+            return m ? m[1] : null;
+          }).filter(Boolean);
+
+          if (vIds.length > 0) {
+            const durations = await fetchDurations(vIds);
+            batch.forEach(p => {
+              const vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+              const isShortByDur = vid && durations[vid];
+              const t = (p.tag || '').toLowerCase();
+              const u = (p.url || '').toLowerCase();
+              const isShortByText = t.includes('reel') || t.includes('short') || u.includes('shorts');
+
+              if (isShortByDur || isShortByText) {
+                toMigrate.push(p.id);
+              }
+            });
+          }
+          processed += batch.length;
+          console.log(`⏳ جاري فحص الفيديوهات: ${processed}/${posts.length}...`);
+        }
+
+        if (toMigrate.length > 0) {
+          const { error } = await supabaseClient.from('posts').update({ room: 'reels', tag: 'Reel' }).in('id', toMigrate);
+          if (error) throw error;
+          alert(`✅ تم نقل ${toMigrate.length} فيديو إلى غرفة الـ Reels بنجاح.`);
+          loadDashboard();
+        } else {
+          alert('ℹ️ لم يتم العثور على فيديوهات مطابقة (قصيرة) لنقلها.');
+        }
+      } catch (e) {
+        alert('❌ فشل النقل: ' + e.message);
+      }
+    }
+
+    async function rejectPayment(reqId) {
+      if (!confirm('هل تريد رفض هذا الطلب؟')) return;
+      try {
+        let { error } = await supabaseClient.from('payment_requests').update({ status: 'rejected' }).eq('id', reqId);
+        if (error) throw error;
+        alert('✅ تم رفض الطلب.');
+        let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
+        if (currentPage === 'ranks') loadRanks();
+        else loadDashboard();
+      } catch (e) {
+        alert('❌ حدث خطأ: ' + e.message);
+      }
+    }
+
+    async function loadRanks() {
+      let container = document.getElementById('content-ranks');
+      container.innerHTML = '<div class="loading">جاري التحميل...</div>';
+      try {
+        let { data: reqs, error } = await supabaseClient
+          .from('payment_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+
+        let html = `<div class="card"><h3>💎 سجل الميزات والرتب</h3>`;
+        if (reqs && reqs.length) {
+          html += `<div class="posts-list">`;
+          reqs.forEach(req => {
+            let date = new Date(req.created_at).toLocaleString('ar-EG');
+            let statusBadge = '';
+            if (req.status === 'approved') statusBadge = `<span style="background:#0f3d2e;color:#4caf90;padding:2px 8px;border-radius:4px;font-size:11px;">مفعلة تلقائياً / مقبولة</span>`;
+            else if (req.status === 'pending') statusBadge = `<span style="background:#3d2e0f;color:#ff9800;padding:2px 8px;border-radius:4px;font-size:11px;">قيد الانتظار</span>`;
+            else statusBadge = `<span style="background:#3d0f0f;color:#f55;padding:2px 8px;border-radius:4px;font-size:11px;">مرفوضة</span>`;
+
+            html += `<div class="pi">
+          <div class="pi-icon">💎</div>
+          <div class="pi-info" style="flex:1;">
+            <div class="pi-title">${escapeHtml(req.username)} <span style="color:#aaa;font-weight:normal;">(الجهة: ${escapeHtml(req.bank_name)})</span></div>
+            <div class="pi-meta">${escapeHtml(req.plan_name)} • ${req.price ? '$' + req.price : 'تبرع'} • ${date}</div>
+            <div style="margin-top:4px;">${statusBadge} <span class="pi-tag">ID: ${req.user_id || 'غير معروف'}</span></div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            ${req.status === 'pending' ? `<button class="btn-pub" style="background:#4caf90;padding:5px 12px;font-size:11px;" onclick="approvePayment(${req.id}, '${req.user_id}', '${req.plan_key}')">✅ قبول وتفعيل</button>
+            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="rejectPayment(${req.id})">❌ رفض</button>` : ''}
+            <button class="btn-del" style="padding:5px 12px;font-size:11px;" onclick="deletePaymentReq(${req.id})">🗑️ حذف السجل</button>
+          </div>
+        </div>`;
+          });
+          html += `</div>`;
+        } else {
+          html += `<div class="empty">لا يوجد سجل للميزات والرتب حتى الآن.</div>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = `<div class="empty" style="color:red; text-align:center;">خطأ في التحميل: ${escapeHtml(e.message || e)}</div>`;
+        console.error(e);
+      }
+    }
+
+    async function deletePaymentReq(reqId) {
+      if (!confirm('حذف هذا السجل نهائياً؟')) return;
+      try {
+        let { error } = await supabaseClient.from('payment_requests').delete().eq('id', reqId);
+        if (error) throw error;
+        alert('✅ تم حذف السجل.');
+        let currentPage = document.querySelector('.ap.active').id.replace('ap-', '');
+        if (currentPage === 'ranks') loadRanks();
+        else loadDashboard();
+      } catch (e) { alert('❌ حدث خطأ: ' + e.message); }
+    }
+
+    // ==================== تحميل صفحة المحتوى ====================
+    // ==================== تحميل صفحة المحتوى (مع الترقيم) ====================
     async function loadContentPage(room, page = 1) {
       let container = document.getElementById(`content-${room}`);
       if (!container) return;
@@ -1817,6 +2407,7 @@
 
       container.innerHTML = '<div class="loading">جاري التحميل...</div>';
       try {
+        // جلب البيانات مع العدد الإجمالي
         let { data: posts, error, count } = await supabaseClient
           .from('posts')
           .select('*', { count: 'exact' })
@@ -1827,197 +2418,1424 @@
         if (error) throw error;
 
         let addForm = getAddForm(room);
-        let postsHtml = '';
+        let bulkActionsHtml = '';
         if (posts && posts.length) {
-          postsHtml = `<div class="card"><h3>📋 المنشورات (صفحة ${page})</h3><div class="posts-list">` + posts.map(p => {
-            return `<div class="pi">
-              <div class="pi-info">
-                <div class="pi-title">${escapeHtml(p.title)}</div>
-                <div class="pi-meta">${escapeHtml(p.description || '')} • ${p.tag || ''}</div>
-              </div>
-              <div style="display:flex; gap:6px;">
-                <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
-                <button class="btn-del" onclick="deletePost(${p.id}, '${room}', ${page})">🗑️ حذف</button>
-                ${room === 'tournaments' ? `<button class="btn-pub" onclick="openTournamentManagement(${p.id}, '${escapeHtml(p.title)}')">🏆 إدارة</button>` : ''}
-              </div>
-            </div>`;
-          }).join('') + `</div></div>`;
-        } else {
-          postsHtml = '<div class="card"><div class="empty">لا يوجد محتوى.</div></div>';
+          bulkActionsHtml = `
+        <div class="card" style="border-color: #ff9800; background: rgba(255,152,0,0.05);">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <input type="checkbox" id="selectAll-${room}" style="width:18px; height:18px; cursor:pointer;" onclick="toggleAllCheckboxes('${room}', this.checked)">
+              <label for="selectAll-${room}" style="font-size:13px; font-weight:700; cursor:pointer;">تحديد الكل</label>
+              <button class="btn-del" style="background:#ff3333; color:white; padding:6px 14px;" onclick="deleteSelectedPosts('${room}', ${page})">🗑️ حذف المحدد</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="postSearch-${room}" placeholder="🔍 ابحث في هذه الغرفة..." style="padding:8px 14px; border-radius:10px; border:1px solid #ff9800; background:rgba(0,0,0,0.5); color:white; font-size:13px; width:250px;" oninput="searchPostsInRoom('${room}', this.value)">
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="channelFilter-${room}" placeholder="اسم اليوتيوبر للـ حذف" style="padding:6px 12px; border-radius:6px; border:1px solid #444; background:rgba(0,0,0,0.3); color:white; font-size:12px; width:160px;">
+              <button class="btn-del" style="padding:6px 14px;" onclick="deleteByChannelName('${room}', ${page})">🔥 حذف محتوى القناة</button>
+            </div>
+          </div>
+        </div>
+      `;
         }
 
-        // Pagination buttons
+        let postsHtml = '';
+        if (posts && posts.length) {
+          if (room === 'yt-channels') {
+            postsHtml = `<div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+              <h3>📋 القنوات (صفحة ${page})</h3>
+              <button class="btn-pub" style="background:#ff4444; width:auto; padding:8px 16px; font-size:12px;" onclick="manualSyncChannels()">🔄 فحص وتحديث القنوات الآن</button>
+            </div>
+            <div class="posts-list">` + posts.map(p => {
+              let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<div class="channel-avatar-admin" style="overflow:hidden;"><img src="${p.icon}" style="width:100%; height:100%; object-fit:cover; transform:scale(1.2);"></div>` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
+              return `<div class="channel-card-admin">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer;">
+            ${avatar}
+            <div class="channel-info-admin">
+              <div class="channel-name-admin">${escapeHtml(p.title)}</div>
+              <div class="channel-sub-admin">${escapeHtml(p.description || '')}</div>
+              <a href="${p.url}" target="_blank" class="channel-link-admin">زيارة القناة</a>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}', ${page})">🗑️</button>
+            </div>
+          </div>`;
+            }).join('') + `</div></div>`;
+          } else {
+            postsHtml = `<div class="card"><h3>📋 المنشورات (صفحة ${page})</h3><div class="posts-list">` + posts.map(p => {
+              let media = '';
+              const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
+              const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+              const isImage = p.url && p.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i);
+
+              if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
+              else if (isYouTube) {
+                let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+                media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`;
+              }
+              else if (isImage) media = `<img src="${p.url}" style="width:80px; height:60px; border-radius:6px; object-fit:cover;">`;
+              else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:80px; height:60px; border-radius:6px; object-fit:cover;">`;
+              else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
+
+              return `<div class="pi" id="pi-${p.id}">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer; margin-right:5px;">
+            <div style="width:80px; flex-shrink:0;">${media}</div>
+            <div class="pi-info">
+              <div class="pi-title">${escapeHtml(p.title)}</div>
+              <div class="pi-meta">${(room === 'yt-videos' || room === 'live') ? '' : escapeHtml(p.description || '') + ' • '}${p.tag || ''}</div>
+              <span class="pi-tag">${escapeHtml(p.tag || p.room)}</span>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}', ${page})">🗑️ حذف</button>
+              ${(room === 'tournaments') ? `
+                <button class="btn-pub" style="background: linear-gradient(135deg, #00f5ff, #00d2ff); color:#000; padding:6px 14px; font-size:12px; font-weight:700;" onclick="openTournamentManagement(${p.id}, '${escapeHtml(p.title)}')">🏆 إدارة البطولة</button>
+                <button class="btn-del" style="border-color:#ff4a4a; color:#ff4a4a; padding:6px 14px; font-size:12px;" onclick="resetTournamentOnCard(${p.id})">🔄 إعادة</button>
+              ` : ''}
+            </div>
+          </div>`;
+            }).join('') + `</div></div>`;
+          }
+        } else postsHtml = '<div class="card"><div class="empty">لا توجد منشورات في هذه الصفحة.</div></div>';
+
+        // إضافة أزرار الترقيم
         let paginationHtml = '';
         if (count > pageSize) {
           const totalPages = Math.ceil(count / pageSize);
-          paginationHtml = `<div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
-            <button class="btn-edit" ${page === 1 ? 'disabled' : ''} onclick="loadContentPage('${room}', ${page - 1})">⬅️ السابق</button>
-            <span style="align-self:center; color:#888;">${page} / ${totalPages}</span>
-            <button class="btn-edit" ${page >= totalPages ? 'disabled' : ''} onclick="loadContentPage('${room}', ${page + 1})">التالي ➡️</button>
-          </div>`;
+          paginationHtml = `<div style="display:flex; justify-content:center; gap:10px; margin-top:20px; padding-bottom:20px;">
+        <button class="btn-edit" ${page === 1 ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadContentPage('${room}', ${page - 1})">⬅️ السابق</button>
+        <span style="display:flex; align-items:center; font-weight:bold; color:#ff3333;">صفحة ${page} من ${totalPages}</span>
+        <button class="btn-edit" ${page >= totalPages ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadContentPage('${room}', ${page + 1})">التالي ➡️</button>
+      </div>`;
         }
 
-        container.innerHTML = addForm + postsHtml + paginationHtml;
-      } catch (e) { 
-        container.innerHTML = '<div style="color:#f55;text-align:center;padding:24px;">❌ خطأ في التحميل: ' + e.message + '</div>'; 
-        console.error(e); 
-      }
+        container.innerHTML = addForm + bulkActionsHtml + postsHtml + paginationHtml;
+      } catch (e) { container.innerHTML = '<div class="empty">خطأ في التحميل: ' + e.message + '</div>'; console.error(e); }
     }
 
-    function getAddForm(room) {
-      if (room === 'tournaments') {
-        return `<div class="card"><h3>➕ إضافة بطولة جديدة</h3>
-          <div class="fg"><input class="full" id="title-${room}" placeholder="عنوان البطولة"></div>
-          <div class="fg"><input class="full" id="desc-${room}" placeholder="وصف قصير"></div>
-          <div class="fg"><select id="tag-${room}"><option value="Registration">التسجيل مفتوح</option><option value="Global">عالمية</option></select></div>
-          <button class="btn-pub" onclick="addPost('${room}')">➕ إنشاء البطولة</button>
-        </div>`;
-      }
-      return `<div class="card"><h3>➕ إضافة منشور جديد</h3>
-        <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"></div>
-        <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
-      </div>`;
+    // --- Bulk Action Functions ---
+    function toggleAllCheckboxes(room, checked) {
+      const checkboxes = document.querySelectorAll(`.post-checkbox-${room}`);
+      checkboxes.forEach(cb => cb.checked = checked);
     }
 
-    async function addPost(room) {
-      const title = document.getElementById(`title-${room}`).value.trim();
-      const desc = document.getElementById(`desc-${room}`) ? document.getElementById(`desc-${room}`).value.trim() : '';
-      const tag = document.getElementById(`tag-${room}`) ? document.getElementById(`tag-${room}`).value : '';
-      if (!title) return alert('العنوان مطلوب');
+    async function deleteSelectedPosts(room, page = 1) {
+      const checkboxes = document.querySelectorAll(`.post-checkbox-${room}:checked`);
+      const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+      if (ids.length === 0) { alert('يرجى تحديد منشورات أولاً'); return; }
+      const isTrashable = ['yt-videos', 'live', 'gaming-news', 'youtube-news', 'reels'].includes(room);
+      if (!confirm(isTrashable ? `هل تريد نقل ${ids.length} منشور للمهملات؟` : `هل تريد حذف ${ids.length} منشور نهائياً؟`)) return;
       try {
-        const { error } = await supabaseClient.from('posts').insert({ title, description: desc, tag, room });
-        if (error) throw error;
-        loadContentPage(room);
-      } catch (e) { alert(e.message); }
+        if (isTrashable) { await supabaseClient.from('posts').update({ room: '_trash' }).in('id', ids); }
+        else { await supabaseClient.from('posts').delete().in('id', ids); }
+        alert('✅ تم تنفيذ العملية بنجاح');
+        loadContentPage(room, page); loadDashboard();
+      } catch (e) { alert('❌ فشل الحذف الجماعي: ' + e.message); }
     }
 
-    async function deletePost(id, room, page) {
-      if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    async function deleteByChannelName(room, page = 1) {
+      const channelName = document.getElementById(`channelFilter-${room}`).value.trim();
+      if (!channelName) { alert('يرجى إدخال اسم القناة'); return; }
+      if (!confirm(`هل تريد نقل جميع محتويات "${channelName}" للمهملات؟`)) return;
       try {
-        const { error } = await supabaseClient.from('posts').delete().eq('id', id);
-        if (error) throw error;
-        loadContentPage(room, page);
-      } catch (e) { alert(e.message); }
+        await supabaseClient.from('posts').update({ room: '_trash' }).eq('room', room).eq('description', channelName);
+        alert(`✅ تم إخفاء محتويات "${channelName}" (نقل للمهملات).`);
+        loadContentPage(room, page); loadDashboard();
+      } catch (e) { alert('❌ فشل العملية: ' + e.message); }
     }
 
-    async function loadSubscribersAdmin(page = 1) {
-      let container = document.getElementById('content-subscribers');
-      if (!container) return;
-      const pageSize = 50;
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
-      container.innerHTML = '<div class="loading">جاري تحميل المشتركين...</div>';
-      try {
-        let { data: users, error, count } = await supabaseClient.from('profiles').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(start, end);
-        if (error) throw error;
+    let _searchTimeout = null;
+    async function searchPostsInRoom(room, query) {
+      if (_searchTimeout) clearTimeout(_searchTimeout);
+      _searchTimeout = setTimeout(async () => {
+        let container = document.getElementById(`content-${room}`);
+        let postListContainer = container.querySelector('.posts-list');
+        if (!postListContainer) return;
 
-        let html = `<div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h3>👥 إدارة المستخدمين (${count})</h3>
-            <input type="text" oninput="filterSubscribersList(this.value)" placeholder="🔍 بحث..." style="padding:8px 15px; border-radius:8px; border:1px solid #333; background:#000; color:#fff;">
-          </div>
-          <div class="posts-list">`;
-        
-        users.forEach(u => {
-          html += `<div class="pi subs-user-item" data-username="${u.username}" data-email="${u.email}">
-            <div class="pi-info">
-              <div class="pi-title">${escapeHtml(u.username)}</div>
-              <div class="pi-meta">${u.email} • رتبة: ${u.role || 'user'}</div>
+        try {
+          let queryBuilder = supabaseClient.from('posts').select('*').eq('room', room).order('id', { ascending: false });
+          if (query.trim()) {
+            queryBuilder = queryBuilder.ilike('title', `%${query.trim()}%`);
+          } else {
+            queryBuilder = queryBuilder.limit(50);
+          }
+
+          let { data: posts, error } = await queryBuilder;
+          if (error) throw error;
+
+          if (!posts || !posts.length) {
+            postListContainer.innerHTML = '<div class="empty">لا توجد نتائج بحث.</div>';
+            return;
+          }
+
+          postListContainer.innerHTML = posts.map(p => {
+            if (room === 'yt-channels') {
+              let avatar = (p.icon && (p.icon.startsWith('http') || p.icon.startsWith('data:'))) ? `<div class="channel-avatar-admin" style="overflow:hidden;"><img src="${p.icon}" style="width:100%; height:100%; object-fit:cover; transform:scale(1.2);"></div>` : `<div class="channel-avatar-admin" style="background:#1a2d80; display:flex; align-items:center; justify-content:center;">📺</div>`;
+              return `<div class="channel-card-admin">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer;">
+            ${avatar}
+            <div class="channel-info-admin">
+              <div class="channel-name-admin">${escapeHtml(p.title)}</div>
+              <div class="channel-sub-admin">${escapeHtml(p.description || '')}</div>
+              <a href="${p.url}" target="_blank" class="channel-link-admin">زيارة القناة</a>
             </div>
             <div style="display:flex; gap:6px;">
-              <button class="btn-edit" onclick="openUserEditModal('${u.id}')">✏️</button>
-              <button class="btn-del" onclick="deleteUser('${u.id}')">🗑️</button>
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️</button>
             </div>
           </div>`;
-        });
-        html += `</div></div>`;
+            } else {
+              let media = '';
+              const isVideo = p.url && (p.url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || p.url.includes('/storage/v1/object/public/videos/'));
+              const isYouTube = p.url && (p.url.includes('youtube.com/watch') || p.url.includes('youtu.be'));
+              const isImage = p.url && p.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i);
+              if (isVideo) media = `<video src="${p.url}" controls style="width:80px; height:60px; object-fit:cover; border-radius:6px;"></video>`;
+              else if (isYouTube) { let vid = p.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1]; media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover;">` : `<div class="pi-icon">${p.icon || '📹'}</div>`; }
+              else if (isImage) media = `<img src="${p.url}" style="width:80px; height:60px; border-radius:6px; object-fit:cover;">`;
+              else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) media = `<img src="${p.icon}" style="width:40px; height:40px; border-radius:6px; object-fit:cover;">`;
+              else media = `<div class="pi-icon">${p.icon || '📄'}</div>`;
+              return `<div class="pi" id="pi-${p.id}">
+            <input type="checkbox" class="post-checkbox-${room}" value="${p.id}" style="width:18px; height:18px; cursor:pointer; margin-right:5px;">
+            <div style="width:80px; flex-shrink:0;">${media}</div>
+            <div class="pi-info">
+              <div class="pi-title">${escapeHtml(p.title)}</div>
+              <div class="pi-meta">${(room === 'yt-videos' || room === 'live') ? '' : escapeHtml(p.description || '') + ' • '}${p.tag || ''}</div>
+              <span class="pi-tag">${escapeHtml(p.tag || p.room)}</span>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-edit" onclick="openEditModal(${p.id})">✏️ تعديل</button>
+              <button class="btn-del" onclick="deletePost(${p.id},'${room}')">🗑️ حذف</button>
+            </div>
+          </div>`;
+            }
+          }).join('');
+        } catch (e) { console.error('Search error:', e); }
+      }, 400);
+    }
 
+    // ==================== نموذج الإضافة لكل غرفة (تم حذف yt-lives) ====================
+    function getAddForm(room) {
+      if (room === 'home') {
+        return `<div class="card"><h3>➕ إضافة مقال / فيديو / صورة للصفحة الرئيسية</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Article">📄 مقال (نص)</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="المقال الكامل (نص طويل)" rows="8"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+      } else if (room === 'highlights') {
+        return `<div class="card"><h3>➕ إضافة مقطع مميز (فيديو/صورة)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان (اختياري)"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+      } else if (room === 'projects') {
+        return `<div class="card"><h3>➕ إضافة مشروع (فيديو/صورة/نص)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="اسم المشروع *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}"><option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option></select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط المشروع (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="تفاصيل المشروع" rows="4"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+      } else if (room === 'gaming-news' || room === 'youtube-news') {
+        let tagOptions = room === 'gaming-news' ? `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>` : `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
+        return `<div class="card"><h3>➕ إضافة خبر (مع دعم الفيديو)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="عنوان الخبر *"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"></div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)"><textarea class="full" id="content-${room}" placeholder="محتوى الخبر الطويل" rows="6"></textarea></div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+      } else if (room === 'live' || room === 'tournaments') {
+        let tagOptions = room === 'live' ? `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>` : `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+        return `<div class="card"><h3>➕ إضافة منشور (مع دعم الفيديو)</h3>
+      <div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div>
+      <div class="form-with-preview">
+        <div>
+          <div class="fg"><input class="full" id="title-${room}" placeholder="العنوان">${room === 'live' ? '' : `<input id="desc-${room}" placeholder="وصف قصير (اختياري)">`}</div>
+          <div class="fg">
+            <div class="img-upload"><input type="file" id="imgfile-${room}" accept="image/*" onchange="handleImageUpload('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"></div>
+            <div class="img-upload"><input type="file" id="videofile-${room}" accept="video/*" onchange="uploadVideoToBucket('${room}')"><label for="videofile-${room}">🎥 رفع فيديو</label></div>
+          </div>
+          <div class="fg"><select id="tag-${room}">${tagOptions}</select></div>
+          ${room === 'tournaments' ? `
+          <div style="margin-bottom:12px; padding:10px; background:rgba(255,210,0,0.05); border:1px solid rgba(255,210,0,0.1); border-radius:10px; display:flex; gap:15px; flex-wrap:wrap;">
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#ffd2b8;">
+              <input type="checkbox" id="reg-enabled-${room}" style="width:18px; height:18px;"> 🚀 تفعيل التسجيل المباشر
+            </label>
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#00f5ff;">
+              <input type="checkbox" id="dl-enabled-${room}" style="width:18px; height:18px;"> ⬇️ تفعيل زر التحميل
+            </label>
+          </div>` : ''}
+          <div class="fg"><input class="full" id="url-${room}" placeholder="رابط (يوتيوب أو فيديو أو صورة)">${room === 'live' ? '' : `<textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea>`}</div>
+          <button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button>
+        </div>
+        <div class="preview-panel">
+          <h4 style="color:#d4e800; margin-bottom:8px;">📷 معاينة</h4>
+          <img id="preview-img-${room}" class="preview-media" style="display:none;">
+          <video id="preview-video-${room}" class="preview-media" controls style="display:none;"></video>
+          <div id="preview-text-${room}" style="color:#aaa; text-align:center;">لا توجد وسائط مرفوعة بعد</div>
+          <div class="preview-buttons"><button type="button" class="btn-del" onclick="clearMedia('${room}')" style="font-size:11px; padding:4px 8px;">🗑️ حذف</button></div>
+        </div>
+      </div>
+    </div>`;
+      } else if (room === 'yt-channels') {
+        return `<div class="card"><h3>➕ إضافة قناة يوتيوب (برابط)</h3><div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط قناة يوتيوب (handle أو ID أو URL)"> <textarea class="full" id="content-${room}" placeholder="وصف إضافي (اختياري)" rows="2"></textarea></div><button class="btn-pub" onclick="addYouTubeChannel('${room}')">➕ إضافة</button></div>`;
+      } else if (room === 'subscribers') {
+        setTimeout(() => loadSubscribersAdmin(), 80);
+        return `
+      <div class="card">
+        <h3>➕ إضافة يوتيوبر / مشترك مميز</h3>
+        <div class="ok" id="ok-${room}">✅ تمت الإضافة!</div><div class="er" id="er-${room}"></div>
+        <div class="fg">
+          <input class="full" id="user-search-input" placeholder="🔍 ابحث عن مستخدم بالاسم..." oninput="searchUsers(this.value)">
+          <div id="user-search-results" class="search-results-dropdown" style="display:none; background:#0d1117; border:1px solid #334; border-radius:8px; margin-top:5px; max-height:200px; overflow-y:auto; z-index:100;"></div>
+          <input type="hidden" id="sub-user-id">
+          <input class="full" id="sub-user-selected" placeholder="المستخدم المختار" readonly style="background:#1a1a2e; margin-top:8px;">
+          <div class="fg" style="margin-top:8px;">
+            <select id="sub-user-role" class="full">
+              <option value="Youtuber">🎬 Youtuber</option>
+              <option value="Youtuber VIP">🔥 Youtuber VIP</option>
+              <option value="VIP">👑 VIP Member</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-pub" onclick="addUserSubscriber()">➕ إضافة للقائمة</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <h3 style="margin:0;">👥 إدارة المستخدمين والأدوار</h3>
+          <button class="btn-edit" onclick="loadSubscribersAdmin()" style="font-size:12px;padding:5px 14px;">🔄 تحديث</button>
+        </div>
+        <div id="subscribers-admin-view" style="margin-top:14px;">
+          <div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>
+        </div>
+      </div>`;
+      } else if (room === 'yt-videos' || room === 'reels') {
+        const titleLabel = room === 'reels' ? '➕ إضافة Reel (Shorts)' : '➕ إضافة فيديو يوتيوب';
+        const tagOptions = room === 'reels' ? '<option value="Reel">🎬 Reel</option><option value="VIP">👑 VIP Reel</option>' : '<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>';
+        return `<div class="card"><h3>${titleLabel}</h3><div class="ok" id="ok-${room}">✅ تمت!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="url-${room}" placeholder="رابط فيديو أو قناة"><select id="type-${room}"><option value="single">🎬 فيديو عادي</option><option value="channel">👑 قناة VIP (أحدث فيديو)</option></select><select id="tag-${room}">${tagOptions}</select></div><button class="btn-pub" onclick="addYouTubeVideo('${room}')">➕ إضافة</button></div>`;
+      } else {
+        let tagOptions = '';
+        if (room === 'live') tagOptions = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
+        else if (room === 'tournaments') tagOptions = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+        else if (room === 'gaming-news') tagOptions = `<option value="News">📰 خبر</option><option value="VIP">👑 VIP</option>`;
+        else if (room === 'youtube-news') tagOptions = `<option value="Youtube News">▶️ خبر يوتيوب</option>`;
+        else tagOptions = `<option value="default">عام</option>`;
+        return `<div class="card"><h3>➕ إضافة منشور</h3><div class="ok" id="ok-${room}">✅ تم النشر!</div><div class="er" id="er-${room}"></div><div class="fg"><input class="full" id="title-${room}" placeholder="العنوان"><input id="desc-${room}" placeholder="وصف قصير (اختياري)"><div class="img-upload full"><input type="file" id="imgfile-${room}" accept="image/*" onchange="previewImg('${room}')"><label for="imgfile-${room}">📁 رفع صورة</label><input type="text" id="icon-${room}" placeholder="رمز تعبيري (اختياري)"><img id="preview-${room}" class="img-preview" src="" style="display:none; max-width:100%; height:80px; object-fit:cover; margin-top:10px; border-radius:8px;"></div><select id="tag-${room}">${tagOptions}</select><input class="full" id="url-${room}" placeholder="رابط (اختياري)"><textarea class="full" id="content-${room}" placeholder="محتوى طويل (اختياري)" rows="4"></textarea></div><button class="btn-pub" onclick="addPost('${room}')">➕ نشر</button></div>`;
+      }
+    }
+
+    // ==================== دوال مساعدة للمعاينة والإضافة ====================
+    function previewImg(room) {
+      let file = document.getElementById(`imgfile-${room}`).files[0];
+      if (!file) return;
+      let reader = new FileReader();
+      reader.onload = e => {
+        let preview = document.getElementById(`preview-${room}`);
+        if (preview) {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        }
+        const iconField = document.getElementById(`icon-${room}`);
+        if (iconField) {
+          iconField.value = '🖼️';
+          iconField._imgData = e.target.result;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearMedia(room) {
+      if (room !== 'highlights' && room !== 'home' && room !== 'projects' && room !== 'gaming-news' && room !== 'youtube-news' && room !== 'live' && room !== 'tournaments') return;
+      const previewImg = document.getElementById(`preview-img-${room}`);
+      const previewVideo = document.getElementById(`preview-video-${room}`);
+      const previewText = document.getElementById(`preview-text-${room}`);
+      if (previewImg) previewImg.style.display = 'none';
+      if (previewVideo) previewVideo.style.display = 'none';
+      if (previewText) previewText.style.display = 'block';
+      document.getElementById(`url-${room}`).value = '';
+      document.getElementById(`icon-${room}`).value = '';
+      document.getElementById(`imgfile-${room}`).value = '';
+      document.getElementById(`videofile-${room}`).value = '';
+      delete document.getElementById(`icon-${room}`)._imgData;
+    }
+    function handleImageUpload(room) {
+      const fileInput = document.getElementById(`imgfile-${room}`);
+      const file = fileInput?.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const previewImg = document.getElementById(`preview-img-${room}`);
+        const previewVideo = document.getElementById(`preview-video-${room}`);
+        const previewText = document.getElementById(`preview-text-${room}`);
+        if (previewImg) { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
+        if (previewVideo) previewVideo.style.display = 'none';
+        if (previewText) previewText.style.display = 'none';
+        const iconField = document.getElementById(`icon-${room}`);
+        iconField.value = '🖼️';
+        iconField._imgData = e.target.result;
+        document.getElementById(`url-${room}`).value = '';
+      };
+      reader.readAsDataURL(file);
+    }
+    async function uploadVideoToBucket(room) {
+      let fileInput = document.getElementById(`videofile-${room}`);
+      let file = fileInput?.files[0];
+      if (!file) { alert('لم تختر ملفاً'); return; }
+      if (!file.type.startsWith('video/')) { alert('الملف المختار ليس فيديو'); return; }
+      let fileName = Date.now() + '_' + file.name;
+      fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+      let filePath = `highlights/${fileName}`;
+      let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
+      let btn = document.querySelector(`#ap-${room} .btn-pub`);
+      if (btn) btn.disabled = true;
+      try {
+        let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
+        if (res.ok) {
+          let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
+          document.getElementById(`url-${room}`).value = publicUrl;
+          let titleField = document.getElementById(`title-${room}`);
+          if (titleField && !titleField.value.trim()) titleField.value = file.name.replace(/\.[^/.]+$/, '');
+          const previewImg = document.getElementById(`preview-img-${room}`);
+          const previewVideo = document.getElementById(`preview-video-${room}`);
+          const previewText = document.getElementById(`preview-text-${room}`);
+          if (previewImg) previewImg.style.display = 'none';
+          if (previewVideo) { previewVideo.src = publicUrl; previewVideo.style.display = 'block'; }
+          if (previewText) previewText.style.display = 'none';
+          document.getElementById(`icon-${room}`).value = '';
+          delete document.getElementById(`icon-${room}`)._imgData;
+          alert('✅ تم رفع الفيديو! الرابط جاهز.');
+        } else { let errText = await res.text(); alert('❌ فشل الرفع: ' + errText); }
+      } catch (e) { alert('خطأ: ' + e.message); }
+      finally { if (btn) btn.disabled = false; }
+    }
+    async function addPost(room) {
+      const titleEl = document.getElementById(`title-${room}`);
+      const urlEl = document.getElementById(`url-${room}`);
+      const descEl = document.getElementById(`desc-${room}`);
+      const contentEl = document.getElementById(`content-${room}`);
+      const iconEl = document.getElementById(`icon-${room}`);
+      const tagEl = document.getElementById(`tag-${room}`);
+      function getSafeValue(el) { if (!el) return ''; if (el.value === undefined) return ''; return (el.value || '').trim(); }
+      let title = getSafeValue(titleEl);
+      let url = getSafeValue(urlEl);
+      let desc = getSafeValue(descEl);
+      let content = getSafeValue(contentEl);
+      let icon = getSafeValue(iconEl);
+      let tag = tagEl ? tagEl.value : room;
+
+      // دعم البطولات
+      if (room === 'tournaments') {
+        const regCb = document.getElementById(`reg-enabled-${room}`);
+        if (regCb && regCb.checked) tag += ':reg';
+        const dlCb = document.getElementById(`dl-enabled-${room}`);
+        if (dlCb && dlCb.checked) tag += ':dl';
+      }
+      let imgData = iconEl?._imgData || '';
+      if (imgData) icon = imgData;
+      const hasImage = (icon && (icon.startsWith('data:') || icon.startsWith('http'))) || (url && url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+      const hasVideo = url && (url.match(/\.(mp4|webm|avi|mov|mkv|flv|wmv|m4v|mpg|mpeg|3gp)$/i) || url.includes('/storage/v1/object/public/videos/') || url.includes('youtube.com') || url.includes('youtu.be'));
+      if (room === 'highlights') {
+        if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ عند اختيار "صورة"، يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+        else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ عند اختيار "فيديو"، يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+        else { if (!hasImage && !hasVideo) { showError(room, '❌ في Pro / Tournament، يجب رفع صورة أو فيديو.'); return; } }
+      } else if (room === 'home') {
+        if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+        else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+        else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المقال فارغ. أدخل عنواناً أو محتوى.'); return; } }
+      } else if (room === 'projects') {
+        if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+        else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+        else { if (!title && !url && !icon && !content) { showError(room, '❌ المشروع فارغ. أدخل عنواناً أو وسائط.'); return; } }
+      } else if (room === 'gaming-news' || room === 'youtube-news' || room === 'live' || room === 'tournaments') {
+        if (tag === 'Photo') { if (!hasImage) { showError(room, '❌ يجب رفع صورة أو إضافة رابط صورة.'); return; } }
+        else if (tag === 'Video') { if (!hasVideo) { showError(room, '❌ يجب رفع فيديو أو إضافة رابط يوتيوب.'); return; } }
+        else { if (!title && !desc && !content && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو محتوى.'); return; } }
+      } else {
+        if (!title && !url && !icon) { showError(room, '❌ المنشور فارغ. أدخل عنواناً أو رابطاً أو صورة.'); return; }
+      }
+      if (!title && (url || icon)) title = room === 'highlights' ? '🎬 مقطع' : (room === 'home' ? '📄 مقال' : (room === 'projects' ? '🌐 مشروع' : (room === 'gaming-news' ? '📰 خبر' : (room === 'youtube-news' ? '▶️ خبر' : (room === 'live' ? '🔴 بث' : (room === 'tournaments' ? '🏆 بطولة' : '📄 منشور'))))));
+      const body = { title, description: desc, icon: icon || '📄', url, tag, room, content };
+      const btn = document.querySelector(`#ap-${room} .btn-pub`);
+      if (btn) btn.disabled = true;
+      try {
+        const { error } = await supabaseClient.from('posts').insert(body);
+        if (error) throw error;
+        const okDiv = document.getElementById(`ok-${room}`);
+        if (okDiv) { okDiv.style.display = 'block'; setTimeout(() => okDiv.style.display = 'none', 2000); }
+        if (titleEl) titleEl.value = '';
+        if (descEl) descEl.value = '';
+        if (urlEl) urlEl.value = '';
+        if (iconEl) iconEl.value = '';
+        if (contentEl) contentEl.value = '';
+        const fileInput = document.getElementById(`imgfile-${room}`);
+        if (fileInput) fileInput.value = '';
+        const videoInput = document.getElementById(`videofile-${room}`);
+        if (videoInput) videoInput.value = '';
+        const previewImg = document.getElementById(`preview-img-${room}`);
+        const previewVideo = document.getElementById(`preview-video-${room}`);
+        const previewText = document.getElementById(`preview-text-${room}`);
+        if (previewImg) previewImg.style.display = 'none';
+        if (previewVideo) previewVideo.style.display = 'none';
+        if (previewText) previewText.style.display = 'block';
+        loadContentPage(room);
+        loadDashboard();
+      } catch (e) { showError(room, e.message); }
+      finally { if (btn) btn.disabled = false; }
+    }
+    function showError(room, msg) { let er = document.getElementById(`er-${room}`); if (er) { er.textContent = msg; er.style.display = 'block'; setTimeout(() => er.style.display = 'none', 4000); } else alert(msg); }
+    async function deletePost(id, room, page = 1) {
+      if (!confirm('هل أنت متأكد من الحذف؟')) return;
+
+      // إخفاء العنصر فوراً من الشاشة ليعطي شعوراً بالحذف الفوري
+      const el = document.getElementById(`pi-${id}`) || document.getElementById(`user-${id}`) || document.querySelector(`[value="${id}"]`)?.closest('.channel-card-admin');
+      if (el) el.style.display = 'none';
+
+      try {
+        let { data: post, error: fetchErr } = await supabaseClient.from('posts').select('*').eq('id', id).single();
+        if (fetchErr || !post) {
+          alert('⚠️ لم يتم العثور على العنصر في قاعدة البيانات، ربما تم حذفه بالفعل.');
+          loadContentPage(room, page);
+          return;
+        }
+
+        if (room === 'yt-channels') {
+          const channelTitle = post.title.trim();
+          console.log(`🧹 جاري تنظيف محتويات القناة: ${channelTitle}`);
+
+          // 1. حذف الفيديوهات المرتبطة بالاسم (للفيديوهات القديمة)
+          await supabaseClient.from('posts').delete().eq('description', channelTitle).in('room', ['yt-videos', 'live', '_trash']);
+
+          // 2. حذف الفيديوهات المرتبطة بالـ ID (للفيديوهات الجديدة)
+          await supabaseClient.from('posts').delete().eq('tag', `auto:${id}`).in('room', ['yt-videos', 'live', '_trash']);
+
+          // 3. حذف القناة نفسها
+          const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+          if (error) throw error;
+
+          alert(`✅ تم حذف القناة "${channelTitle}" وجميع محتوياتها بنجاح.`);
+        } else if (room === 'yt-videos' || room === 'live' || room === 'gaming-news' || room === 'youtube-news' || room === 'reels') {
+          // نقل للمهملات لمنع البوت من إعادتها (Soft Delete)
+          const { error } = await supabaseClient.from('posts').update({ room: '_trash' }).eq('id', id);
+          if (error) throw error;
+
+          // تأكيد حذف أي تكرارات بروابط مشابهة لضمان نظافة السجل
+          if (post.url) {
+            const norm = normalizeUrl(post.url);
+            await supabaseClient.from('posts').delete().or(`url.eq.${post.url},url.eq.${norm}`).neq('id', id);
+          }
+          alert('✅ تم النقل للمهملات (لن يعود المنشور مرة أخرى).');
+        } else {
+          // غرف أخرى حذف نهائي
+          const { error } = await supabaseClient.from('posts').delete().eq('id', id);
+          if (error) throw error;
+          alert('✅ تم الحذف نهائياً.');
+        }
+
+        await loadContentPage(room, page);
+        loadDashboard();
+      } catch (e) {
+        console.error('Delete process failed:', e);
+        alert('❌ خطأ أثناء الحذف: ' + e.message);
+        if (el) el.style.display = 'flex';
+      }
+    }
+
+    // ==================== إدارة سلة المحذوفات (Trash) ====================
+    async function loadTrashRoom(page = 1) {
+      trashPage = page;
+      let container = document.getElementById('content-trash');
+      if (!container) return;
+      container.innerHTML = '<div class="loading">جاري تحميل المهملات...</div>';
+      try {
+        const from = (trashPage - 1) * trashPageSize;
+        const to = from + trashPageSize - 1;
+
+        let { data: trashPosts, count, error } = await supabaseClient.from('posts')
+          .select('*', { count: 'exact' })
+          .eq('room', '_trash')
+          .order('id', { ascending: false })
+          .range(from, to);
+
+        if (error) throw error;
+
+        let html = `<div class="card" style="border-color:#ffaa00;">
+      <h3>🗑️ سلة المهملات الشاملة (يمنع البوت من إعادتها)</h3>
+      <p style="font-size:12px; color:#888; margin-bottom:12px;">ملاحظة: العناصر هنا لن تظهر في الموقع، ولكن وجودها يمنع بوتات (الأخبار، الفيديوهات، العروض) من جلبها مرة أخرى.</p>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05);">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#ffaa00;">
+          <input type="checkbox" id="selectAllTrash" onchange="toggleSelectAllTrash(this.checked)" style="width:16px; height:16px;">
+          تحديد الكل في هذه الصفحة
+        </label>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-pub" style="background:#4caf90; padding:6px 14px; font-size:12px;" onclick="restoreSelectedTrash()">⏪ استعادة المحدد</button>
+          <button class="btn-del" style="padding:6px 14px; font-size:12px;" onclick="hardDeleteSelectedTrash()">🔥 حذف المحدد نهائياً</button>
+        </div>
+      </div>
+    </div>`;
+
+        if (!trashPosts || trashPosts.length === 0) {
+          html += '<div class="empty">سلة المهملات فارغة.</div>';
+        } else {
+          html += `<div class="posts-list">` + trashPosts.map(p => {
+            let vid = p.url?.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+            let media = vid ? `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` :
+              (p.icon && p.icon.startsWith('http') ? `<img src="${p.icon}" style="width:80px; height:60px; object-fit:cover; border-radius:6px;">` : `<div class="pi-icon">📰</div>`);
+
+            let typeLabel = p.tag || 'News';
+            if (p.url && (p.url.includes('youtube.com') || p.url.includes('youtu.be'))) typeLabel = 'Video';
+            return `<div class="pi" id="trash-item-${p.id}">
+          <div style="display:flex; align-items:center; gap:12px; flex:1;">
+            <input type="checkbox" class="trash-checkbox" value="${p.id}" style="width:18px; height:18px;">
+            <div style="width:80px; flex-shrink:0;">${media}</div>
+            <div class="pi-info">
+              <div class="pi-title">${escapeHtml(p.title)}</div>
+              <div class="pi-meta"><span style="color:#ffaa00;">[${typeLabel}]</span> • ${escapeHtml(p.description || '')}</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-pub" style="background:#4caf90; padding:6px 12px; font-size:11px;" onclick="restorePost(${p.id})">⏪ استعادة</button>
+            <button class="btn-del" style="padding:6px 12px; font-size:11px;" onclick="hardDeletePost(${p.id})">🔥 حذف</button>
+          </div>
+        </div>`;
+          }).join('') + `</div>`;
+
+          // Improved Pagination
+          const totalPages = Math.ceil(count / trashPageSize);
+          if (totalPages > 1) {
+            html += `<div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:20px; padding-bottom:20px;">
+              <button class="btn-edit" ${trashPage === 1 ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadTrashRoom(${trashPage - 1})">⬅️ السابق</button>
+              <span style="font-weight:bold; color:#ffaa00; font-size:13px;">صفحة ${trashPage} من ${totalPages}</span>
+              <button class="btn-edit" ${trashPage >= totalPages ? 'disabled style="opacity:0.5; cursor:default;"' : ''} onclick="loadTrashRoom(${trashPage + 1})">التالي ➡️</button>
+            </div>`;
+          }
+        }
+        container.innerHTML = html;
+      } catch (e) { container.innerHTML = '<div class="empty">خطأ في تحميل المهملات</div>'; console.error(e); }
+    }
+
+    function toggleSelectAllTrash(checked) {
+      document.querySelectorAll('.trash-checkbox').forEach(cb => cb.checked = checked);
+    }
+
+    async function getSelectedTrashIds() {
+      return Array.from(document.querySelectorAll('.trash-checkbox:checked')).map(cb => parseInt(cb.value));
+    }
+
+    async function restoreSelectedTrash() {
+      const ids = await getSelectedTrashIds();
+      if (ids.length === 0) return alert('يرجى تحديد فيديوهات أولاً');
+      if (!confirm(`هل تريد استعادة ${ids.length} فيديو إلى الموقع؟`)) return;
+      try {
+        await supabaseClient.from('posts').update({ room: 'yt-videos' }).in('id', ids);
+        alert(`✅ تم استعادة ${ids.length} فيديو بنجاح.`);
+        loadTrashRoom(trashPage);
+      } catch (e) { alert('خطأ: ' + e.message); }
+    }
+
+    async function hardDeleteSelectedTrash() {
+      const ids = await getSelectedTrashIds();
+      if (ids.length === 0) return alert('يرجى تحديد فيديوهات أولاً');
+      if (!confirm(`تحذير: سيتم حذف ${ids.length} فيديو نهائياً. قد يعيد البوت جلبها مستقبلاً. استمرار؟`)) return;
+      try {
+        await supabaseClient.from('posts').delete().in('id', ids);
+        alert(`✅ تم حذف ${ids.length} فيديو نهائياً.`);
+        loadTrashRoom(trashPage);
+      } catch (e) { alert('خطأ: ' + e.message); }
+    }
+
+    async function restorePost(id) {
+      if (!confirm('هل تريد استعادة هذا الفيديو للموقع؟')) return;
+      // سنفترض أنه فيديو يوتيوب، وإذا كان بثاً مباشراً يمكن تعديله لاحقاً
+      await supabaseClient.from('posts').update({ room: 'yt-videos' }).eq('id', id);
+      alert('✅ تم استعادة الفيديو بنجاح.');
+      loadTrashRoom();
+    }
+
+    async function hardDeletePost(id) {
+      if (!confirm('تحذير: الحذف النهائي سيجعل البوت يعيد إضافة الفيديو إذا وجده في القناة. استمر؟')) return;
+      await supabaseClient.from('posts').delete().eq('id', id);
+      alert('✅ تم الحذف النهائي.');
+      loadTrashRoom();
+    }
+
+    // ==================== دوال التعديل المصححة ====================
+    function getTagOptionsForEdit(room, currentTag) {
+      let opts = '';
+      if (room === 'live') opts = `<option value="Live Now">🔴 Live Now</option><option value="Pre Lives">⏰ Pre Lives</option><option value="VIP">👑 VIP</option>`;
+      else if (room === 'tournaments') opts = `<option value="Registration">📋 تسجيل</option><option value="Global">🌍 عالمي</option><option value="VIP">👑 VIP</option>`;
+      else if (room === 'highlights') opts = `<option value="Pro">🏅 Pro (صورة أو فيديو)</option><option value="Tournament">🏆 بطولة (صورة أو فيديو)</option><option value="Video">📹 فيديو (فيديو فقط)</option><option value="Photo">📷 صورة (صورة فقط)</option>`;
+      else if (room === 'home') opts = `<option value="Article">📄 مقال</option><option value="Photo">🖼️ صورة</option><option value="Video">🎬 فيديو</option>`;
+      else if (room === 'projects') opts = `<option value="Project">🌐 مشروع</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
+      else if (room === 'gaming-news') opts = `<option value="News">📰 خبر</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option><option value="VIP">👑 VIP</option>`;
+      else if (room === 'youtube-news') opts = `<option value="Youtube News">▶️ خبر يوتيوب</option><option value="Video">🎬 فيديو</option><option value="Photo">🖼️ صورة</option>`;
+      else if (room === 'subscribers') opts = `<option value="Youtuber">🔔 Youtuber</option><option value="Youtuber VIP">👑 VIP</option>`;
+      else if (room === 'yt-channels') opts = `<option value="Channel">📺 Channel</option>`;
+      else if (room === 'yt-videos') opts = `<option value="Video">📹 Video</option><option value="VIP">👑 VIP</option>`;
+      else opts = `<option value="default">عام</option>`;
+      return opts.replace(`value="${currentTag}"`, `value="${currentTag}" selected`);
+    }
+
+    async function openEditModal(id) {
+      let { data, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
+      if (error) {
+        console.error('خطأ في جلب المنشور:', error);
+        alert('فشل تحميل بيانات المنشور');
+        return;
+      }
+      currentEditPost = data;
+      let currentMediaUrl = '';
+      if (data.icon && (data.icon.startsWith('http') || data.icon.startsWith('data:'))) currentMediaUrl = data.icon;
+      else if (data.url && data.url.match(/\.(jpeg|jpg|gif|png|webp|svg|bmp)$/i)) currentMediaUrl = data.url;
+
+      const modalBodyEl = document.getElementById('editModalBody');
+      if (!modalBodyEl) return;
+
+      const isMediaRoom = (data.room === 'yt-videos' || data.room === 'live');
+      const safeTag = (data.tag || '').split(':')[0];
+      modalBodyEl.innerHTML = `
+    <div class="fg"><input class="full" id="edit-title" placeholder="العنوان" value="${escapeHtml(data.title)}"></div>
+    <div class="fg" style="${isMediaRoom ? 'display:none;' : ''}"><input id="edit-desc" placeholder="وصف" value="${escapeHtml(data.description || '')}"></div>
+    <div class="fg"><input id="edit-icon" placeholder="رمز أو رابط صورة حالياً" value="${escapeHtml(data.icon || '')}"></div>
+    <div class="fg"><input class="full" id="edit-url" placeholder="رابط الفيديو/الصورة الحالي" value="${escapeHtml(data.url || '')}"></div>
+    <div class="fg"><select id="edit-tag">${getTagOptionsForEdit(data.room, safeTag)}</select></div>
+    
+    ${data.room === 'tournaments' ? `
+    <div style="margin-bottom:12px; padding:10px; background:rgba(255,210,0,0.05); border:1px solid rgba(255,210,0,0.1); border-radius:10px; display:flex; gap:15px; flex-wrap:wrap;">
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#ffd2b8;">
+        <input type="checkbox" id="edit-reg-enabled" ${(data.tag || '').includes(':reg') ? 'checked' : ''} style="width:18px; height:18px;"> 🚀 تفعيل التسجيل المباشر
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#00f5ff;">
+        <input type="checkbox" id="edit-dl-enabled" ${(data.tag || '').includes(':dl') ? 'checked' : ''} style="width:18px; height:18px;"> ⬇️ تفعيل زر التحميل
+      </label>
+    </div>` : ''}
+
+    <div class="fg" style="${isMediaRoom ? 'display:none;' : ''}"><textarea class="full" id="edit-content" placeholder="محتوى طويل" rows="5">${escapeHtml(data.content || '')}</textarea></div>
+    <div class="fg">
+      <div class="img-upload">
+        <input type="file" id="edit-imgfile" accept="image/*" onchange="previewEditImg()">
+        <label for="edit-imgfile">📁 رفع صورة جديدة</label>
+        <img id="edit-imgpreview" class="img-preview" src="${currentMediaUrl}" style="${currentMediaUrl ? 'display:block;' : 'display:none;'} max-width:100%; height:80px; margin-top:10px; border-radius:8px; object-fit:cover;">
+      </div>
+    </div>
+    <div class="fg"><div class="img-upload"><input type="file" id="edit-videofile" accept="video/*" onchange="uploadEditVideo()"><label for="edit-videofile">🎥 رفع فيديو جديد</label></div></div>
+    <button class="btn-pub" onclick="saveEditPost()">💾 حفظ التعديلات</button>
+    <button class="btn-del" style="margin-top:10px; width:100%;" onclick="deletePost(${data.id}, '${data.room}'); closeEditModal();">🗑️ حذف المنشور</button>
+  `;
+      document.getElementById('editModal').classList.add('open');
+    }
+
+    function previewEditImg() {
+      let file = document.getElementById('edit-imgfile').files[0];
+      if (!file) return;
+      let reader = new FileReader();
+      reader.onload = e => {
+        let preview = document.getElementById('edit-imgpreview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        document.getElementById('edit-icon').value = '🖼️';
+        document.getElementById('edit-icon')._imgData = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function uploadEditVideo() {
+      let file = document.getElementById('edit-videofile').files[0];
+      if (!file) return;
+      if (!file.type.startsWith('video/')) {
+        alert('الملف المختار ليس فيديو');
+        return;
+      }
+      let fileName = Date.now() + '_' + file.name;
+      fileName = fileName.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+      let filePath = `highlights/${fileName}`;
+      let uploadUrl = `${SUPABASE_URL}/storage/v1/object/videos/${filePath}`;
+      try {
+        let res = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: file });
+        if (res.ok) {
+          let publicUrl = `${SUPABASE_URL}/storage/v1/object/public/videos/${filePath}`;
+          document.getElementById('edit-url').value = publicUrl;
+          let titleField = document.getElementById('edit-title');
+          if (titleField && !titleField.value.trim()) {
+            titleField.value = file.name.replace(/\.[^/.]+$/, '');
+          }
+          alert('✅ تم رفع الفيديو الجديد! الرابط جاهز.');
+        } else {
+          let errText = await res.text();
+          alert('❌ فشل الرفع: ' + errText);
+        }
+      } catch (e) {
+        alert('خطأ: ' + e.message);
+      }
+    }
+
+    async function saveEditPost() {
+      if (!currentEditPost) {
+        alert('لا يوجد منشور قيد التعديل');
+        return;
+      }
+      const getV = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+      let updated = {
+        title: getV('edit-title'),
+        description: getV('edit-desc'),
+        icon: getV('edit-icon'),
+        url: getV('edit-url'),
+        tag: getV('edit-tag'),
+        content: getV('edit-content')
+      };
+
+      // دعم البطولات في التعديل
+      if (currentEditPost.room === 'tournaments') {
+        const regCb = document.getElementById('edit-reg-enabled');
+        if (regCb && regCb.checked) updated.tag += ':reg';
+        const dlCb = document.getElementById('edit-dl-enabled');
+        if (dlCb && dlCb.checked) updated.tag += ':dl';
+      }
+      let imgData = document.getElementById('edit-icon')?._imgData;
+      if (imgData) updated.icon = imgData;
+      try {
+        const roomToReload = currentEditPost.room;
+        const { error } = await supabaseClient.from('posts').update(updated).eq('id', currentEditPost.id);
+        if (error) throw error;
+
+        // Call load functions BEFORE closing the modal so currentEditPost.room is still available in context if needed
+        loadContentPage(roomToReload).catch(err => console.error(err));
+        loadDashboard().catch(err => console.error(err));
+
+        closeEditModal();
+        alert('✅ تم التعديل بنجاح');
+      } catch (e) {
+        console.error(e);
+        alert('❌ فشل التعديل: ' + (e.message || 'خطأ غير معروف'));
+      }
+    }
+
+    function closeEditModal() {
+      const modal = document.getElementById('editModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function trackQuota(units) {
+      const today = new Date().toISOString().split('T')[0];
+      const key = `yt_quota_${today}`;
+      let used = parseInt(localStorage.getItem(key) || '0');
+      used += units;
+      localStorage.setItem(key, used.toString());
+      console.log(`📊 استهلاك API: +${units} | الإجمالي اليومي: ${used}`);
+      updateQuotaDisplay();
+    }
+    function updateQuotaDisplay() {
+      const today = new Date().toISOString().split('T')[0];
+      const used = localStorage.getItem(`yt_quota_${today}`) || '0';
+      const el = document.getElementById('yt-quota-stat');
+      if (el) el.textContent = used;
+    }
+    document.addEventListener('DOMContentLoaded', updateQuotaDisplay);
+
+    // ==================== دوال يوتيوب والمستخدمين ====================
+    function parseYouTubeUrl(url) {
+      if (!url) return null;
+      url = url.trim();
+      if (url.startsWith('@')) return { type: 'handle', value: url.split(/[\/?]/)[0] };
+      if (/^UC[\w-]{20,}$/.test(url)) return { type: 'id', value: url };
+      if (url.includes('@')) {
+        let h = url.split('@')[1]?.split(/[\/?&]/)[0];
+        if (h) return { type: 'handle', value: '@' + h };
+      }
+      if (url.includes('/channel/')) {
+        let id = url.split('/channel/')[1]?.split(/[\/?&]/)[0];
+        if (id) return { type: 'id', value: id };
+      }
+      if (url.includes('/user/')) {
+        let user = url.split('/user/')[1]?.split(/[\/?&]/)[0];
+        if (user) return { type: 'user', value: user };
+      }
+      if (url.includes('/c/')) {
+        let c = url.split('/c/')[1]?.split(/[\/?&]/)[0];
+        if (c) return { type: 'query', value: c };
+      }
+      try {
+        const u = new URL(url.startsWith('http') ? url : 'https://' + url);
+        const parts = u.pathname.replace(/^\//, '').split('/');
+        if (parts[0] && parts[0] !== 'watch' && parts[0] !== 'shorts' && parts[0] !== 'playlist') return { type: 'query', value: parts[0] };
+      } catch (e) { }
+      if (!url.includes('/') && !url.includes('.')) return { type: 'query', value: url };
+      return null;
+    }
+
+    async function fetchYouTubeChannelInfo(url) {
+      try {
+        let parsed = parseYouTubeUrl(url);
+        if (!parsed) return null;
+        const fetchByParam = async (paramStr) => {
+          trackQuota(1); // channels.list costs 1
+          let apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&${paramStr}&key=${YOUTUBE_API_KEY}`;
+          let res = await fetch(apiUrl);
+          let data = await res.json();
+          return data.items && data.items[0] ? data.items[0] : null;
+        };
+        let item = null;
+        if (parsed.type === 'id') item = await fetchByParam(`id=${parsed.value}`);
+        else if (parsed.type === 'handle') item = await fetchByParam(`forHandle=${parsed.value}`);
+        else if (parsed.type === 'user') {
+          item = await fetchByParam(`forUsername=${parsed.value}`);
+          if (!item) item = await fetchByParam(`forHandle=@${parsed.value}`);
+        } else if (parsed.type === 'query') {
+          item = await fetchByParam(`forHandle=@${parsed.value}`);
+          if (!item) item = await fetchByParam(`forUsername=${parsed.value}`);
+        }
+        if (!item) {
+          trackQuota(100); // search.list costs 100
+          let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(parsed.value || url)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
+          let searchRes = await fetch(searchUrl);
+          let searchData = await searchRes.json();
+          if (searchData.items && searchData.items[0]) item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
+        }
+        if (item) return { title: item.snippet.title, subscribers: item.statistics.subscriberCount?.toLocaleString() || '0', thumbnail: item.snippet.thumbnails?.high?.url, channelId: item.id, uploadsPlaylistId: item.contentDetails?.relatedPlaylists?.uploads };
+        return null;
+      } catch (e) { return null; }
+    }
+
+    async function addYouTubeChannel(room) {
+      let url = document.getElementById(`url-${room}`)?.value?.trim();
+      if (!url) { alert('أدخل رابط القناة'); return; }
+      let btn = document.querySelector(`#ap-${room} .btn-pub`) || document.querySelector('.btn-pub');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الإضافة...'; }
+      try {
+        let info = await fetchYouTubeChannelInfo(url);
+        if (!info) { alert('تعذر جلب معلومات القناة'); return; }
+        let extraContent = document.getElementById(`content-${room}`)?.value?.trim() || '';
+        let body = { title: info.title, description: `${info.subscribers} مشترك`, icon: info.thumbnail || '📺', url: url, tag: room === 'yt-channels' ? 'Channel' : (document.getElementById(`tag-${room}`)?.value || 'Youtuber'), room: room, content: extraContent };
+        let { error } = await supabaseClient.from('posts').insert(body);
+        if (error) throw error;
+        let parsed = parseYouTubeUrl(url);
+        if (parsed) {
+          let chInfo = await getChannelId(parsed);
+          if (chInfo) {
+            let playlistId = chInfo.uploadsId || chInfo.id.replace('UC', 'UU');
+            let videos = await fetchLatestVideos(playlistId, 5);
+            for (let v of videos) await saveToDb(v, 'yt-videos', 'Video', chInfo.id);
+            let live = await fetchLiveStream(chInfo.id);
+            if (live) await saveToDb(live, 'live', 'Live Now', chInfo.id);
+            let upcoming = await fetchUpcomingStream(chInfo.id);
+            if (upcoming) await saveToDb(upcoming, 'live', 'Pre Lives', chInfo.id);
+          }
+        }
+        document.getElementById(`url-${room}`).value = '';
+        loadContentPage(room);
+        loadDashboard();
+      } catch (e) { alert('خطأ: ' + e.message); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = '➕ إضافة'; } }
+    }
+
+    async function getChannelId(parsed) {
+      try {
+        const fetchByParam = async (paramStr) => {
+          let res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id,snippet,contentDetails&${paramStr}&key=${YOUTUBE_API_KEY}`);
+          let d = await res.json();
+          return d.items?.[0] || null;
+        };
+        let item = null;
+        if (parsed.type === 'id') item = await fetchByParam(`id=${parsed.value}`);
+        else if (parsed.type === 'handle') item = await fetchByParam(`forHandle=${parsed.value}`);
+        else if (parsed.type === 'user') {
+          item = await fetchByParam(`forUsername=${parsed.value}`);
+          if (!item) item = await fetchByParam(`forHandle=@${parsed.value}`);
+        } else if (parsed.type === 'query') {
+          item = await fetchByParam(`forHandle=@${parsed.value}`);
+          if (!item) item = await fetchByParam(`forUsername=${parsed.value}`);
+        }
+        if (!item) {
+          let searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(parsed.value)}&maxResults=1&key=${YOUTUBE_API_KEY}`;
+          let searchRes = await fetch(searchUrl);
+          let searchData = await searchRes.json();
+          if (searchData.items && searchData.items[0]) item = await fetchByParam(`id=${searchData.items[0].snippet.channelId}`);
+        }
+        if (item) return { id: item.id, title: item.snippet.title, uploadsId: item.contentDetails?.relatedPlaylists?.uploads };
+      } catch (e) { }
+      return null;
+    }
+
+    async function fetchLatestVideos(playlistId, maxResults = 5) {
+      try {
+        trackQuota(1); // playlistItems.list costs 1
+        let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=${maxResults}&key=${YOUTUBE_API_KEY}`);
+        let d = await res.json();
+        if (!d.items) return [];
+        return d.items.map(v => ({ videoId: v.snippet.resourceId.videoId, title: v.snippet.title, description: v.snippet.description || '', channelName: v.snippet.channelTitle, thumbnail: v.snippet.thumbnails?.high?.url || '', publishedAt: v.snippet.publishedAt, videoUrl: `https://www.youtube.com/watch?v=${v.snippet.resourceId.videoId}`, type: 'video' }));
+      } catch (e) { return []; }
+    }
+
+    async function fetchLiveStream(channelId) {
+      try {
+        trackQuota(100); // search.list costs 100
+        let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${YOUTUBE_API_KEY}`);
+        let d = await res.json();
+        let v = d.items?.[0];
+        if (v) return { videoId: v.id.videoId, title: v.snippet.title, channelName: v.snippet.channelTitle, thumbnail: v.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${v.id.videoId}`, type: 'live' };
+      } catch (e) { }
+      return null;
+    }
+
+    async function fetchUpcomingStream(channelId) {
+      try {
+        trackQuota(100); // search.list costs 100
+        let res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=upcoming&key=${YOUTUBE_API_KEY}`);
+        let d = await res.json();
+        let v = d.items?.[0];
+        if (v) return { videoId: v.id.videoId, title: v.snippet.title, channelName: v.snippet.channelTitle, thumbnail: v.snippet.thumbnails?.high?.url, videoUrl: `https://www.youtube.com/watch?v=${v.id.videoId}`, type: 'upcoming' };
+      } catch (e) { }
+      return null;
+    }
+
+    async function saveToDb(item, room, tag, channelId = null) {
+      let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', item.videoUrl).limit(1);
+      if (existing?.length) return false;
+      const finalTag = channelId ? `auto:${channelId}` : tag;
+      await supabaseClient.from('posts').insert({ title: item.title, description: item.channelName, icon: item.thumbnail || '📹', url: item.videoUrl, tag: finalTag, room: room, content: item.publishedAt || '' });
+      return true;
+    }
+
+    const FORBIDDEN_KEYWORDS = [
+      'sexy', 'bikini', 'hot girl', 'nude', 'adult', '18+', '🔞', 'رقص', 'فضيحة', 'إباحي', 'بنات', 'نساء', 'سيدات', 'فتيات', 'لاعبة', 'موسيقى', 'music', 'romance', 'kiss', 'girl', 'woman', 'lady', 'female', 'dating', 'sexual',
+      'ufc', 'mma', 'fighting championship', 'boxing', 'business', 'market', 'stock', 'finance', 'economy', 'politics', 'سياسة', 'اقتصاد', 'أسهم', 'بورصة', 'تجارة', 'أعمال', 'مصارعة', 'قتال', 'fashion', 'lifestyle'
+    ];
+    function isContentSafe(text) {
+      if (!text) return true;
+      const lower = text.toLowerCase();
+      // منع المنشورات التي تحتوي على كلمات عامة غير متعلقة بالألعاب إذا كانت في سياق مشبوه
+      return !FORBIDDEN_KEYWORDS.some(k => lower.includes(k));
+    }
+    function normalizeUrl(url) {
+      if (!url) return '';
+      try {
+        const u = new URL(url);
+        // إزالة معاملات التتبع التي قد تجعل الرابط يبدو جديداً للبوت
+        return u.origin + u.pathname;
+      } catch (e) { return url; }
+    }
+
+    async function syncGamingNews(silent = false) {
+      if (!silent && !confirm('هل تريد جلب آخر أخبار الألعاب المعروفة؟')) return;
+      try {
+        const famousGames = [
+          'GTA', 'Grand Theft Auto', 'Call of Duty', 'Warzone', 'FIFA', 'FC 25', 'FC 24', 'Assassin', 'God of War',
+          'Spider-Man', 'Elden Ring', 'Resident Evil', 'Cyberpunk', 'Last of Us', 'Minecraft', 'Fortnite', 'Valorant',
+          'League of Legends', 'CS2', 'Counter-Strike', 'Zelda', 'Mario', 'Red Dead', 'RDR2', 'Witcher', 'Diablo',
+          'Overwatch', 'PUBG', 'Apex Legends', 'Final Fantasy', 'Tekken', 'Mortal Kombat', 'Street Fighter', 'Starfield',
+          'Fallout', 'Skyrim', 'PlayStation', 'PS5', 'Xbox', 'Nintendo', 'Steam', 'Epic Games', 'Marvel', 'Batman',
+          'Star Wars', 'Harry Potter', 'Hogwarts Legacy', 'Ghost of Tsushima', 'Hades', 'Alan Wake', 'Monster Hunter',
+          'Dragon Age', 'Silent Hill', 'Metal Gear', 'Halo', 'Gears of War', 'Uncharted', 'Ratchet', 'Forza', 'Gran Turismo',
+          'Pokemon', 'Sonic', 'Genshin Impact', 'Honkai', 'Destiny', 'Battlefield', 'Far Cry', 'Tomb Raider', 'Borderlands'
+        ];
+        const rssUrl = encodeURIComponent('https://feeds.feedburner.com/ign/games-all');
+        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`);
+        const data = await res.json();
+        let count = 0;
+        for (let item of data.items) {
+          const text = (item.title + ' ' + item.description).toLowerCase();
+          const isFamous = famousGames.some(kw => text.includes(kw.toLowerCase()));
+
+          // شرط: اللعبة معروفة + وجود صورة مصغرة
+          if (!isFamous) continue;
+          if (!item.thumbnail || item.thumbnail.includes('placeholder')) continue;
+
+          const normUrl = normalizeUrl(item.link);
+          if (isContentSafe(text)) {
+            let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${item.link},url.eq.${normUrl}`).limit(1);
+            if (existing?.length) continue;
+            await supabaseClient.from('posts').insert({
+              title: item.title,
+              description: item.author || 'IGN News',
+              icon: item.thumbnail,
+              url: normUrl,
+              tag: 'News',
+              room: 'gaming-news',
+              content: item.description || ''
+            });
+            count++;
+          }
+          if (count >= 15) break;
+        }
+        if (!silent) alert(`✅ تم جلب ${count} خبر جديد عن ألعاب معروفة.`);
+        loadDashboard();
+      } catch (e) { if (!silent) alert('❌ فشل جلب الأخبار'); }
+    }
+
+    async function syncGiveaways(silent = false) {
+      if (!silent && !confirm('هل تريد جلب عروض Steam و Epic Games؟')) return;
+      try {
+        const targetUrl = 'https://www.gamerpower.com/api/giveaways?platform=pc';
+        const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`);
+        const data = await res.json();
+        let count = 0;
+        for (let item of data) {
+          const plat = (item.platforms || '').toLowerCase();
+          const normUrl = normalizeUrl(item.open_giveaway_url);
+
+          // شرط: منصة Steam/Epic + وجود صورة للعرض
+          const isTargetPlatform = plat.includes('steam') || plat.includes('epic');
+          if (isTargetPlatform && item.image && isContentSafe(item.title + ' ' + item.description)) {
+            let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${item.open_giveaway_url},url.eq.${normUrl}`).limit(1);
+            if (existing?.length) continue;
+            await supabaseClient.from('posts').insert({
+              title: `🎁 مجانية الآن: ${item.title}`,
+              description: item.platforms,
+              icon: item.image,
+              url: normUrl,
+              tag: 'Giveaway',
+              room: 'gaming-news',
+              content: item.description
+            });
+            count++;
+          }
+          if (count >= 10) break;
+        }
+        if (!silent) alert(`✅ تم جلب ${count} عرض جديد من Steam/Epic.`);
+        loadDashboard();
+      } catch (e) { if (!silent) alert('❌ فشل جلب العروض'); }
+    }
+
+    // ======== بوت مراقب البثوث (Live Streams Bot) ========
+    async function syncLiveStreamsStatus() {
+      console.log('🚀 بدء فحص حالة البثوث المباشرة...');
+      try {
+        // 1. جلب كل البثوث من غرفة live
+        const { data: streams, error: fetchError } = await supabaseClient
+          .from('posts')
+          .select('id, url, tag, user_id')
+          .eq('room', 'live');
+
+        if (fetchError) throw fetchError;
+        if (!streams || streams.length === 0) {
+          console.log('ℹ️ لا توجد بثوث لفحصها.');
+          return;
+        }
+
+        // 2. تصفية روابط يوتيوب فقط واستخراج الـ IDs
+        const ytStreams = streams.filter(s => s.url && (s.url.includes('youtube.com') || s.url.includes('youtu.be')));
+        const videoIds = ytStreams.map(s => {
+          const match = s.url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+          return match ? match[1] : null;
+        }).filter(Boolean);
+
+        if (videoIds.length === 0) return;
+
+        // 3. جلب حالة البثوث من YouTube API (بشكل دفعات)
+        const apiKey = window.YOUTUBE_API_KEY;
+        const chunks = [];
+        for (let i = 0; i < videoIds.length; i += 50) chunks.push(videoIds.slice(i, i + 50));
+
+        const ytStatusMap = {};
+        for (const chunk of chunks) {
+          trackQuota(1); // videos.list costs 1
+          const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${chunk.join(',')}&key=${apiKey}`);
+          const json = await resp.json();
+          if (json.items) {
+            json.items.forEach(item => {
+              ytStatusMap[item.id] = item.snippet.liveBroadcastContent; // 'live', 'upcoming', or 'none'
+            });
+          }
+        }
+
+        // 4. جلب رتب أصحاب البثوث
+        const userIds = [...new Set(streams.map(s => s.user_id).filter(Boolean))];
+        const { data: profiles } = await supabaseClient.from('profiles').select('id, roles').in('id', userIds);
+        const userRolesMap = {};
+        if (profiles) {
+          profiles.forEach(p => {
+            let r = p.roles;
+            if (typeof r === 'string') try { r = JSON.parse(r); } catch (e) { r = []; }
+            userRolesMap[p.id] = Array.isArray(r) ? r : [p.role];
+          });
+        }
+
+        // 5. تحديث الحالات في قاعدة البيانات
+        for (const stream of ytStreams) {
+          const vid = stream.url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/)?.[1];
+          const ytStatus = ytStatusMap[vid];
+          const userRoles = userRolesMap[stream.user_id] || [];
+          const isVipUser = userRoles.includes('youtuber_vip') || userRoles.includes('admin') || userRoles.includes('moderator');
+
+          let newTag = stream.tag;
+
+          if (isVipUser) {
+            newTag = 'VIP'; // رتبة الـ VIP لها الأولوية في التصنيف
+          } else if (ytStatus === 'live') {
+            newTag = 'مباشر Now';
+          } else if (ytStatus === 'upcoming') {
+            newTag = 'Pre Live';
+          } else if (ytStatus === 'none' && stream.tag !== 'VIP') {
+            // إذا انتهى البث ولم يكن صاحبه VIP، يمكن تركه أو تحويله لـ "منتهي"
+            // لن نغيره حالياً لترك الحرية للمدير
+          }
+
+          if (newTag !== stream.tag) {
+            console.log(`Updating stream ${stream.id} to tag: ${newTag}`);
+            await supabaseClient.from('posts').update({ tag: newTag }).eq('id', stream.id);
+          }
+        }
+
+        console.log('✅ تم تحديث حالات البثوث بنجاح.');
+        if (window.currentContentRoom === 'live') loadContentPage('live');
+      } catch (err) {
+        console.error('❌ خطأ في بوت البثوث:', err);
+      }
+    }
+
+    async function syncYouTubeNews() {
+      if (!confirm('هل تريد جلب آخر منشورات القنوات وأخبار البطولات العالمية؟\n(سيتم البحث عن المحتوى المنشور خلال آخر 24 ساعة)')) return;
+      try {
+        console.log('⏳ جاري جلب الأخبار...');
+        let count = 0;
+
+        // 1. جلب أخبار البطولات والأحداث الكبرى (Esports Tournaments)
+        trackQuota(100); // search.list costs 100
+        const eventQuery = encodeURIComponent('Esports Tournament Championship 2026 news -sports -football -rugby');
+        const eventRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${eventQuery}&type=video&order=date&maxResults=5&key=${YOUTUBE_API_KEY}`);
+        const eventData = await eventRes.json();
+        if (eventData.items) {
+          for (let item of eventData.items) {
+            const combinedText = (item.snippet.title + ' ' + item.snippet.description).toLowerCase();
+            if (isContentSafe(combinedText)) {
+              const videoUrl = `https://www.youtube.com/watch?v=${item.id.videoId}`;
+              let { data: existing } = await supabaseClient.from('posts').select('id').eq('url', videoUrl).limit(1);
+              if (existing?.length) continue;
+              await supabaseClient.from('posts').insert({
+                title: `🏆 حدث/بطولة: ${item.snippet.title}`,
+                description: item.snippet.channelTitle,
+                icon: item.snippet.thumbnails?.high?.url || '🏆',
+                url: videoUrl,
+                tag: 'Tournament News',
+                room: 'youtube-news',
+                content: item.snippet.description
+              });
+              count++;
+            }
+          }
+        }
+
+        // 2. جلب آخر منشورات القنوات المسجلة في الموقع (خلال آخر 24 ساعة)
+        let { data: channels } = await supabaseClient.from('posts').select('*').eq('room', 'yt-channels');
+        if (channels && channels.length > 0) {
+          for (let ch of channels) {
+            let parsed = parseYouTubeUrl(ch.url);
+            let chInfo = await getChannelId(parsed);
+            if (chInfo) {
+              let uploadsId = chInfo.uploadsId || chInfo.id.replace('UC', 'UU');
+              let activities = await fetchLatestVideos(uploadsId, 1);
+              for (let v of activities) {
+                const pubDate = new Date(v.publishedAt);
+                // الفحص خلال آخر 24 ساعة كما طلب المستخدم
+                const isRecent = (Date.now() - pubDate.getTime()) < (24 * 60 * 60 * 1000);
+
+                if (isRecent && isContentSafe(v.title)) {
+                  const normVUrl = normalizeUrl(v.videoUrl);
+                  let { data: existing } = await supabaseClient.from('posts').select('id').or(`url.eq.${v.videoUrl},url.eq.${normVUrl}`).limit(1);
+                  if (existing?.length) continue;
+
+                  await supabaseClient.from('posts').insert({
+                    title: `📢 تحديث قناة: ${v.title}`,
+                    description: v.channelName,
+                    icon: v.thumbnail || '🔔',
+                    url: normVUrl,
+                    tag: 'Channel Post',
+                    room: 'youtube-news',
+                    content: v.description || `آخر نشاط من قناة ${v.channelName}`
+                  });
+                  count++;
+                }
+              }
+            }
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
+
+        alert(`✅ تم جلب ${count} خبر/منشور جديد خلال الـ 24 ساعة الماضية.`);
+        loadDashboard();
+      } catch (e) { alert('❌ فشل جلب الأخبار: ' + e.message); }
+    }
+
+    async function manualSyncChannels() {
+      if (!confirm('سيتم الآن فحص جميع القنوات وتنزيل الفيديوهات والبثوث الجديدة. قد يستغرق الأمر بعض الوقت. استمرار؟')) return;
+      await autoCheckAllChannels(true);
+      alert('✅ تم اكتمال الفحص والمزامنة.');
+    }
+
+    function refreshDashboard() {
+      loadDashboard();
+    }
+
+    let _autoCheckInterval = null;
+    function startAutoCheck() {
+      if (_autoCheckInterval) clearInterval(_autoCheckInterval);
+      autoCheckAllChannels();
+      _autoCheckInterval = setInterval(autoCheckAllChannels, 24 * 60 * 60 * 1000);
+    }
+
+    let _newsSyncInterval = null;
+    function startNewsAutoSync() {
+      if (_newsSyncInterval) clearInterval(_newsSyncInterval);
+      // فحص كل ربع ساعة للأخبار والعروض (صامت)
+      syncGamingNews(true);
+      syncGiveaways(true);
+      _newsSyncInterval = setInterval(() => {
+        syncGamingNews(true);
+        syncGiveaways(true);
+      }, 15 * 60 * 1000);
+    }
+
+    // تم حذف دوال addYouTubeLive لأنها غير مستخدمة بعد إزالة الغرفة
+
+    // ==================== غرفة Subscribers ====================
+    async function loadSubscribersAdmin(page = 1) {
+      const container = document.getElementById('subscribers-admin-view');
+      if (!container) return;
+      container.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">⏳ جارٍ التحميل...</div>';
+      const pageSize = 30;
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      try {
+        const { data: users, error, count } = await supabaseClient.from('profiles')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(start, end);
+
+        if (error) throw error;
+        if (!users || !users.length) { container.innerHTML = '<div style="color:#888;text-align:center;padding:24px;">لا يوجد مستخدمون</div>'; return; }
+
+        function getRoles(u) { if (Array.isArray(u.roles) && u.roles.length) return u.roles; if (u.role) return [u.role]; return ['user']; }
+        const roleOrder = ['vip', 'youtuber_vip', 'youtuber', 'moderator', 'member', 'user'];
+        const grouped = {};
+        roleOrder.forEach(r => grouped[r] = []);
+        users.forEach(u => {
+          const roles = getRoles(u);
+          let placed = false;
+          for (const r of roleOrder) { if (roles.includes(r)) { grouped[r].push(u); placed = true; break; } }
+          if (!placed) grouped['user'].push(u);
+        });
+
+        let html = `<div style="margin-bottom:14px; display:flex; gap:10px; align-items:center;">
+          <input type="text" id="subsSearchInput" class="role-search-input" style="flex:1;" placeholder="🔍 ابحث باسم المستخدم أو البريد..." oninput="filterSubscribersList(this.value)">
+          <span style="font-size:12px; color:#888;">الصفحة ${page}</span>
+        </div>`;
+
+        roleOrder.forEach(r => {
+          const m = ROLE_META[r] || ROLE_META.user;
+          const list = grouped[r];
+          if (!list.length) return;
+          html += `<div class="subs-role-group" data-role="${r}" style="margin-bottom:18px;"><div style="font-size:14px;font-weight:700;color:${m.color};margin-bottom:8px;padding:6px 10px;background:${m.bg};border-radius:8px;border:1px solid ${m.color}33;">${m.label}</div>`;
+          html += '<div class="posts-list">';
+          list.forEach(u => {
+            const uid = u.id;
+            const roles = getRoles(u);
+            const badges = roles.map(rr => { const mm = ROLE_META[rr] || ROLE_META.user; return `<span style="font-size:10px;background:${mm.bg};color:${mm.color};border-radius:4px;padding:2px 6px;margin:2px;display:inline-block;">${mm.label}</span>`; }).join('');
+            const date = new Date(u.created_at).toLocaleDateString('ar-EG');
+            const toggleBtns = Object.keys(ROLE_META).map(rr => {
+              const has = roles.includes(rr);
+              const mm = ROLE_META[rr];
+              return has
+                ? `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${mm.color};background:${mm.bg};color:${mm.color};cursor:pointer;" onclick="toggleRole('${uid}','${rr}',false).then(()=>loadSubscribersAdmin(${page}))">✕ ${mm.label}</button>`
+                : `<button style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid #334;background:#0a1020;color:#778;cursor:pointer;" onclick="toggleRole('${uid}','${rr}',true).then(()=>loadSubscribersAdmin(${page}))">${mm.label}</button>`;
+            }).join('');
+            const avatarHtml = u.avatar_url ? `<div style="width:100%;height:100%;overflow:hidden;border-radius:50%;"><img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;transform:scale(1.2);"></div>` : '👤';
+            html += `<div class="pi subs-user-item" data-username="${escapeHtml(u.username || '')}" data-email="${escapeHtml(u.email || '')}">
+          <div class="pi-icon">${avatarHtml}</div>
+          <div class="pi-info" style="flex:1;">
+            <div class="pi-title">${escapeHtml(u.username || u.email)}</div>
+            <div class="pi-meta">${escapeHtml(u.email)} • ${date}</div>
+            <div style="margin-top:4px;">${badges}</div>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;max-width:280px;">
+            ${toggleBtns}
+            <button class="btn-del" style="font-size:10px;padding:3px 8px;" onclick="deleteUser('${uid}').then(()=>loadSubscribersAdmin(${page}))">🗑️ حذف</button>
+          </div>
+        </div>`;
+          });
+          html += '</div></div>';
+        });
+
+        // Pagination buttons
         if (count > pageSize) {
           const totalPages = Math.ceil(count / pageSize);
-          html += `<div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
+          html += `<div style="display:flex; justify-content:center; gap:10px; margin-top:20px; padding-bottom:20px;">
             <button class="btn-edit" ${page === 1 ? 'disabled' : ''} onclick="loadSubscribersAdmin(${page - 1})">⬅️ السابق</button>
             <span style="align-self:center; color:#888;">${page} / ${totalPages}</span>
             <button class="btn-edit" ${page >= totalPages ? 'disabled' : ''} onclick="loadSubscribersAdmin(${page + 1})">التالي ➡️</button>
           </div>`;
         }
+
         container.innerHTML = html;
-      } catch (e) { container.innerHTML = 'خطأ: ' + e.message; }
+      } catch (e) { container.innerHTML = '<div style="color:#f55;text-align:center;padding:24px;">❌ خطأ في التحميل: ' + e.message + '</div>'; console.error(e); }
     }
-
-    async function openEditModal(id) {
-      try {
-        const { data: post, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
-        if (error) throw error;
-        document.getElementById('edit-id').value = post.id;
-        document.getElementById('edit-title').value = post.title;
-        document.getElementById('edit-desc').value = post.description || '';
-        document.getElementById('edit-tag').value = post.tag || '';
-        document.getElementById('edit-url').value = post.url || '';
-        document.getElementById('edit-room').value = post.room;
-        document.getElementById('editModal').classList.add('active');
-      } catch (e) { alert(e.message); }
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.remove('active');
-    }
-
-    async function saveEditPost() {
-      const id = document.getElementById('edit-id').value;
-      const title = document.getElementById('edit-title').value;
-      const description = document.getElementById('edit-desc').value;
-      const tag = document.getElementById('edit-tag').value;
-      const url = document.getElementById('edit-url').value;
-      const room = document.getElementById('edit-room').value;
-      try {
-        const { error } = await supabaseClient.from('posts').update({ title, description, tag, url }).eq('id', id);
-        if (error) throw error;
-        closeEditModal();
-        loadContentPage(room);
-      } catch (e) { alert(e.message); }
-    }
-
-    async function openUserEditModal(userId) {
-      // implementation for user edit modal
-      alert('ميزة تعديل المستخدم (الرتب) قيد الصيانة أو تحتاج لنافذة خاصة.');
-    }
-
-    async function addYouTubeChannel() {
-      const url = prompt('أدخل رابط القناة أو الـ ID:');
-      if (!url) return;
-      try {
-        // Simple placeholder for YouTube channel addition
-        await supabaseClient.from('posts').insert({ title: 'قناة جديدة', url: url, room: 'yt-channels', icon: '📺' });
-        loadContentPage('yt-channels');
-      } catch (e) { alert(e.message); }
-    }
-
-    async function manualSyncChannels() {
-      alert('جاري المزامنة يدوياً...');
-      // Logic for syncing channels
-    }
-
-    function startAutoCheck() {
-      console.log('Auto-check started...');
-    }
-
-    function startNewsAutoSync() {
-      console.log('News sync started...');
-    }
-
-    // Stubs for missing functions to prevent crashes
-    window.autoCheckAllChannels = () => console.log('Stub: autoCheckAllChannels');
-    window.handleImageUpload = () => console.log('Stub: handleImageUpload');
-    window.uploadVideoToBucket = () => console.log('Stub: uploadVideoToBucket');
-    window.addYouTubeVideo = () => console.log('Stub: addYouTubeVideo');
-    window.clearMedia = () => console.log('Stub: clearMedia');
-    window.refreshDashboard = () => loadDashboard();
-    window.searchPostsInRoom = () => console.log('Stub: searchPostsInRoom');
-    window.approvePayment = () => console.log('Stub: approvePayment');
-    window.rejectPayment = () => console.log('Stub: rejectPayment');
-    window.toggleAllCheckboxes = () => console.log('Stub: toggleAllCheckboxes');
-    window.deleteSelectedPosts = () => console.log('Stub: deleteSelectedPosts');
-    window.deleteByChannelName = () => console.log('Stub: deleteByChannelName');
 
     function filterSubscribersList(query) {
       const items = document.querySelectorAll('.subs-user-item');
