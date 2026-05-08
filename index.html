@@ -6807,29 +6807,29 @@
       if (tourData.status === 'finished' && tourData.rankings) {
         const medals = ['🥇', '🥈', '🥉'];
         const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
-        let rankingsHtml = `<div style="margin-top:30px; border-top:1px solid #333; padding-top:30px; text-align:center;">
-          <h3 style="color:#ffd2b8; margin-bottom:25px; font-weight:900; font-size:20px;">🏆 الترتيب النهائي للبطولة</h3>`;
+        let rankingsHtml = `<div style="margin-top:20px; border-top:1px solid #333; padding:20px; text-align:center; max-height:450px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:12px;">
+          <h3 style="color:#ffd2b8; margin-bottom:15px; font-weight:900; font-size:18px;">🏆 الترتيب النهائي للبطولة</h3>`;
         
         // المراكز الثلاثة الأولى
-        rankingsHtml += `<div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap; margin-bottom:30px;">`;
+        rankingsHtml += `<div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;">`;
         tourData.rankings.slice(0, 3).forEach((p, idx) => {
           rankingsHtml += `
-            <div style="background:rgba(255,255,255,0.03); border:1px solid ${colors[idx]}; border-radius:15px; padding:15px 20px; min-width:140px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow: 0 0 15px ${colors[idx]}11;">
-              <span style="font-size:32px;">${medals[idx]}</span>
-              <div style="font-weight:900; color:#fff; font-size:14px;">${escapeHtml(p.name)}</div>
-              <div style="font-size:10px; color:${colors[idx]}; font-weight:800;">${idx===0?'البطل':(idx===1?'الوصيف':'المركز الثالث')}</div>
+            <div style="background:rgba(255,255,255,0.03); border:1px solid ${colors[idx]}; border-radius:12px; padding:10px; min-width:120px; display:flex; flex-direction:column; align-items:center; gap:5px; box-shadow: 0 0 10px ${colors[idx]}11;">
+              <span style="font-size:24px;">${medals[idx]}</span>
+              <div style="font-weight:900; color:#fff; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%;">${escapeHtml(p.name)}</div>
+              <div style="font-size:9px; color:${colors[idx]}; font-weight:800;">${idx===0?'البطل':(idx===1?'الوصيف':'المركز الثالث')}</div>
             </div>`;
         });
         rankingsHtml += `</div>`;
 
         // بقية المراكز (من دور 32 وما فوق)
         if (tourData.rankings.length > 3) {
-          rankingsHtml += `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px; max-width:1000px; margin:0 auto; padding:0 10px;">`;
+          rankingsHtml += `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:8px; max-width:1000px; margin:0 auto; padding:0 10px;">`;
           tourData.rankings.slice(3).forEach((p, idx) => {
             rankingsHtml += `
-              <div style="background:rgba(255,255,255,0.02); border:1px solid #222; border-radius:8px; padding:8px 12px; display:flex; align-items:center; gap:10px; text-align:left;">
-                <span style="color:#666; font-size:10px; font-weight:bold; width:15px;">${idx + 4}</span>
-                <div style="color:#aaa; font-size:12px;">${escapeHtml(p.name)}</div>
+              <div style="background:rgba(255,255,255,0.02); border:1px solid #222; border-radius:6px; padding:6px 10px; display:flex; align-items:center; gap:8px; text-align:left;">
+                <span style="color:#666; font-size:9px; font-weight:bold; width:15px;">${idx + 4}</span>
+                <div style="color:#aaa; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.name)}</div>
               </div>`;
           });
           rankingsHtml += `</div>`;
