@@ -6928,9 +6928,12 @@
 
       let tourDetailsHtml = '';
       if (tourData.type === 'bracket') {
-        const numRounds = tourData.matches.length;
-        tourDetailsHtml = `<div id="tour-bracket-wrapper" style="overflow:hidden; width:100%; min-height:500px; background:rgba(0,0,0,0.1); border-radius:12px;"><div class="bracket-container" style="transform: scale(${tourZoomScale});">`;
-        tourData.matches.forEach((round, rIdx) => {
+        const participants = tourData.participants || [];
+        const numRounds = Math.ceil(Math.log2(participants.length)) || (tourData.matches ? tourData.matches.length : 0);
+        
+        tourDetailsHtml = `<div id="tour-bracket-wrapper" style="overflow:auto; width:100%; min-height:500px; background:rgba(0,0,0,0.1); border-radius:12px; cursor:grab;"><div class="bracket-container" style="transform: scale(${tourZoomScale}); transform-origin: top left; padding:40px; display:flex; gap:50px;">`;
+        
+        for (let rIdx = 0; rIdx < numRounds; rIdx++) {
           let roundTitle = `${window.t('الجولة', 'Round')} ${rIdx + 1}`;
           const distFromFinal = numRounds - 1 - rIdx;
           if (distFromFinal === 0) roundTitle = 'النهائي';
@@ -6938,29 +6941,107 @@
           else if (distFromFinal === 2) roundTitle = 'ربع النهائي';
           else if (distFromFinal === 3) roundTitle = 'ثمن النهائي';
 
-          tourDetailsHtml += `<div class="bracket-round-view">
-            <div style="text-align:center; color:var(--vx-primary); font-size:11px; font-weight:800; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2);">${roundTitle}</div>`;
-          round.forEach(m => {
-            tourDetailsHtml += `<div class="match-card-view">
-              <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
-                <span>${escapeHtml(m.p1?.name || '---')}</span>
-                <span class="match-score-view">${m.score1}</span>
+          tourDetailsHtml += `<div class="bracket-round-view" style="display:flex; flex-direction:column; justify-content:space-around; min-width:200px;">
+            <div style="text-align:center; color:var(--vx-primary); font-size:11px; font-weight:800; margin-bottom:15px; background:rgba(255,0,64,0.05); padding:5px; border-radius:5px;">${roundTitle}</div>`;
+          
+          const roundMatches = (tourData.matches && tourData.matches[rIdx]) ? tourData.matches[rIdx] : null;
+          const matchesCount = Math.pow(2, numRounds - rIdx - 1);
+
+          for (let mIdx = 0; mIdx < matchesCount; mIdx++) {
+            const m = (roundMatches && roundMatches[mIdx]) ? roundMatches[mIdx] : { p1: { name: '---' }, p2: { name: '---' }, score1: 0, score2: 0, winner: null };
+            
+            tourDetailsHtml += `<div class="match-card-view" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin:10px 0; overflow:hidden;">
+              <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}" style="padding:8px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.02);">
+                <span style="font-size:12px; font-weight:700;">${escapeHtml(m.p1?.name || '---')}</span>
+                <span class="match-score-view" style="font-weight:900; color:var(--vx-primary);">${m.score1 || 0}</span>
               </div>
-              <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}">
-                <span>${escapeHtml(m.p2?.name || '---')}</span>
-                <span class="match-score-view">${m.score2}</span>
+              <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}" style="padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:700;">${escapeHtml(m.p2?.name || '---')}</span>
+                <span class="match-score-view" style="font-weight:900; color:var(--vx-primary);">${m.score2 || 0}</span>
               </div>
             </div>`;
-          });
+          }
           tourDetailsHtml += `</div>`;
-        });
+        }
         tourDetailsHtml += `</div></div>`;
       } else if (tourData.type === 'league') {
-        tourDetailsHtml = `<div style="padding:10px;"><table class="league-table-view"><thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead><tbody>`;
-        tourData.league.sort((a,b)=> b.pts - a.pts).forEach((p,idx) => {
-          tourDetailsHtml += `<tr><td>${idx+1}</td><td style="text-align:left;">${escapeHtml(p.name)}</td><td>${p.p}</td><td style="color:var(--vx-primary); font-weight:800;">${p.pts}</td></tr>`;
+        tourDetailsHtml = `
+        <div style="padding:10px; overflow-x:auto;">
+          <table class="tr-table-premium" style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.02);">
+                <th style="padding:12px; text-align:center; color:#666;">#</th>
+                <th style="padding:12px; text-align:left; color:#aaa;">اللاعب</th>
+                <th title="لعب" style="text-align:center; color:#888;">P</th>
+                <th title="فوز" style="text-align:center; color:#00ff88;">W</th>
+                <th title="خسارة" style="text-align:center; color:#ff4444;">L</th>
+                <th title="نقاط" style="text-align:center; color:#ffaa00; font-weight:bold;">Pts</th>
+              </tr>
+            </thead>
+            <tbody>`;
+        const sorted = [...tourData.league].sort((a,b)=> b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.w - a.w);
+        sorted.forEach((p,idx) => {
+          const isTop = idx < 3;
+          tourDetailsHtml += `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.02); ${isTop ? 'background:rgba(0,245,255,0.02);' : ''}">
+            <td style="padding:12px; text-align:center; font-weight:900; color:${isTop?'#00f5ff':'#555'};">${idx+1}</td>
+            <td style="padding:12px; font-weight:700; color:#eee;">${escapeHtml(p.name)}</td>
+            <td style="text-align:center; color:#888;">${p.p || 0}</td>
+            <td style="text-align:center; color:#00ff88;">${p.w || 0}</td>
+            <td style="text-align:center; color:#ff4444;">${p.l || 0}</td>
+            <td style="text-align:center; font-weight:900; color:#ffaa00;">${p.pts || 0}</td>
+          </tr>`;
         });
         tourDetailsHtml += `</tbody></table></div>`;
+      } else if (tourData.type === 'groups_bracket') {
+        if (tourData.matches && tourData.matches.length > 0) {
+          // عرض الشجرة إذا بدأت التصفيات
+          const numRounds = tourData.matches.length;
+          tourDetailsHtml = `
+            <div style="text-align:center; color:#ffd2b8; margin-bottom:15px; font-weight:bold; font-size:14px;">🌳 المرحلة الإقصائية</div>
+            <div id="tour-bracket-wrapper" style="overflow:auto; width:100%; min-height:400px; background:rgba(0,0,0,0.1); border-radius:12px; cursor:grab;">
+              <div class="bracket-container" style="transform: scale(${tourZoomScale}); transform-origin: top left; padding:40px; display:flex; gap:40px;">`;
+          tourData.matches.forEach((round, rIdx) => {
+            tourDetailsHtml += `<div class="bracket-round-view" style="display:flex; flex-direction:column; justify-content:space-around; min-width:180px;">
+              <div style="text-align:center; color:#00f5ff; font-size:10px; font-weight:800; margin-bottom:10px; background:rgba(0,245,255,0.05); padding:3px; border-radius:4px;">الجولة ${rIdx + 1}</div>`;
+            round.forEach(m => {
+              tourDetailsHtml += `<div class="match-card-view" style="background:rgba(255,255,255,0.02); border:1px solid #333; border-radius:8px; margin:8px 0; overflow:hidden;">
+                <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #222;">
+                  <span style="font-size:11px; font-weight:700;">${escapeHtml(m.p1?.name || '---')}</span>
+                  <span style="font-weight:900; color:#00f5ff;">${m.score1}</span>
+                </div>
+                <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:11px; font-weight:700;">${escapeHtml(m.p2?.name || '---')}</span>
+                  <span style="font-weight:900; color:#00f5ff;">${m.score2}</span>
+                </div>
+              </div>`;
+            });
+            tourDetailsHtml += `</div>`;
+          });
+          tourDetailsHtml += `</div></div>`;
+        } else if (tourData.groups) {
+          // عرض المجموعات
+          tourDetailsHtml = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:15px; padding:10px;">`;
+          tourData.groups.forEach(g => {
+            tourDetailsHtml += `
+              <div style="background:rgba(255,255,255,0.03); border:1px solid #333; border-radius:12px; overflow:hidden;">
+                <div style="background:rgba(0,245,255,0.05); color:#00f5ff; padding:10px; font-weight:800; border-bottom:1px solid #222; font-size:13px; text-align:center;">${escapeHtml(g.name)}</div>
+                <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                  <thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:8px; text-align:center;">#</th><th style="padding:8px; text-align:left;">اللاعب</th><th style="padding:8px;">P</th><th style="padding:8px; color:#ffaa00;">Pts</th></tr></thead>
+                  <tbody>`;
+            g.players.forEach((p, idx) => {
+              const isQualified = idx < 2;
+              tourDetailsHtml += `<tr style="border-bottom:1px solid #222; ${isQualified ? 'background:rgba(0,255,200,0.03);' : ''}">
+                <td style="padding:8px; text-align:center; font-weight:900; color:${isQualified ? '#00ffcc' : '#555'};">${idx + 1}</td>
+                <td style="padding:8px; font-weight:700;">${escapeHtml(p.name)}</td>
+                <td style="padding:8px; text-align:center;">${p.p || 0}</td>
+                <td style="padding:8px; text-align:center; font-weight:900; color:#ffaa00;">${p.pts || 0}</td>
+              </tr>`;
+            });
+            tourDetailsHtml += `</tbody></table></div>`;
+          });
+          tourDetailsHtml += `</div>`;
+        }
       }
 
       // عرض الترتيب النهائي إذا انتهت البطولة
@@ -7001,9 +7082,7 @@
 
       contentHtml += tourDetailsHtml;
       container.innerHTML = contentHtml;
-
-      container.innerHTML = contentHtml;
-      setTimeout(initTourPanning, 100);
+      setTimeout(window.initTourPanning, 100);
     }
 
     window.openTournamentResults = function(postId) { window.showTourDetails(postId); };
