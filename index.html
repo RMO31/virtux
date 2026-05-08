@@ -43,6 +43,49 @@
       min-height: 100vh;
     }
 
+    .bracket-container {
+      display: flex;
+      gap: 40px;
+      padding: 30px;
+      min-width: max-content;
+      transition: transform 0.2s ease-out;
+      transform-origin: top center;
+    }
+    .bracket-round-view {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      min-width: 180px;
+    }
+    .match-card-view {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      width: 180px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .match-team-view {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #ccc;
+    }
+    .match-team-view.winner {
+      background: rgba(0, 245, 255, 0.1);
+      color: #00f5ff;
+      font-weight: 800;
+    }
+    .match-score-view {
+      background: rgba(0,0,0,0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 800;
+      color: #00f5ff;
+    }
+
     /* Video Background */
     #bg-video-container {
       position: fixed;
@@ -6617,15 +6660,11 @@
     }
     migrateReelsToNewRoom();
     // ==================== تفاصيل البطولات والشجرة ====================
+    let tourZoomScale = 1.0;
     window.showTourDetails = async function(postId) {
       const posts = window.allPosts['tournaments'] || [];
       const post = posts.find(p => p.id === postId);
       if (!post) return;
-
-      let tourData = null;
-      try {
-        if (post.content && post.content.startsWith('{')) tourData = JSON.parse(post.content);
-      } catch(e) {}
 
       let existing = document.getElementById('tour-details-modal');
       if (existing) existing.remove();
@@ -6633,94 +6672,113 @@
       const modal = document.createElement('div');
       modal.id = 'tour-details-modal';
       modal.className = 'modal active';
-      
-      let contentHtml = `<div style="text-align:center; padding:50px; color:#666; font-size:16px;">⏳ ${window.t("البطولة قيد الإعداد، سيتم عرض النتائج هنا فور البدء.", "Tournament is being prepared. Results will appear here soon.")}</div>`;
-      
-      if (tourData && tourData.status !== 'registration') {
-        if (tourData.type === 'bracket') {
-          contentHtml = `<div class="bracket-container">`;
-          tourData.matches.forEach((round, rIdx) => {
-            contentHtml += `<div class="bracket-round-view">
-              <div style="text-align:center; color:var(--vx-primary); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2); padding-bottom:5px;">
-                ${window.t('الجولة', 'Round')} ${rIdx + 1}
-              </div>`;
-            round.forEach(m => {
-              contentHtml += `<div class="match-card-view">
-                <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
-                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${escapeHtml(m.p1?.name || '???')}</span>
-                  <span class="match-score-view">${m.score1}</span>
-                </div>
-                <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}">
-                  <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${escapeHtml(m.p2?.name || '???')}</span>
-                  <span class="match-score-view">${m.score2}</span>
-                </div>
-              </div>`;
-            });
-            contentHtml += `</div>`;
-          });
-          contentHtml += `</div>`;
-        } else if (tourData.type === 'league') {
-          contentHtml = `
-          <div style="padding:10px;">
-            <h3 style="color:#ffd2b8; text-align:center; margin-bottom:20px; font-family:'Outfit';">🏆 ${window.t('جدول الترتيب', 'League Standings')}</h3>
-            <table class="league-table-view">
-              <thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('فوز', 'W')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead>
-              <tbody>`;
-          tourData.league.sort((a,b)=> b.pts - a.pts || b.w - a.w).forEach((p,idx) => {
-            contentHtml += `<tr><td>${idx+1}</td><td style="text-align:left; font-weight:700;">${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:800;">${p.pts}</td></tr>`;
-          });
-          contentHtml += `</tbody></table></div>`;
-        } else if (tourData.type === 'groups_bracket') {
-            if (tourData.matches && tourData.matches.length > 0) {
-                 contentHtml = `<h3 style="color:#ffd2b8; text-align:center; margin-bottom:20px; font-family:'Outfit';">🌳 ${window.t('المرحلة الإقصائية', 'Elimination Stage')}</h3><div class="bracket-container">`;
-                 tourData.matches.forEach((round, rIdx) => {
-                    contentHtml += `<div class="bracket-round-view"><div style="text-align:center; color:var(--vx-primary); font-size:12px; font-weight:800; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2);">${window.t('الجولة', 'Round')} ${rIdx+1}</div>`;
-                    round.forEach(m => {
-                      contentHtml += `<div class="match-card-view">
-                        <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
-                          <span>${escapeHtml(m.p1?.name || '???')}</span>
-                          <span class="match-score-view">${m.score1}</span>
-                        </div>
-                        <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}">
-                          <span>${escapeHtml(m.p2?.name || '???')}</span>
-                          <span class="match-score-view">${m.score2}</span>
-                        </div>
-                      </div>`;
-                    });
-                    contentHtml += `</div>`;
-                 });
-                 contentHtml += `</div>`;
-            } else {
-              contentHtml = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">`;
-              tourData.groups.forEach(g => {
-                contentHtml += `<div style="background:rgba(255,255,255,0.02); padding:20px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
-                  <h4 style="color:#ffd2b8; margin-bottom:15px; text-align:center;">${g.name}</h4>
-                  <table class="league-table-view">
-                    <thead><tr><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('فوز', 'W')}</th><th>${window.t('ن', 'PTS')}</th></tr></thead>
-                    <tbody>`;
-                g.players.sort((a,b)=>b.pts-a.pts).forEach(p => {
-                  contentHtml += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
-                });
-                contentHtml += `</tbody></table></div>`;
-              });
-              contentHtml += `</div>`;
-            }
-        }
-      }
-
       modal.innerHTML = `
-        <div class="tour-modal-box">
+        <div class="tour-modal-box" style="max-width:95%; width:1200px;">
           <button onclick="document.getElementById('tour-details-modal').remove()" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.05); border:1px solid #333; color:#aaa; width:36px; height:36px; border-radius:10px; cursor:pointer; font-size:20px; z-index:10;">✕</button>
-          <div style="margin-bottom:30px; text-align:center;">
-            <h2 style="color:#fff; font-family:'Outfit'; font-size:26px; margin-bottom:10px;">🏆 ${escapeHtml(post.title)}</h2>
-            <p style="color:#888; font-size:14px;">${window.t('تفاصيل البطولة والنتائج المباشرة', 'Tournament Details & Live Results')}</p>
+          
+          <div style="margin-bottom:20px; text-align:center;">
+            <h2 style="color:#fff; font-family:'Outfit'; font-size:24px; margin-bottom:5px;">🏆 ${escapeHtml(post.title)}</h2>
+            <div style="display:flex; justify-content:center; gap:10px; margin-top:10px;">
+               <button onclick="adjustTourZoom(-0.1)" style="background:#222; color:#00f5ff; border:1px solid #333; padding:4px 12px; border-radius:6px; cursor:pointer; font-weight:800;">🔍-</button>
+               <button onclick="adjustTourZoom(0.1)" style="background:#222; color:#00f5ff; border:1px solid #333; padding:4px 12px; border-radius:6px; cursor:pointer; font-weight:800;">🔍+</button>
+            </div>
           </div>
-          <div id="tour-details-content">${contentHtml}</div>
+
+          <div id="tour-details-content" style="overflow:auto; max-height:70vh; min-height:300px;">
+             <div class="loading-state">⏳ جاري تحميل البيانات الحية...</div>
+          </div>
         </div>
       `;
-      modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
       document.body.appendChild(modal);
+      modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+      // الاشتراك في التحديثات الحية
+      const channel = db.channel(`tour-live-${postId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts', filter: `id=eq.${postId}` }, payload => {
+           renderTourContent(payload.new);
+        })
+        .subscribe();
+
+      // إغلاق الاشتراك عند قفل المودال
+      const originalRemove = modal.remove;
+      modal.remove = function() {
+        db.removeChannel(channel);
+        originalRemove.call(this);
+      };
+
+      // التحميل الأولي
+      const { data: latestPost } = await db.from('posts').select('*').eq('id', postId).single();
+      renderTourContent(latestPost || post);
     };
+
+    window.adjustTourZoom = function(delta) {
+      tourZoomScale = Math.max(0.4, Math.min(1.5, tourZoomScale + delta));
+      const root = document.querySelector('.bracket-container');
+      if (root) root.style.transform = `scale(${tourZoomScale})`;
+    };
+
+    function renderTourContent(post) {
+      const container = document.getElementById('tour-details-content');
+      if (!container) return;
+
+      let tourData = null;
+      try {
+        if (post.content && post.content.startsWith('{')) tourData = JSON.parse(post.content);
+      } catch(e) {}
+
+      if (!tourData || tourData.status === 'registration') {
+        container.innerHTML = `<div style="text-align:center; padding:50px; color:#666; font-size:16px;">⏳ البطولة قيد الإعداد، سيتم عرض النتائج هنا فور البدء.</div>`;
+        return;
+      }
+
+      let contentHtml = '';
+      if (tourData.type === 'bracket') {
+        contentHtml = `<div class="bracket-container" style="transform: scale(${tourZoomScale});">`;
+        tourData.matches.forEach((round, rIdx) => {
+          contentHtml += `<div class="bracket-round-view">
+            <div style="text-align:center; color:var(--vx-primary); font-size:11px; font-weight:800; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2);">${window.t('الجولة', 'Round')} ${rIdx + 1}</div>`;
+          round.forEach(m => {
+            contentHtml += `<div class="match-card-view">
+              <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
+                <span>${escapeHtml(m.p1?.name || '---')}</span>
+                <span class="match-score-view">${m.score1}</span>
+              </div>
+              <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}">
+                <span>${escapeHtml(m.p2?.name || '---')}</span>
+                <span class="match-score-view">${m.score2}</span>
+              </div>
+            </div>`;
+          });
+          contentHtml += `</div>`;
+        });
+        contentHtml += `</div>`;
+      } else if (tourData.type === 'league') {
+        contentHtml = `<div style="padding:10px;"><table class="league-table-view"><thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead><tbody>`;
+        tourData.league.sort((a,b)=> b.pts - a.pts).forEach((p,idx) => {
+          contentHtml += `<tr><td>${idx+1}</td><td style="text-align:left;">${escapeHtml(p.name)}</td><td>${p.p}</td><td style="color:var(--vx-primary); font-weight:800;">${p.pts}</td></tr>`;
+        });
+        contentHtml += `</tbody></table></div>`;
+      }
+
+      // عرض الترتيب النهائي إذا انتهت البطولة
+      if (tourData.status === 'finished' && tourData.rankings) {
+        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+        let rankingsHtml = `<div style="margin-top:30px; border-top:1px solid #333; padding-top:20px;">
+          <h3 style="color:#ffd2b8; margin-bottom:15px; text-align:center;">🏆 الترتيب النهائي</h3>
+          <div style="display:flex; justify-content:center; gap:15px; flex-wrap:wrap;">`;
+        tourData.rankings.forEach((p, idx) => {
+          rankingsHtml += `
+            <div style="background:rgba(255,255,255,0.03); border:1px solid #333; border-radius:12px; padding:12px 20px; display:flex; align-items:center; gap:12px;">
+              <span style="font-size:24px;">${medals[idx] || (idx+1)}</span>
+              <div style="font-weight:800; color:#fff;">${escapeHtml(p.name)}</div>
+            </div>`;
+        });
+        rankingsHtml += `</div></div>`;
+        contentHtml = rankingsHtml + contentHtml;
+      }
+
+      container.innerHTML = contentHtml;
+    }
 
     window.openTournamentResults = function(postId) { window.showTourDetails(postId); };
     function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m); }
