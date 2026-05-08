@@ -890,66 +890,74 @@
     /* تحسين عرض الشجرة في لوحة الإدارة */
     .bracket-container {
       display: flex;
-      gap: 30px;
-      padding: 20px 0;
+      gap: 50px;
+      padding: 30px 10px;
       position: relative;
+      align-items: center;
+      min-width: max-content;
     }
 
     .bracket-round {
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: space-around;
       position: relative;
+      min-width: 220px; /* Increased from 180px */
     }
 
     .match-box {
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 8px;
-      width: 120px;
-      margin: 5px 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      width: 220px; /* Increased from 180px */
+      margin: 10px 0;
       position: relative;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       flex-shrink: 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      overflow: hidden;
     }
-    .match-box:hover { border-color: #00f5ff; transform: scale(1.02); }
+    
+    .match-box:hover { 
+      border-color: #00f5ff; 
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 245, 255, 0.15);
+    }
 
+    /* Connectors */
     .match-box::after {
       content: "";
       position: absolute;
-      right: -15px;
+      right: -25px;
       top: 50%;
-      width: 15px;
-      height: 1px;
-      background: rgba(0, 245, 255, 0.4);
+      width: 25px;
+      height: 2px;
+      background: linear-gradient(to right, rgba(0, 245, 255, 0.4), rgba(0, 245, 255, 0.2));
     }
     .bracket-round:last-child .match-box::after { display: none; }
 
-    .match-box:nth-child(odd)::before {
+    /* Vertical connector for pairs */
+    .match-box:nth-child(odd):not(:last-child)::before {
       content: "";
       position: absolute;
-      right: -15px;
+      right: -25px;
       top: 50%;
-      width: 1px;
-      height: var(--connector-height, 50px);
-      background: rgba(0, 245, 255, 0.4);
+      width: 2px;
+      height: var(--connector-height, 60px);
+      background: rgba(0, 245, 255, 0.3);
     }
+    
     .bracket-round:last-child .match-box::before { display: none; }
-    .bracket-round .match-box:only-child::before { display: none; }
 
-    /* وصلة من اليسار للمربعات في الأدوار التالية */
+    /* Left connector for rounds after the first */
     .bracket-round:not(:first-child) .match-box::before {
       content: "";
       position: absolute;
-      left: -15px;
+      left: -25px;
       top: 50%;
-      width: 15px;
-      height: 1px;
-      background: rgba(0, 245, 255, 0.4);
-    }
-    /* إلغاء تداخل الخط الرأسي مع وصلة اليسار في المربعات الفردية */
-    .bracket-round:not(:first-child) .match-box:nth-child(odd)::before {
-      box-shadow: -15px 0 0 0 transparent; /* لمنع التعارض */
+      width: 25px;
+      height: 2px;
+      background: rgba(0, 245, 255, 0.2);
     }
 
     .match-p {
@@ -1349,8 +1357,19 @@
     function handleDragLeave(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }
     function handleDrop(idx) {
       if (draggedItemIndex === null || draggedItemIndex === idx) return;
+      
+      // التأكد من أن قائمة المشاركين تغطي جميع الخانات (لحساب خانات الـ BYE)
+      const numRounds = Math.ceil(Math.log2(currentTourData.participants.length));
+      const totalSlots = Math.pow(2, numRounds);
+      
+      while (currentTourData.participants.length < totalSlots) {
+        currentTourData.participants.push({ name: 'BYE', id: 'bye' });
+      }
+
       const p = currentTourData.participants;
       [p[draggedItemIndex], p[idx]] = [p[idx], p[draggedItemIndex]];
+      
+      // تنظيف الـ BYE الزائدة من النهاية (اختياري، لكن يفضل بقاء القوة 2 للشجرة)
       draggedItemIndex = null;
       renderDrawView();
     }
@@ -1400,18 +1419,22 @@
       }
 
       let previewHtml = `
-        <h4 style="color:#ffd2b8; margin-bottom:10px; text-align:center; font-size:12px;">🌳 معاينة الشجرة (اسحب للترتيب)</h4>
-        <div class="bracket-container" style="justify-content: flex-start; gap:30px; transform: scale(0.75); transform-origin: top left; padding-bottom:50px;">`;
+        <h4 style="color:#ffd2b8; margin-bottom:15px; text-align:center; font-size:14px; font-weight:bold; letter-spacing:1px;">🌳 معاينة شجرة المواجهات</h4>
+        <p style="text-align:center; color:#888; font-size:11px; margin-bottom:20px;">💡 يمكنك سحب وإفلات اللاعبين داخل المربعات لتغيير أماكنهم</p>
+        <div class="bracket-container" style="padding-bottom:100px;">`;
 
       let currentRoundPlayers = players;
       for (let r = 0; r < numRounds; r++) {
-        const finalTitle = r === numRounds - 1 ? 'النهائي' : `جولة ${r + 1}`;
+        const isFinal = r === numRounds - 1;
+        const roundTitle = isFinal ? 'النهائي' : (r === numRounds - 2 ? 'نصف النهائي' : `جولة ${r + 1}`);
+        
         previewHtml += `<div class="bracket-round">
-          <h5 style="color:#00f5ff; font-size:9px; text-align:center; margin-bottom:10px; opacity:0.6;">${finalTitle}</h5>`;
+          <h5 style="color:#00f5ff; font-size:11px; text-align:center; margin-bottom:20px; text-transform:uppercase; font-weight:800; background:rgba(0,245,255,0.1); padding:4px; border-radius:4px;">${roundTitle}</h5>`;
         
         let nextRoundCount = currentRoundPlayers.length / 2;
-        const connHeight = Math.pow(2, r) * 60; // المسافة بين مركزي مباراتين (أقل بـ 15)
-        const marginVal = (connHeight - 47) / 2; // الهامش للتمركز (47 هو طول المربع الجديد)
+        // Adjust vertical spacing: rounds further in have more space
+        const connHeight = Math.pow(2, r) * 70; 
+        const marginVal = (connHeight - 54) / 2; // 54 is approximate height of match-box
 
         for (let m = 0; m < nextRoundCount; m++) {
           const p1Idx = m * 2;
@@ -1419,37 +1442,45 @@
           const p1 = currentRoundPlayers[p1Idx];
           const p2 = currentRoundPlayers[p2Idx];
           
-          // السماح بالسحب والإفلات فقط في الجولة الأولى
-          const dragAttr1 = (r === 0 && p1.id !== 'bye') ? `draggable="true" ondragstart="handleDragStart(${p1Idx})"` : '';
-          const dragAttr2 = (r === 0 && p2.id !== 'bye') ? `draggable="true" ondragstart="handleDragStart(${p2Idx})"` : '';
-          const dropAttr1 = (r === 0) ? `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(${p1Idx})"` : '';
-          const dropAttr2 = (r === 0) ? `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(${p2Idx})"` : '';
+          // Drag and drop for first round only (usually where the seeds are set)
+          // Or allow for all rounds if it's just a preview of slots?
+          // The user specifically asked to change player locations.
+          const canDrag = (r === 0);
+          const dragAttr1 = (canDrag && p1.id !== 'bye') ? `draggable="true" ondragstart="handleDragStart(${p1Idx})"` : '';
+          const dragAttr2 = (canDrag && p2.id !== 'bye') ? `draggable="true" ondragstart="handleDragStart(${p2Idx})"` : '';
+          const dropAttr1 = canDrag ? `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(${p1Idx})"` : '';
+          const dropAttr2 = canDrag ? `ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(${p2Idx})"` : '';
+
+          const p1Avatar = p1.avatar ? `<img src="${p1.avatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;margin-right:8px;">` : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:8px;">👤</div>`;
+          const p2Avatar = p2.avatar ? `<img src="${p2.avatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;margin-right:8px;">` : `<div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.1);margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:8px;">👤</div>`;
 
           previewHtml += `
             <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px;">
-              <div class="match-p" ${dragAttr1} ${dropAttr1} style="padding:2px 8px; height:22px; cursor:${r===0?'move':'default'};">
-                <span style="font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p1.name)}</span>
+              <div class="match-p" ${dragAttr1} ${dropAttr1} style="padding:8px 12px; height:32px; cursor:${canDrag?'move':'default'}; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center;">
+                ${p1.id === 'bye' ? '' : p1Avatar}
+                <span style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:${p1.id==='bye'?'#555':'#eee'}; flex:1;">${p1Name}</span>
               </div>
-              <div class="match-p" ${dragAttr2} ${dropAttr2} style="border-top:1px solid rgba(255,255,255,0.05); padding:2px 8px; height:22px; cursor:${r===0?'move':'default'};">
-                <span style="font-size:9px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p2.name)}</span>
+              <div class="match-p" ${dragAttr2} ${dropAttr2} style="padding:8px 12px; height:32px; cursor:${canDrag?'move':'default'}; display:flex; align-items:center;">
+                ${p2.id === 'bye' ? '' : p2Avatar}
+                <span style="font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; color:${p2.id==='bye'?'#555':'#eee'}; flex:1;">${p2Name}</span>
               </div>
             </div>`;
         }
         previewHtml += `</div>`;
         
+        // Prepare winners for next round visual (placeholders)
         let nextRoundPlayers = [];
         for (let m = 0; m < nextRoundCount; m++) {
-          nextRoundPlayers.push({ name: `الفائز م${m+1}`, id: 'winner' });
+          nextRoundPlayers.push({ name: `Winner M${m+1}`, id: 'winner' });
         }
         currentRoundPlayers = nextRoundPlayers;
       }
       
+      // Champion Slot
       previewHtml += `<div class="bracket-round">
-        <h5 style="color:gold; font-size:9px; text-align:center; margin-bottom:10px; opacity:0.6;">🏆 البطل</h5>
-        <div class="match-box" style="border-color:gold; background:rgba(255,215,0,0.05); margin: auto 0; width:150px;">
-          <div class="match-p" style="justify-content:center; height:40px;">
-            <span style="color:gold; font-weight:900; font-size:11px;">CHAMPION</span>
-          </div>
+        <h5 style="color:gold; font-size:11px; text-align:center; margin-bottom:20px; font-weight:800; background:rgba(255,215,0,0.1); padding:4px; border-radius:4px;">🏆 البطل</h5>
+        <div class="match-box" style="border-color:gold; background:rgba(255,215,0,0.08); margin: auto 0; width:200px; height:60px; display:flex; align-items:center; justify-content:center; border-width:2px;">
+          <span style="color:gold; font-weight:900; font-size:14px; letter-spacing:2px; text-shadow: 0 0 10px rgba(255,215,0,0.3);">CHAMPION</span>
         </div>
       </div></div>`;
 
@@ -1595,30 +1626,60 @@
       info.innerText = `النظام: ${currentTourData.type === 'bracket' ? 'شجرة' : 'دوري'} • عدد المتنافسين: ${currentTourData.participants.length}`;
 
       if (currentTourData.type === 'bracket') {
-        let html = `<div class="bracket-container" style="transform: scale(0.7); transform-origin: top left; gap:30px; min-width: max-content; padding-bottom:150px;">`;
-        currentTourData.matches.forEach((round, rIndex) => {
+        const participants = currentTourData.participants;
+        const numRounds = Math.ceil(Math.log2(participants.length));
+        
+        let html = `<div class="bracket-container" style="gap:50px; min-width: max-content; padding-bottom:150px;">`;
+        
+        for (let rIndex = 0; rIndex < numRounds; rIndex++) {
+          const isFinal = rIndex === numRounds - 1;
+          const roundTitle = isFinal ? 'النهائي' : (rIndex === numRounds - 2 ? 'نصف النهائي' : `جولة ${rIndex + 1}`);
+          
           html += `<div class="bracket-round">
-            <h4 style="color:#00f5ff; font-size:9px; margin-bottom:8px; text-align:center; opacity:0.6;">جولة ${rIndex + 1}</h4>`;
-          round.forEach((m, mIndex) => {
-            const connHeight = Math.pow(2, rIndex) * 60;
-            const marginVal = (connHeight - 47) / 2;
+            <h4 style="color:#00f5ff; font-size:12px; margin-bottom:20px; text-align:center; font-weight:bold; background:rgba(0,245,255,0.1); padding:6px; border-radius:8px; text-transform:uppercase; letter-spacing:1px;">${roundTitle}</h4>`;
+          
+          let roundMatches = currentTourData.matches[rIndex] || [];
+          let matchesCount = Math.pow(2, numRounds - rIndex - 1);
+
+          for (let mIndex = 0; mIndex < matchesCount; mIndex++) {
+            const m = roundMatches[mIndex] || { 
+              p1: { name: `فائز م${mIndex * 2 + 1}`, id: 'placeholder' }, 
+              p2: { name: `فائز م${mIndex * 2 + 2}`, id: 'placeholder' }, 
+              score1: 0, score2: 0, winner: null 
+            };
+            
+            const connHeight = Math.pow(2, rIndex) * 80;
+            const marginVal = (connHeight - 78) / 2; // Adjusted for larger match-box
+            
+            const p1Name = m.p1?.id === 'bye' ? '<span style="color:#444;">(BYE)</span>' : escapeHtml(m.p1?.name || '???');
+            const p2Name = m.p2?.id === 'bye' ? '<span style="color:#444;">(BYE)</span>' : escapeHtml(m.p2?.name || '???');
+            const p1Avatar = m.p1?.avatar ? `<img src="${m.p1.avatar}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:10px;">` : `<div style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.05);margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#444;">👤</div>`;
+            const p2Avatar = m.p2?.avatar ? `<img src="${m.p2.avatar}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:10px;">` : `<div style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.05);margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#444;">👤</div>`;
+
+            const isPlaceholder = !currentTourData.matches[rIndex] || !currentTourData.matches[rIndex][mIndex];
+            const clickHandler = isPlaceholder ? '' : `onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)"`;
+            const clickHandler2 = isPlaceholder ? '' : `onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)"`;
+            const inputStyle = isPlaceholder ? 'display:none;' : 'width:38px; font-size:12px; height:26px;';
+
             html += `
-            <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px;">
-              <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 1)" style="height:23px; padding:2px 8px;">
-                <span style="font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p1?.name || '???')}</span>
-                <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()" style="width:28px; font-size:9px;">
+            <div class="match-box" style="margin: ${marginVal}px 0; --connector-height: ${connHeight}px; opacity: ${isPlaceholder ? 0.4 : 1};">
+              <div class="match-p ${m.winner === m.p1?.id ? 'winner' : ''}" ${clickHandler} style="height:48px; padding:6px 14px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center;">
+                ${m.p1?.id === 'bye' || m.p1?.id === 'placeholder' ? '' : p1Avatar}
+                <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; font-weight:700; color:${m.p1?.id==='placeholder'?'#555':'#eee'};">${p1Name}</span>
+                <input type="number" value="${m.score1}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 1, this.value)" onclick="event.stopPropagation()" style="${inputStyle}">
               </div>
-              <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" onclick="setMatchWinner(${rIndex}, ${mIndex}, 2)" style="border-top:1px solid rgba(255,255,255,0.05); height:23px; padding:2px 8px;">
-                <span style="font-size:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${escapeHtml(m.p2?.name || '???')}</span>
-                <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()" style="width:28px; font-size:9px;">
+              <div class="match-p ${m.winner === m.p2?.id ? 'winner' : ''}" ${clickHandler2} style="height:48px; padding:6px 14px; display:flex; align-items:center;">
+                ${m.p2?.id === 'bye' || m.p2?.id === 'placeholder' ? '' : p2Avatar}
+                <span style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; font-weight:700; color:${m.p2?.id==='placeholder'?'#555':'#eee'};">${p2Name}</span>
+                <input type="number" value="${m.score2}" onchange="updateMatchScore(${rIndex}, ${mIndex}, 2, this.value)" onclick="event.stopPropagation()" style="${inputStyle}">
               </div>
             </div>`;
-          });
+          }
           html += `</div>`;
-        });
+        }
 
-        html += `<div style="display:flex; align-items:center; padding-left:20px;">
-          <button class="btn-pub" onclick="generateNextRound()" style="background:#00f5ff; color:#000; border:none; width:100px; font-size:9px; font-weight:700; height:32px; border-radius:8px;">➕ الجولة التالية</button>
+        html += `<div style="display:flex; align-items:center; padding: 0 60px;">
+          <button class="btn-pub" onclick="generateNextRound()" style="background: linear-gradient(135deg, #00f5ff, #00d2ff); color:#000; border:none; width:170px; font-size:13px; font-weight:900; height:50px; border-radius:14px; box-shadow: 0 4px 25px rgba(0,245,255,0.3); letter-spacing:1px; transition: 0.3s; cursor:pointer;">🚀 الجولة التالية</button>
         </div>`;
 
         html += `</div>`;
