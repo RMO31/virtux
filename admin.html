@@ -1731,8 +1731,12 @@
         let html = `<div id="bracket-zoom-area" class="bracket-zoom-area" style="overflow:auto; flex:1; width:100%; height:600px;"><div class="bracket-container" id="bracket-root" style="transform: scale(${bracketZoomScale});">`;
         
         for (let rIndex = 0; rIndex < numRounds; rIndex++) {
-          const isFinal = rIndex === numRounds - 1;
-          const roundTitle = isFinal ? 'النهائي' : (rIndex === numRounds - 2 ? 'نصف النهائي' : `جولة ${rIndex + 1}`);
+          let roundTitle = `الجولة ${rIndex + 1}`;
+          const distFromFinal = numRounds - 1 - rIndex;
+          if (distFromFinal === 0) roundTitle = 'النهائي';
+          else if (distFromFinal === 1) roundTitle = 'نصف النهائي';
+          else if (distFromFinal === 2) roundTitle = 'ربع النهائي';
+          else if (distFromFinal === 3) roundTitle = 'ثمن النهائي';
           
           html += `<div class="bracket-round">
             <h4 style="color:#00f5ff; font-size:12px; margin-bottom:20px; text-align:center; font-weight:bold; background:rgba(0,245,255,0.1); padding:6px; border-radius:8px;">${roundTitle}</h4>`;
