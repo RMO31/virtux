@@ -1132,16 +1132,20 @@
     }
     .bracket-container {
       display: flex;
-      gap: 30px;
-      overflow-x: auto;
-      padding: 20px 0;
+      gap: 50px;
+      padding: 40px;
+      min-width: max-content;
+      transition: transform 0.1s ease-out;
+      transform-origin: 0 0;
+      user-select: none;
     }
     .bracket-round-view {
       display: flex;
       flex-direction: column;
       justify-content: space-around;
-      gap: 15px;
-      min-width: 200px;
+      gap: 20px;
+      flex-shrink: 0;
+      min-width: 220px;
     }
     .match-card-view {
       background: rgba(255, 255, 255, 0.03);
@@ -6734,8 +6738,8 @@
 
     let tourPanning = false;
     let tourStartX, tourStartY, tourScrollLeft, tourScrollTop;
-    function initTourPanning() {
-      const area = document.getElementById('tour-details-content');
+    window.initTourPanning = function() {
+      const area = document.getElementById('tour-bracket-wrapper');
       if (!area) return;
       area.style.cursor = 'grab';
       area.addEventListener('mousedown', (e) => {
@@ -6770,13 +6774,26 @@
       } catch(e) {}
 
       if (!tourData || tourData.status === 'registration') {
-        container.innerHTML = `<div style="text-align:center; padding:50px; color:#666; font-size:16px;">⏳ البطولة قيد الإعداد، سيتم عرض النتائج هنا فور البدء.</div>`;
+        container.innerHTML = `
+          <div style="padding:20px; color:#eee;">
+            ${post.image_url ? `<img src="${post.image_url}" style="width:100%; border-radius:15px; margin-bottom:20px; border:1px solid #333;">` : ''}
+            <div style="background:rgba(255,255,255,0.03); border:1px solid #333; border-radius:15px; padding:20px;">
+              <h3 style="color:#00f5ff; margin-bottom:15px;">📝 معلومات البطولة</h3>
+              <div style="line-height:1.6; color:#ccc; font-size:15px; white-space:pre-wrap;">${escapeHtml(post.description || '')}</div>
+              <div style="margin-top:25px; text-align:center;">
+                <div style="background:rgba(0,245,255,0.1); color:#00f5ff; padding:15px; border-radius:10px; border:1px dashed #00f5ff; display:inline-block;">
+                  ⏳ التسجيل مفتوح حالياً! سيتم عرض شجرة المواجهات هنا فور اكتمال العدد وبدء البطولة.
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
         return;
       }
 
       let contentHtml = '';
       if (tourData.type === 'bracket') {
-        contentHtml = `<div class="bracket-container" style="transform: scale(${tourZoomScale});">`;
+        contentHtml = `<div id="tour-bracket-wrapper" style="overflow:hidden; width:100%; min-height:500px; background:rgba(0,0,0,0.1); border-radius:12px;"><div class="bracket-container" style="transform: scale(${tourZoomScale});">`;
         tourData.matches.forEach((round, rIdx) => {
           contentHtml += `<div class="bracket-round-view">
             <div style="text-align:center; color:var(--vx-primary); font-size:11px; font-weight:800; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2);">${window.t('الجولة', 'Round')} ${rIdx + 1}</div>`;
@@ -6794,7 +6811,7 @@
           });
           contentHtml += `</div>`;
         });
-        contentHtml += `</div>`;
+        contentHtml += `</div></div>`;
       } else if (tourData.type === 'league') {
         contentHtml = `<div style="padding:10px;"><table class="league-table-view"><thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead><tbody>`;
         tourData.league.sort((a,b)=> b.pts - a.pts).forEach((p,idx) => {
