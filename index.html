@@ -10,7 +10,13 @@
   <link rel="icon" type="image/png" href="logo.png">
   <link
     href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&display=swap"
-    rel=  <style>
+    rel="stylesheet">
+  <style>
+    body {
+      min-width: 1300px;
+      overflow-x: auto;
+    }
+
     :root {
       --vx-primary: hsl(345, 100%, 55%);
       --vx-primary-rgb: 255, 0, 64;
@@ -25,47 +31,134 @@
     * {
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
+      box-sizing: border-box
     }
 
     body {
-      background: var(--vx-bg);
+      margin: 0;
+      background: #000;
       color: #fff;
-      font-family: 'Inter', 'Outfit', sans-serif;
+      font-family: 'Inter', 'Roboto', 'Cairo', sans-serif;
       overflow-x: hidden;
       min-height: 100vh;
-      min-width: 1300px;
     }
 
-    h1, h2, h3, .vx-logo {
-      font-family: 'Outfit', sans-serif;
+    .bracket-container {
+      display: flex;
+      gap: 40px;
+      padding: 30px;
+      min-width: max-content;
+      transition: transform 0.2s ease-out;
+      transform-origin: top center;
+    }
+    .bracket-round-view {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      min-width: 180px;
+    }
+    .match-card-view {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      width: 180px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .match-team-view {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #ccc;
+    }
+    .match-team-view.winner {
+      background: rgba(0, 245, 255, 0.1);
+      color: #00f5ff;
+      font-weight: 800;
+    }
+    .match-score-view {
+      background: rgba(0,0,0,0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 800;
+      color: #00f5ff;
     }
 
-    /* Cinematic Background */
+    /* Video Background */
     #bg-video-container {
       position: fixed;
       inset: 0;
+      width: 100%;
+      height: 100%;
       z-index: -2;
-      background: #000;
       overflow: hidden;
+      background: #000;
+      pointer-events: none;
     }
 
     #bg-video {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: brightness(0.5) contrast(1.1) saturate(1.1);
+      filter: brightness(0.6) contrast(1.2) saturate(1.1) blur(0px);
+      /* Enhanced cinematic quality */
+      will-change: transform;
     }
 
     #bg-video-overlay {
       position: fixed;
       inset: 0;
       z-index: -1;
-      background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.5) 100%),
-                  rgba(0, 5, 15, 0.2);
+      background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%),
+        rgba(0, 5, 15, 0.2);
+      /* Deep blue tint */
+      pointer-events: none;
     }
 
-    /* Layout */
+    .now-free-badge {
+      position: absolute;
+      top: 15px;
+      left: -35px;
+      background: linear-gradient(135deg, #00f5ff, #0055ff);
+      color: #fff;
+      padding: 6px 45px;
+      font-size: 11px;
+      font-weight: 900;
+      transform: rotate(-45deg);
+      z-index: 20;
+      box-shadow: 0 2px 15px rgba(0, 245, 255, 0.4);
+      text-transform: uppercase;
+      pointer-events: none;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    @keyframes pulse-glow {
+      0% {
+        box-shadow: 0 0 5px rgba(0, 245, 255, 0.4);
+      }
+
+      50% {
+        box-shadow: 0 0 15px rgba(0, 245, 255, 0.7);
+      }
+
+      100% {
+        box-shadow: 0 0 5px rgba(0, 245, 255, 0.4);
+      }
+    }
+
+    h1,
+    h2,
+    h3,
+    .vx-logo {
+      font-family: 'Outfit', sans-serif;
+    }
+
     .vx-root {
       display: flex;
       flex-direction: column;
@@ -85,298 +178,493 @@
       gap: 12px;
       position: sticky;
       top: 0;
-      z-index: 1000;
+      z-index: 100;
     }
 
     .vx-logo {
-      font-size: 28px;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--vx-primary), var(--vx-accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--vx-primary);
+      letter-spacing: 1px;
       text-transform: uppercase;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      filter: drop-shadow(0 0 10px rgba(255, 0, 64, 0.2));
-      transition: transform 0.3s ease;
-    }
-
-    .vx-logo:hover {
-      transform: scale(1.02);
     }
 
     .vx-logo span {
-      background: #fff;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #fff;
       font-weight: 400;
       opacity: 0.8;
     }
 
-    /* Topbar Components */
-    .vx-search-container {
-      flex: 1;
-      max-width: 400px;
-      position: relative;
-      margin: 0 20px;
-    }
-    .vx-search-input {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--vx-border);
-      padding: 10px 16px 10px 40px;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(8px);
-    }
-    .vx-search-input:focus {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--vx-primary);
-      box-shadow: 0 0 15px rgba(255, 0, 64, 0.1);
-    }
-    .vx-search-icon {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #666;
-      font-size: 16px;
-      pointer-events: none;
-    }
-
     .vx-topnav {
       display: flex;
-      gap: 12px;
-      margin: 0 15px;
+      gap: 10px;
+      margin-left: auto;
     }
 
-    .dd { position: relative; }
+    .dd {
+      position: relative
+    }
+
     .dd-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: #aaa;
-      padding: 8px 16px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-size: 14px;
+      background: rgba(255, 0, 64, 0.1);
+      border: 1px solid var(--vx-primary);
+      color: var(--vx-primary);
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 13px;
       font-weight: 600;
-      transition: all 0.2s;
+      cursor: pointer;
+      transition: 0.3s;
     }
+
     .dd-btn:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--vx-primary);
+      color: #000;
+      box-shadow: var(--vx-glow);
     }
+
     .dd-menu {
-      position: absolute;
-      top: calc(100% + 12px);
-      left: 0;
-      background: rgba(10, 10, 15, 0.95);
-      backdrop-filter: blur(24px);
-      border: 1px solid var(--vx-border);
-      border-radius: 14px;
-      min-width: 200px;
-      padding: 8px;
       display: none;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-      z-index: 1000;
-      transform: translateY(10px);
-      opacity: 0;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: rgba(15, 15, 20, 0.9);
+      backdrop-filter: var(--vx-glass);
+      -webkit-backdrop-filter: var(--vx-glass);
+      border: 1px solid var(--vx-border);
+      border-radius: 12px;
+      min-width: 180px;
+      z-index: 999;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
-    .dd.active .dd-menu {
-      display: block;
-      transform: translateY(0);
-      opacity: 1;
+
+    .dd.open .dd-menu {
+      display: block
     }
+
     .dd-menu a {
       display: block;
+      color: #eee;
       padding: 10px 16px;
-      color: #ccc;
-      text-decoration: none;
       font-size: 13px;
-      border-radius: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--vx-border);
+      text-decoration: none;
       transition: 0.2s;
     }
-    .dd-menu a:hover {
-      background: rgba(255, 0, 64, 0.1);
-      color: var(--vx-primary);
+
+    .dd-menu a:last-child {
+      border-bottom: none
     }
 
-    /* Layout & Body */
-    .vx-body { display: flex; flex: 1; overflow: hidden; }
+    .dd-menu a:hover {
+      background: var(--vx-primary);
+      color: #000
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    .btn-user-post,
+    .btn-ytvip-post {
+      background: #e01010;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition: 0.2s;
+    }
+
+    .btn-user-post:hover {
+      background: #ff3333;
+    }
+
+    .btn-ytvip-post {
+      background: #1a0000;
+      color: #e01010;
+      border: 1px solid #e01010;
+    }
+
+    .btn-ytvip-post:hover {
+      background: #e01010;
+      color: #000;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .vx-ticker {
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: var(--vx-glass);
+      -webkit-backdrop-filter: var(--vx-glass);
+      padding: 0;
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      position: relative;
+      border-bottom: 1px solid var(--vx-border);
+      height: 36px;
+    }
+
+    .ticker-label {
+      font-size: 11px;
+      background: var(--vx-primary);
+      color: #000;
+      padding: 0 18px;
+      font-weight: 800;
+      white-space: nowrap;
+      z-index: 5;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .ticker-scroll {
+      flex: 1;
+      overflow: hidden;
+      height: 36px;
+    }
+
+    @keyframes ticker-scroll-anim {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    .ticker-track {
+      display: inline-flex;
+      white-space: nowrap;
+      align-items: center;
+      height: 36px;
+      animation: ticker-scroll-anim 40s linear infinite;
+    }
+
+    .ticker-track:hover {
+      animation-play-state: paused;
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 40px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      white-space: nowrap;
+      height: 36px;
+    }
+
+    .ticker-item span {
+      color: var(--vx-primary);
+      font-weight: 600;
+    }
+
+    .ticker-item a {
+      color: var(--vx-primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .ticker-item a:hover {
+      text-decoration: underline;
+    }
+
+    .vx-body {
+      display: flex;
+      flex: 1
+    }
 
     .vx-sidebar {
-      width: 260px;
-      background: rgba(0, 0, 0, 0.2);
+      width: 180px;
+      background: rgba(10, 10, 15, 0.6);
+      backdrop-filter: var(--vx-glass);
+      -webkit-backdrop-filter: var(--vx-glass);
       border-right: 1px solid var(--vx-border);
       display: flex;
       flex-direction: column;
-      padding: 24px 16px;
-      gap: 4px;
+      gap: 6px;
+      padding: 16px 8px;
     }
+
     .sb-btn {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
       background: transparent;
-      border: 1px solid transparent;
-      color: #888;
-      border-radius: 14px;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 14px;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
       font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: 0.3s;
     }
-    .sb-btn:hover {
-      background: rgba(255, 255, 255, 0.03);
-      color: #fff;
-    }
+
+    .sb-btn:hover,
     .sb-btn.active {
-      background: rgba(255, 0, 64, 0.1);
+      background: rgba(255, 0, 64, 0.15);
       color: var(--vx-primary);
-      border-color: rgba(255, 0, 64, 0.1);
-      font-weight: 700;
     }
-    .sb-icon { font-size: 18px; }
+
+    .sb-btn.active {
+      background: rgba(255, 0, 64, 0.2);
+      border-left: 3px solid var(--vx-primary);
+      font-weight: 600;
+    }
+
     .sb-section {
-      font-size: 11px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.4);
       text-transform: uppercase;
       letter-spacing: 2px;
-      color: #444;
-      margin: 20px 16px 8px;
-      font-weight: 700;
+      padding: 12px 16px 4px
     }
 
     .vx-main {
       flex: 1;
-      overflow-y: auto;
-      background: rgba(0, 0, 0, 0.05);
-      position: relative;
+      overflow-y: auto
     }
 
     .vx-page {
-      display: none;
-      padding: 40px;
-      animation: pageIn 0.5s ease-out;
-    }
-    .vx-page.active { display: block; }
-
-    @keyframes pageIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      display: none
     }
 
-    /* Ticker */
-    .vx-ticker {
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--vx-border);
-      height: 40px;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-    }
-    .vx-btn.primary {
-      background: var(--vx-primary);
-      color: #000;
-    }
-    .vx-btn.primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(255, 0, 64, 0.3);
-    }
-    .vx-btn.outline {
-      background: transparent;
-      border: 1px solid var(--vx-border);
-      color: #fff;
-    }
-    .vx-btn.outline:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: #fff;
-    }
-    .ticker-label {
-      background: var(--vx-primary);
-      color: #000;
-      padding: 0 20px;
-      font-weight: 900;
-      font-size: 11px;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      z-index: 2;
-    }
-    .ticker-track {
-      display: flex;
-      gap: 50px;
-      animation: tickerLoop 60s linear infinite;
-      white-space: nowrap;
-    }
-    @keyframes tickerLoop {
-      from { transform: translateX(100%); }
-      to { transform: translateX(-100%); }
+    .vx-page.active {
+      display: block
     }
 
-    /* Hero Section */
     .home-hero {
-      padding: 40px 0;
+      position: relative;
+      background: transparent;
+      min-height: calc(100vh - 84px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
       text-align: center;
+      padding: 60px 24px 80px;
     }
 
     .home-welcome {
-      font-size: 42px;
+      font-size: 28px;
       font-weight: 800;
       color: #fff;
-      margin-bottom: 50px;
-      text-shadow: 0 0 30px rgba(255, 0, 64, 0.4);
-    }
-
-    .home-grid-container {
-      display: grid;
-      grid-template-columns: 1fr 2fr 1fr;
-      gap: 24px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .home-card {
       background: rgba(255, 255, 255, 0.03);
       backdrop-filter: var(--vx-glass);
       -webkit-backdrop-filter: var(--vx-glass);
+      padding: 12px 36px;
+      border-radius: 100px;
       border: 1px solid var(--vx-border);
+      display: inline-block;
+      margin: 0 auto 40px auto;
+      letter-spacing: 1px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+
+    .home-welcome span {
+      color: var(--vx-primary);
+    }
+
+    .home-welcome::after {
+      content: "";
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40%;
+      height: 2px;
+      background: var(--vx-primary);
+      box-shadow: var(--vx-glow);
+    }
+
+    .home-content-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .home-about,
+    .home-rules {
+      flex: 1;
+      min-width: 320px;
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: var(--vx-glass);
+      -webkit-backdrop-filter: var(--vx-glass);
       border-radius: 24px;
       padding: 32px;
-      transition: 0.4s;
+      text-align: left;
+      border: 1px solid var(--vx-border);
+      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .home-card:hover {
-      transform: translateY(-5px);
-      border-color: var(--vx-primary);
+    .home-about:hover,
+    .home-rules:hover {
+      transform: translateY(-10px);
       background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 0, 64, 0.3);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
     }
 
-    .home-card h3 {
-      font-size: 22px;
-      margin-bottom: 20px;
+    .home-about h3,
+    .home-rules h3 {
+      color: #fff;
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 24px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
-    /* Grid & Cards */
+    .home-about h3::before,
+    .home-rules h3::before {
+      content: "";
+      width: 4px;
+      height: 24px;
+      background: var(--vx-primary);
+      border-radius: 2px;
+      box-shadow: var(--vx-glow);
+    }
+
+    .about-text {
+      line-height: 1.7;
+      color: #ddd;
+      font-size: 15px;
+    }
+
+    .about-features {
+      margin-top: 15px;
+      list-style: none;
+    }
+
+    .about-features li {
+      margin: 8px 0;
+      color: #e01010;
+      font-weight: 500;
+    }
+
+    .rules-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .rules-list li {
+      margin: 12px 0;
+      padding-left: 28px;
+      position: relative;
+      color: #f0f0f0;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .rules-list li::before {
+      content: "⛔";
+      position: absolute;
+      left: 0;
+      color: #ff5555;
+      font-size: 16px;
+    }
+
+    .missile {
+      display: none;
+    }
+
+    .empty-home {
+      display: none;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      padding: 10px 18px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #333
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--vx-border);
+      color: rgba(255, 255, 255, 0.7);
+      border-radius: 10px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: var(--vx-primary);
+      color: #000;
+      border-color: var(--vx-primary);
+      box-shadow: var(--vx-glow);
+    }
+
     .posts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      padding: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 15px;
+      padding: 20px
+    }
+
+    .grid-tournaments {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .grid-tournaments .post-card-media {
+      height: 140px;
+    }
+
+    .grid-tournaments .post-card-video {
+      height: 140px;
+      aspect-ratio: auto;
+    }
+    .post-card.tour-card:hover {
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      box-shadow: none !important;
+    }
+
+    .grid-tournaments .post-card-emoji {
+      height: 100px;
+      font-size: 36px;
+    }
+
+    .grid-tournaments .post-card-title {
+      font-size: 13px;
+    }
+
+    .grid-tournaments .post-card-summary {
+      font-size: 10.5px;
+      margin-bottom: 8px;
+    }
+
+    .grid-tournaments .post-card-body {
+      padding: 10px 12px;
     }
 
     .post-card {
@@ -384,103 +672,554 @@
       backdrop-filter: var(--vx-glass);
       -webkit-backdrop-filter: var(--vx-glass);
       border: 1px solid var(--vx-border);
-      border-radius: 20px;
+      border-radius: 16px;
       overflow: hidden;
       transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     .post-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      border-color: var(--vx-primary);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), var(--vx-glow);
+      transform: translateY(-5px);
+      border-color: rgba(255, 0, 64, 0.4);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
 
     .post-card-media {
+      width: 100%;
       height: 180px;
-      background: #000;
       position: relative;
+      overflow: hidden;
+      background: #0a0a15;
     }
 
     .post-card-media img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: 0.5s;
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    .post-card:hover .post-card-media img {
-      transform: scale(1.1);
-    }
-
-    .post-card-body { padding: 18px; flex: 1; }
-    .post-card-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #fff; }
-    .post-card-summary { font-size: 13px; color: #aaa; line-height: 1.6; margin-bottom: 16px; }
-
-    /* Modals */
-    .modal {
-      position: fixed;
-      inset: 0;
-      z-index: 2000;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(12px);
-      display: none;
+    .post-card-emoji {
+      width: 100%;
+      height: 120px;
+      background: linear-gradient(135deg, #2a2a3a, #1a1a2a);
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-    }
-    .modal.active { display: flex; animation: modalFade 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-    
-    .modal-content {
-      background: rgba(20, 20, 25, 0.8);
-      backdrop-filter: blur(32px);
-      border: 1px solid var(--vx-border);
-      border-radius: 28px;
-      width: 100%;
-      max-width: 500px;
-      position: relative;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      font-size: 48px;
+      position: relative
     }
 
-    @keyframes modalFade {
-      from { opacity: 0; transform: scale(0.95) translateY(20px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+    .post-card-video {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      display: block;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .post-card-video video,
+    .post-card-video iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .restricted-overlay {
+      position: relative
+    }
+
+    .restricted-overlay::after {
+      content: "🔒";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 40px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: #e01010;
+      pointer-events: none
+    }
+
+    .live-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: red;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px
+    }
+
+    .post-card-body {
+      padding: 12px 14px;
+      flex: 1;
+      display: flex;
+      flex-direction: column
+    }
+
+    .post-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ddd;
+      margin-bottom: 4px
+    }
+
+    .post-card-summary {
+      font-size: 11.5px;
+      color: #aaa;
+      margin-bottom: 12px;
+      line-height: 1.5
+    }
+
+    .post-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: auto
+    }
+
+    .post-tag {
+      font-size: 11px;
+      background: #2a2a3a;
+      color: #e01010;
+      border-radius: 4px;
+      padding: 2px 8px
+    }
+
+    .post-link {
+      font-size: 12px;
+      color: #e01010;
+      text-decoration: none;
+      background: #2a2a3a;
+      border: 1px solid #444;
+      border-radius: 5px;
+      padding: 4px 10px
+    }
+
+    .post-link:hover {
+      background: #e01010;
+      color: #000
+    }
+
+    .post-dl {
+      font-size: 12px;
+      color: #000;
+      text-decoration: none;
+      background: #e01010;
+      border-radius: 5px;
+      padding: 4px 10px;
+      font-weight: 600
+    }
+
+    .read-more {
+      font-size: 12px;
+      background: #e01010;
+      color: #000;
+      border-radius: 5px;
+      padding: 4px 10px;
+      text-decoration: none;
+      font-weight: 600
+    }
+
+    .read-more:hover {
+      background: #e6c300
+    }
+
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+      gap: 12px;
+      padding: 12px
+    }
+
+    .channels-grid.subscribers-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, 200px) !important;
+      gap: 12px !important;
+      width: 100% !important;
+      justify-content: flex-start !important;
+      padding: 15px !important;
+      box-sizing: border-box !important
+    }
+
+    .channel-card {
+      background: rgba(30, 30, 46, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .channel-card:hover {
+      border-color: #e01010;
+      transform: translateY(-3px);
+      background: rgba(30, 30, 46, 0.9);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .subscriber-card {
+      position: relative;
+      min-height: 115px;
+      width: 200px !important;
+      min-width: 200px !important;
+      max-width: 200px !important;
+      margin: 0 !important;
+      padding: 10px 8px 12px;
+      justify-content: flex-start;
+      overflow: hidden;
+      isolation: isolate
+    }
+
+    .subscriber-card::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: conic-gradient(from 0deg, transparent 0deg, var(--sub-accent, rgba(224, 16, 16, .85)) 90deg, transparent 170deg, transparent 360deg);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      opacity: .7;
+      animation: subscriber-spin 4.5s linear infinite;
+      pointer-events: none
+    }
+
+    .subscriber-card .channel-avatar {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 5px
+    }
+
+    .subscriber-card .channel-name {
+      font-size: 14px;
+      line-height: 1.2;
+      margin-bottom: 3px;
+      word-break: break-word
+    }
+
+    .subscriber-badge {
+      font-size: 9px;
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-weight: 800;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 18px
+    }
+
+    @keyframes subscriber-spin {
+      from {
+        transform: rotate(0deg)
+      }
+
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .channel-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 10px
+    }
+
+    .channel-info {
+      width: 100%
+    }
+
+    .channel-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e01010;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .channel-sub {
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 6px
+    }
+
+    .channel-link {
+      font-size: 11px;
+      color: #e01010;
+      text-decoration: none;
+      border: 1px solid #e01010;
+      border-radius: 6px;
+      padding: 5px 14px;
+      display: inline-block;
+      margin-top: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      font-weight: 600;
+    }
+
+    .channel-link:hover {
+      background: #e01010;
+      color: #000;
+      border-color: #e01010
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #555;
+      padding: 40px;
+      font-size: 14px
+    }
+
+    .post-card.gold-frame {
+      border: 2px solid gold !important;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
+    }
+
+    .post-card.gold-frame .post-card-title {
+      color: gold !important;
+    }
+
+    .loading-state {
+      text-align: center;
+      color: #aaa;
+      padding: 30px;
+      font-size: 13px
+    }
+
+    .contact-page { padding: 30px 20px; }
+    .contact-cards { display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%; }
+    .contact-card { background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 32px; text-align: center; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; width: 100%; }
+    .contact-card:hover { transform: translateY(-5px); border-color: var(--vx-primary); background: rgba(255,0,64,0.04); box-shadow: 0 15px 40px rgba(0,0,0,0.4); }
+    .cc-icon { font-size: 44px; margin-bottom: 12px; }
+    .cc-name { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; font-family: 'Outfit', sans-serif; letter-spacing: 0.5px; }
+    .cc-handle { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+    .copy-btn { margin-top: 15px; background: rgba(255,0,64,0.1); border: 1px solid var(--vx-primary); color: var(--vx-primary); padding: 8px 24px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .copy-btn:hover { background: var(--vx-primary); color: #000; box-shadow: var(--vx-glow); }
+
+    /* Tournament Bracket & Results Visualization */
+    .bracket-container { display: flex; gap: 60px; padding: 30px; overflow-x: auto; background: rgba(0,0,0,0.4); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+    .bracket-round-view { display: flex; flex-direction: column; justify-content: space-around; gap: 40px; min-width: 240px; }
+    .match-card-view { background: rgba(20,20,25,0.8); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 14px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); }
+    .match-team-view { padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; color: #eee; transition: 0.2s; }
+    .match-team-view.winner { color: var(--vx-primary); background: rgba(255,0,64,0.08); font-weight: 800; text-shadow: 0 0 12px rgba(255,0,64,0.3); }
+    .match-team-view:last-child { border-bottom: none; }
+    .match-score-view { font-family: 'Outfit', monospace; color: var(--vx-primary); font-weight: 800; background: rgba(0,0,0,0.6); padding: 3px 10px; border-radius: 6px; font-size: 13px; }
+    .league-table-view { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 15px; }
+    .league-table-view th { color: #888; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .league-table-view tr { background: rgba(255,255,255,0.02); border-radius: 10px; }
+    .league-table-view td { padding: 14px; text-align: center; font-size: 14px; color: #eee; }
+    .league-table-view tr:hover { background: rgba(255,255,255,0.05); }
+
+    .page-header {
+      padding: 14px 20px 10px;
+      border-bottom: 1px solid #333;
+      background: #0a0000
+    }
+
+    .page-header h2 {
+      font-size: 17px;
+      color: #e01010;
+      font-weight: 600
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: rgba(20, 20, 25, 0.85);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid var(--vx-border);
+      border-radius: 28px;
+      width: 90%;
+      max-width: 440px;
+      padding: 40px;
+      position: relative;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
     }
 
     .modal-close {
       position: absolute;
-      top: 24px;
-      right: 24px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--vx-border);
-      color: #666;
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      top: 12px;
+      right: 18px;
+      font-size: 28px;
       cursor: pointer;
-      font-size: 20px;
-      transition: 0.2s;
-    }
-    .modal-close:hover {
-      background: rgba(255, 0, 64, 0.1);
-      color: var(--vx-primary);
-      border-color: var(--vx-primary);
+      color: #aaa;
     }
 
-    .form-group { margin-bottom: 24px; }
+    .modal-close:hover {
+      color: #e01010;
+    }
+
+    .modal h3 {
+      color: #fff;
+      margin-bottom: 24px;
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
     .form-group label {
       display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: #666;
       margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Tournament Details & Bracket Styles */
+    .tour-modal-box {
+      max-width: 1000px;
+      width: 95%;
+      background: #0a0000;
+      border: 1.5px solid #e01010;
+      border-radius: 18px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 25px;
+      color: #fff;
+      position: relative;
+      box-shadow: 0 0 30px rgba(224, 16, 16, 0.2);
+    }
+    .bracket-container {
+      display: flex;
+      gap: 50px;
+      padding: 40px;
+      min-width: max-content;
+      transition: transform 0.1s ease-out;
+      transform-origin: 0 0;
+      user-select: none;
+    }
+    .bracket-round-view {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      gap: 20px;
+      flex-shrink: 0;
+      min-width: 220px;
+    }
+    .match-card-view {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 13px;
+      transition: 0.2s;
+    }
+    .match-card-view:hover {
+      border-color: #e01010;
+      background: rgba(224, 16, 16, 0.05);
+    }
+    .match-team-view {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      align-items: center;
+    }
+    .match-team-view.winner {
+      color: #e01010;
+      font-weight: 700;
+    }
+    .match-score-view {
+      font-weight: 800;
+      background: #000;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #fff;
+    }
+    .league-table-view {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+    .league-table-view th, .league-table-view td {
+      border: 1px solid #333;
+      padding: 12px;
+      text-align: center;
+    }
+    .league-table-view th { background: rgba(255, 255, 255, 0.05); color: #e01010; font-weight: 700; }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--vx-border);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 14px;
+      transition: 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--vx-primary);
+      box-shadow: 0 0 0 4px rgba(255, 0, 64, 0.1);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--vx-primary);
+      color: #000;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 12px;
+      font-size: 15px;
       text-transform: uppercase;
       letter-spacing: 1px;
+      transition: 0.3s;
     }
 
     .btn-submit:hover {
@@ -489,55 +1228,864 @@
       box-shadow: var(--vx-glow);
     }
 
-    /* Brackets & Results */
-    .bracket-container {
-      display: flex;
-      gap: 60px;
-      padding: 40px;
-      min-width: max-content;
-    }
-
-    .match-card-view {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--vx-border);
-      border-radius: 14px;
-      width: 220px;
-      margin: 15px 0;
-      overflow: hidden;
-      transition: 0.3s;
-    }
-
-    .match-team-view {
-      padding: 10px 15px;
-      display: flex;
-      justify-content: space-between;
+    .auth-switch {
+      text-align: center;
+      margin-top: 18px;
       font-size: 13px;
-      border-bottom: 1px solid var(--vx-border);
+      color: #aaa;
     }
 
-    .match-team-view.winner {
-      background: rgba(0, 245, 255, 0.1);
-      color: var(--vx-accent);
+    .auth-switch a {
+      color: #e01010;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .google-btn-modal {
+      background: #4285F4;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .google-btn-modal:hover {
+      background: #357ae8;
+    }
+
+    .error-msg {
+      color: #ff6b6b;
+      font-size: 12px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .auth-buttons-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .username-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .username-modal.active {
+      display: flex;
+    }
+
+    .username-modal .modal-box {
+      background: #110000;
+      border: 1px solid #e01010;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .username-modal .modal-box h3 {
+      color: #e01010;
+      margin-bottom: 15px;
+    }
+
+    .username-modal .modal-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+    }
+
+    .username-modal .modal-box button {
+      background: #e01010;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .username-modal .modal-box button.cancel {
+      background: #555;
+      color: white;
+    }
+
+    .profile-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .profile-modal.active {
+      display: flex;
+    }
+
+    .profile-modal .modal-box {
+      background: rgba(20, 20, 25, 0.95);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid var(--vx-border);
+      border-radius: 20px;
+      width: 95%;
+      max-width: 420px;
+      max-height: 95vh;
+      overflow-y: auto;
+      padding: 18px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    .profile-modal .modal-box h2 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 24px;
       font-weight: 800;
     }
 
-    /* Utility */
-    .glass {
-      background: var(--vx-surface);
-      backdrop-filter: var(--vx-glass);
-      -webkit-backdrop-filter: var(--vx-glass);
+    /* --- Registration Modal Styles --- */
+    .reg-section {
+      padding: 10px 0;
+    }
+
+    .reg-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      border: 1px solid var(--vx-border);
+      margin-bottom: 8px;
+    }
+
+    .reg-item-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--vx-primary);
+    }
+
+    .reg-item-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #eee;
+    }
+
+    /* --- Tournament Results Styles --- */
+    .tr-bracket {
+      display: flex;
+      gap: 40px;
+      padding: 10px;
+    }
+
+    .tr-round {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .tr-match {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--vx-border);
+      border-radius: 8px;
+      padding: 10px;
+      width: 200px;
+    }
+
+    .tr-p {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin: 2px 0;
+    }
+
+    .tr-p.winner {
+      background: rgba(0, 245, 255, 0.1);
+      color: #00f5ff;
+      font-weight: bold;
+      border: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .tr-score {
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .tr-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .tr-table th,
+    .tr-table td {
+      border: 1px solid var(--vx-border);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .tr-table th {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tr-rank-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      margin-bottom: 8px;
       border: 1px solid var(--vx-border);
     }
 
-    .text-gradient {
-      background: linear-gradient(135deg, #fff 0%, var(--vx-primary) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .tr-rank-num {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--vx-primary);
+      width: 35px;
     }
 
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
-    ::-webkit-scrollbar-thumb { background: var(--vx-primary); border-radius: 10px; }
+    .tr-group-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+    }
+
+    .tr-group-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-top: 10px;
+    }
+
+    .tr-group-table th,
+    .tr-group-table td {
+      border: 1px solid var(--vx-border);
+      padding: 6px;
+      text-align: center;
+    }
+
+    .tr-group-table th {
+      background: rgba(255, 255, 255, 0.03);
+      color: #777;
+    }
+
+    .profile-avatar {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .profile-avatar img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--vx-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .profile-avatar .avatar-placeholder {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      border: 3px solid var(--vx-primary);
+    }
+
+    .profile-fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .profile-field {
+      margin-bottom: 16px;
+    }
+
+    .profile-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .profile-field input,
+    .profile-field select {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--vx-border);
+      border-radius: 12px;
+      color: white;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: 0.3s;
+    }
+
+    .profile-field input:focus {
+      outline: none;
+      border-color: var(--vx-primary);
+    }
+
+    .profile-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .profile-buttons button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 14px;
+      transition: 0.3s;
+    }
+
+    .btn-save {
+      background: var(--vx-primary);
+      color: #000;
+    }
+
+    .btn-save:hover {
+      background: #fff;
+      box-shadow: var(--vx-glow);
+    }
+
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      border: 1px solid var(--vx-border) !important;
+    }
+
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .change-password-section {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--vx-border);
+    }
+
+    .change-password-section h3 {
+      color: var(--vx-primary);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .username-feedback {
+      font-size: 12px;
+      margin-top: 5px;
+      color: #ffaa66;
+    }
+
+    #upm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 600;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #upm-modal.active {
+      display: flex;
+    }
+
+    .upm-box {
+      background: #111;
+      border: 1px solid #e01010;
+      border-radius: 14px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .upm-top {
+      background: #000;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #333;
+    }
+
+    .upm-top h2 {
+      font-size: 15px;
+      color: #e01010;
+    }
+
+    .upm-close {
+      background: transparent;
+      border: 1px solid #555;
+      color: #aaa;
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .upm-body {
+      padding: 18px;
+    }
+
+    #upm-ok {
+      background: #1a0000;
+      border: 1px solid #0f6e56;
+      color: #cc2222;
+      border-radius: 7px;
+      padding: 9px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    #upm-err {
+      background: #3d0f0f;
+      border: 1px solid #6e0f0f;
+      color: #f55;
+      border-radius: 7px;
+      padding: 9px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    #upm-submit {
+      width: 100%;
+      padding: 10px;
+      background: #e01010;
+      color: #000;
+      border: none;
+      border-radius: 7px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    #upm-submit:hover {
+      background: #ff3333;
+    }
+
+    #upm-submit:disabled {
+      background: #555;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    #upm-modal {
+      pointer-events: auto;
+    }
+
+    .file-input-group {
+      margin-bottom: 12px;
+    }
+
+    .file-input-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #e01010;
+      font-size: 12px;
+    }
+
+    .preview-img,
+    .preview-video {
+      max-width: 100%;
+      max-height: 150px;
+      margin-top: 8px;
+      border-radius: 6px;
+    }
+
+    .fetching-info {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .form-with-preview {
+      display: grid;
+      grid-template-columns: 1fr 200px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .preview-panel {
+      background: #0a0000;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .preview-media {
+      max-width: 100%;
+      max-height: 150px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 700px) {
+      .form-with-preview {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ══ HOME CHANNEL PANEL ══ */
+    .home-channel-panel {
+      width: 100%;
+      max-width: 1200px;
+      margin: 36px auto;
+      padding: 0 4px;
+    }
+
+    .hcp-title {
+      color: #e01010;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .5px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .home-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media(max-width:680px) {
+      .home-split {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .hcp-half {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(220, 0, 0, 0.3);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .hcp-half-head {
+      font-size: 11px;
+      font-weight: 700;
+      color: #e01010;
+      padding: 9px 13px 8px;
+      border-bottom: 1px solid rgba(220, 0, 0, 0.15);
+    }
+
+    .hc-wrap {
+      position: relative;
+      overflow: hidden;
+      min-height: 210px;
+    }
+
+    .hc-track {
+      display: flex;
+      transition: transform 0.36s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    .hc-slide {
+      min-width: 100%;
+      box-sizing: border-box;
+      padding: 11px 12px 46px;
+    }
+
+    .hc-slide a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .hc-thumb-wrap {
+      position: relative;
+      border-radius: 9px;
+      overflow: hidden;
+      background: #050000;
+    }
+
+    .hc-thumb-wrap.vip-ch {
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 0 0 0 2px rgba(255, 210, 0, 0.8), 0 0 16px rgba(255, 200, 0, 0.35), 0 0 32px rgba(255, 180, 0, 0.15);
+      border-radius: 9px;
+    }
+
+    .hc-thumb {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hc-thumb-placeholder {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #0a0000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+    }
+
+    .hc-badge-live {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      background: #c00;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      animation: hc-blink 1.3s infinite;
+    }
+
+    .hc-badge-soon {
+      position: absolute;
+      top: 7px;
+      right: 8px;
+      background: #ff2222;
+      color: #000;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    @keyframes hc-blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .35
+      }
+    }
+
+    .hc-info-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #eee;
+      margin-top: 8px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .hc-info-ch {
+      font-size: 11px;
+      color: #e01010;
+      margin-top: 3px;
+      opacity: .8;
+    }
+
+    .hc-nav {
+      position: absolute;
+      bottom: 10px;
+      right: 11px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      z-index: 5;
+    }
+
+    .hc-dots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .hc-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #444;
+      transition: background .2s, transform .2s;
+    }
+
+    .hc-dot.active {
+      background: #e01010;
+      transform: scale(1.35);
+    }
+
+    .hc-btn {
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      background: rgba(220, 0, 0, .15);
+      border: 1px solid rgba(220, 0, 0, .45);
+      color: #e01010;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background .18s, color .18s;
+      line-height: 1;
+    }
+
+    .hc-btn:hover {
+      background: #e01010;
+      color: #000;
+    }
+
+    .hc-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 180px;
+      color: #555;
+      font-size: 12px;
+    }
+
+    .hc-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 180px;
+      color: #555;
+      font-size: 12px;
+      gap: 6px;
+    }
+
+    /* subscribers groups */
+    .sub-role-section {
+      margin: 20px 0 10px;
+    }
+
+    .sub-role-header {
+      padding: 10px 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    @keyframes lang-pulse {
+      0% {
+        transform: scale(1);
+      }
+
+      40% {
+        transform: scale(1.18);
+        box-shadow: 0 0 10px #e01010;
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .lang-switching {
+      animation: lang-pulse 0.35s ease forwards;
+    }
+
+    /* Unified Translation Buttons */
+    .trans-btns {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+    }
+
+    .trans-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #777;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      letter-spacing: 0.5px;
+    }
+
+    .trans-btn:hover:not(.active) {
+      color: #bbb;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .trans-btn.active {
+      background: linear-gradient(135deg, #e01010, #900000);
+      color: #fff;
+      border-color: rgba(255, 50, 50, 0.3);
+      box-shadow: 0 4px 15px rgba(224, 16, 16, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .trans-btn:active {
+      transform: scale(0.95);
+    }
+
+    .home-grid-container {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 18px;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      align-items: start;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -552,58 +2100,55 @@
   <div id="bg-video-overlay"></div>
 
   <div class="vx-root">
-    <header class="vx-topbar">
-      <div class="vx-logo" onclick="showPage('home')">VIRTUX<span>COMMUNITY</span></div>
-      
-      <div class="vx-search-container">
-        <span class="vx-search-icon">🔍</span>
-        <input type="text" class="vx-search-input" placeholder="Search tournaments, videos, news..." 
-               oninput="window.globalSearch(this.value)">
-      </div>
-
-      <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
-        <div class="lang-switch">
-          <button id="lang-ar-btn" class="active" onclick="setLang('ar')">AR</button>
-          <button id="lang-en-btn" onclick="setLang('en')">EN</button>
+    <div class="vx-topbar">
+      <div class="vx-logo">VIRT<span>UX</span></div>
+      <div class="vx-topnav">
+        <div class="dd" id="dd-news"><button class="dd-btn" onclick="window.toggleDD('dd-news')">الأخبار ▾</button>
+          <div class="dd-menu"><a onclick="window.showPage('gaming-news');window.closeDD()">📰 أخبار الألعاب</a><a
+              onclick="window.showPage('youtube-news');window.closeDD()">▶️ أخبار يوتيوب</a></div>
         </div>
-        
-        <div class="vx-topnav">
-          <div class="dd" id="dd-news">
-            <button class="dd-btn" onclick="toggleDD('dd-news')">News ▾</button>
-            <div class="dd-menu">
-              <a onclick="showPage('gaming-news')">📰 Gaming</a>
-              <a onclick="showPage('youtube-news')">▶️ YouTube</a>
-            </div>
-          </div>
-          <div class="dd" id="dd-yt">
-            <button class="dd-btn" onclick="toggleDD('dd-yt')">Content ▾</button>
-            <div class="dd-menu">
-              <a onclick="showPage('yt-channels')">📺 Channels</a>
-              <a onclick="showPage('yt-videos')">🎬 Videos</a>
-              <a onclick="showPage('reels')">🎬 Reels</a>
-            </div>
-          </div>
+        <div class="dd" id="dd-yt"><button class="dd-btn" onclick="window.toggleDD('dd-yt')">يوتيوب ▾</button>
+          <div class="dd-menu"><a onclick="window.showPage('yt-channels');window.closeDD()">📺 القنوات</a><a
+              onclick="window.showPage('yt-videos');window.closeDD()">🎬 الفيديوهات</a><a
+              onclick="window.showPage('reels');window.closeDD()">🎬 Reels</a></div>
         </div>
-
-        <div id="btn-login-link">
-          <button class="vx-btn primary" onclick="openAuthModal('login')">Login</button>
-        </div>
-
-        <div id="btn-user-area" style="display: none;">
-          <div class="user-profile-trigger" onclick="toggleDD('user-dropdown')">
-            <div id="user-avatar-wrapper" class="user-avatar" style="display: none;">
-              <img id="user-avatar-img" src="" alt="">
-            </div>
-            <span id="user-name"></span>
-          </div>
-          <div id="user-dropdown" class="vx-dropdown">
-            <button onclick="document.getElementById('profileButton').click()">👤 Profile</button>
-            <div class="vx-dropdown-sep"></div>
-            <button onclick="handleLogout()" style="color: #f55;">🚪 Logout</button>
-          </div>
+        <div class="dd" id="dd-collab"><button class="dd-btn" onclick="window.toggleDD('dd-collab')">📢 الإعلانات
+            ▾</button>
+          <div class="dd-menu"><a onclick="window.showPage('projects');window.closeDD()">🌐 التعاون</a></div>
         </div>
       </div>
-    </header>
+      <div id="lang-btns" style="display:flex;gap:4px;">
+        <button id="lang-ar-btn" onclick="window.setLang('ar')"
+          style="background:#e01010;border:1px solid #e01010;color:#000;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:700;font-family:'Poppins',sans-serif;">عربي</button>
+        <button id="lang-en-btn" onclick="window.setLang('en')"
+          style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:700;font-family:'Poppins',sans-serif;">EN</button>
+      </div>
+      <div id="auth-btn-area" style="margin-left:8px;">
+        <div class="auth-buttons-header">
+          <a href="#" id="btn-login-link"
+            style="background:transparent;border:1px solid #e01010;color:#e01010;padding:5px 14px;border-radius:5px;font-size:13px;cursor:pointer;text-decoration:none;">تسجيل
+            الدخول</a>
+        </div>
+        <div id="btn-user-area" style="display:none;align-items:center;gap:6px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <div
+              style="width:32px; height:32px; border-radius:50%; overflow:hidden; border:1.5px solid #e01010; box-shadow:0 0 5px rgba(224,16,16,0.3); flex-shrink:0; display:none;"
+              id="user-avatar-wrapper">
+              <img id="user-avatar-img" src="" style="width:100%; height:100%; object-fit:cover; transform:scale(1.2);">
+            </div>
+            <div style="display:flex; flex-direction:column; justify-content:center; gap:1px;">
+              <span id="user-name" style="font-size:12px;color:#e01010;white-space:nowrap;font-weight:700;"></span>
+              <div id="user-role-badge" style="display:none;flex-wrap:wrap;gap:2px;align-items:center;"></div>
+            </div>
+          </div>
+          <button id="profileButton"
+            style="background:transparent;border:1px solid #e01010;color:#e01010;padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;">👤
+            الملف</button>
+          <button id="logoutButton" onclick="window.doLogout()"
+            style="background:transparent;border:1px solid #f55;color:#f55;padding:3px 10px;border-radius:5px;font-size:11px;cursor:pointer;">خروج</button>
+        </div>
+      </div>
+    </div>
 
     <div class="vx-ticker">
       <div class="ticker-label">مباشر</div>
@@ -613,86 +2158,116 @@
     </div>
 
     <div class="vx-body">
-      <aside class="vx-sidebar">
-        <div class="sb-nav">
-          <button class="sb-btn active" id="sb-home" onclick="showPage('home')">
-            <span class="sb-icon">🏠</span> <span class="sb-text">Home</span>
-          </button>
-          
-          <div class="sb-separator">Main</div>
-          
-          <button class="sb-btn" id="sb-live" onclick="showPage('live')">
-            <span class="sb-icon">🔴</span> <span class="sb-text">Live Streams</span>
-          </button>
-          <button class="sb-btn" id="sb-tournaments" onclick="showPage('tournaments')">
-            <span class="sb-icon">🏆</span> <span class="sb-text">Tournaments</span>
-          </button>
-          <button class="sb-btn" id="sb-highlights" onclick="showPage('highlights')">
-            <span class="sb-icon">🎬</span> <span class="sb-text">Highlights</span>
-          </button>
-          
-          <div class="sb-separator">Community</div>
-          
-          <button class="sb-btn" id="sb-subscribers" onclick="showPage('subscribers')">
-            <span class="sb-icon">👥</span> <span class="sb-text">Members</span>
-          </button>
-          <button class="sb-btn" id="sb-contact" onclick="showPage('contact')">
-            <span class="sb-icon">📞</span> <span class="sb-text">Support</span>
-        <div class="sb-footer">
-          <div class="vx-logo-small">VIRTUX</div>
-          <div class="vx-copyright">&copy; 2026 Virtux</div>
-        </div>
-      </aside>
+      <div class="vx-sidebar">
+        <button class="sb-btn active" id="sb-home" onclick="window.showPage('home')">🏠 الرئيسية</button>
+        <div class="sb-section">المحتوى</div>
+        <button class="sb-btn" id="sb-live" onclick="window.showPage('live')">🔴 live المباشر</button>
+        <button class="sb-btn" id="sb-tournaments" onclick="window.showPage('tournaments')">🏆 البطولات</button>
+        <button class="sb-btn" id="sb-highlights" onclick="window.showPage('highlights')">🎬 أبرز اللحظات</button>
+        <div class="sb-section">المجتمع</div>
+        <button class="sb-btn" id="sb-subscribers" onclick="window.showPage('subscribers')">👥 المشتركون</button>
+        <button class="sb-btn" id="sb-contact" onclick="window.showPage('contact')">📞 التواصل</button>
+      </div>
       <div class="vx-main">
         <div class="vx-page active" id="page-home">
           <div class="home-hero">
-            <h1 class="home-welcome">Welcome to <span class="text-gradient">Virtux</span></h1>
+            <div class="home-welcome" data-ar="مرحباً بك في Virtux" data-en="Welcome to Virtux">مرحباً بك في Virtux
+            </div>
 
+            <!-- ══ ROW: About | Channel Panel | Rules ══ -->
+            <!-- ══ ROW: About | Channel Panel | Rules ══ -->
             <div class="home-grid-container">
-              <!-- About Card -->
-              <div class="home-card glass">
-                <h3><span class="sb-icon">🎮</span> About Virtux</h3>
-                <div class="about-content">
-                  <p>The ultimate gaming hub for competitive players. Follow your favorite creators, join high-stakes tournaments, and share your best moments.</p>
-                  <div class="about-features" style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap;">
-                    <span style="background:rgba(255,0,64,0.1); color:var(--vx-primary); padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700;">🔴 Live Streams</span>
-                    <span style="background:rgba(0,245,255,0.1); color:var(--vx-accent); padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700;">🏆 Tournaments</span>
-                    <span style="background:rgba(255,255,255,0.05); color:#aaa; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700;">🎬 Highlights</span>
+
+              <!-- About يسار -->
+              <div class="home-about">
+                <h3 data-ar="🎮 عن Virtux" data-en="🎮 About Virtux">🎮 عن Virtux</h3>
+                <div class="about-text" style="font-size:13px;line-height:1.75;color:#ddd;">
+                  <p style="margin:0 0 10px;"><strong style="color:#ff0000;" data-ar="🔴 مباشر Streams"
+                      data-en="🔴 Live Streams">🔴 مباشر Streams</strong><br>
+                    <span
+                      data-ar="قسم خاص live المباشرة، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي، والتفاعل معهم مباشرة داخل المنصة."
+                      data-en="A dedicated live section where users can follow players and content creators in real time and interact with them on the platform.">قسم
+                      خاص live المباشرة، حيث يمكن للمستخدمين متابعة اللاعبين وصناع المحتوى أثناء اللعب في وقت حقيقي،
+                      والتفاعل معهم مباشرة داخل المنصة.</span>
+                  </p>
+                  <p style="margin:0 0 10px;"><strong style="color:#e01010;" data-ar="🏆 البطولات"
+                      data-en="🏆 Tournaments">🏆 البطولات</strong><br>
+                    <span
+                      data-ar="منطقة البطولات في Virtux، وتضم: بطولات مفتوحة لجميع اللاعبين، بطولات VIP للاعبين المميزين، ومنافسات قوية بنظام احترافي وجوائز مستمرة."
+                      data-en="The Virtux tournaments zone features open tournaments for all players, VIP tournaments for elite players, and professional competitions with ongoing prizes.">منطقة
+                      البطولات في Virtux، وتضم: بطولات مفتوحة لجميع اللاعبين، بطولات VIP للاعبين المميزين، ومنافسات قوية
+                      بنظام احترافي وجوائز مستمرة.</span>
+                  </p>
+                  <p style="margin:0 0 10px;"><strong style="color:#cc2222;" data-ar="🎬 أبرز اللحظات"
+                      data-en="🎬 Highlights">🎬 أبرز اللحظات</strong><br>
+                    <span
+                      data-ar="قسم مخصص لأقوى اللحظات داخل الألعاب، حيث يتم عرض أفضل اللقطات والانتصارات والمشاهد الحماسية التي يشاركها اللاعبون والمجتمع."
+                      data-en="A section dedicated to the best gaming moments, showcasing top clips, victories, and exciting scenes shared by players and the community.">قسم
+                      مخصص لأقوى اللحظات داخل الألعاب، حيث يتم عرض أفضل اللقطات والانتصارات والمشاهد الحماسية التي
+                      يشاركها اللاعبون والمجتمع.</span>
+                  </p>
+                  <p style="margin:0 0 10px;"><strong style="color:#8888ff;">👥 Subscribers System</strong><br>
+                    <span
+                      data-ar="نظام الاشتراكات داخل Virtux يتيح للمستخدمين دعم القنوات أو اللاعبين المفضلين لديهم، والحصول على مزايا خاصة ومحتوى حصري."
+                      data-en="The Virtux subscription system lets users support their favorite channels or players and gain exclusive perks and content.">نظام
+                      الاشتراكات داخل Virtux يتيح للمستخدمين دعم القنوات أو اللاعبين المفضلين لديهم، والحصول على مزايا
+                      خاصة ومحتوى حصري.</span>
+                  </p>
+                  <p
+                    style="margin:0;padding:8px 12px;background:rgba(220,0,0,0.1);border-radius:8px;border-right:3px solid #e01010;">
+                    <strong style="color:#e01010;" data-ar="🚀 هدفنا" data-en="🚀 Our Goal">🚀 هدفنا</strong><br>
+                    <span style="font-size:12px;"><span
+                        data-ar="نسعى في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، live المباشر في بيئة احترافية وآمنة."
+                        data-en="Virtux aims to build a strong gaming community combining entertainment, competition, and live streaming in a professional and safe environment.">نسعى
+                        في Virtux إلى بناء مجتمع قوي للألعاب، يجمع بين الترفيه، المنافسة، live المباشر في بيئة احترافية
+                        وآمنة.</span></span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- لوحة القنوات في المنتصف -->
+              <div class="home-channel-panel" style="margin:0;">
+                <div class="hcp-title" data-ar="📡 قنوات الموقع" data-en="📡 Site Channels">📡 قنوات الموقع</div>
+                <div class="home-split">
+                  <div class="hcp-half">
+                    <div class="hcp-half-head" data-ar="🔴 live المباشر وما قبل live" data-en="🔴 Live &amp; Pre-Live">
+                      🔴 live المباشر وما قبل live</div>
+                    <div class="hc-wrap" id="hc-live">
+                      <div class="hc-loading">⏳ جارٍ التحميل...</div>
+                    </div>
+                  </div>
+                  <div class="hcp-half">
+                    <div class="hcp-half-head" data-ar="🎬 آخر الفيديوهات" data-en="🎬 Latest Videos">🎬 آخر الفيديوهات
+                    </div>
+                    <div class="hc-wrap" id="hc-videos">
+                      <div class="hc-loading">⏳ جارٍ التحميل...</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Main Panel -->
-              <div class="home-card glass main-panel" style="grid-column: span 1;">
-                <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                  <h3>📡 Featured</h3>
-                  <div class="panel-tabs" style="display:flex; background:rgba(0,0,0,0.2); padding:4px; border-radius:10px;">
-                    <button class="panel-tab active" onclick="switchHomeTab('live')" style="background:var(--vx-primary); color:#000; border:none; padding:4px 12px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">Live</button>
-                    <button class="panel-tab" onclick="switchHomeTab('videos')" style="background:transparent; color:#fff; border:none; padding:4px 12px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">Videos</button>
-                  </div>
-                </div>
-                
-                <div class="panel-content">
-                  <div id="hc-live" class="carousel-container active">
-                    <div class="hc-loading">⏳ Loading live...</div>
-                  </div>
-                  <div id="hc-videos" class="carousel-container" style="display:none;">
-                    <div class="hc-loading">⏳ Loading videos...</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Rules Card -->
-              <div class="home-card glass">
-                <h3><span class="sb-icon">🛑</span> Rules</h3>
-                <ul class="rules-list-modern" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
-                  <li style="font-size:13px; color:#ccc; display:flex; gap:10px; align-items:center;"><span style="color:var(--vx-primary);">✔</span> Respect fellow gamers</li>
-                  <li style="font-size:13px; color:#ccc; display:flex; gap:10px; align-items:center;"><span style="color:var(--vx-primary);">✔</span> No toxic behavior</li>
-                  <li style="font-size:13px; color:#ccc; display:flex; gap:10px; align-items:center;"><span style="color:var(--vx-primary);">✔</span> No inappropriate content</li>
-                  <li style="font-size:13px; color:#ccc; display:flex; gap:10px; align-items:center;"><span style="color:var(--vx-primary);">✔</span> Play fair, have fun</li>
+              <!-- Rules يمين -->
+              <div class="home-rules">
+                <h3 data-ar="🛑 القواعد" data-en="🛑 Rules">🛑 القواعد</h3>
+                <ul class="rules-list">
+                  <li data-ar="🚫 ممنوع الإهانة أو السلوك المسيء بأي شكل"
+                    data-en="🚫 Insults or abusive behavior are strictly prohibited">🚫 ممنوع الإهانة أو السلوك المسيء
+                    بأي شكل</li>
+                  <li data-ar="🚫 ممنوع التحريض أو إثارة المشاكل بين الأعضاء"
+                    data-en="🚫 Inciting conflict between members is not allowed">🚫 ممنوع التحريض أو إثارة المشاكل بين
+                    الأعضاء</li>
+                  <li data-ar="🚫 ممنوع نشر محتوى غير لائق" data-en="🚫 Posting inappropriate content is forbidden">🚫
+                    ممنوع نشر محتوى غير لائق</li>
+                  <li data-ar="🚫 ممنوع نشر صور النساء" data-en="🚫 Posting images of women is not allowed">🚫 ممنوع نشر
+                    صور النساء</li>
+                  <li data-ar="🚫 ممنوع نشر الموسيقى" data-en="🚫 Posting music is not allowed">🚫 ممنوع نشر الموسيقى
+                  </li>
+                  <li data-ar="✅ يُشترط الأسلوب الراقي والمحترم" data-en="✅ Respectful and polite behavior is required">
+                    ✅ يُشترط الأسلوب الراقي والمحترم</li>
                 </ul>
               </div>
-            </div>
+
+            </div><!-- end grid -->
           </div>
         </div>
       </div>
@@ -723,36 +2298,28 @@
             style="color:#e01010; font-size:12px; cursor:pointer; text-decoration:underline; display:block;"
             data-ar="هل نسيت كلمة المرور؟" data-en="Forgot Password?">هل نسيت كلمة المرور؟</a>
         </div>
-        <button class="vx-btn primary" id="doLoginBtn" style="width:100%; margin-bottom:12px;">Login</button>
-        <button class="vx-btn outline" id="googleBtn" style="width:100%; border-color:#4285f4; color:#4285f4;">
-          <span style="font-size:18px;">G</span> Sign in with Google
-        </button>
-        <div class="auth-switch" style="margin-top:20px; text-align:center; font-size:13px; color:#666;">
-          Don't have an account? <a id="switchToSignup" style="color:var(--vx-primary); cursor:pointer; font-weight:700;">Sign Up</a>
-        </div>
+        <button class="btn-submit" id="doLoginBtn">دخول</button>
+        <button class="btn-submit google-btn-modal" id="googleBtn">🔵 تسجيل دخول عن طريق غوغل</button>
+        <div class="auth-switch">ليس لديك حساب؟ <a id="switchToSignup">إنشاء حساب جديد</a></div>
       </div>
       <div id="modal-signup" style="display:none;">
-        <h3 style="margin-bottom:24px;">📝 Create Account</h3>
+        <h3>📝 إنشاء حساب جديد</h3>
         <div class="form-group">
-          <label>Username</label>
-          <input type="text" id="signupUsername" placeholder="Enter username">
+          <label>اسم المستخدم</label>
+          <input type="text" id="signupUsername" placeholder="اسم المستخدم">
         </div>
         <div class="form-group">
-          <label>Email</label>
+          <label>البريد الإلكتروني</label>
           <input type="email" id="signupEmail" placeholder="example@domain.com">
         </div>
         <div class="form-group">
-          <label>Password</label>
+          <label>كلمة المرور</label>
           <input type="password" id="signupPassword" placeholder="********">
         </div>
         <div id="signupError" class="error-msg"></div>
-        <button class="vx-btn primary" id="doSignupBtn" style="width:100%; margin-bottom:12px;">Sign Up</button>
-        <button class="vx-btn outline" id="googleSignupBtn" style="width:100%; border-color:#4285f4; color:#4285f4;">
-          <span style="font-size:18px;">G</span> Sign up with Google
-        </button>
-        <div class="auth-switch" style="margin-top:20px; text-align:center; font-size:13px; color:#666;">
-          Already have an account? <a id="switchToLogin" style="color:var(--vx-primary); cursor:pointer; font-weight:700;">Login</a>
-        </div>
+        <button class="btn-submit" id="doSignupBtn">تسجيل</button>
+        <button class="btn-submit google-btn-modal" id="googleSignupBtn">🔵 تسجيل عبر Google</button>
+        <div class="auth-switch">لديك حساب بالفعل؟ <a id="switchToLogin">تسجيل الدخول</a></div>
       </div>
     </div>
   </div>
@@ -2115,20 +3682,48 @@
         return;
       }
       const canViewVIP = userHasAnyRole(['vip', 'member', 'admin', 'moderator', 'youtuber_vip']);
-      el.innerHTML = posts.map(p => renderSingleCard(p, room, canViewVIP)).join('');
-    }
-
-    function renderSingleCard(p, room, canViewVIP) {
+      el.innerHTML = posts.map(p => {
         let media = '';
         const isRestricted = isVIP(p) && !canViewVIP;
         if (isRestricted) {
-          media = `<div class="post-card-restricted">
-            <span class="restricted-icon">👑</span>
-            <span class="restricted-label">${room === 'tournaments' ? '🏆 VIP Tournament' : '🎬 VIP Content'}</span>
-            <span class="restricted-hint">Exclusive for VIP members</span>
-          </div>`;
+          media = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1a0a2e,#0a0000);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;">
+        <span style="font-size:42px;">👑</span>
+        <span style="color:#e01010;font-size:13px;font-weight:700;">${room === 'tournaments' ? '🏆 بطولة VIP' : '🎬 محتوى VIP'}</span>
+        <span style="color:#888;font-size:11px;">خاص بأعضاء VIP  Member</span>
+      </div>`;
         } else {
-          media = renderCardMedia(p, room);
+          const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
+          const isVideoExt = p.url && /\.(mp4|webm|ogg|mov)/i.test(p.url);
+          const isStorageVideo = p.url && !isImageUrl && (p.url.includes('/storage/v1/object/public/videos/') || p.url.includes('/storage/v1/object/public/posts-media/'));
+          const isLocalVideo = p.url && !isImageUrl && (isVideoExt || isStorageVideo);
+          const isYouTube = p.url && (p.url.includes('youtube.com') || p.url.includes('youtu.be'));
+          const isTwitch = p.url && p.url.includes('twitch.tv');
+
+          if (isImageUrl) {
+            media = `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
+          } else if (isLocalVideo) {
+            const poster = (p.icon && p.icon.startsWith('http')) ? `poster="${p.icon}"` : '';
+            media = `<div class="post-card-video"><video src="${p.url}" ${poster} controls preload="metadata" style="width:100%;height:100%;background:#000;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"></video><div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;color:#f55;font-size:12px;background:#0a0000;">❌ تعذر تحميل الفيديو</div></div>`;
+          } else if (isYouTube) {
+            const videoId = extractYouTubeId(p.url);
+            if (videoId) {
+              const isLiveVid = p.url.includes('/live/') || p.tag === 'مباشر Now' || p.tag === 'Live Now';
+              const liveBadgeHtml = isLiveVid ? '<div style="position:absolute;top:8px;right:8px;background:#f00;color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:4px;letter-spacing:1px;">● LIVE</div>' : '';
+              media = '<div class="post-card-video" style="position:relative;cursor:pointer;background:#000;" data-vid="' + videoId + '" onclick="window.playYT(this)">'
+                + '<img src="https://i.ytimg.com/vi/' + videoId + '/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="window.fixThumb(this,this.closest(\'[data-vid]\').dataset.vid)">'
+                + liveBadgeHtml
+                + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:58px;height:58px;background:rgba(0,0,0,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;"><div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:22px solid #fff;margin-left:5px;"></div></div></div>'
+                + '</div>';
+            } else { media = '<div class="post-card-emoji">🎬</div>'; }
+          } else if (isTwitch) {
+            const twitchMatch = p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+            media = twitchMatch ? `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${twitchMatch[1]}&parent=${location.hostname}" loading="lazy" frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="width:100%;height:100%;border:none;"></iframe></div>` : `<div class="post-card-emoji">📺</div>`;
+          } else if (p.icon && (p.icon.startsWith('data:') || p.icon.startsWith('http'))) {
+            media = `<img class="post-card-img" src="${p.icon}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
+          } else {
+            const liveTag = room === 'live' && (p.tag === 'مباشر Now' || p.tag === 'Live Now') ? `<div class="live-badge">${window.t('مباشر', 'LIVE')}</div>` : '';
+            media = `<div style="width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#0a0a1a,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">${liveTag}<span style="font-size:36px;">${p.icon || '📄'}</span></div>`;
+          }
         }
 
         const tourAction = room === 'tournaments' ? `onclick="window.showTourDetails(${p.id})"` : '';
@@ -2137,13 +3732,37 @@
         let summary = cleanSummary.substring(0, 150); if (cleanSummary.length > 150) summary += '...';
 
         const articleRooms = ['gaming-news', 'youtube-news', 'highlights', 'tournaments'];
-        let readMoreLink = articleRooms.includes(room) ? `<a href="post.html?id=${p.id}" class="read-more">📖 ${window.t("اقرأ المزيد", "Read More")}</a>` : '';
-        
+        let readMoreLink = articleRooms.includes(room) ? `<a href="post.html?id=${p.id}" class="read-more" style="display:inline-block;margin-top:8px;color:var(--vx-primary);text-decoration:none;font-weight:700;">📖 ${window.t("اقرأ المزيد", "Read More")}</a>` : '';
         if (room === 'tournaments') {
-          readMoreLink = renderTournamentLinks(p);
+          const tourLinkLabel = window.t("رابط البطولة", "Tournament Link");
+          const readMoreLabel = window.t("اقرأ المزيد", "Read More");
+          
+          let tourData = null;
+          try { if (p.content && p.content.startsWith('{')) tourData = JSON.parse(p.content); } catch(e){}
+          const isFinished = tourData && tourData.status === 'finished';
+
+          const tourLink = (!isFinished && p.url && !p.url.includes('youtube.com') && !p.url.includes('youtu.be')) ? `<a href="${p.url}" target="_blank" onclick="event.stopPropagation()" style="display:inline-block;margin-top:8px;color:var(--vx-primary);background:rgba(255,0,64,0.05);border:1px solid var(--vx-primary);border-radius:6px;padding:4px 10px;font-size:11px;text-decoration:none;font-weight:700;margin-right:8px;transition:0.3s;">🔗 ${tourLinkLabel}</a>` : '';
+          
+          readMoreLink = `
+            <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
+              <a href="post.html?id=${p.id}" onclick="event.stopPropagation()" style="display:inline-block;margin-top:8px;color:#fff;background:rgba(255,255,255,0.05);border:1px solid #444;border-radius:6px;padding:4px 10px;font-size:11px;text-decoration:none;font-weight:700;margin-right:8px;transition:0.3s;">📖 ${readMoreLabel}</a>
+              ${tourLink}
+            </div>`;
         }
 
-        let actions = renderCardActions(p, room, isRestricted);
+        let actions = '';
+        if (!isRestricted && p.url) {
+          const isStorageFile = p.url.includes('/storage/v1/object/public/');
+          const isVideoFile = p.url.match(/\.(mp4|webm|mov|avi|mkv)(\?|$)/i) || (isStorageFile && p.url.match(/\.(mp4|webm|mov)/i));
+          const isImageFile = p.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i) || (isStorageFile && p.url.match(/\.(jpg|jpeg|png|gif|webp)/i));
+          const isYouTubeUrl = p.url.includes('youtube.com') || p.url.includes('youtu.be');
+          
+          if (room !== 'tournaments') {
+            if (p.tag?.includes(':dl') || isVideoFile || isImageFile) actions = `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل", "Download")}</a>`;
+            else if (!isYouTubeUrl) actions = `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط", "Link")}</a>`;
+          }
+        }
+
         let registerBtn = '';
         if (room === 'tournaments') {
           if (isVIP(p)) {
@@ -2233,43 +3852,6 @@
           </div>
         </div>`;
       }).join('');
-    }
-
-    function renderCardMedia(p, room) {
-        const isImageUrl = p.url && (/\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(p.url) || p.tag === 'Photo' || p.icon === '🖼️');
-        const isYouTube = p.url && (p.url.includes('youtube.com') || p.url.includes('youtu.be'));
-        const isTwitch = p.url && p.url.includes('twitch.tv');
-        const isLocalVideo = p.url && !isImageUrl && (p.url.match(/\.(mp4|webm|ogg|mov)/i) || p.url.includes('/storage/v1/object/public/'));
-
-        if (isImageUrl) return `<img class="post-card-img" src="${p.url}" onload="window.applyImgClass&&window.applyImgClass(this)">`;
-        if (isLocalVideo) return `<div class="post-card-video"><video src="${p.url}" controls preload="metadata"></video></div>`;
-        if (isYouTube) {
-            const vid = extractYouTubeId(p.url);
-            return vid ? `<div class="post-card-video" data-vid="${vid}" onclick="window.playYT(this)"><img src="https://i.ytimg.com/vi/${vid}/mqdefault.jpg"></div>` : `<div class="post-card-emoji">🎬</div>`;
-        }
-        if (isTwitch) {
-            const m = p.url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-            return m ? `<div class="post-card-video"><iframe src="https://player.twitch.tv/?channel=${m[1]}&parent=${location.hostname}" allowfullscreen></iframe></div>` : `<div class="post-card-emoji">📺</div>`;
-        }
-        return `<div class="post-card-emoji">${p.icon || '📄'}</div>`;
-    }
-
-    function renderCardActions(p, room, isRestricted) {
-        if (isRestricted || !p.url || room === 'tournaments') return '';
-        const isMedia = p.url.match(/\.(mp4|webm|mov|jpg|jpeg|png|gif|webp)/i);
-        if (p.tag?.includes(':dl') || isMedia) return `<a href="${p.url}" target="_blank" class="post-dl" download>⬇️ ${window.t("تحميل", "Download")}</a>`;
-        if (!p.url.includes('youtube.com')) return `<a href="${p.url}" target="_blank" class="post-link">🔗 ${window.t("رابط", "Link")}</a>`;
-        return '';
-    }
-
-    function renderTournamentLinks(p) {
-        const label = window.t("رابط البطولة", "Tournament Link");
-        const readLabel = window.t("اقرأ المزيد", "Read More");
-        let tourData = null;
-        try { if (p.content?.startsWith('{')) tourData = JSON.parse(p.content); } catch(e){}
-        const isFinished = tourData?.status === 'finished';
-        const tourLink = (!isFinished && p.url && !p.url.includes('youtube.com')) ? `<a href="${p.url}" target="_blank" class="vx-tour-link">🔗 ${label}</a>` : '';
-        return `<div class="tour-links"><a href="post.html?id=${p.id}" class="vx-read-more">📖 ${readLabel}</a>${tourLink}</div>`;
     }
 
     async function loadSubscribersWithVIP(el, posts, roleFilter, searchQuery) {
@@ -4706,55 +6288,47 @@
     if (typeof setLang === 'function') setLang(window._siteLanguage, true);
 
 
-    window.globalSearch = function(query) {
-      const q = query.trim().toLowerCase();
-      if (!q) {
-        // Reset grids if empty
-        if (window.currentRoom) loadPosts(window.currentRoom);
+    // ==================== وظائف القنوات (بحث وترقيم) ====================
+    window._filteredYTChannels = null;
+    window.renderYTChannelsPaged = function (posts, page = 1) {
+      const pageSize = 30;
+      const grid = document.getElementById('grid-yt-channels');
+      const pagin = document.getElementById('pagination-yt-channels');
+      if (!grid) return;
+
+      const currentPosts = posts || window._filteredYTChannels || window.allPosts['yt-channels'] || [];
+      window._filteredYTChannels = posts || window._filteredYTChannels;
+
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+      const paged = currentPosts.slice(start, end);
+
+      renderCards(paged, 'grid-yt-channels', 'yt-channels');
+
+      // Pagination buttons
+      if (pagin) {
+        const totalPages = Math.ceil(currentPosts.length / pageSize);
+        if (totalPages <= 1) { pagin.innerHTML = ''; return; }
+        let html = '';
+        for (let i = 1; i <= totalPages; i++) {
+          const active = i === page ? 'background:var(--vx-primary);color:#000;' : 'background:#111;color:#fff;';
+          html += `<button onclick="window.renderYTChannelsPaged(null, ${i})" style="${active} border:1px solid #444; border-radius:6px; padding:6px 12px; cursor:pointer; font-weight:bold;">${i}</button>`;
+        }
+        pagin.innerHTML = html;
+      }
+    };
+
+    window.searchYTChannels = function (query) {
+      const all = window.allPosts['yt-channels'] || [];
+      if (!query.trim()) {
+        window._filteredYTChannels = null;
+        window.renderYTChannelsPaged(all, 1);
         return;
       }
-      
-      // Basic global search across all cached posts
-      const results = {};
-      Object.keys(window.allPosts).forEach(room => {
-        results[room] = (window.allPosts[room] || []).filter(p => 
-          (p.title && p.title.toLowerCase().includes(q)) || 
-          (p.description && p.description.toLowerCase().includes(q))
-        );
-      });
-
-      // Update current grid with results if in a room
-      if (window.currentRoom && results[window.currentRoom]) {
-        renderCards(results[window.currentRoom], 'grid-' + window.currentRoom, window.currentRoom);
-      }
+      const filtered = all.filter(p => p.title && p.title.toLowerCase().includes(query.toLowerCase()));
+      window._filteredYTChannels = filtered;
+      window.renderYTChannelsPaged(filtered, 1);
     };
-
-    window.toggleDD = function(id) {
-      const el = document.getElementById(id);
-      const parent = el?.parentElement;
-      if (!parent) return;
-      
-      const isOpen = parent.classList.contains('active');
-      document.querySelectorAll('.dd').forEach(d => d.classList.remove('active'));
-      if (!isOpen) parent.classList.add('active');
-    };
-
-    window.closeDD = function() {
-      document.querySelectorAll('.dd').forEach(d => d.classList.remove('active'));
-    };
-
-    window.switchHomeTab = function(tab) {
-      document.querySelectorAll('.carousel-container').forEach(c => c.classList.remove('active'));
-      document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-      
-      document.getElementById('hc-' + tab).classList.add('active');
-      const btn = Array.from(document.querySelectorAll('.panel-tab')).find(b => b.textContent.toLowerCase().includes(tab));
-      if (btn) btn.classList.add('active');
-    };
-
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.dd')) window.closeDD();
-    });
 
     initializeAuth();
     showPage('home');
@@ -5042,81 +6616,54 @@
     }
 
     function renderLeague(league, container) {
-      // Sort league by points, then goal difference, then wins
-      league.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.w - a.w);
-
-      let html = `<div class="tr-league-container" style="background:none; border:none;">
-        <div style="display:grid; gap:10px; padding:5px;">`;
-      
-      league.forEach((p, idx) => {
-        const isTop = idx < 3;
-        const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
-        const borderColor = isTop ? colors[idx] : 'rgba(255,255,255,0.08)';
-        const shadow = isTop ? `0 0 15px ${colors[idx]}22` : 'none';
-        
-        html += `
-          <div class="tr-league-card" style="background:rgba(255,255,255,0.03); border:1px solid ${borderColor}; border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:15px; box-shadow:${shadow}; position:relative; overflow:hidden;">
-            ${isTop ? `<div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${colors[idx]};"></div>` : ''}
-            <div style="font-size:18px; font-weight:900; color:${isTop ? colors[idx] : '#555'}; width:30px; text-align:center;">${idx + 1}</div>
-            
-            <div style="flex:1; display:flex; align-items:center; gap:12px;">
-              <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center; font-size:16px; border:1px solid ${borderColor}44;">👤</div>
-              <div>
-                <div style="font-weight:800; color:#fff; font-size:14px; margin-bottom:2px;">${escapeHtml(p.name)}</div>
-                <div style="font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1px;">${isTop ? (idx===0?'Champion':(idx===1?'Runner up':'3rd Place')) : 'Competitor'}</div>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:15px; align-items:center; text-align:center;">
-              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">P</div><div style="font-weight:700; color:#aaa;">${p.p || 0}</div></div>
-              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">W</div><div style="font-weight:700; color:#00ff88;">${p.w || 0}</div></div>
-              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">L</div><div style="font-weight:700; color:#ff3333;">${p.l || 0}</div></div>
-              <div style="min-width:35px;"><div style="font-size:9px; color:#555; margin-bottom:2px;">G</div><div style="font-weight:700; color:#ffd2b8;">${(p.gf || 0)}-${(p.ga || 0)}</div></div>
-              <div style="min-width:50px; background:rgba(255,255,255,0.03); padding:5px; border-radius:8px; border:1px solid ${isTop ? borderColor : 'rgba(255,255,255,0.05)'};">
-                <div style="font-size:9px; color:${isTop ? borderColor : '#555'}; margin-bottom:2px;">PTS</div>
-                <div style="font-weight:900; color:${isTop ? borderColor : '#00f5ff'}; font-size:15px;">${p.pts || 0}</div>
-              </div>
-            </div>
-          </div>`;
+      let html = `<table class="tr-table"><thead><tr><th>اللاعب</th><th>لعب</th><th>فوز</th><th>ن</th></tr></thead><tbody>`;
+      league.forEach(p => {
+        html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
       });
-      
-      html += `</div></div>`;
+      html += `</tbody></table>`;
       container.innerHTML = html;
     }
 
     function renderGroups(groups, container) {
-      let html = `<div class="tr-group-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:20px;">`;
+      let html = `<div class="tr-group-grid">`;
       groups.forEach(g => {
-        html += `
-        <div class="tr-group-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden;">
-          <div class="tr-group-header" style="background:rgba(0,245,255,0.05); color:#00f5ff; padding:12px 15px; font-weight:800; border-bottom:1px solid rgba(0,245,255,0.1); font-size:14px;">${escapeHtml(g.name)}</div>
-          <table class="tr-table-premium mini" style="width:100%; border-collapse:collapse; font-size:11px;">
-            <thead>
-              <tr style="background:rgba(255,255,255,0.02);">
-                <th style="padding:8px 10px; color:#666; text-align:center;">#</th>
-                <th style="padding:8px 10px; color:#aaa;">اللاعب</th>
-                <th title="لعب" style="padding:8px 5px; text-align:center;">P</th>
-                <th title="فوز" style="padding:8px 5px; text-align:center; color:#00ff88;">W</th>
-                <th title="نقاط" style="padding:8px 5px; text-align:center; color:#ffaa00;">Pts</th>
-              </tr>
-            </thead>
-            <tbody>`;
-        g.players.forEach((p, idx) => {
-          const isQualified = idx < 2;
-          html += `
-          <tr class="${isQualified ? 'qualified' : ''}" style="border-bottom:1px solid rgba(255,255,255,0.02); ${isQualified ? 'background:rgba(0,255,200,0.03);' : ''}">
-            <td style="padding:10px; text-align:center; font-weight:900; color:${isQualified ? '#00ffcc' : '#555'};">${idx + 1}</td>
-            <td style="padding:10px; font-weight:700; color:#eee;">${escapeHtml(p.name)}</td>
-            <td style="text-align:center; color:#888;">${p.p || 0}</td>
-            <td style="text-align:center; color:#00ff88;">${p.w || 0}</td>
-            <td style="text-align:center; font-weight:900; color:#ffaa00;">${p.pts || 0}</td>
-          </tr>`;
+        html += `<div style="background:rgba(255,255,255,0.02); padding:15px; border-radius:10px; border:1px solid var(--vx-border);">
+      <h5 style="color:#ffd2b8; margin-bottom:10px;">${g.name}</h5>
+      <table class="tr-group-table"><thead><tr><th>اللاعب</th><th>ل</th><th>ف</th><th>ن</th></tr></thead><tbody>`;
+        g.players.forEach(p => {
+          html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.p}</td><td>${p.w}</td><td style="color:var(--vx-primary); font-weight:bold;">${p.pts}</td></tr>`;
         });
         html += `</tbody></table></div>`;
       });
       html += `</div>`;
       container.innerHTML = html;
     }
+    // ==================== نظام هجرة الـ Reels من الفيديوهات ====================
+    async function migrateReelsToNewRoom() {
+      const done = localStorage.getItem('virtux_reels_migrated_v3');
+      if (done) return;
+      try {
+        const { data: posts } = await db.from('posts').select('id,url,tag').eq('room', 'yt-videos');
+        const reels = (posts || []).filter(p => {
+          const isShort = p.url && (p.url.includes('/shorts/') || p.url.includes('shorts'));
+          const t = (p.tag || '').toLowerCase();
+          const isReelTag = t === 'reel' || t === 'reels' || t === 'vip reel' || t === 'short' || t === 'shorts';
+          return isShort || isReelTag;
+        });
+        if (reels.length > 0) {
+          const ids = reels.map(r => r.id);
+          const { error } = await db.from('posts').update({ room: 'reels' }).in('id', ids);
+          if (error) throw error;
+          console.log(`[Migration V3] Moved ${ids.length} items to reels room.`);
+          // Reload if we are on a page that would be affected
+          if (window._currentPage === 'reels' || window._currentPage === 'yt-videos') {
+            setTimeout(() => window.location.reload(), 500);
+          }
+        }
+        localStorage.setItem('virtux_reels_migrated_v3', 'true');
+      } catch (e) { console.error('Migration V3 failed:', e); }
+    }
+    migrateReelsToNewRoom();
     // ==================== تفاصيل البطولات والشجرة ====================
     let tourZoomScale = 1.0;
     window.showTourDetails = async function(postId) {
@@ -5193,40 +6740,29 @@
     let tourPanning = false;
     let tourStartX, tourStartY, tourScrollLeft, tourScrollTop;
     window.initTourPanning = function() {
-      const area = document.getElementById('tour-details-content') || document.getElementById('tour-bracket-wrapper') || document.getElementById('tr-view');
+      const area = document.getElementById('tour-bracket-wrapper');
       if (!area) return;
       area.style.cursor = 'grab';
-      area.style.userSelect = 'none';
-      
-      const onDown = (e) => {
-        if (e.target.closest('button')) return;
+      area.addEventListener('mousedown', (e) => {
         tourPanning = true;
         area.style.cursor = 'grabbing';
-        tourStartX = e.pageX || e.touches[0].pageX;
-        tourStartY = e.pageY || e.touches[0].pageY;
+        tourStartX = e.pageX - area.offsetLeft;
+        tourStartY = e.pageY - area.offsetTop;
         tourScrollLeft = area.scrollLeft;
         tourScrollTop = area.scrollTop;
-      };
-
-      const onMove = (e) => {
+      });
+      area.addEventListener('mouseleave', () => { tourPanning = false; area.style.cursor = 'grab'; });
+      area.addEventListener('mouseup', () => { tourPanning = false; area.style.cursor = 'grab'; });
+      area.addEventListener('mousemove', (e) => {
         if (!tourPanning) return;
         e.preventDefault();
-        const x = e.pageX || e.touches[0].pageX;
-        const y = e.pageY || e.touches[0].pageY;
+        const x = e.pageX - area.offsetLeft;
+        const y = e.pageY - area.offsetTop;
         const walkX = (x - tourStartX) * 1.5;
         const walkY = (y - tourStartY) * 1.5;
         area.scrollLeft = tourScrollLeft - walkX;
         area.scrollTop = tourScrollTop - walkY;
-      };
-
-      const onUp = () => { tourPanning = false; area.style.cursor = 'grab'; };
-
-      area.addEventListener('mousedown', onDown);
-      area.addEventListener('touchstart', onDown, { passive: false });
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('touchmove', onMove, { passive: false });
-      window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchend', onUp);
+      });
     }
 
     function renderTourContent(post) {
@@ -5262,12 +6798,9 @@
 
       let tourDetailsHtml = '';
       if (tourData.type === 'bracket') {
-        const participants = tourData.participants || [];
-        const numRounds = Math.ceil(Math.log2(participants.length)) || (tourData.matches ? tourData.matches.length : 0);
-        
-        tourDetailsHtml = `<div id="tour-bracket-wrapper" style="overflow:auto; width:100%; min-height:500px; background:rgba(0,0,0,0.1); border-radius:12px; cursor:grab;"><div class="bracket-container" style="transform: scale(${tourZoomScale}); transform-origin: top left; padding:40px; display:flex; gap:50px;">`;
-        
-        for (let rIdx = 0; rIdx < numRounds; rIdx++) {
+        const numRounds = tourData.matches.length;
+        tourDetailsHtml = `<div id="tour-bracket-wrapper" style="overflow:hidden; width:100%; min-height:500px; background:rgba(0,0,0,0.1); border-radius:12px;"><div class="bracket-container" style="transform: scale(${tourZoomScale});">`;
+        tourData.matches.forEach((round, rIdx) => {
           let roundTitle = `${window.t('الجولة', 'Round')} ${rIdx + 1}`;
           const distFromFinal = numRounds - 1 - rIdx;
           if (distFromFinal === 0) roundTitle = 'النهائي';
@@ -5275,107 +6808,29 @@
           else if (distFromFinal === 2) roundTitle = 'ربع النهائي';
           else if (distFromFinal === 3) roundTitle = 'ثمن النهائي';
 
-          tourDetailsHtml += `<div class="bracket-round-view" style="display:flex; flex-direction:column; justify-content:space-around; min-width:200px;">
-            <div style="text-align:center; color:var(--vx-primary); font-size:11px; font-weight:800; margin-bottom:15px; background:rgba(255,0,64,0.05); padding:5px; border-radius:5px;">${roundTitle}</div>`;
-          
-          const roundMatches = (tourData.matches && tourData.matches[rIdx]) ? tourData.matches[rIdx] : null;
-          const matchesCount = Math.pow(2, numRounds - rIdx - 1);
-
-          for (let mIdx = 0; mIdx < matchesCount; mIdx++) {
-            const m = (roundMatches && roundMatches[mIdx]) ? roundMatches[mIdx] : { p1: { name: '---' }, p2: { name: '---' }, score1: 0, score2: 0, winner: null };
-            
-            tourDetailsHtml += `<div class="match-card-view" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin:10px 0; overflow:hidden;">
-              <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}" style="padding:8px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.02);">
-                <span style="font-size:12px; font-weight:700;">${escapeHtml(m.p1?.name || '---')}</span>
-                <span class="match-score-view" style="font-weight:900; color:var(--vx-primary);">${m.score1 || 0}</span>
+          tourDetailsHtml += `<div class="bracket-round-view">
+            <div style="text-align:center; color:var(--vx-primary); font-size:11px; font-weight:800; margin-bottom:15px; border-bottom:1px solid rgba(255,0,64,0.2);">${roundTitle}</div>`;
+          round.forEach(m => {
+            tourDetailsHtml += `<div class="match-card-view">
+              <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}">
+                <span>${escapeHtml(m.p1?.name || '---')}</span>
+                <span class="match-score-view">${m.score1}</span>
               </div>
-              <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}" style="padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:12px; font-weight:700;">${escapeHtml(m.p2?.name || '---')}</span>
-                <span class="match-score-view" style="font-weight:900; color:var(--vx-primary);">${m.score2 || 0}</span>
+              <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}">
+                <span>${escapeHtml(m.p2?.name || '---')}</span>
+                <span class="match-score-view">${m.score2}</span>
               </div>
             </div>`;
-          }
+          });
           tourDetailsHtml += `</div>`;
-        }
+        });
         tourDetailsHtml += `</div></div>`;
       } else if (tourData.type === 'league') {
-        tourDetailsHtml = `
-        <div style="padding:10px; overflow-x:auto;">
-          <table class="tr-table-premium" style="width:100%; border-collapse:collapse; font-size:13px;">
-            <thead>
-              <tr style="background:rgba(255,255,255,0.02);">
-                <th style="padding:12px; text-align:center; color:#666;">#</th>
-                <th style="padding:12px; text-align:left; color:#aaa;">اللاعب</th>
-                <th title="لعب" style="text-align:center; color:#888;">P</th>
-                <th title="فوز" style="text-align:center; color:#00ff88;">W</th>
-                <th title="خسارة" style="text-align:center; color:#ff4444;">L</th>
-                <th title="نقاط" style="text-align:center; color:#ffaa00; font-weight:bold;">Pts</th>
-              </tr>
-            </thead>
-            <tbody>`;
-        const sorted = [...tourData.league].sort((a,b)=> b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.w - a.w);
-        sorted.forEach((p,idx) => {
-          const isTop = idx < 3;
-          tourDetailsHtml += `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.02); ${isTop ? 'background:rgba(0,245,255,0.02);' : ''}">
-            <td style="padding:12px; text-align:center; font-weight:900; color:${isTop?'#00f5ff':'#555'};">${idx+1}</td>
-            <td style="padding:12px; font-weight:700; color:#eee;">${escapeHtml(p.name)}</td>
-            <td style="text-align:center; color:#888;">${p.p || 0}</td>
-            <td style="text-align:center; color:#00ff88;">${p.w || 0}</td>
-            <td style="text-align:center; color:#ff4444;">${p.l || 0}</td>
-            <td style="text-align:center; font-weight:900; color:#ffaa00;">${p.pts || 0}</td>
-          </tr>`;
+        tourDetailsHtml = `<div style="padding:10px;"><table class="league-table-view"><thead><tr><th>#</th><th>${window.t('اللاعب', 'Player')}</th><th>${window.t('لعب', 'P')}</th><th>${window.t('نقاط', 'PTS')}</th></tr></thead><tbody>`;
+        tourData.league.sort((a,b)=> b.pts - a.pts).forEach((p,idx) => {
+          tourDetailsHtml += `<tr><td>${idx+1}</td><td style="text-align:left;">${escapeHtml(p.name)}</td><td>${p.p}</td><td style="color:var(--vx-primary); font-weight:800;">${p.pts}</td></tr>`;
         });
         tourDetailsHtml += `</tbody></table></div>`;
-      } else if (tourData.type === 'groups_bracket') {
-        if (tourData.matches && tourData.matches.length > 0) {
-          // عرض الشجرة إذا بدأت التصفيات
-          const numRounds = tourData.matches.length;
-          tourDetailsHtml = `
-            <div style="text-align:center; color:#ffd2b8; margin-bottom:15px; font-weight:bold; font-size:14px;">🌳 المرحلة الإقصائية</div>
-            <div id="tour-bracket-wrapper" style="overflow:auto; width:100%; min-height:400px; background:rgba(0,0,0,0.1); border-radius:12px; cursor:grab;">
-              <div class="bracket-container" style="transform: scale(${tourZoomScale}); transform-origin: top left; padding:40px; display:flex; gap:40px;">`;
-          tourData.matches.forEach((round, rIdx) => {
-            tourDetailsHtml += `<div class="bracket-round-view" style="display:flex; flex-direction:column; justify-content:space-around; min-width:180px;">
-              <div style="text-align:center; color:#00f5ff; font-size:10px; font-weight:800; margin-bottom:10px; background:rgba(0,245,255,0.05); padding:3px; border-radius:4px;">الجولة ${rIdx + 1}</div>`;
-            round.forEach(m => {
-              tourDetailsHtml += `<div class="match-card-view" style="background:rgba(255,255,255,0.02); border:1px solid #333; border-radius:8px; margin:8px 0; overflow:hidden;">
-                <div class="match-team-view ${m.winner === m.p1?.id ? 'winner' : ''}" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #222;">
-                  <span style="font-size:11px; font-weight:700;">${escapeHtml(m.p1?.name || '---')}</span>
-                  <span style="font-weight:900; color:#00f5ff;">${m.score1}</span>
-                </div>
-                <div class="match-team-view ${m.winner === m.p2?.id ? 'winner' : ''}" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:11px; font-weight:700;">${escapeHtml(m.p2?.name || '---')}</span>
-                  <span style="font-weight:900; color:#00f5ff;">${m.score2}</span>
-                </div>
-              </div>`;
-            });
-            tourDetailsHtml += `</div>`;
-          });
-          tourDetailsHtml += `</div></div>`;
-        } else if (tourData.groups) {
-          // عرض المجموعات
-          tourDetailsHtml = `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:15px; padding:10px;">`;
-          tourData.groups.forEach(g => {
-            tourDetailsHtml += `
-              <div style="background:rgba(255,255,255,0.03); border:1px solid #333; border-radius:12px; overflow:hidden;">
-                <div style="background:rgba(0,245,255,0.05); color:#00f5ff; padding:10px; font-weight:800; border-bottom:1px solid #222; font-size:13px; text-align:center;">${escapeHtml(g.name)}</div>
-                <table style="width:100%; border-collapse:collapse; font-size:11px;">
-                  <thead><tr style="background:rgba(255,255,255,0.02);"><th style="padding:8px; text-align:center;">#</th><th style="padding:8px; text-align:left;">اللاعب</th><th style="padding:8px;">P</th><th style="padding:8px; color:#ffaa00;">Pts</th></tr></thead>
-                  <tbody>`;
-            g.players.forEach((p, idx) => {
-              const isQualified = idx < 2;
-              tourDetailsHtml += `<tr style="border-bottom:1px solid #222; ${isQualified ? 'background:rgba(0,255,200,0.03);' : ''}">
-                <td style="padding:8px; text-align:center; font-weight:900; color:${isQualified ? '#00ffcc' : '#555'};">${idx + 1}</td>
-                <td style="padding:8px; font-weight:700;">${escapeHtml(p.name)}</td>
-                <td style="padding:8px; text-align:center;">${p.p || 0}</td>
-                <td style="padding:8px; text-align:center; font-weight:900; color:#ffaa00;">${p.pts || 0}</td>
-              </tr>`;
-            });
-            tourDetailsHtml += `</tbody></table></div>`;
-          });
-          tourDetailsHtml += `</div>`;
-        }
       }
 
       // عرض الترتيب النهائي إذا انتهت البطولة
@@ -5416,7 +6871,9 @@
 
       contentHtml += tourDetailsHtml;
       container.innerHTML = contentHtml;
-      setTimeout(window.initTourPanning, 100);
+
+      container.innerHTML = contentHtml;
+      setTimeout(initTourPanning, 100);
     }
 
     window.openTournamentResults = function(postId) { window.showTourDetails(postId); };
